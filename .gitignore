@@ -1,0 +1,49 @@
+# Build outputs
+bin/
+obj/
+out/
+publish/
+artifacts/
+TestResults/
+coverage/
+
+# .NET / IDE
+.vs/
+.vscode/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.rsuser
+
+# Rider / JetBrains
+.idea/
+*.DotSettings.user
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs and temporary files
+*.log
+*.tmp
+*.temp
+*.bak
+
+# RiftScan generated runtime data
+sessions/
+reports/generated/
+*.dump
+*.dmp
+*.bin
+*.trace
+
+# Keep checked-in fixtures separate from live/generated sessions
+!tests/fixtures/**
+
+# Credentials or local environment
+.env
+.env.*
+*.secrets.json
+appsettings.Local.json
