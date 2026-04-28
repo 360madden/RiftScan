@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text.Json;
 using RiftScan.Analysis.Deltas;
+using RiftScan.Analysis.Regions;
 using RiftScan.Core.Sessions;
 
 namespace RiftScan.Analysis.Values;
@@ -128,6 +129,14 @@ public sealed class TypedValueLaneAnalyzer
             rankScore = Math.Min(rankScore, 55.0);
         }
 
+        var recommendation = Recommend(dataType, changedSampleCount);
+        if (KnownSystemRegionClassifier.IsKnownSystemNoise(delta.BaseAddressHex))
+        {
+            diagnostics.Add(KnownSystemRegionClassifier.Diagnostic);
+            rankScore = Math.Min(rankScore, KnownSystemRegionClassifier.ValueRankScoreCap);
+            recommendation = KnownSystemRegionClassifier.ValueRecommendation;
+        }
+
         rankScore = Math.Round(rankScore, 3);
         var absoluteAddress = ParseHex(delta.BaseAddressHex) + (ulong)offset;
 
@@ -143,7 +152,7 @@ public sealed class TypedValueLaneAnalyzer
             DistinctValueCount = distinctValueCount,
             ChangedSampleCount = changedSampleCount,
             RankScore = rankScore,
-            Recommendation = Recommend(dataType, changedSampleCount),
+            Recommendation = recommendation,
             ValuePreview = valuePreview.Take(8).ToArray(),
             Diagnostics = diagnostics
         };

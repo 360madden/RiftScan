@@ -1,6 +1,7 @@
 using System.Text.Json;
 using RiftScan.Analysis.Clusters;
 using RiftScan.Analysis.Deltas;
+using RiftScan.Analysis.Regions;
 using RiftScan.Analysis.Structures;
 using RiftScan.Analysis.Values;
 using RiftScan.Core.Sessions;
@@ -78,6 +79,13 @@ public sealed class DynamicRegionTriageAnalyzer
         var entropyScore = Math.Min(entropy / 8.0, 1.0) * 35.0;
         var densityScore = (1.0 - zeroRatio) * 20.0;
         var rankScore = Math.Round(dynamicScore + entropyScore + densityScore, 3);
+        var recommendation = Recommend(snapshots.Count, uniqueChecksumCount, entropy, zeroRatio);
+        if (KnownSystemRegionClassifier.IsKnownSystemNoise(snapshots[0].BaseAddressHex))
+        {
+            diagnostics.Add(KnownSystemRegionClassifier.Diagnostic);
+            rankScore = Math.Min(rankScore, KnownSystemRegionClassifier.TriageRankScoreCap);
+            recommendation = KnownSystemRegionClassifier.TriageRecommendation;
+        }
 
         return new RegionTriageEntry
         {
@@ -90,7 +98,7 @@ public sealed class DynamicRegionTriageAnalyzer
             ByteEntropy = Math.Round(entropy, 6),
             ZeroByteRatio = Math.Round(zeroRatio, 6),
             RankScore = rankScore,
-            Recommendation = Recommend(snapshots.Count, uniqueChecksumCount, entropy, zeroRatio),
+            Recommendation = recommendation,
             Diagnostics = diagnostics
         };
     }
@@ -110,15 +118,22 @@ public sealed class DynamicRegionTriageAnalyzer
         return "low_priority_until_more_signal";
     }
 
-    private static NextCapturePlan BuildNextCapturePlan(string sessionId, IReadOnlyList<RegionTriageEntry> triageEntries) =>
-        new()
+    private static NextCapturePlan BuildNextCapturePlan(string sessionId, IReadOnlyList<RegionTriageEntry> triageEntries)
+    {
+        var followupEntries = triageEntries
+            .Where(entry => !KnownSystemRegionClassifier.IsKnownSystemNoise(entry.BaseAddressHex))
+            .Take(25)
+            .ToArray();
+
+        return new NextCapturePlan
         {
             SessionId = sessionId,
-            Recommendation = triageEntries.Any(entry => entry.SnapshotCount < 2)
+            Recommendation = followupEntries.Length == 0
+                ? "no_candidate_regions_after_known_system_noise_filter"
+                : triageEntries.Any(entry => entry.SnapshotCount < 2)
                 ? "capture_at_least_two_samples_for_delta_triage"
                 : "prioritize_regions_with_checksum_changes_clusters_and_structures",
-            Regions = triageEntries
-                .Take(25)
+            Regions = followupEntries
                 .Select(entry => new NextCaptureRegion
                 {
                     RegionId = entry.RegionId,
@@ -129,6 +144,7 @@ public sealed class DynamicRegionTriageAnalyzer
                 })
                 .ToArray()
         };
+    }
 
     private static double CalculateEntropy(IReadOnlyCollection<byte> bytes)
     {
