@@ -23,4 +23,8 @@ public sealed record PassiveCaptureOptions
     public IReadOnlySet<string> RegionIds { get; init; } = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
     public IReadOnlySet<ulong> BaseAddresses { get; init; } = new HashSet<ulong>();
+
+    public string? StimulusLabel { get; init; }
+
+    public string? StimulusNotes { get; init; }
 }

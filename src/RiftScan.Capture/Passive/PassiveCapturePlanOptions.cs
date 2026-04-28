@@ -21,4 +21,8 @@ public sealed record PassiveCapturePlanOptions
     public long MaxTotalBytes { get; init; } = 1024 * 1024;
 
     public bool IncludeImageRegions { get; init; }
+
+    public string? StimulusLabel { get; init; }
+
+    public string? StimulusNotes { get; init; }
 }

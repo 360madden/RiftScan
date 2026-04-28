@@ -1,5 +1,8 @@
 using RiftScan.Analysis.Structures;
 using RiftScan.Analysis.Vectors;
+using RiftScan.Capture.Passive;
+using RiftScan.Core.Processes;
+using RiftScan.Core.Sessions;
 
 namespace RiftScan.Tests;
 
@@ -19,6 +22,34 @@ public sealed class Vec3CandidateAnalyzerTests
         Assert.Equal("vec3_candidate_followup", candidate.Recommendation);
         Assert.Contains("candidate_not_truth_claim", candidate.Diagnostics);
         Assert.True(File.Exists(Path.Combine(session.Path, "vec3_candidates.jsonl")));
+    }
+
+    [Fact]
+    public void Analyze_session_scores_move_forward_stimulus_when_vec3_changes()
+    {
+        using var session = new TempDirectory();
+        _ = new PassiveCaptureService(new MovingVec3ProcessMemoryReader()).Capture(new PassiveCaptureOptions
+        {
+            ProcessName = "fixture_process",
+            OutputPath = session.Path,
+            Samples = 3,
+            IntervalMilliseconds = 0,
+            MaxRegions = 1,
+            MaxBytesPerRegion = 16,
+            MaxTotalBytes = 48,
+            StimulusLabel = "move_forward"
+        });
+        _ = new FloatTripletStructureAnalyzer().AnalyzeSession(session.Path);
+
+        var candidates = new Vec3CandidateAnalyzer().AnalyzeSession(session.Path);
+
+        var candidate = Assert.Single(candidates, candidate => candidate.OffsetHex == "0x0");
+        Assert.Equal("move_forward", candidate.StimulusLabel);
+        Assert.Equal(25, candidate.BehaviorScore);
+        Assert.Equal("behavior_consistent_candidate", candidate.ValidationStatus);
+        Assert.Equal("move_forward_vec3_candidate_followup", candidate.Recommendation);
+        Assert.True(candidate.ValueDeltaMagnitude > 0);
+        Assert.Contains("move_forward_vec3_changed", candidate.Diagnostics);
     }
 
     private static TempDirectory CopyFixtureToTemp()
@@ -57,6 +88,35 @@ public sealed class Vec3CandidateAnalyzerTests
             {
                 Directory.Delete(Path, recursive: true);
             }
+        }
+    }
+
+    private sealed class MovingVec3ProcessMemoryReader : IProcessMemoryReader
+    {
+        private int _readCount;
+
+        public IReadOnlyList<ProcessDescriptor> FindProcessesByName(string processName) =>
+        [
+            new ProcessDescriptor(100, "fixture_process", DateTimeOffset.Parse("2026-04-28T17:00:00Z"), "fixture.exe")
+        ];
+
+        public ProcessDescriptor GetProcessById(int processId) =>
+            new(processId, "fixture_process", DateTimeOffset.Parse("2026-04-28T17:00:00Z"), "fixture.exe");
+
+        public IReadOnlyList<ProcessModuleInfo> GetModules(int processId) => [];
+
+        public IReadOnlyList<VirtualMemoryRegion> EnumerateRegions(int processId) =>
+        [
+            new VirtualMemoryRegion("region-000001", 0x1000, 16, MemoryRegionConstants.MemCommit, MemoryRegionConstants.PageReadWrite, MemoryRegionConstants.MemPrivate)
+        ];
+
+        public byte[] ReadMemory(int processId, ulong baseAddress, int byteCount)
+        {
+            var bytes = new byte[byteCount];
+            BitConverter.GetBytes(1.0f + _readCount++).CopyTo(bytes, 0);
+            BitConverter.GetBytes(2.0f).CopyTo(bytes, 4);
+            BitConverter.GetBytes(-3.0f).CopyTo(bytes, 8);
+            return bytes;
         }
     }
 }

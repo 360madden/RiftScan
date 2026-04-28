@@ -135,6 +135,8 @@ public static class Program
         long maxTotalBytes = 1024 * 1024;
         var includeImageRegions = false;
         IReadOnlySet<string> regionIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        string? stimulusLabel = null;
+        string? stimulusNotes = null;
 
         for (var index = 0; index < args.Length; index++)
         {
@@ -171,6 +173,12 @@ public static class Program
                 case "--region-ids":
                     regionIds = ParseRegionIds(RequireValue(args, ref index, arg));
                     break;
+                case "--stimulus":
+                    stimulusLabel = RequireValue(args, ref index, arg);
+                    break;
+                case "--stimulus-note":
+                    stimulusNotes = RequireValue(args, ref index, arg);
+                    break;
                 default:
                     throw new ArgumentException($"Unknown capture passive option: {arg}");
             }
@@ -187,7 +195,9 @@ public static class Program
             MaxBytesPerRegion = maxBytesPerRegion,
             MaxTotalBytes = maxTotalBytes,
             IncludeImageRegions = includeImageRegions,
-            RegionIds = regionIds
+            RegionIds = regionIds,
+            StimulusLabel = stimulusLabel,
+            StimulusNotes = stimulusNotes
         };
     }
 
@@ -208,6 +218,8 @@ public static class Program
         var maxBytesPerRegion = 64 * 1024;
         long maxTotalBytes = 1024 * 1024;
         var includeImageRegions = false;
+        string? stimulusLabel = null;
+        string? stimulusNotes = null;
 
         for (var index = 1; index < args.Length; index++)
         {
@@ -241,6 +253,12 @@ public static class Program
                 case "--include-image-regions":
                     includeImageRegions = true;
                     break;
+                case "--stimulus":
+                    stimulusLabel = RequireValue(args, ref index, arg);
+                    break;
+                case "--stimulus-note":
+                    stimulusNotes = RequireValue(args, ref index, arg);
+                    break;
                 default:
                     throw new ArgumentException($"Unknown capture plan option: {arg}");
             }
@@ -257,7 +275,9 @@ public static class Program
             IntervalMilliseconds = intervalMilliseconds,
             MaxBytesPerRegion = maxBytesPerRegion,
             MaxTotalBytes = maxTotalBytes,
-            IncludeImageRegions = includeImageRegions
+            IncludeImageRegions = includeImageRegions,
+            StimulusLabel = stimulusLabel,
+            StimulusNotes = stimulusNotes
         };
     }
 
@@ -352,9 +372,9 @@ public static class Program
 
     private static void PrintUsage()
     {
-        Console.WriteLine("riftscan capture passive --process <name> --out sessions/<id> [--samples 1] [--interval-ms 100]");
-        Console.WriteLine("riftscan capture passive --pid <id> --out sessions/<id> [--samples 1] [--interval-ms 100] [--region-ids region-000001,region-000002]");
-        Console.WriteLine("riftscan capture plan <source-session> --pid <id> --out sessions/<id> [--top-regions 5]");
+        Console.WriteLine("riftscan capture passive --process <name> --out sessions/<id> [--samples 1] [--interval-ms 100] [--stimulus passive_idle]");
+        Console.WriteLine("riftscan capture passive --pid <id> --out sessions/<id> [--samples 1] [--interval-ms 100] [--region-ids region-000001,region-000002] [--stimulus move_forward]");
+        Console.WriteLine("riftscan capture plan <source-session> --pid <id> --out sessions/<id> [--top-regions 5] [--stimulus move_forward]");
         Console.WriteLine("riftscan analyze session <session-path> [--all|--top 100]");
         Console.WriteLine("riftscan report session <session-path> [--top 100]");
         Console.WriteLine("riftscan compare sessions <session-a> <session-b> [--top 100] [--out reports/generated/comparison.json]");

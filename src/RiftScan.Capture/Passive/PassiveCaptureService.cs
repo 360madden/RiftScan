@@ -6,6 +6,17 @@ namespace RiftScan.Capture.Passive;
 
 public sealed class PassiveCaptureService(IProcessMemoryReader processMemoryReader)
 {
+    public static readonly IReadOnlySet<string> ValidStimulusLabels = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+    {
+        "passive",
+        "passive_idle",
+        "passive_world_activity",
+        "move_forward",
+        "turn_left",
+        "turn_right",
+        "camera_only"
+    };
+
     public PassiveCaptureResult Capture(PassiveCaptureOptions options)
     {
         ValidateOptions(options);
@@ -134,6 +145,7 @@ public sealed class PassiveCaptureService(IProcessMemoryReader processMemoryRead
         WriteJson(sessionPath, "regions.json", new RegionMap { Regions = capturedRegions.Values.OrderBy(region => region.BaseAddressHex).ToArray() });
         WriteJson(sessionPath, "modules.json", new ModuleMap { Modules = modules });
         WriteSnapshotIndex(sessionPath, snapshotEntries);
+        WriteStimulusIfRequested(sessionPath, manifest.SessionId, snapshotEntries, options);
         WriteChecksums(sessionPath, snapshotEntries);
 
         return new PassiveCaptureResult
@@ -179,6 +191,10 @@ public sealed class PassiveCaptureService(IProcessMemoryReader processMemoryRead
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(options.MaxRegions);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(options.MaxBytesPerRegion);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(options.MaxTotalBytes);
+        if (!string.IsNullOrWhiteSpace(options.StimulusLabel) && !ValidStimulusLabels.Contains(options.StimulusLabel))
+        {
+            throw new ArgumentException($"Unknown stimulus label: {options.StimulusLabel}.");
+        }
     }
 
     private static void PrepareSessionDirectory(string sessionPath)
@@ -215,6 +231,31 @@ public sealed class PassiveCaptureService(IProcessMemoryReader processMemoryRead
         File.WriteAllLines(path, entries.Select(entry => JsonSerializer.Serialize(entry, SessionJson.Options).ReplaceLineEndings(string.Empty)));
     }
 
+    private static void WriteStimulusIfRequested(
+        string sessionPath,
+        string sessionId,
+        IReadOnlyList<SnapshotIndexEntry> snapshotEntries,
+        PassiveCaptureOptions options)
+    {
+        if (string.IsNullOrWhiteSpace(options.StimulusLabel))
+        {
+            return;
+        }
+
+        var stimulus = new StimulusEvent
+        {
+            SessionId = sessionId,
+            StimulusId = "stimulus-000001",
+            Label = options.StimulusLabel,
+            StartSnapshotId = snapshotEntries.First().SnapshotId,
+            EndSnapshotId = snapshotEntries.Last().SnapshotId,
+            CreatedUtc = DateTimeOffset.UtcNow,
+            Notes = options.StimulusNotes ?? string.Empty
+        };
+        var path = ResolveSessionPath(sessionPath, "stimuli.jsonl");
+        File.WriteAllLines(path, [JsonSerializer.Serialize(stimulus, SessionJson.Options).ReplaceLineEndings(string.Empty)]);
+    }
+
     private static void WriteChecksums(string sessionPath, IEnumerable<SnapshotIndexEntry> snapshotEntries)
     {
         var paths = new List<string>
@@ -224,6 +265,11 @@ public sealed class PassiveCaptureService(IProcessMemoryReader processMemoryRead
             "modules.json",
             "snapshots/index.jsonl"
         };
+        if (File.Exists(ResolveSessionPath(sessionPath, "stimuli.jsonl")))
+        {
+            paths.Add("stimuli.jsonl");
+        }
+
         paths.AddRange(snapshotEntries.Select(entry => entry.Path));
 
         var entries = paths

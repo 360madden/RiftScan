@@ -31,6 +31,18 @@ public sealed record Vec3Candidate
     [JsonPropertyName("snapshot_support")]
     public int SnapshotSupport { get; init; }
 
+    [JsonPropertyName("stimulus_label")]
+    public string StimulusLabel { get; init; } = string.Empty;
+
+    [JsonPropertyName("sample_value_count")]
+    public int SampleValueCount { get; init; }
+
+    [JsonPropertyName("value_delta_magnitude")]
+    public double ValueDeltaMagnitude { get; init; }
+
+    [JsonPropertyName("behavior_score")]
+    public double BehaviorScore { get; init; }
+
     [JsonPropertyName("rank_score")]
     public double RankScore { get; init; }
 

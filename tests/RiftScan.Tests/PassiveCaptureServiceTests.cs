@@ -1,3 +1,4 @@
+using System.Text.Json;
 using RiftScan.Capture.Passive;
 using RiftScan.Core.Processes;
 using RiftScan.Core.Sessions;
@@ -94,6 +95,39 @@ public sealed class PassiveCaptureServiceTests
         Assert.Equal(1, result.RegionsCaptured);
         Assert.Contains("snapshots/region-000099-sample-000001.bin", result.ArtifactsWritten);
         Assert.DoesNotContain("snapshots/region-000001-sample-000001.bin", result.ArtifactsWritten);
+    }
+
+    [Fact]
+    public void Capture_writes_optional_stimulus_label()
+    {
+        using var output = new TempDirectory();
+        var reader = new FakeProcessMemoryReader();
+
+        var result = new PassiveCaptureService(reader).Capture(new PassiveCaptureOptions
+        {
+            ProcessName = "fixture_process",
+            OutputPath = output.Path,
+            Samples = 2,
+            IntervalMilliseconds = 0,
+            MaxRegions = 1,
+            MaxBytesPerRegion = 16,
+            MaxTotalBytes = 32,
+            StimulusLabel = "move_forward",
+            StimulusNotes = "fixture label"
+        });
+
+        Assert.True(result.Success);
+        Assert.Contains("stimuli.jsonl", result.ArtifactsWritten);
+        var stimulusLine = File.ReadLines(Path.Combine(output.Path, "stimuli.jsonl")).Single();
+        var stimulus = JsonSerializer.Deserialize<StimulusEvent>(stimulusLine, SessionJson.Options)!;
+        Assert.Equal("move_forward", stimulus.Label);
+        Assert.Equal("snapshot-000001", stimulus.StartSnapshotId);
+        Assert.Equal("snapshot-000002", stimulus.EndSnapshotId);
+
+        var checksums = JsonSerializer.Deserialize<ChecksumManifest>(
+            File.ReadAllText(Path.Combine(output.Path, "checksums.json")),
+            SessionJson.Options)!;
+        Assert.Contains(checksums.Entries, entry => entry.Path == "stimuli.jsonl");
     }
 
     [Fact]

@@ -48,7 +48,9 @@ public sealed class PassiveCapturePlanService(IProcessMemoryReader processMemory
             MaxTotalBytes = options.MaxTotalBytes,
             IncludeImageRegions = options.IncludeImageRegions,
             RegionIds = regionIds,
-            BaseAddresses = baseAddresses
+            BaseAddresses = baseAddresses,
+            StimulusLabel = options.StimulusLabel,
+            StimulusNotes = options.StimulusNotes
         });
     }
 
@@ -106,5 +108,19 @@ public sealed class PassiveCapturePlanService(IProcessMemoryReader processMemory
         ArgumentOutOfRangeException.ThrowIfNegative(options.IntervalMilliseconds);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(options.MaxBytesPerRegion);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(options.MaxTotalBytes);
+        ValidateStimulusLabel(options.StimulusLabel);
+    }
+
+    private static void ValidateStimulusLabel(string? label)
+    {
+        if (string.IsNullOrWhiteSpace(label))
+        {
+            return;
+        }
+
+        if (!PassiveCaptureService.ValidStimulusLabels.Contains(label))
+        {
+            throw new ArgumentException($"Unknown stimulus label: {label}.");
+        }
     }
 }

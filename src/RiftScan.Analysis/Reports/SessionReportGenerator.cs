@@ -157,19 +157,20 @@ public sealed class SessionReportGenerator
         yield return string.Empty;
         yield return "## Vec3 candidates";
         yield return string.Empty;
-        yield return "| Rank | Candidate | Region | Offset | Score | Support | Preview | Recommendation |";
-        yield return "|---:|---|---|---:|---:|---:|---|---|";
+        yield return "| Rank | Candidate | Region | Offset | Score | Behavior | Stimulus | Support | Preview | Recommendation |";
+        yield return "|---:|---|---|---:|---:|---:|---|---:|---|---|";
 
         var vec3Rank = 1;
         foreach (var candidate in vec3Candidates)
         {
-            yield return $"| {vec3Rank} | `{candidate.CandidateId}` | `{candidate.RegionId}` | `{candidate.OffsetHex}` | {candidate.RankScore:F3} | {candidate.SnapshotSupport} | `{string.Join(", ", candidate.ValuePreview.Select(value => value.ToString("G6")))}` | `{candidate.Recommendation}` |";
+            var stimulus = string.IsNullOrWhiteSpace(candidate.StimulusLabel) ? "-" : candidate.StimulusLabel;
+            yield return $"| {vec3Rank} | `{candidate.CandidateId}` | `{candidate.RegionId}` | `{candidate.OffsetHex}` | {candidate.RankScore:F3} | {candidate.BehaviorScore:F3} | `{stimulus}` | {candidate.SnapshotSupport} | `{string.Join(", ", candidate.ValuePreview.Select(value => value.ToString("G6")))}` | `{candidate.Recommendation}` |";
             vec3Rank++;
         }
 
         if (vec3Candidates.Count == 0)
         {
-            yield return "| 0 | none | - | - | 0 | 0 | - | - |";
+            yield return "| 0 | none | - | - | 0 | 0 | - | 0 | - | - |";
         }
 
         yield return string.Empty;
