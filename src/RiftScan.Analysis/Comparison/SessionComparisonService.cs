@@ -27,6 +27,7 @@ public sealed class SessionComparisonService
         var clusterMatches = CompareClusters(ReadClusters(fullAPath), ReadClusters(fullBPath), top);
         var structureCandidateMatches = CompareStructureCandidates(ReadStructureCandidates(fullAPath), ReadStructureCandidates(fullBPath), top);
         var vec3CandidateMatches = CompareVec3Candidates(ReadVec3Candidates(fullAPath), ReadVec3Candidates(fullBPath), top);
+        var vec3BehaviorSummary = BuildVec3BehaviorSummary(vec3CandidateMatches);
         var valueCandidateMatches = CompareValueCandidates(ReadValueCandidates(fullAPath), ReadValueCandidates(fullBPath), top);
         var warnings = BuildWarnings(manifestA, manifestB, regionMatches, clusterMatches, structureCandidateMatches, vec3CandidateMatches, valueCandidateMatches);
 
@@ -47,6 +48,7 @@ public sealed class SessionComparisonService
             ClusterMatches = clusterMatches,
             StructureCandidateMatches = structureCandidateMatches,
             Vec3CandidateMatches = vec3CandidateMatches,
+            Vec3BehaviorSummary = vec3BehaviorSummary,
             ValueCandidateMatches = valueCandidateMatches,
             Warnings = warnings
         };
@@ -280,6 +282,62 @@ public sealed class SessionComparisonService
 
     private static bool IsMoveForwardLabel(string label) =>
         string.Equals(label, "move_forward", StringComparison.OrdinalIgnoreCase);
+
+    private static Vec3BehaviorSummary BuildVec3BehaviorSummary(IReadOnlyList<Vec3CandidateComparison> matches)
+    {
+        var behaviorContrastCount = matches.Count(match => match.Recommendation.Contains("behavior_contrast", StringComparison.OrdinalIgnoreCase));
+        var behaviorConsistentMatchCount = matches.Count(match =>
+            string.Equals(match.SessionAValidationStatus, "behavior_consistent_candidate", StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(match.SessionBValidationStatus, "behavior_consistent_candidate", StringComparison.OrdinalIgnoreCase));
+        var unlabeledMatchCount = matches.Count(match =>
+            string.IsNullOrWhiteSpace(match.SessionAStimulusLabel) ||
+            string.IsNullOrWhiteSpace(match.SessionBStimulusLabel));
+        var labels = matches
+            .SelectMany(match => new[] { match.SessionAStimulusLabel, match.SessionBStimulusLabel })
+            .Where(label => !string.IsNullOrWhiteSpace(label))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Order(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
+        return new Vec3BehaviorSummary
+        {
+            MatchingVec3CandidateCount = matches.Count,
+            BehaviorContrastCount = behaviorContrastCount,
+            BehaviorConsistentMatchCount = behaviorConsistentMatchCount,
+            UnlabeledMatchCount = unlabeledMatchCount,
+            StimulusLabels = labels,
+            NextRecommendedAction = RecommendNextBehaviorAction(matches.Count, behaviorContrastCount, behaviorConsistentMatchCount, unlabeledMatchCount)
+        };
+    }
+
+    private static string RecommendNextBehaviorAction(
+        int matchCount,
+        int behaviorContrastCount,
+        int behaviorConsistentMatchCount,
+        int unlabeledMatchCount)
+    {
+        if (matchCount == 0)
+        {
+            return "capture_more_labeled_sessions";
+        }
+
+        if (behaviorContrastCount > 0)
+        {
+            return "review_behavior_contrast_candidates_before_truth_claim";
+        }
+
+        if (unlabeledMatchCount > 0)
+        {
+            return "add_stimulus_labels_before_behavior_claims";
+        }
+
+        if (behaviorConsistentMatchCount > 0)
+        {
+            return "capture_contrasting_stimulus_session";
+        }
+
+        return "capture_more_labeled_sessions";
+    }
 
     private static IReadOnlyList<ValueCandidateComparison> CompareValueCandidates(
         IReadOnlyList<TypedValueCandidate> a,

@@ -52,6 +52,9 @@ public sealed record SessionComparisonResult
     [JsonPropertyName("vec3_candidate_matches")]
     public IReadOnlyList<Vec3CandidateComparison> Vec3CandidateMatches { get; init; } = [];
 
+    [JsonPropertyName("vec3_behavior_summary")]
+    public Vec3BehaviorSummary Vec3BehaviorSummary { get; init; } = new();
+
     [JsonPropertyName("value_candidate_matches")]
     public IReadOnlyList<ValueCandidateComparison> ValueCandidateMatches { get; init; } = [];
 

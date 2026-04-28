@@ -80,6 +80,12 @@ public sealed class SessionComparisonServiceTests
         Assert.Equal("behavior_consistent_candidate", match.SessionAValidationStatus);
         Assert.Equal("behavior_consistent_candidate", match.SessionBValidationStatus);
         Assert.Equal("passive_to_move_vec3_behavior_contrast_candidate", match.Recommendation);
+        Assert.Equal(result.Vec3CandidateMatches.Count, result.Vec3BehaviorSummary.MatchingVec3CandidateCount);
+        Assert.Equal(1, result.Vec3BehaviorSummary.BehaviorContrastCount);
+        Assert.Equal(1, result.Vec3BehaviorSummary.BehaviorConsistentMatchCount);
+        Assert.Equal(0, result.Vec3BehaviorSummary.UnlabeledMatchCount);
+        Assert.Equal(["move_forward", "passive_idle"], result.Vec3BehaviorSummary.StimulusLabels);
+        Assert.Equal("review_behavior_contrast_candidates_before_truth_claim", result.Vec3BehaviorSummary.NextRecommendedAction);
     }
 
     [Fact]
@@ -102,6 +108,7 @@ public sealed class SessionComparisonServiceTests
             Assert.Contains("matching_cluster_count", output.ToString(), StringComparison.Ordinal);
             Assert.Contains("matching_structure_candidate_count", output.ToString(), StringComparison.Ordinal);
             Assert.Contains("matching_vec3_candidate_count", output.ToString(), StringComparison.Ordinal);
+            Assert.Contains("vec3_behavior_summary", output.ToString(), StringComparison.Ordinal);
             Assert.Contains("matching_value_candidate_count", output.ToString(), StringComparison.Ordinal);
             Assert.Contains("comparison_path", output.ToString(), StringComparison.Ordinal);
         }
