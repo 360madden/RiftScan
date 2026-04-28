@@ -28,6 +28,10 @@ public sealed record PassiveCaptureResult
     [JsonPropertyName("bytes_captured")]
     public long BytesCaptured { get; init; }
 
+    [JsonPropertyName("handoff_path")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? HandoffPath { get; init; }
+
     [JsonPropertyName("artifacts_written")]
     public IReadOnlyList<string> ArtifactsWritten { get; init; } = [];
 }

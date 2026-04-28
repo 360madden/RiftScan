@@ -383,6 +383,76 @@ public sealed class PassiveCaptureServiceTests
     }
 
     [Fact]
+    public void Capture_with_pid_and_process_name_falls_back_to_name_after_restart()
+    {
+        using var output = new TempDirectory();
+        var oldProcess = new ProcessDescriptor(100, "fixture_process", DateTimeOffset.Parse("2026-04-28T17:00:00Z"), "fixture-old.exe");
+        var newProcess = new ProcessDescriptor(200, "fixture_process", DateTimeOffset.Parse("2026-04-28T17:01:00Z"), "fixture-new.exe");
+        var getProcessByIdAttempts = 0;
+        var readProcessIds = new List<int>();
+
+        var reader = new FakeProcessMemoryReader
+        {
+            Processes = [oldProcess, newProcess],
+            GetProcessByIdFunc = processId =>
+            {
+                getProcessByIdAttempts++;
+                if (getProcessByIdAttempts == 1 && processId == oldProcess.ProcessId)
+                {
+                    return oldProcess;
+                }
+
+                throw new InvalidOperationException("old pid unavailable");
+            },
+            FindProcessesByNameFunc = processName =>
+                string.Equals(processName, "fixture_process", StringComparison.OrdinalIgnoreCase)
+                    ? [newProcess]
+                    : [],
+            GetModulesFunc = processId =>
+            [
+                new ProcessModuleInfo
+                {
+                    ModuleId = $"module-{processId}",
+                    Name = processId == newProcess.ProcessId ? "fixture-new.exe" : "fixture-old.exe",
+                    Path = processId == newProcess.ProcessId ? "fixture-new.exe" : "fixture-old.exe",
+                    BaseAddressHex = "0x1000",
+                    SizeBytes = 16
+                }
+            ],
+            ReadMemoryFunc = (processId, _, byteCount) =>
+            {
+                readProcessIds.Add(processId);
+                return processId == oldProcess.ProcessId
+                    ? throw new InvalidOperationException("old process unavailable")
+                    : Enumerable.Range(0, byteCount).Select(value => (byte)value).ToArray();
+            }
+        };
+
+        var result = new PassiveCaptureService(reader).Capture(new PassiveCaptureOptions
+        {
+            ProcessId = oldProcess.ProcessId,
+            ProcessName = "fixture_process",
+            OutputPath = output.Path,
+            Samples = 1,
+            IntervalMilliseconds = 0,
+            MaxRegions = 1,
+            MaxBytesPerRegion = 16,
+            MaxTotalBytes = 16,
+            InterventionWaitMilliseconds = 250,
+            InterventionPollIntervalMilliseconds = 50
+        });
+
+        Assert.True(result.Success);
+        Assert.Equal(newProcess.ProcessId, result.ProcessId);
+        Assert.Contains(oldProcess.ProcessId, readProcessIds);
+        Assert.Contains(newProcess.ProcessId, readProcessIds);
+        Assert.Contains("snapshots/region-000001-sample-000001.bin", result.ArtifactsWritten);
+
+        var modules = JsonSerializer.Deserialize<ModuleMap>(File.ReadAllText(Path.Combine(output.Path, "modules.json")), SessionJson.Options)!;
+        Assert.Equal("fixture-new.exe", modules.Modules.Single().Name);
+    }
+
+    [Fact]
     public void Capture_times_out_waiting_for_process_and_writes_intervention_handoff()
     {
         using var output = new TempDirectory();
@@ -429,12 +499,69 @@ public sealed class PassiveCaptureServiceTests
         Assert.False(result.Success);
         Assert.Equal(0, result.SnapshotsCaptured);
         Assert.Contains("intervention_handoff.json", result.ArtifactsWritten);
+        Assert.Equal(Path.GetFullPath(Path.Combine(output.Path, "intervention_handoff.json")), result.HandoffPath);
         var handoff = JsonSerializer.Deserialize<CaptureInterventionHandoff>(File.ReadAllText(Path.Combine(output.Path, "intervention_handoff.json")), SessionJson.Options)!;
         Assert.Equal("no_snapshot_data_before_intervention_timeout", handoff.Reason);
         Assert.Equal(0, handoff.SnapshotCount);
         Assert.Equal(1, handoff.SamplesTargeted);
         Assert.Equal(100, handoff.ProcessId);
         Assert.False(File.Exists(Path.Combine(output.Path, "manifest.json")));
+    }
+
+    [Fact]
+    public void Capture_interrupted_partial_session_includes_handoff_in_checksums()
+    {
+        using var output = new TempDirectory();
+        var process = new ProcessDescriptor(100, "fixture_process", DateTimeOffset.Parse("2026-04-28T17:00:00Z"), "fixture.exe");
+        var processLookupAttempts = 0;
+        var readAttempts = 0;
+
+        var reader = new FakeProcessMemoryReader
+        {
+            Processes = [process],
+            FindProcessesByNameFunc = processName =>
+            {
+                processLookupAttempts++;
+                return processLookupAttempts == 1 && string.Equals(processName, "fixture_process", StringComparison.OrdinalIgnoreCase)
+                    ? [process]
+                    : [];
+            },
+            ReadMemoryFunc = (_, _, byteCount) =>
+            {
+                readAttempts++;
+                return readAttempts == 1
+                    ? Enumerable.Range(0, byteCount).Select(value => (byte)value).ToArray()
+                    : throw new InvalidOperationException("process unavailable");
+            }
+        };
+
+        var result = new PassiveCaptureService(reader).Capture(new PassiveCaptureOptions
+        {
+            ProcessName = "fixture_process",
+            OutputPath = output.Path,
+            Samples = 2,
+            IntervalMilliseconds = 0,
+            MaxRegions = 1,
+            MaxBytesPerRegion = 16,
+            MaxTotalBytes = 32,
+            InterventionWaitMilliseconds = 250,
+            InterventionPollIntervalMilliseconds = 50
+        });
+
+        Assert.False(result.Success);
+        Assert.Equal(1, result.SnapshotsCaptured);
+        Assert.Contains("intervention_handoff.json", result.ArtifactsWritten);
+        Assert.Equal(Path.GetFullPath(Path.Combine(output.Path, "intervention_handoff.json")), result.HandoffPath);
+
+        var manifest = JsonSerializer.Deserialize<SessionManifest>(File.ReadAllText(Path.Combine(output.Path, "manifest.json")), SessionJson.Options)!;
+        Assert.Equal("interrupted", manifest.Status);
+
+        var checksums = JsonSerializer.Deserialize<ChecksumManifest>(File.ReadAllText(Path.Combine(output.Path, "checksums.json")), SessionJson.Options)!;
+        Assert.Contains(checksums.Entries, entry => entry.Path == "intervention_handoff.json");
+
+        var verification = new SessionVerifier().Verify(output.Path);
+        Assert.True(verification.Success, string.Join(Environment.NewLine, verification.Issues.Select(issue => $"{issue.Code}: {issue.Message}")));
+        Assert.Contains("intervention_handoff.json", verification.ArtifactsVerified);
     }
 
     private sealed class FakeProcessMemoryReader : IProcessMemoryReader
@@ -459,6 +586,8 @@ public sealed class PassiveCaptureServiceTests
 
         public Func<int, ProcessDescriptor>? GetProcessByIdFunc { get; init; }
 
+        public Func<int, IReadOnlyList<ProcessModuleInfo>>? GetModulesFunc { get; init; }
+
         public Func<int, IReadOnlyList<VirtualMemoryRegion>>? EnumerateRegionsFunc { get; init; }
 
         public Func<int, ulong, int, byte[]>? ReadMemoryFunc { get; init; }
@@ -471,7 +600,8 @@ public sealed class PassiveCaptureServiceTests
             GetProcessByIdFunc?.Invoke(processId)
             ?? Processes.Single(process => process.ProcessId == processId);
 
-        public IReadOnlyList<ProcessModuleInfo> GetModules(int processId) => [];
+        public IReadOnlyList<ProcessModuleInfo> GetModules(int processId) =>
+            GetModulesFunc?.Invoke(processId) ?? [];
 
         public IReadOnlyList<VirtualMemoryRegion> EnumerateRegions(int processId) =>
             EnumerateRegionsFunc?.Invoke(processId) ?? Regions;

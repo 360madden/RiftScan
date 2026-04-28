@@ -119,8 +119,16 @@ public sealed class PassiveCaptureService(IProcessMemoryReader processMemoryRead
                     break;
                 }
 
+                var processChanged = resumedProcess.ProcessId != restoredProcess.ProcessId ||
+                    resumedProcess.StartTimeUtc != restoredProcess.StartTimeUtc;
                 restoredProcess = resumedProcess;
                 candidateRegions = ResolveCandidateRegions(restoredProcess.ProcessId, options);
+                modules = processMemoryReader.GetModules(restoredProcess.ProcessId);
+                if (processChanged)
+                {
+                    sample--;
+                    continue;
+                }
             }
 
             if (sample < options.Samples && options.IntervalMilliseconds > 0)
@@ -153,6 +161,7 @@ public sealed class PassiveCaptureService(IProcessMemoryReader processMemoryRead
                     RegionsCaptured = 0,
                     SnapshotsCaptured = 0,
                     BytesCaptured = 0,
+                    HandoffPath = ResolveSessionPath(sessionPath, InterventionHandoffFileName),
                     ArtifactsWritten = [InterventionHandoffFileName]
                 };
             }
@@ -212,6 +221,7 @@ public sealed class PassiveCaptureService(IProcessMemoryReader processMemoryRead
             RegionsCaptured = capturedRegions.Count,
             SnapshotsCaptured = snapshotEntries.Count,
             BytesCaptured = totalBytes,
+            HandoffPath = interrupted ? ResolveSessionPath(sessionPath, InterventionHandoffFileName) : null,
             ArtifactsWritten = EnumerateArtifacts(sessionPath).ToArray()
         };
     }
