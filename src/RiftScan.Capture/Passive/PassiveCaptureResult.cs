@@ -4,6 +4,9 @@ namespace RiftScan.Capture.Passive;
 
 public sealed record PassiveCaptureResult
 {
+    [JsonPropertyName("result_schema_version")]
+    public string ResultSchemaVersion { get; init; } = "riftscan.passive_capture_result.v1";
+
     [JsonPropertyName("success")]
     public bool Success { get; init; }
 

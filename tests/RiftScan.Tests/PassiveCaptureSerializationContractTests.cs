@@ -31,6 +31,7 @@ public sealed class PassiveCaptureSerializationContractTests
         using var document = JsonDocument.Parse(JsonSerializer.Serialize(result, SessionJson.Options));
         var root = document.RootElement;
 
+        Assert.Equal("riftscan.passive_capture_result.v1", root.GetProperty("result_schema_version").GetString());
         Assert.False(root.GetProperty("success").GetBoolean());
         Assert.Equal("interrupted", root.GetProperty("status").GetString());
         Assert.Equal(3, root.GetProperty("samples_requested").GetInt32());
@@ -63,6 +64,7 @@ public sealed class PassiveCaptureSerializationContractTests
         using var document = JsonDocument.Parse(JsonSerializer.Serialize(result, SessionJson.Options));
         var root = document.RootElement;
 
+        Assert.Equal("riftscan.passive_capture_result.v1", root.GetProperty("result_schema_version").GetString());
         Assert.Equal("complete", root.GetProperty("status").GetString());
         Assert.False(root.TryGetProperty("interruption_reason", out _));
         Assert.False(root.TryGetProperty("handoff_path", out _));
