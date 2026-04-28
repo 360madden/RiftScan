@@ -4,6 +4,7 @@ using RiftScan.Analysis.Clusters;
 using RiftScan.Analysis.Deltas;
 using RiftScan.Analysis.Structures;
 using RiftScan.Analysis.Triage;
+using RiftScan.Analysis.Values;
 using RiftScan.Core.Sessions;
 
 namespace RiftScan.Analysis.Reports;
@@ -51,6 +52,12 @@ public sealed class SessionReportGenerator
             .ThenBy(entry => entry.RegionId, StringComparer.OrdinalIgnoreCase)
             .Take(top)
             .ToArray();
+        var valueCandidates = ReadValueCandidates(fullSessionPath)
+            .OrderByDescending(candidate => candidate.RankScore)
+            .ThenBy(candidate => candidate.RegionId, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(candidate => candidate.OffsetHex, StringComparer.OrdinalIgnoreCase)
+            .Take(top)
+            .ToArray();
         var structureCandidates = ReadStructureCandidates(fullSessionPath)
             .OrderByDescending(candidate => candidate.Score)
             .ThenBy(candidate => candidate.RegionId, StringComparer.OrdinalIgnoreCase)
@@ -65,7 +72,7 @@ public sealed class SessionReportGenerator
             .ToArray();
 
         var reportPath = ResolveSessionPath(fullSessionPath, "report.md");
-        File.WriteAllLines(reportPath, BuildReport(manifest, triageEntries, deltaEntries, clusters, structureCandidates));
+        File.WriteAllLines(reportPath, BuildReport(manifest, triageEntries, deltaEntries, valueCandidates, clusters, structureCandidates));
 
         return new SessionReportResult { Success = true, SessionPath = fullSessionPath, ReportPath = reportPath };
     }
@@ -74,6 +81,7 @@ public sealed class SessionReportGenerator
         SessionManifest manifest,
         IReadOnlyList<RegionTriageEntry> triageEntries,
         IReadOnlyList<RegionDeltaEntry> deltaEntries,
+        IReadOnlyList<TypedValueCandidate> valueCandidates,
         IReadOnlyList<StructureCluster> clusters,
         IReadOnlyList<StructureCandidate> structureCandidates)
     {
@@ -118,6 +126,24 @@ public sealed class SessionReportGenerator
         if (deltaEntries.Count == 0)
         {
             yield return "| 0 | none | 0 | 0 | 0 | - | - |";
+        }
+
+        yield return string.Empty;
+        yield return "## Typed value lanes";
+        yield return string.Empty;
+        yield return "| Rank | Candidate | Region | Offset | Type | Score | Distinct | Preview | Recommendation |";
+        yield return "|---:|---|---|---:|---|---:|---:|---|---|";
+
+        var valueRank = 1;
+        foreach (var candidate in valueCandidates)
+        {
+            yield return $"| {valueRank} | `{candidate.CandidateId}` | `{candidate.RegionId}` | `{candidate.OffsetHex}` | `{candidate.DataType}` | {candidate.RankScore:F3} | {candidate.DistinctValueCount} | `{string.Join(", ", candidate.ValuePreview.Take(4))}` | `{candidate.Recommendation}` |";
+            valueRank++;
+        }
+
+        if (valueCandidates.Count == 0)
+        {
+            yield return "| 0 | none | - | - | - | 0 | 0 | - | - |";
         }
 
         yield return string.Empty;
@@ -191,6 +217,20 @@ public sealed class SessionReportGenerator
         return File.ReadLines(path)
             .Where(line => !string.IsNullOrWhiteSpace(line))
             .Select(line => JsonSerializer.Deserialize<RegionDeltaEntry>(line, SessionJson.Options) ?? throw new InvalidOperationException("Invalid delta entry."))
+            .ToArray();
+    }
+
+    private static IReadOnlyList<TypedValueCandidate> ReadValueCandidates(string sessionPath)
+    {
+        var path = ResolveSessionPath(sessionPath, "typed_value_candidates.jsonl");
+        if (!File.Exists(path))
+        {
+            _ = new TypedValueLaneAnalyzer().AnalyzeSession(sessionPath);
+        }
+
+        return File.ReadLines(path)
+            .Where(line => !string.IsNullOrWhiteSpace(line))
+            .Select(line => JsonSerializer.Deserialize<TypedValueCandidate>(line, SessionJson.Options) ?? throw new InvalidOperationException("Invalid typed value candidate."))
             .ToArray();
     }
 
