@@ -20,6 +20,75 @@ public sealed record SessionReportResult
 
     [JsonPropertyName("report_path")]
     public string ReportPath { get; init; } = string.Empty;
+
+    [JsonPropertyName("report_json_path")]
+    public string ReportJsonPath { get; init; } = string.Empty;
+}
+
+internal sealed record SessionMachineReport
+{
+    [JsonPropertyName("schema_version")]
+    public string SchemaVersion { get; init; } = "riftscan.session_report.v1";
+
+    [JsonPropertyName("session_id")]
+    public string SessionId { get; init; } = string.Empty;
+
+    [JsonPropertyName("session_path")]
+    public string SessionPath { get; init; } = string.Empty;
+
+    [JsonPropertyName("markdown_report_path")]
+    public string MarkdownReportPath { get; init; } = string.Empty;
+
+    [JsonPropertyName("process_name")]
+    public string ProcessName { get; init; } = string.Empty;
+
+    [JsonPropertyName("process_id")]
+    public int ProcessId { get; init; }
+
+    [JsonPropertyName("capture_mode")]
+    public string CaptureMode { get; init; } = string.Empty;
+
+    [JsonPropertyName("status")]
+    public string Status { get; init; } = string.Empty;
+
+    [JsonPropertyName("snapshot_count")]
+    public int SnapshotCount { get; init; }
+
+    [JsonPropertyName("region_count")]
+    public int RegionCount { get; init; }
+
+    [JsonPropertyName("total_bytes_stored")]
+    public long TotalBytesStored { get; init; }
+
+    [JsonPropertyName("top_limit")]
+    public int TopLimit { get; init; }
+
+    [JsonPropertyName("artifact_counts")]
+    public SessionReportArtifactCounts ArtifactCounts { get; init; } = new();
+
+    [JsonPropertyName("capture_interruption")]
+    public CaptureInterventionHandoffReport? CaptureInterruption { get; init; }
+}
+
+internal sealed record SessionReportArtifactCounts
+{
+    [JsonPropertyName("triage_entries")]
+    public int TriageEntries { get; init; }
+
+    [JsonPropertyName("delta_entries")]
+    public int DeltaEntries { get; init; }
+
+    [JsonPropertyName("typed_value_candidates")]
+    public int TypedValueCandidates { get; init; }
+
+    [JsonPropertyName("vec3_candidates")]
+    public int Vec3Candidates { get; init; }
+
+    [JsonPropertyName("structure_clusters")]
+    public int StructureClusters { get; init; }
+
+    [JsonPropertyName("structure_candidates")]
+    public int StructureCandidates { get; init; }
 }
 
 internal sealed record CaptureInterventionHandoffReport
@@ -115,9 +184,49 @@ public sealed class SessionReportGenerator
 
         var reportPath = ResolveSessionPath(fullSessionPath, "report.md");
         File.WriteAllLines(reportPath, BuildReport(manifest, interventionHandoff, triageEntries, deltaEntries, valueCandidates, vec3Candidates, clusters, structureCandidates));
+        var reportJsonPath = ResolveSessionPath(fullSessionPath, "report.json");
+        var machineReport = BuildMachineReport(fullSessionPath, reportPath, top, manifest, interventionHandoff, triageEntries, deltaEntries, valueCandidates, vec3Candidates, clusters, structureCandidates);
+        File.WriteAllText(reportJsonPath, JsonSerializer.Serialize(machineReport, SessionJson.Options));
 
-        return new SessionReportResult { Success = true, SessionPath = fullSessionPath, ReportPath = reportPath };
+        return new SessionReportResult { Success = true, SessionPath = fullSessionPath, ReportPath = reportPath, ReportJsonPath = reportJsonPath };
     }
+
+    private static SessionMachineReport BuildMachineReport(
+        string sessionPath,
+        string reportPath,
+        int top,
+        SessionManifest manifest,
+        CaptureInterventionHandoffReport? interventionHandoff,
+        IReadOnlyList<RegionTriageEntry> triageEntries,
+        IReadOnlyList<RegionDeltaEntry> deltaEntries,
+        IReadOnlyList<TypedValueCandidate> valueCandidates,
+        IReadOnlyList<Vec3Candidate> vec3Candidates,
+        IReadOnlyList<StructureCluster> clusters,
+        IReadOnlyList<StructureCandidate> structureCandidates) =>
+        new()
+        {
+            SessionId = manifest.SessionId,
+            SessionPath = sessionPath,
+            MarkdownReportPath = reportPath,
+            ProcessName = manifest.ProcessName,
+            ProcessId = manifest.ProcessId,
+            CaptureMode = manifest.CaptureMode,
+            Status = manifest.Status,
+            SnapshotCount = manifest.SnapshotCount,
+            RegionCount = manifest.RegionCount,
+            TotalBytesStored = manifest.TotalBytesStored,
+            TopLimit = top,
+            ArtifactCounts = new SessionReportArtifactCounts
+            {
+                TriageEntries = triageEntries.Count,
+                DeltaEntries = deltaEntries.Count,
+                TypedValueCandidates = valueCandidates.Count,
+                Vec3Candidates = vec3Candidates.Count,
+                StructureClusters = clusters.Count,
+                StructureCandidates = structureCandidates.Count
+            },
+            CaptureInterruption = interventionHandoff
+        };
 
     private static IEnumerable<string> BuildReport(
         SessionManifest manifest,

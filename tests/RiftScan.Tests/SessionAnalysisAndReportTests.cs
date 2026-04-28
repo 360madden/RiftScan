@@ -49,6 +49,7 @@ public sealed class SessionAnalysisAndReportTests
 
         Assert.True(result.Success);
         Assert.True(File.Exists(result.ReportPath));
+        Assert.True(File.Exists(result.ReportJsonPath));
         var report = File.ReadAllText(result.ReportPath);
         Assert.Contains("# RiftScan Session Report - fixture-valid-session", report, StringComparison.Ordinal);
         Assert.Contains("Dynamic region triage", report, StringComparison.Ordinal);
@@ -58,6 +59,14 @@ public sealed class SessionAnalysisAndReportTests
         Assert.Contains("Structure clusters", report, StringComparison.Ordinal);
         Assert.Contains("Structure candidates", report, StringComparison.Ordinal);
         Assert.Contains("region-0001", report, StringComparison.Ordinal);
+
+        using var machineReport = JsonDocument.Parse(File.ReadAllText(result.ReportJsonPath));
+        var root = machineReport.RootElement;
+        Assert.Equal("riftscan.session_report.v1", root.GetProperty("schema_version").GetString());
+        Assert.Equal("fixture-valid-session", root.GetProperty("session_id").GetString());
+        Assert.Equal("rift_x64", root.GetProperty("process_name").GetString());
+        Assert.Equal(10, root.GetProperty("top_limit").GetInt32());
+        Assert.Equal(1, root.GetProperty("artifact_counts").GetProperty("triage_entries").GetInt32());
     }
 
     [Fact]
@@ -76,6 +85,12 @@ public sealed class SessionAnalysisAndReportTests
         Assert.Contains("restart_or_reselect_process_then_resume_capture", report, StringComparison.Ordinal);
         Assert.Contains("region-000001", report, StringComparison.Ordinal);
         Assert.Contains("process unavailable", report, StringComparison.Ordinal);
+
+        using var machineReport = JsonDocument.Parse(File.ReadAllText(result.ReportJsonPath));
+        var interruption = machineReport.RootElement.GetProperty("capture_interruption");
+        Assert.Equal("intervention_wait_timed_out", interruption.GetProperty("reason").GetString());
+        Assert.True(interruption.GetProperty("elapsed_ms").GetInt64() >= 0);
+        Assert.Equal("restart_or_reselect_process_then_resume_capture", interruption.GetProperty("recommended_next_action").GetString());
     }
 
     [Fact]
@@ -100,6 +115,7 @@ public sealed class SessionAnalysisAndReportTests
             Assert.Contains("vec3_candidates.jsonl", output.ToString(), StringComparison.Ordinal);
             Assert.Contains("clusters.jsonl", output.ToString(), StringComparison.Ordinal);
             Assert.Contains("report.md", output.ToString(), StringComparison.Ordinal);
+            Assert.Contains("report.json", output.ToString(), StringComparison.Ordinal);
         }
         finally
         {
