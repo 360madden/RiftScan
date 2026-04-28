@@ -573,6 +573,36 @@ public sealed class PassiveCaptureServiceTests
     }
 
     [Fact]
+    public void Capture_writes_unreadable_region_handoff_when_process_remains_available()
+    {
+        using var output = new TempDirectory();
+        var reader = new FakeProcessMemoryReader
+        {
+            ReadMemoryFunc = (_, _, _) => throw new InvalidOperationException("selected region unreadable")
+        };
+
+        var result = new PassiveCaptureService(reader).Capture(new PassiveCaptureOptions
+        {
+            ProcessName = "fixture_process",
+            OutputPath = output.Path,
+            Samples = 1,
+            IntervalMilliseconds = 0,
+            MaxRegions = 1,
+            MaxBytesPerRegion = 16,
+            MaxTotalBytes = 16,
+            InterventionWaitMilliseconds = 250,
+            InterventionPollIntervalMilliseconds = 50
+        });
+
+        Assert.False(result.Success);
+        Assert.Equal(0, result.SnapshotsCaptured);
+        Assert.Contains("intervention_handoff.json", result.ArtifactsWritten);
+        var handoff = JsonSerializer.Deserialize<CaptureInterventionHandoff>(File.ReadAllText(Path.Combine(output.Path, "intervention_handoff.json")), SessionJson.Options)!;
+        Assert.Equal("no_snapshot_data_before_selected_regions_unreadable", handoff.Reason);
+        Assert.False(File.Exists(Path.Combine(output.Path, "manifest.json")));
+    }
+
+    [Fact]
     public void Capture_interrupted_partial_session_includes_handoff_in_checksums()
     {
         using var output = new TempDirectory();

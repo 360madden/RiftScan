@@ -43,6 +43,7 @@ public sealed class PassiveCaptureService(IProcessMemoryReader processMemoryRead
         var snapshotEntries = new List<SnapshotIndexEntry>();
         long totalBytes = 0;
         bool interrupted = false;
+        var interruptionReason = "intervention_wait_timed_out";
         var sampleCountAttempted = 0;
         var restoredProcess = process;
 
@@ -112,10 +113,30 @@ public sealed class PassiveCaptureService(IProcessMemoryReader processMemoryRead
 
             if (!capturedThisSample)
             {
-                var resumedProcess = WaitForProcessInterventionOrFail(options);
+                var resumedProcess = ResolveProcessForWaitOrNull(options);
+                if (resumedProcess is not null)
+                {
+                    var currentProcessChanged = resumedProcess.ProcessId != restoredProcess.ProcessId ||
+                        resumedProcess.StartTimeUtc != restoredProcess.StartTimeUtc;
+                    restoredProcess = resumedProcess;
+                    candidateRegions = ResolveCandidateRegions(restoredProcess.ProcessId, options);
+                    modules = processMemoryReader.GetModules(restoredProcess.ProcessId);
+                    if (currentProcessChanged)
+                    {
+                        sample--;
+                        continue;
+                    }
+
+                    interrupted = true;
+                    interruptionReason = "selected_regions_unreadable";
+                    break;
+                }
+
+                resumedProcess = WaitForProcessInterventionOrFail(options);
                 if (resumedProcess is null)
                 {
                     interrupted = true;
+                    interruptionReason = "intervention_wait_timed_out";
                     break;
                 }
 
@@ -145,7 +166,7 @@ public sealed class PassiveCaptureService(IProcessMemoryReader processMemoryRead
                     sessionPath,
                     restoredProcess,
                     options,
-                    "no_snapshot_data_before_intervention_timeout",
+                    NoSnapshotInterruptionReason(interruptionReason),
                     0,
                     0,
                     0,
@@ -202,7 +223,7 @@ public sealed class PassiveCaptureService(IProcessMemoryReader processMemoryRead
                 sessionPath,
                 restoredProcess,
                 options,
-                "intervention_wait_timed_out",
+                interruptionReason,
                 capturedRegions.Count,
                 snapshotEntries.Count,
                 totalBytes,
@@ -504,6 +525,13 @@ public sealed class PassiveCaptureService(IProcessMemoryReader processMemoryRead
 
         WriteJson(sessionPath, InterventionHandoffFileName, handoff);
     }
+
+    private static string NoSnapshotInterruptionReason(string interruptionReason) =>
+        interruptionReason switch
+        {
+            "selected_regions_unreadable" => "no_snapshot_data_before_selected_regions_unreadable",
+            _ => "no_snapshot_data_before_intervention_timeout"
+        };
 
     private static IEnumerable<string> EnumerateArtifacts(string sessionPath) =>
         Directory.EnumerateFiles(sessionPath, "*", SearchOption.AllDirectories)
