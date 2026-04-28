@@ -36,6 +36,8 @@ dotnet run --project src/RiftScan.Cli/RiftScan.Cli.csproj --configuration Releas
 
 ## Validation
 
+`scripts/smoke-fixture.ps1` is fixture-only and does not attach to RIFT. Live capture and plan-follow-up need an explicit process ID; fake-process plan coverage runs in unit tests.
+
 ```powershell
 pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/smoke-fixture.ps1
 dotnet build RiftScan.slnx --configuration Release --no-restore

@@ -1,0 +1,25 @@
+{
+  "schema_version": "comparison_next_capture_plan.v1",
+  "target_region_priorities": [
+    {
+      "base_address_hex": "0x2000",
+      "session_a_region_id": "region-000002",
+      "session_b_region_id": "region-000002",
+      "priority_score": 85,
+      "reason": "stable_vec3_candidate_across_sessions"
+    },
+    {
+      "base_address_hex": "0x1000",
+      "session_a_region_id": "region-000001",
+      "session_b_region_id": "region-000001",
+      "priority_score": 10,
+      "reason": "lower_priority_fixture"
+    }
+  ],
+  "reason": "fixture_schema_stability",
+  "expected_signal": "fixture_base_address_priority",
+  "stop_condition": "top_priority_base_address_captured",
+  "warnings": [
+    "next_capture_plan_is_recommendation_not_truth_claim"
+  ]
+}

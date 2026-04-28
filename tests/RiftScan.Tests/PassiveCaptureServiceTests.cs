@@ -234,31 +234,10 @@ public sealed class PassiveCaptureServiceTests
     [Fact]
     public void Capture_plan_can_read_comparison_next_capture_plan_file()
     {
-        using var source = new TempDirectory();
         using var output = new TempDirectory();
-        Directory.CreateDirectory(source.Path);
-        var planPath = Path.Combine(source.Path, "comparison-next-capture-plan.json");
-        File.WriteAllText(planPath, """
-            {
-              "schema_version": "comparison_next_capture_plan.v1",
-              "target_region_priorities": [
-                {
-                  "base_address_hex": "0x2000",
-                  "session_a_region_id": "region-000002",
-                  "session_b_region_id": "region-000002",
-                  "priority_score": 85,
-                  "reason": "stable_vec3_candidate_across_sessions"
-                },
-                {
-                  "base_address_hex": "0x1000",
-                  "session_a_region_id": "region-000001",
-                  "session_b_region_id": "region-000001",
-                  "priority_score": 10,
-                  "reason": "lower_priority_fixture"
-                }
-              ]
-            }
-            """);
+        var planPath = Path.Combine(AppContext.BaseDirectory, "Fixtures", "comparison-next-capture-plan.json");
+        using var planDocument = JsonDocument.Parse(File.ReadAllText(planPath));
+        Assert.Equal("comparison_next_capture_plan.v1", planDocument.RootElement.GetProperty("schema_version").GetString());
         var reader = new FakeProcessMemoryReader
         {
             Regions =
