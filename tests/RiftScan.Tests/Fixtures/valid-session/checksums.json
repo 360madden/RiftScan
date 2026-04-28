@@ -1,0 +1,30 @@
+{
+  "algorithm": "SHA256",
+  "entries": [
+    {
+      "path": "manifest.json",
+      "sha256_hex": "c2e24c82a5c579b16e3050064cba5bacbaac7ae8ce2793352d681e5e386d584c",
+      "bytes": 557
+    },
+    {
+      "path": "regions.json",
+      "sha256_hex": "dca619f2f5f0ea400c2349c7adb6e8a6404b6ceab55ed76e85e3aa6328c6ce4c",
+      "bytes": 240
+    },
+    {
+      "path": "modules.json",
+      "sha256_hex": "53edfad0303eed251b269ac533a2d4f663e358b1abfcc23869a2e6eda4607737",
+      "bytes": 23
+    },
+    {
+      "path": "snapshots/index.jsonl",
+      "sha256_hex": "cbb65c760647861bc965f3e9481b90b6898ad3d7c908552ca68d9f606e945089",
+      "bytes": 245
+    },
+    {
+      "path": "snapshots/region-0001-snapshot-0001.bin",
+      "sha256_hex": "be45cb2605bf36bebde684841a28f0fd43c69850a3dce5fedba69928ee3a8991",
+      "bytes": 16
+    }
+  ]
+}

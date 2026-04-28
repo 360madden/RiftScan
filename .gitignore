@@ -32,15 +32,16 @@ desktop.ini
 *.bak
 
 # RiftScan generated runtime data
-sessions/
-reports/generated/
+/sessions/
+/reports/generated/
 *.dump
 *.dmp
 *.bin
 *.trace
 
 # Keep checked-in fixtures separate from live/generated sessions
-!tests/fixtures/**
+!tests/RiftScan.Tests/Fixtures/**
+!tests/RiftScan.Tests/Fixtures/**/*.bin
 
 # Credentials or local environment
 .env

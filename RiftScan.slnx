@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/RiftScan.Analysis/RiftScan.Analysis.csproj" />
+    <Project Path="src/RiftScan.Capture/RiftScan.Capture.csproj" />
+    <Project Path="src/RiftScan.Cli/RiftScan.Cli.csproj" />
+    <Project Path="src/RiftScan.Core/RiftScan.Core.csproj" />
+    <Project Path="src/RiftScan.Rift/RiftScan.Rift.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/RiftScan.Tests/RiftScan.Tests.csproj" />
+  </Folder>
+</Solution>

@@ -1,0 +1,19 @@
+{
+  "schema_version": "riftscan.session.v1",
+  "session_id": "fixture-valid-session",
+  "project_version": "0.1.0",
+  "created_utc": "2026-04-28T17:00:00Z",
+  "machine_name": "fixture-machine",
+  "os_version": "fixture-os",
+  "process_name": "rift_x64",
+  "process_id": 1234,
+  "process_start_time_utc": "2026-04-28T16:59:00Z",
+  "capture_mode": "fixture",
+  "snapshot_count": 1,
+  "region_count": 1,
+  "total_bytes_raw": 16,
+  "total_bytes_stored": 16,
+  "compression": "none",
+  "checksum_algorithm": "SHA256",
+  "status": "complete"
+}
