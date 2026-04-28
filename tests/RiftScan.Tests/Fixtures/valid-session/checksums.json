@@ -18,12 +18,12 @@
     },
     {
       "path": "snapshots/index.jsonl",
-      "sha256_hex": "cbb65c760647861bc965f3e9481b90b6898ad3d7c908552ca68d9f606e945089",
+      "sha256_hex": "808b1f0eea1916a24f48d23576d3e93de1e1100a9dd114db772c6b0eeb81233e",
       "bytes": 245
     },
     {
       "path": "snapshots/region-0001-snapshot-0001.bin",
-      "sha256_hex": "be45cb2605bf36bebde684841a28f0fd43c69850a3dce5fedba69928ee3a8991",
+      "sha256_hex": "5237800b052e0e784d8db0405cd9e4dc5585d47826f3b0b7e69d464251649cd0",
       "bytes": 16
     }
   ]

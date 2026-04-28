@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using RiftScan.Analysis.Structures;
 using RiftScan.Analysis.Triage;
 using RiftScan.Core.Sessions;
 
@@ -44,14 +45,20 @@ public sealed class SessionReportGenerator
             .ThenBy(entry => entry.RegionId, StringComparer.OrdinalIgnoreCase)
             .Take(top)
             .ToArray();
+        var structureCandidates = ReadStructureCandidates(fullSessionPath)
+            .OrderByDescending(candidate => candidate.Score)
+            .ThenBy(candidate => candidate.RegionId, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(candidate => candidate.OffsetHex, StringComparer.OrdinalIgnoreCase)
+            .Take(top)
+            .ToArray();
 
         var reportPath = ResolveSessionPath(fullSessionPath, "report.md");
-        File.WriteAllLines(reportPath, BuildReport(manifest, triageEntries));
+        File.WriteAllLines(reportPath, BuildReport(manifest, triageEntries, structureCandidates));
 
         return new SessionReportResult { Success = true, SessionPath = fullSessionPath, ReportPath = reportPath };
     }
 
-    private static IEnumerable<string> BuildReport(SessionManifest manifest, IReadOnlyList<RegionTriageEntry> triageEntries)
+    private static IEnumerable<string> BuildReport(SessionManifest manifest, IReadOnlyList<RegionTriageEntry> triageEntries, IReadOnlyList<StructureCandidate> structureCandidates)
     {
         yield return $"# RiftScan Session Report - {manifest.SessionId}";
         yield return string.Empty;
@@ -76,11 +83,29 @@ public sealed class SessionReportGenerator
         }
 
         yield return string.Empty;
+        yield return "## Structure candidates";
+        yield return string.Empty;
+        yield return "| Rank | Region | Offset | Score | Support | Kind | Preview |";
+        yield return "|---:|---|---:|---:|---:|---|---|";
+
+        var structureRank = 1;
+        foreach (var candidate in structureCandidates)
+        {
+            yield return $"| {structureRank} | `{candidate.RegionId}` | `{candidate.OffsetHex}` | {candidate.Score:F3} | {candidate.SnapshotSupport} | `{candidate.StructureKind}` | `{string.Join(", ", candidate.ValuePreview.Select(value => value.ToString("G6")))}` |";
+            structureRank++;
+        }
+
+        if (structureCandidates.Count == 0)
+        {
+            yield return "| 0 | none | - | 0 | 0 | - | - |";
+        }
+
+        yield return string.Empty;
         yield return "## Next smallest action";
         yield return string.Empty;
         yield return triageEntries.Any(entry => entry.SnapshotCount < 2)
             ? "Capture at least two samples before making dynamic or behavior claims."
-            : "Review regions with checksum changes and nonzero entropy before adding cluster detection.";
+            : "Review regions with checksum changes and structure candidates before adding cluster detection.";
     }
 
     private static T ReadJson<T>(string sessionPath, string relativePath)
@@ -99,7 +124,20 @@ public sealed class SessionReportGenerator
             .ToArray();
     }
 
+    private static IReadOnlyList<StructureCandidate> ReadStructureCandidates(string sessionPath)
+    {
+        var path = ResolveSessionPath(sessionPath, "structures.jsonl");
+        if (!File.Exists(path))
+        {
+            _ = new FloatTripletStructureAnalyzer().AnalyzeSession(sessionPath);
+        }
+
+        return File.ReadLines(path)
+            .Where(line => !string.IsNullOrWhiteSpace(line))
+            .Select(line => JsonSerializer.Deserialize<StructureCandidate>(line, SessionJson.Options) ?? throw new InvalidOperationException("Invalid structure candidate."))
+            .ToArray();
+    }
+
     private static string ResolveSessionPath(string sessionPath, string relativePath) =>
         Path.GetFullPath(Path.Combine(sessionPath, relativePath.Replace('/', Path.DirectorySeparatorChar)));
 }
-

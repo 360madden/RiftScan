@@ -8,7 +8,7 @@ namespace RiftScan.Tests;
 public sealed class SessionAnalysisAndReportTests
 {
     [Fact]
-    public void Analyze_session_writes_triage_and_next_capture_plan()
+    public void Analyze_session_writes_triage_structures_and_next_capture_plan()
     {
         using var session = CopyFixtureToTemp();
 
@@ -19,6 +19,7 @@ public sealed class SessionAnalysisAndReportTests
         Assert.Equal(1, result.RegionsAnalyzed);
         Assert.True(File.Exists(Path.Combine(session.Path, "triage.jsonl")));
         Assert.True(File.Exists(Path.Combine(session.Path, "next_capture_plan.json")));
+        Assert.True(File.Exists(Path.Combine(session.Path, "structures.jsonl")));
 
         var triageLine = File.ReadLines(Path.Combine(session.Path, "triage.jsonl")).Single();
         var triage = JsonSerializer.Deserialize<RegionTriageEntry>(triageLine, SessionJson.Options)!;
@@ -39,6 +40,7 @@ public sealed class SessionAnalysisAndReportTests
         var report = File.ReadAllText(result.ReportPath);
         Assert.Contains("# RiftScan Session Report - fixture-valid-session", report, StringComparison.Ordinal);
         Assert.Contains("Dynamic region triage", report, StringComparison.Ordinal);
+        Assert.Contains("Structure candidates", report, StringComparison.Ordinal);
         Assert.Contains("region-0001", report, StringComparison.Ordinal);
     }
 
@@ -58,6 +60,7 @@ public sealed class SessionAnalysisAndReportTests
             Assert.Equal(0, analyzeExit);
             Assert.Equal(0, reportExit);
             Assert.Contains("triage.jsonl", output.ToString(), StringComparison.Ordinal);
+            Assert.Contains("structures.jsonl", output.ToString(), StringComparison.Ordinal);
             Assert.Contains("report.md", output.ToString(), StringComparison.Ordinal);
         }
         finally
