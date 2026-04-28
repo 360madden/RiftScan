@@ -25,6 +25,12 @@ public sealed class SessionComparisonServiceTests
         Assert.Contains(result.RegionMatches, match => match.BaseAddressHex == "0x10000000");
         Assert.True(result.MatchingClusterCount >= 1);
         Assert.Contains(result.ClusterMatches, match => match.BaseAddressHex == "0x10000000");
+        Assert.True(result.MatchingStructureCandidateCount >= 1);
+        Assert.Contains(result.StructureCandidateMatches, match =>
+            match.BaseAddressHex == "0x10000000" &&
+            match.OffsetHex == "0x0" &&
+            match.StructureKind == "float32_triplet" &&
+            match.Recommendation == "stable_structure_candidate");
         Assert.Contains("comparison_is_candidate_evidence_not_truth_claim", result.Warnings);
     }
 
@@ -65,6 +71,7 @@ public sealed class SessionComparisonServiceTests
             Assert.True(File.Exists(outputPath));
             Assert.Contains("matching_region_count", output.ToString(), StringComparison.Ordinal);
             Assert.Contains("matching_cluster_count", output.ToString(), StringComparison.Ordinal);
+            Assert.Contains("matching_structure_candidate_count", output.ToString(), StringComparison.Ordinal);
             Assert.Contains("matching_value_candidate_count", output.ToString(), StringComparison.Ordinal);
             Assert.Contains("comparison_path", output.ToString(), StringComparison.Ordinal);
         }

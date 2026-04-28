@@ -1,5 +1,6 @@
 using System.Text.Json;
 using RiftScan.Analysis.Clusters;
+using RiftScan.Analysis.Structures;
 using RiftScan.Analysis.Triage;
 using RiftScan.Analysis.Values;
 using RiftScan.Core.Sessions;
@@ -23,8 +24,9 @@ public sealed class SessionComparisonService
         var manifestB = ReadJson<SessionManifest>(fullBPath, "manifest.json");
         var regionMatches = CompareRegions(ReadTriage(fullAPath), ReadTriage(fullBPath), top);
         var clusterMatches = CompareClusters(ReadClusters(fullAPath), ReadClusters(fullBPath), top);
+        var structureCandidateMatches = CompareStructureCandidates(ReadStructureCandidates(fullAPath), ReadStructureCandidates(fullBPath), top);
         var valueCandidateMatches = CompareValueCandidates(ReadValueCandidates(fullAPath), ReadValueCandidates(fullBPath), top);
-        var warnings = BuildWarnings(manifestA, manifestB, regionMatches, clusterMatches, valueCandidateMatches);
+        var warnings = BuildWarnings(manifestA, manifestB, regionMatches, clusterMatches, structureCandidateMatches, valueCandidateMatches);
 
         return new SessionComparisonResult
         {
@@ -36,9 +38,11 @@ public sealed class SessionComparisonService
             SameProcessName = string.Equals(manifestA.ProcessName, manifestB.ProcessName, StringComparison.OrdinalIgnoreCase),
             MatchingRegionCount = regionMatches.Count,
             MatchingClusterCount = clusterMatches.Count,
+            MatchingStructureCandidateCount = structureCandidateMatches.Count,
             MatchingValueCandidateCount = valueCandidateMatches.Count,
             RegionMatches = regionMatches,
             ClusterMatches = clusterMatches,
+            StructureCandidateMatches = structureCandidateMatches,
             ValueCandidateMatches = valueCandidateMatches,
             Warnings = warnings
         };
@@ -55,6 +59,7 @@ public sealed class SessionComparisonService
 
         if (!File.Exists(ResolveSessionPath(sessionPath, "triage.jsonl")) ||
             !File.Exists(ResolveSessionPath(sessionPath, "clusters.jsonl")) ||
+            !File.Exists(ResolveSessionPath(sessionPath, "structures.jsonl")) ||
             !File.Exists(ResolveSessionPath(sessionPath, "typed_value_candidates.jsonl")))
         {
             _ = new DynamicRegionTriageAnalyzer().AnalyzeSession(sessionPath, top);
@@ -144,6 +149,47 @@ public sealed class SessionComparisonService
         };
     }
 
+    private static IReadOnlyList<StructureCandidateComparison> CompareStructureCandidates(
+        IReadOnlyList<StructureCandidate> a,
+        IReadOnlyList<StructureCandidate> b,
+        int top)
+    {
+        var bByKey = b
+            .GroupBy(StructureCandidateKey, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(group => group.Key, group => group.OrderByDescending(candidate => candidate.Score).First(), StringComparer.OrdinalIgnoreCase);
+
+        return a
+            .Where(candidate => bByKey.ContainsKey(StructureCandidateKey(candidate)))
+            .Select(candidate => BuildStructureCandidateComparison(candidate, bByKey[StructureCandidateKey(candidate)]))
+            .OrderByDescending(match => Math.Min(match.SessionAScore, match.SessionBScore))
+            .ThenByDescending(match => Math.Min(match.SessionASnapshotSupport, match.SessionBSnapshotSupport))
+            .ThenBy(match => match.BaseAddressHex, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(match => match.OffsetHex, StringComparer.OrdinalIgnoreCase)
+            .Take(top)
+            .ToArray();
+    }
+
+    private static StructureCandidateComparison BuildStructureCandidateComparison(StructureCandidate a, StructureCandidate b) =>
+        new()
+        {
+            BaseAddressHex = a.BaseAddressHex,
+            OffsetHex = a.OffsetHex,
+            StructureKind = a.StructureKind,
+            SessionARegionId = a.RegionId,
+            SessionBRegionId = b.RegionId,
+            SessionAScore = a.Score,
+            SessionBScore = b.Score,
+            ScoreDelta = Math.Round(b.Score - a.Score, 3),
+            SessionASnapshotSupport = a.SnapshotSupport,
+            SessionBSnapshotSupport = b.SnapshotSupport,
+            Recommendation = a.Score >= 75 && b.Score >= 75
+                ? "stable_structure_candidate"
+                : "matching_structure_candidate_needs_more_evidence"
+        };
+
+    private static string StructureCandidateKey(StructureCandidate candidate) =>
+        string.Join("|", candidate.BaseAddressHex, candidate.OffsetHex, candidate.StructureKind);
+
     private static IReadOnlyList<ValueCandidateComparison> CompareValueCandidates(
         IReadOnlyList<TypedValueCandidate> a,
         IReadOnlyList<TypedValueCandidate> b,
@@ -206,6 +252,7 @@ public sealed class SessionComparisonService
         SessionManifest manifestB,
         IReadOnlyList<RegionComparison> regionMatches,
         IReadOnlyList<ClusterComparison> clusterMatches,
+        IReadOnlyList<StructureCandidateComparison> structureCandidateMatches,
         IReadOnlyList<ValueCandidateComparison> valueCandidateMatches)
     {
         var warnings = new List<string>();
@@ -222,6 +269,11 @@ public sealed class SessionComparisonService
         if (clusterMatches.Count == 0)
         {
             warnings.Add("no_overlapping_cluster_matches_by_base_address_and_span");
+        }
+
+        if (structureCandidateMatches.Count == 0)
+        {
+            warnings.Add("no_matching_structure_candidates_by_base_offset_kind");
         }
 
         if (valueCandidateMatches.Count == 0)
@@ -245,6 +297,9 @@ public sealed class SessionComparisonService
 
     private static IReadOnlyList<StructureCluster> ReadClusters(string sessionPath) =>
         ReadJsonLines<StructureCluster>(sessionPath, "clusters.jsonl");
+
+    private static IReadOnlyList<StructureCandidate> ReadStructureCandidates(string sessionPath) =>
+        ReadJsonLines<StructureCandidate>(sessionPath, "structures.jsonl");
 
     private static IReadOnlyList<TypedValueCandidate> ReadValueCandidates(string sessionPath) =>
         ReadJsonLines<TypedValueCandidate>(sessionPath, "typed_value_candidates.jsonl");
