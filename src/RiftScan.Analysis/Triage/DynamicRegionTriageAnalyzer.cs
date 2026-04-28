@@ -1,4 +1,5 @@
 using System.Text.Json;
+using RiftScan.Analysis.Clusters;
 using RiftScan.Analysis.Structures;
 using RiftScan.Core.Sessions;
 
@@ -31,6 +32,7 @@ public sealed class DynamicRegionTriageAnalyzer
 
         WriteJsonLines(fullSessionPath, "triage.jsonl", triageEntries);
         _ = new FloatTripletStructureAnalyzer().AnalyzeSession(fullSessionPath, top);
+        _ = new StructureClusterAnalyzer().AnalyzeSession(fullSessionPath, top);
         WriteJson(fullSessionPath, "next_capture_plan.json", BuildNextCapturePlan(manifest.SessionId, triageEntries));
 
         return new SessionAnalysisResult
@@ -39,7 +41,7 @@ public sealed class DynamicRegionTriageAnalyzer
             SessionPath = fullSessionPath,
             SessionId = manifest.SessionId,
             RegionsAnalyzed = triageEntries.Length,
-            ArtifactsWritten = ["triage.jsonl", "structures.jsonl", "next_capture_plan.json"]
+            ArtifactsWritten = ["triage.jsonl", "structures.jsonl", "clusters.jsonl", "next_capture_plan.json"]
         };
     }
 
@@ -110,7 +112,7 @@ public sealed class DynamicRegionTriageAnalyzer
             SessionId = sessionId,
             Recommendation = triageEntries.Any(entry => entry.SnapshotCount < 2)
                 ? "capture_at_least_two_samples_for_delta_triage"
-                : "prioritize_regions_with_checksum_changes_and_nonzero_entropy",
+                : "prioritize_regions_with_checksum_changes_clusters_and_structures",
             Regions = triageEntries
                 .Take(25)
                 .Select(entry => new NextCaptureRegion

@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using RiftScan.Analysis.Clusters;
 using RiftScan.Analysis.Structures;
 using RiftScan.Analysis.Triage;
 using RiftScan.Core.Sessions;
@@ -34,8 +35,7 @@ public sealed class SessionReportGenerator
         }
 
         var manifest = ReadJson<SessionManifest>(fullSessionPath, "manifest.json");
-        var triagePath = ResolveSessionPath(fullSessionPath, "triage.jsonl");
-        if (!File.Exists(triagePath))
+        if (!File.Exists(ResolveSessionPath(fullSessionPath, "triage.jsonl")))
         {
             _ = new DynamicRegionTriageAnalyzer().AnalyzeSession(fullSessionPath, top);
         }
@@ -51,14 +51,24 @@ public sealed class SessionReportGenerator
             .ThenBy(candidate => candidate.OffsetHex, StringComparer.OrdinalIgnoreCase)
             .Take(top)
             .ToArray();
+        var clusters = ReadClusters(fullSessionPath)
+            .OrderByDescending(cluster => cluster.RankScore)
+            .ThenBy(cluster => cluster.RegionId, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(cluster => cluster.StartOffsetHex, StringComparer.OrdinalIgnoreCase)
+            .Take(top)
+            .ToArray();
 
         var reportPath = ResolveSessionPath(fullSessionPath, "report.md");
-        File.WriteAllLines(reportPath, BuildReport(manifest, triageEntries, structureCandidates));
+        File.WriteAllLines(reportPath, BuildReport(manifest, triageEntries, clusters, structureCandidates));
 
         return new SessionReportResult { Success = true, SessionPath = fullSessionPath, ReportPath = reportPath };
     }
 
-    private static IEnumerable<string> BuildReport(SessionManifest manifest, IReadOnlyList<RegionTriageEntry> triageEntries, IReadOnlyList<StructureCandidate> structureCandidates)
+    private static IEnumerable<string> BuildReport(
+        SessionManifest manifest,
+        IReadOnlyList<RegionTriageEntry> triageEntries,
+        IReadOnlyList<StructureCluster> clusters,
+        IReadOnlyList<StructureCandidate> structureCandidates)
     {
         yield return $"# RiftScan Session Report - {manifest.SessionId}";
         yield return string.Empty;
@@ -83,6 +93,24 @@ public sealed class SessionReportGenerator
         }
 
         yield return string.Empty;
+        yield return "## Structure clusters";
+        yield return string.Empty;
+        yield return "| Rank | Cluster | Region | Span | Candidates | Score | Recommendation |";
+        yield return "|---:|---|---|---:|---:|---:|---|";
+
+        var clusterRank = 1;
+        foreach (var cluster in clusters)
+        {
+            yield return $"| {clusterRank} | `{cluster.ClusterId}` | `{cluster.RegionId}` | `{cluster.StartOffsetHex}-{cluster.EndOffsetHex}` | {cluster.CandidateCount} | {cluster.RankScore:F3} | `{cluster.Recommendation}` |";
+            clusterRank++;
+        }
+
+        if (clusters.Count == 0)
+        {
+            yield return "| 0 | none | - | - | 0 | 0 | - |";
+        }
+
+        yield return string.Empty;
         yield return "## Structure candidates";
         yield return string.Empty;
         yield return "| Rank | Region | Offset | Score | Support | Kind | Preview |";
@@ -103,9 +131,9 @@ public sealed class SessionReportGenerator
         yield return string.Empty;
         yield return "## Next smallest action";
         yield return string.Empty;
-        yield return triageEntries.Any(entry => entry.SnapshotCount < 2)
-            ? "Capture at least two samples before making dynamic or behavior claims."
-            : "Review regions with checksum changes and structure candidates before adding cluster detection.";
+        yield return clusters.Count > 0
+            ? "Review top structure clusters across a larger passive capture before player-specific matching."
+            : "Capture more samples or wider regions before making layout claims.";
     }
 
     private static T ReadJson<T>(string sessionPath, string relativePath)
@@ -135,6 +163,20 @@ public sealed class SessionReportGenerator
         return File.ReadLines(path)
             .Where(line => !string.IsNullOrWhiteSpace(line))
             .Select(line => JsonSerializer.Deserialize<StructureCandidate>(line, SessionJson.Options) ?? throw new InvalidOperationException("Invalid structure candidate."))
+            .ToArray();
+    }
+
+    private static IReadOnlyList<StructureCluster> ReadClusters(string sessionPath)
+    {
+        var path = ResolveSessionPath(sessionPath, "clusters.jsonl");
+        if (!File.Exists(path))
+        {
+            _ = new StructureClusterAnalyzer().AnalyzeSession(sessionPath);
+        }
+
+        return File.ReadLines(path)
+            .Where(line => !string.IsNullOrWhiteSpace(line))
+            .Select(line => JsonSerializer.Deserialize<StructureCluster>(line, SessionJson.Options) ?? throw new InvalidOperationException("Invalid structure cluster."))
             .ToArray();
     }
 
