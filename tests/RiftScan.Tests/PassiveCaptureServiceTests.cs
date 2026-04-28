@@ -508,6 +508,11 @@ public sealed class PassiveCaptureServiceTests
 
         Assert.True(result.Success);
         Assert.Equal(newProcess.ProcessId, result.ProcessId);
+        Assert.Equal("complete", result.Status);
+        Assert.Equal(1, result.SamplesRequested);
+        Assert.Equal(1, result.SamplesAttempted);
+        Assert.Null(result.InterruptionReason);
+        Assert.Equal(1, result.RegionReadFailureCount);
         Assert.Contains(oldProcess.ProcessId, readProcessIds);
         Assert.Contains(newProcess.ProcessId, readProcessIds);
         Assert.Contains("snapshots/region-000001-sample-000001.bin", result.ArtifactsWritten);
@@ -561,6 +566,11 @@ public sealed class PassiveCaptureServiceTests
         });
 
         Assert.False(result.Success);
+        Assert.Equal("interrupted", result.Status);
+        Assert.Equal(1, result.SamplesRequested);
+        Assert.Equal(1, result.SamplesAttempted);
+        Assert.Equal("no_snapshot_data_before_intervention_timeout", result.InterruptionReason);
+        Assert.Equal(1, result.RegionReadFailureCount);
         Assert.Equal(0, result.SnapshotsCaptured);
         Assert.Contains("intervention_handoff.json", result.ArtifactsWritten);
         Assert.Equal(Path.GetFullPath(Path.Combine(output.Path, "intervention_handoff.json")), result.HandoffPath);
@@ -596,6 +606,9 @@ public sealed class PassiveCaptureServiceTests
         });
 
         Assert.False(result.Success);
+        Assert.Equal("interrupted", result.Status);
+        Assert.Equal("no_snapshot_data_before_selected_regions_unreadable", result.InterruptionReason);
+        Assert.Equal(1, result.RegionReadFailureCount);
         Assert.Equal(0, result.SnapshotsCaptured);
         Assert.Contains("intervention_handoff.json", result.ArtifactsWritten);
         var handoff = JsonSerializer.Deserialize<CaptureInterventionHandoff>(File.ReadAllText(Path.Combine(output.Path, "intervention_handoff.json")), SessionJson.Options)!;
@@ -650,6 +663,11 @@ public sealed class PassiveCaptureServiceTests
         });
 
         Assert.False(result.Success);
+        Assert.Equal("interrupted", result.Status);
+        Assert.Equal(2, result.SamplesRequested);
+        Assert.Equal(2, result.SamplesAttempted);
+        Assert.Equal("intervention_wait_timed_out", result.InterruptionReason);
+        Assert.Equal(1, result.RegionReadFailureCount);
         Assert.Equal(1, result.SnapshotsCaptured);
         Assert.Contains("intervention_handoff.json", result.ArtifactsWritten);
         Assert.Equal(Path.GetFullPath(Path.Combine(output.Path, "intervention_handoff.json")), result.HandoffPath);

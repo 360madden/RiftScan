@@ -167,11 +167,12 @@ public sealed class PassiveCaptureService(IProcessMemoryReader processMemoryRead
         {
             if (interrupted)
             {
+                var handoffReason = NoSnapshotInterruptionReason(interruptionReason);
                 WriteInterventionHandoff(
                     sessionPath,
                     restoredProcess,
                     options,
-                    NoSnapshotInterruptionReason(interruptionReason),
+                    handoffReason,
                     0,
                     0,
                     0,
@@ -185,9 +186,14 @@ public sealed class PassiveCaptureService(IProcessMemoryReader processMemoryRead
                     SessionId = Path.GetFileName(sessionPath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)),
                     ProcessId = restoredProcess.ProcessId,
                     ProcessName = restoredProcess.ProcessName,
+                    Status = InterruptedSessionStatus,
+                    SamplesRequested = options.Samples,
+                    SamplesAttempted = sampleCountAttempted,
+                    InterruptionReason = handoffReason,
                     RegionsCaptured = 0,
                     SnapshotsCaptured = 0,
                     BytesCaptured = 0,
+                    RegionReadFailureCount = lastRegionReadFailures.Count,
                     HandoffPath = ResolveSessionPath(sessionPath, InterventionHandoffFileName),
                     ArtifactsWritten = [InterventionHandoffFileName]
                 };
@@ -246,9 +252,14 @@ public sealed class PassiveCaptureService(IProcessMemoryReader processMemoryRead
             SessionId = manifest.SessionId,
             ProcessId = restoredProcess.ProcessId,
             ProcessName = restoredProcess.ProcessName,
+            Status = manifest.Status,
+            SamplesRequested = options.Samples,
+            SamplesAttempted = sampleCountAttempted,
+            InterruptionReason = interrupted ? interruptionReason : null,
             RegionsCaptured = capturedRegions.Count,
             SnapshotsCaptured = snapshotEntries.Count,
             BytesCaptured = totalBytes,
+            RegionReadFailureCount = lastRegionReadFailures.Count,
             HandoffPath = interrupted ? ResolveSessionPath(sessionPath, InterventionHandoffFileName) : null,
             ArtifactsWritten = EnumerateArtifacts(sessionPath).ToArray()
         };

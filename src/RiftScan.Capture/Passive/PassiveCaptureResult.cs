@@ -19,6 +19,19 @@ public sealed record PassiveCaptureResult
     [JsonPropertyName("process_name")]
     public string ProcessName { get; init; } = string.Empty;
 
+    [JsonPropertyName("status")]
+    public string Status { get; init; } = string.Empty;
+
+    [JsonPropertyName("samples_requested")]
+    public int SamplesRequested { get; init; }
+
+    [JsonPropertyName("samples_attempted")]
+    public int SamplesAttempted { get; init; }
+
+    [JsonPropertyName("interruption_reason")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? InterruptionReason { get; init; }
+
     [JsonPropertyName("regions_captured")]
     public int RegionsCaptured { get; init; }
 
@@ -27,6 +40,9 @@ public sealed record PassiveCaptureResult
 
     [JsonPropertyName("bytes_captured")]
     public long BytesCaptured { get; init; }
+
+    [JsonPropertyName("region_read_failure_count")]
+    public int RegionReadFailureCount { get; init; }
 
     [JsonPropertyName("handoff_path")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
