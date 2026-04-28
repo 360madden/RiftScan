@@ -58,6 +58,8 @@ public sealed class SessionAnalysisAndReportTests
         Assert.Contains("Vec3 candidates", report, StringComparison.Ordinal);
         Assert.Contains("Analyzers", report, StringComparison.Ordinal);
         Assert.Contains("dynamic_region_triage", report, StringComparison.Ordinal);
+        Assert.Contains("Limitations", report, StringComparison.Ordinal);
+        Assert.Contains("Next recommended capture", report, StringComparison.Ordinal);
         Assert.Contains("Structure clusters", report, StringComparison.Ordinal);
         Assert.Contains("Structure candidates", report, StringComparison.Ordinal);
         Assert.Contains("region-0001", report, StringComparison.Ordinal);
@@ -70,6 +72,8 @@ public sealed class SessionAnalysisAndReportTests
         Assert.Equal(10, root.GetProperty("top_limit").GetInt32());
         Assert.Equal(1, root.GetProperty("artifact_counts").GetProperty("triage_entries").GetInt32());
         Assert.Equal("dynamic_region_triage", root.GetProperty("analyzers")[0].GetProperty("analyzer_id").GetString());
+        Assert.Contains(root.GetProperty("limitations").EnumerateArray(), limitation => limitation.GetString() == "candidate_evidence_not_truth_claim");
+        Assert.Equal("larger_passive_capture_for_cross_session_structure_validation", root.GetProperty("next_recommended_capture").GetString());
     }
 
     [Fact]
@@ -121,7 +125,10 @@ public sealed class SessionAnalysisAndReportTests
             "top_limit",
             "artifact_counts",
             "analyzers",
-            "capture_interruption");
+            "capture_interruption",
+            "limitations",
+            "next_recommended_capture",
+            "next_smallest_action");
 
         var firstAnalyzer = root.GetProperty("analyzers")[0];
         AssertJsonProperties(

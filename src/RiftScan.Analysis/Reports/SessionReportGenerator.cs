@@ -71,6 +71,15 @@ internal sealed record SessionMachineReport
 
     [JsonPropertyName("capture_interruption")]
     public CaptureInterventionHandoffReport? CaptureInterruption { get; init; }
+
+    [JsonPropertyName("limitations")]
+    public IReadOnlyList<string> Limitations { get; init; } = [];
+
+    [JsonPropertyName("next_recommended_capture")]
+    public string NextRecommendedCapture { get; init; } = string.Empty;
+
+    [JsonPropertyName("next_smallest_action")]
+    public string NextSmallestAction { get; init; } = string.Empty;
 }
 
 internal sealed record SessionReportAnalyzerInfo
@@ -200,11 +209,14 @@ public sealed class SessionReportGenerator
 
         var interventionHandoff = ReadOptionalJson<CaptureInterventionHandoffReport>(fullSessionPath, "intervention_handoff.json");
         var analyzers = BuildAnalyzerInfos(triageEntries, deltaEntries, valueCandidates, vec3Candidates, clusters, structureCandidates);
+        var limitations = BuildLimitations(interventionHandoff, clusters);
+        var nextRecommendedCapture = BuildNextRecommendedCapture(interventionHandoff, clusters);
+        var nextSmallestAction = BuildNextSmallestAction(clusters);
 
         var reportPath = ResolveSessionPath(fullSessionPath, "report.md");
-        File.WriteAllLines(reportPath, BuildReport(manifest, interventionHandoff, analyzers, triageEntries, deltaEntries, valueCandidates, vec3Candidates, clusters, structureCandidates));
+        File.WriteAllLines(reportPath, BuildReport(manifest, interventionHandoff, analyzers, limitations, nextRecommendedCapture, nextSmallestAction, triageEntries, deltaEntries, valueCandidates, vec3Candidates, clusters, structureCandidates));
         var reportJsonPath = ResolveSessionPath(fullSessionPath, "report.json");
-        var machineReport = BuildMachineReport(fullSessionPath, reportPath, top, manifest, interventionHandoff, analyzers, triageEntries, deltaEntries, valueCandidates, vec3Candidates, clusters, structureCandidates);
+        var machineReport = BuildMachineReport(fullSessionPath, reportPath, top, manifest, interventionHandoff, analyzers, limitations, nextRecommendedCapture, nextSmallestAction, triageEntries, deltaEntries, valueCandidates, vec3Candidates, clusters, structureCandidates);
         File.WriteAllText(reportJsonPath, JsonSerializer.Serialize(machineReport, SessionJson.Options));
 
         return new SessionReportResult { Success = true, SessionPath = fullSessionPath, ReportPath = reportPath, ReportJsonPath = reportJsonPath };
@@ -265,6 +277,43 @@ public sealed class SessionReportGenerator
     private static string FirstNonEmpty(IEnumerable<string> values, string fallback) =>
         values.FirstOrDefault(value => !string.IsNullOrWhiteSpace(value)) ?? fallback;
 
+    private static IReadOnlyList<string> BuildLimitations(
+        CaptureInterventionHandoffReport? interventionHandoff,
+        IReadOnlyList<StructureCluster> clusters)
+    {
+        var limitations = new List<string> { "candidate_evidence_not_truth_claim" };
+        if (interventionHandoff is not null)
+        {
+            limitations.Add("capture_interrupted_before_requested_samples_completed");
+        }
+
+        if (clusters.Count == 0)
+        {
+            limitations.Add("no_structure_clusters_available_for_player_matching");
+        }
+
+        return limitations;
+    }
+
+    private static string BuildNextRecommendedCapture(
+        CaptureInterventionHandoffReport? interventionHandoff,
+        IReadOnlyList<StructureCluster> clusters)
+    {
+        if (interventionHandoff is not null)
+        {
+            return interventionHandoff.RecommendedNextAction;
+        }
+
+        return clusters.Count > 0
+            ? "larger_passive_capture_for_cross_session_structure_validation"
+            : "capture_more_samples_or_wider_regions";
+    }
+
+    private static string BuildNextSmallestAction(IReadOnlyList<StructureCluster> clusters) =>
+        clusters.Count > 0
+            ? "Review top structure clusters across a larger passive capture before player-specific matching."
+            : "Capture more samples or wider regions before making layout claims.";
+
     private static SessionMachineReport BuildMachineReport(
         string sessionPath,
         string reportPath,
@@ -272,6 +321,9 @@ public sealed class SessionReportGenerator
         SessionManifest manifest,
         CaptureInterventionHandoffReport? interventionHandoff,
         IReadOnlyList<SessionReportAnalyzerInfo> analyzers,
+        IReadOnlyList<string> limitations,
+        string nextRecommendedCapture,
+        string nextSmallestAction,
         IReadOnlyList<RegionTriageEntry> triageEntries,
         IReadOnlyList<RegionDeltaEntry> deltaEntries,
         IReadOnlyList<TypedValueCandidate> valueCandidates,
@@ -301,13 +353,19 @@ public sealed class SessionReportGenerator
                 StructureCandidates = structureCandidates.Count
             },
             Analyzers = analyzers,
-            CaptureInterruption = interventionHandoff
+            CaptureInterruption = interventionHandoff,
+            Limitations = limitations,
+            NextRecommendedCapture = nextRecommendedCapture,
+            NextSmallestAction = nextSmallestAction
         };
 
     private static IEnumerable<string> BuildReport(
         SessionManifest manifest,
         CaptureInterventionHandoffReport? interventionHandoff,
         IReadOnlyList<SessionReportAnalyzerInfo> analyzers,
+        IReadOnlyList<string> limitations,
+        string nextRecommendedCapture,
+        string nextSmallestAction,
         IReadOnlyList<RegionTriageEntry> triageEntries,
         IReadOnlyList<RegionDeltaEntry> deltaEntries,
         IReadOnlyList<TypedValueCandidate> valueCandidates,
@@ -472,11 +530,21 @@ public sealed class SessionReportGenerator
         }
 
         yield return string.Empty;
+        yield return "## Limitations";
+        yield return string.Empty;
+        foreach (var limitation in limitations)
+        {
+            yield return $"- `{limitation}`";
+        }
+
+        yield return string.Empty;
+        yield return "## Next recommended capture";
+        yield return string.Empty;
+        yield return $"- Recommendation: `{nextRecommendedCapture}`";
+        yield return string.Empty;
         yield return "## Next smallest action";
         yield return string.Empty;
-        yield return clusters.Count > 0
-            ? "Review top structure clusters across a larger passive capture before player-specific matching."
-            : "Capture more samples or wider regions before making layout claims.";
+        yield return nextSmallestAction;
     }
 
     private static T ReadJson<T>(string sessionPath, string relativePath)
