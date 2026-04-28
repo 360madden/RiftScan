@@ -21,4 +21,6 @@ public sealed record PassiveCaptureOptions
     public bool IncludeImageRegions { get; init; }
 
     public IReadOnlySet<string> RegionIds { get; init; } = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+    public IReadOnlySet<ulong> BaseAddresses { get; init; } = new HashSet<ulong>();
 }

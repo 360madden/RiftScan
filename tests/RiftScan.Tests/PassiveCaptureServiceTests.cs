@@ -66,6 +66,37 @@ public sealed class PassiveCaptureServiceTests
     }
 
     [Fact]
+    public void Capture_can_target_specific_base_addresses()
+    {
+        using var output = new TempDirectory();
+        var reader = new FakeProcessMemoryReader
+        {
+            Regions =
+            [
+                new VirtualMemoryRegion("region-000001", 0x1000, 16, MemoryRegionConstants.MemCommit, MemoryRegionConstants.PageReadWrite, MemoryRegionConstants.MemPrivate),
+                new VirtualMemoryRegion("region-000099", 0x2000, 16, MemoryRegionConstants.MemCommit, MemoryRegionConstants.PageReadWrite, MemoryRegionConstants.MemPrivate)
+            ]
+        };
+
+        var result = new PassiveCaptureService(reader).Capture(new PassiveCaptureOptions
+        {
+            ProcessName = "fixture_process",
+            OutputPath = output.Path,
+            Samples = 1,
+            IntervalMilliseconds = 0,
+            MaxRegions = 8,
+            MaxBytesPerRegion = 16,
+            MaxTotalBytes = 32,
+            BaseAddresses = new HashSet<ulong>([0x2000])
+        });
+
+        Assert.True(result.Success);
+        Assert.Equal(1, result.RegionsCaptured);
+        Assert.Contains("snapshots/region-000099-sample-000001.bin", result.ArtifactsWritten);
+        Assert.DoesNotContain("snapshots/region-000001-sample-000001.bin", result.ArtifactsWritten);
+    }
+
+    [Fact]
     public void Capture_plan_uses_top_planned_region_ids()
     {
         using var source = new TempDirectory();
@@ -106,6 +137,63 @@ public sealed class PassiveCaptureServiceTests
         Assert.True(result.Success);
         Assert.Equal(1, result.RegionsCaptured);
         Assert.Contains("snapshots/region-000002-sample-000001.bin", result.ArtifactsWritten);
+        Assert.DoesNotContain("snapshots/region-000001-sample-000001.bin", result.ArtifactsWritten);
+    }
+
+    [Fact]
+    public void Capture_plan_follows_source_base_addresses_when_region_ids_change()
+    {
+        using var source = new TempDirectory();
+        using var output = new TempDirectory();
+        Directory.CreateDirectory(source.Path);
+        File.WriteAllText(Path.Combine(source.Path, "next_capture_plan.json"), """
+            {
+              "session_id": "source-session",
+              "analyzer_id": "dynamic_region_triage",
+              "recommendation": "test",
+              "regions": [
+                { "region_id": "region-000002", "rank_score": 20, "reason": "test" }
+              ]
+            }
+            """);
+        File.WriteAllText(Path.Combine(source.Path, "regions.json"), """
+            {
+              "regions": [
+                {
+                  "region_id": "region-000002",
+                  "base_address_hex": "0x2000",
+                  "size_bytes": 16,
+                  "protection": "PAGE_READWRITE",
+                  "state": "MEM_COMMIT",
+                  "type": "MEM_PRIVATE"
+                }
+              ]
+            }
+            """);
+        var reader = new FakeProcessMemoryReader
+        {
+            Regions =
+            [
+                new VirtualMemoryRegion("region-000001", 0x1000, 16, MemoryRegionConstants.MemCommit, MemoryRegionConstants.PageReadWrite, MemoryRegionConstants.MemPrivate),
+                new VirtualMemoryRegion("region-000099", 0x2000, 16, MemoryRegionConstants.MemCommit, MemoryRegionConstants.PageReadWrite, MemoryRegionConstants.MemPrivate)
+            ]
+        };
+
+        var result = new PassiveCapturePlanService(reader).CaptureFromPlan(new PassiveCapturePlanOptions
+        {
+            SourceSessionPath = source.Path,
+            ProcessName = "fixture_process",
+            OutputPath = output.Path,
+            TopRegions = 1,
+            Samples = 1,
+            IntervalMilliseconds = 0,
+            MaxBytesPerRegion = 16,
+            MaxTotalBytes = 16
+        });
+
+        Assert.True(result.Success);
+        Assert.Equal(1, result.RegionsCaptured);
+        Assert.Contains("snapshots/region-000099-sample-000001.bin", result.ArtifactsWritten);
         Assert.DoesNotContain("snapshots/region-000001-sample-000001.bin", result.ArtifactsWritten);
     }
 

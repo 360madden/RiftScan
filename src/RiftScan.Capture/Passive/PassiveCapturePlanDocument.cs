@@ -25,6 +25,12 @@ public sealed record PassiveCapturePlanRegion
     [JsonPropertyName("rank_score")]
     public double RankScore { get; init; }
 
+    [JsonPropertyName("base_address_hex")]
+    public string BaseAddressHex { get; init; } = string.Empty;
+
+    [JsonPropertyName("size_bytes")]
+    public long SizeBytes { get; init; }
+
     [JsonPropertyName("reason")]
     public string Reason { get; init; } = string.Empty;
 }

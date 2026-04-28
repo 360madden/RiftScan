@@ -21,9 +21,11 @@ public sealed class PassiveCaptureService(IProcessMemoryReader processMemoryRead
                 MaxRegionBytes = (ulong)options.MaxBytesPerRegion
             }));
 
-        if (options.RegionIds.Count > 0)
+        if (options.RegionIds.Count > 0 || options.BaseAddresses.Count > 0)
         {
-            candidateRegionsQuery = candidateRegionsQuery.Where(region => options.RegionIds.Contains(region.RegionId));
+            candidateRegionsQuery = candidateRegionsQuery.Where(region =>
+                options.RegionIds.Contains(region.RegionId) ||
+                options.BaseAddresses.Contains(region.BaseAddress));
         }
 
         var candidateRegions = candidateRegionsQuery
@@ -33,7 +35,7 @@ public sealed class PassiveCaptureService(IProcessMemoryReader processMemoryRead
 
         if (candidateRegions.Length == 0)
         {
-            throw new InvalidOperationException("No readable committed memory regions matched the passive capture filter or requested region IDs.");
+            throw new InvalidOperationException("No readable committed memory regions matched the passive capture filter or requested region IDs/base addresses.");
         }
 
         PrepareSessionDirectory(sessionPath);

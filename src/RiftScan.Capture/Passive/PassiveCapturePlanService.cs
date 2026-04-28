@@ -19,17 +19,21 @@ public sealed class PassiveCapturePlanService(IProcessMemoryReader processMemory
 
         var plan = JsonSerializer.Deserialize<PassiveCapturePlanDocument>(File.ReadAllText(planPath), SessionJson.Options)
             ?? throw new InvalidOperationException("Could not deserialize next_capture_plan.json.");
-        var regionIds = plan.Regions
+        var plannedRegions = plan.Regions
             .Where(region => !string.IsNullOrWhiteSpace(region.RegionId))
             .OrderByDescending(region => region.RankScore)
             .ThenBy(region => region.RegionId, StringComparer.OrdinalIgnoreCase)
             .Take(options.TopRegions)
+            .ToArray();
+
+        var regionIds = plannedRegions
             .Select(region => region.RegionId)
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var baseAddresses = ResolvePlannedBaseAddresses(sourceSessionPath, plannedRegions, regionIds);
 
-        if (regionIds.Count == 0)
+        if (regionIds.Count == 0 && baseAddresses.Count == 0)
         {
-            throw new InvalidOperationException("Capture plan contains no region IDs to follow up.");
+            throw new InvalidOperationException("Capture plan contains no region IDs or base addresses to follow up.");
         }
 
         return new PassiveCaptureService(processMemoryReader).Capture(new PassiveCaptureOptions
@@ -39,12 +43,53 @@ public sealed class PassiveCapturePlanService(IProcessMemoryReader processMemory
             OutputPath = options.OutputPath,
             Samples = options.Samples,
             IntervalMilliseconds = options.IntervalMilliseconds,
-            MaxRegions = regionIds.Count,
+            MaxRegions = Math.Max(regionIds.Count, baseAddresses.Count),
             MaxBytesPerRegion = options.MaxBytesPerRegion,
             MaxTotalBytes = options.MaxTotalBytes,
             IncludeImageRegions = options.IncludeImageRegions,
-            RegionIds = regionIds
+            RegionIds = regionIds,
+            BaseAddresses = baseAddresses
         });
+    }
+
+    private static IReadOnlySet<ulong> ResolvePlannedBaseAddresses(
+        string sourceSessionPath,
+        IReadOnlyList<PassiveCapturePlanRegion> plannedRegions,
+        IReadOnlySet<string> regionIds)
+    {
+        var baseAddresses = plannedRegions
+            .Where(region => !string.IsNullOrWhiteSpace(region.BaseAddressHex))
+            .Select(region => ParseHex(region.BaseAddressHex))
+            .ToHashSet();
+
+        if (baseAddresses.Count > 0)
+        {
+            return baseAddresses;
+        }
+
+        var regionsPath = Path.Combine(sourceSessionPath, "regions.json");
+        if (!File.Exists(regionsPath))
+        {
+            return baseAddresses;
+        }
+
+        var sourceRegions = JsonSerializer.Deserialize<RegionMap>(File.ReadAllText(regionsPath), SessionJson.Options)
+            ?? throw new InvalidOperationException("Could not deserialize regions.json.");
+        foreach (var region in sourceRegions.Regions.Where(region => regionIds.Contains(region.RegionId)))
+        {
+            if (!string.IsNullOrWhiteSpace(region.BaseAddressHex))
+            {
+                baseAddresses.Add(ParseHex(region.BaseAddressHex));
+            }
+        }
+
+        return baseAddresses;
+    }
+
+    private static ulong ParseHex(string value)
+    {
+        var text = value.StartsWith("0x", StringComparison.OrdinalIgnoreCase) ? value[2..] : value;
+        return ulong.Parse(text, System.Globalization.NumberStyles.HexNumber);
     }
 
     private static void ValidateOptions(PassiveCapturePlanOptions options)

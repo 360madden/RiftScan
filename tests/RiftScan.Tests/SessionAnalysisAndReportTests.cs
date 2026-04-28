@@ -26,6 +26,12 @@ public sealed class SessionAnalysisAndReportTests
         var triage = JsonSerializer.Deserialize<RegionTriageEntry>(triageLine, SessionJson.Options)!;
         Assert.Equal("region-0001", triage.RegionId);
         Assert.Equal("capture_more_samples_before_dynamic_claim", triage.Recommendation);
+
+        var plan = JsonSerializer.Deserialize<NextCapturePlan>(
+            File.ReadAllText(Path.Combine(session.Path, "next_capture_plan.json")),
+            SessionJson.Options)!;
+        Assert.Equal("0x10000000", plan.Regions.Single().BaseAddressHex);
+        Assert.Equal(16, plan.Regions.Single().SizeBytes);
     }
 
     [Fact]

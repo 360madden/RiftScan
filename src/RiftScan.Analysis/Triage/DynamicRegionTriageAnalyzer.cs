@@ -119,6 +119,8 @@ public sealed class DynamicRegionTriageAnalyzer
                 {
                     RegionId = entry.RegionId,
                     RankScore = entry.RankScore,
+                    BaseAddressHex = entry.BaseAddressHex,
+                    SizeBytes = entry.TotalBytes / entry.SnapshotCount,
                     Reason = entry.Recommendation
                 })
                 .ToArray()
