@@ -7,6 +7,7 @@
     <Project Path="src/RiftScan.Rift/RiftScan.Rift.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/RiftScan.ProcessFixture/RiftScan.ProcessFixture.csproj" />
     <Project Path="tests/RiftScan.Tests/RiftScan.Tests.csproj" />
   </Folder>
 </Solution>

@@ -10,7 +10,7 @@ public sealed class WindowsProcessMemoryReader : IProcessMemoryReader
     public IReadOnlyList<ProcessDescriptor> FindProcessesByName(string processName)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(processName);
-        var normalizedName = Path.GetFileNameWithoutExtension(processName);
+        var normalizedName = NormalizeProcessName(processName);
 
         return Process.GetProcessesByName(normalizedName)
             .Select(CreateDescriptor)
@@ -146,6 +146,14 @@ public sealed class WindowsProcessMemoryReader : IProcessMemoryReader
         }
 
         return new ProcessDescriptor(process.Id, process.ProcessName, startTimeUtc, mainModulePath);
+    }
+
+    private static string NormalizeProcessName(string processName)
+    {
+        var fileName = Path.GetFileName(processName);
+        return fileName.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)
+            ? fileName[..^4]
+            : fileName;
     }
 
     private static SafeProcessHandle OpenReadableProcess(int processId)
