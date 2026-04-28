@@ -566,6 +566,7 @@ public sealed class PassiveCaptureServiceTests
         Assert.Equal(Path.GetFullPath(Path.Combine(output.Path, "intervention_handoff.json")), result.HandoffPath);
         var handoff = JsonSerializer.Deserialize<CaptureInterventionHandoff>(File.ReadAllText(Path.Combine(output.Path, "intervention_handoff.json")), SessionJson.Options)!;
         Assert.Equal("no_snapshot_data_before_intervention_timeout", handoff.Reason);
+        Assert.Equal("restart_or_reselect_process_then_resume_capture", handoff.RecommendedNextAction);
         Assert.Equal(0, handoff.SnapshotCount);
         Assert.Equal(1, handoff.SamplesTargeted);
         Assert.Equal(100, handoff.ProcessId);
@@ -599,6 +600,7 @@ public sealed class PassiveCaptureServiceTests
         Assert.Contains("intervention_handoff.json", result.ArtifactsWritten);
         var handoff = JsonSerializer.Deserialize<CaptureInterventionHandoff>(File.ReadAllText(Path.Combine(output.Path, "intervention_handoff.json")), SessionJson.Options)!;
         Assert.Equal("no_snapshot_data_before_selected_regions_unreadable", handoff.Reason);
+        Assert.Equal("review_region_read_failures_or_capture_from_a_fresh_plan", handoff.RecommendedNextAction);
         var failure = Assert.Single(handoff.RegionReadFailures);
         Assert.Equal("region-000001", failure.RegionId);
         Assert.Equal("0x1000", failure.BaseAddressHex);

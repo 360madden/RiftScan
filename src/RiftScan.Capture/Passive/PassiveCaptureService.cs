@@ -537,6 +537,7 @@ public sealed class PassiveCaptureService(IProcessMemoryReader processMemoryRead
             BytesCaptured = bytesCaptured,
             RegionReadFailures = regionReadFailures,
             SamplesTargeted = samplesTargeted,
+            RecommendedNextAction = RecommendedNextAction(reason),
             InterventionWaitMilliseconds = options.InterventionWaitMilliseconds,
             InterventionPollIntervalMilliseconds = options.InterventionPollIntervalMilliseconds
         };
@@ -549,6 +550,16 @@ public sealed class PassiveCaptureService(IProcessMemoryReader processMemoryRead
         {
             "selected_regions_unreadable" => "no_snapshot_data_before_selected_regions_unreadable",
             _ => "no_snapshot_data_before_intervention_timeout"
+        };
+
+    private static string RecommendedNextAction(string reason) =>
+        reason switch
+        {
+            "selected_regions_unreadable" or "no_snapshot_data_before_selected_regions_unreadable" =>
+                "review_region_read_failures_or_capture_from_a_fresh_plan",
+            "intervention_wait_timed_out" or "no_snapshot_data_before_intervention_timeout" =>
+                "restart_or_reselect_process_then_resume_capture",
+            _ => "resume_capture_when_process_returns_or_review_partial_session"
         };
 
     private static IEnumerable<string> EnumerateArtifacts(string sessionPath) =>
