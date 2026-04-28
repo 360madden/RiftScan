@@ -34,6 +34,9 @@ public sealed record ClusterComparison
     [JsonPropertyName("candidate_count_delta")]
     public int CandidateCountDelta { get; init; }
 
+    [JsonPropertyName("overlap_bytes")]
+    public int OverlapBytes { get; init; }
+
     [JsonPropertyName("recommendation")]
     public string Recommendation { get; init; } = string.Empty;
 }

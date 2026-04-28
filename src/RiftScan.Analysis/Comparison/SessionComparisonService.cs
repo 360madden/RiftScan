@@ -97,26 +97,34 @@ public sealed class SessionComparisonService
 
     private static IReadOnlyList<ClusterComparison> CompareClusters(IReadOnlyList<StructureCluster> a, IReadOnlyList<StructureCluster> b, int top)
     {
-        var bByKey = b
-            .GroupBy(ClusterKey, StringComparer.OrdinalIgnoreCase)
-            .ToDictionary(group => group.Key, group => group.OrderByDescending(cluster => cluster.RankScore).First(), StringComparer.OrdinalIgnoreCase);
+        var bByBase = b
+            .GroupBy(cluster => cluster.BaseAddressHex, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(group => group.Key, group => group.ToArray(), StringComparer.OrdinalIgnoreCase);
 
         return a
-            .Where(cluster => bByKey.ContainsKey(ClusterKey(cluster)))
-            .Select(cluster => BuildClusterComparison(cluster, bByKey[ClusterKey(cluster)]))
+            .Where(cluster => bByBase.ContainsKey(cluster.BaseAddressHex))
+            .SelectMany(cluster => bByBase[cluster.BaseAddressHex]
+                .Select(candidate => BuildClusterComparison(cluster, candidate))
+                .Where(match => match.OverlapBytes > 0))
             .OrderByDescending(match => Math.Min(match.SessionARankScore, match.SessionBRankScore))
+            .ThenByDescending(match => match.OverlapBytes)
             .ThenBy(match => match.BaseAddressHex, StringComparer.OrdinalIgnoreCase)
             .ThenBy(match => match.StartOffsetHex, StringComparer.OrdinalIgnoreCase)
             .Take(top)
             .ToArray();
     }
 
-    private static ClusterComparison BuildClusterComparison(StructureCluster a, StructureCluster b) =>
-        new()
+    private static ClusterComparison BuildClusterComparison(StructureCluster a, StructureCluster b)
+    {
+        var start = Math.Max(ParseHex(a.StartOffsetHex), ParseHex(b.StartOffsetHex));
+        var end = Math.Min(ParseHex(a.EndOffsetHex), ParseHex(b.EndOffsetHex));
+        var overlapBytes = Math.Max(0, end - start);
+
+        return new ClusterComparison
         {
             BaseAddressHex = a.BaseAddressHex,
-            StartOffsetHex = a.StartOffsetHex,
-            EndOffsetHex = a.EndOffsetHex,
+            StartOffsetHex = $"0x{start:X}",
+            EndOffsetHex = $"0x{end:X}",
             SessionAClusterId = a.ClusterId,
             SessionBClusterId = b.ClusterId,
             SessionARegionId = a.RegionId,
@@ -124,14 +132,18 @@ public sealed class SessionComparisonService
             SessionARankScore = a.RankScore,
             SessionBRankScore = b.RankScore,
             CandidateCountDelta = b.CandidateCount - a.CandidateCount,
-            Recommendation = a.CandidateCount >= 4 && b.CandidateCount >= 4
-                ? "stable_layout_cluster_candidate"
-                : "shared_cluster_needs_more_evidence"
+            OverlapBytes = overlapBytes,
+            Recommendation = overlapBytes >= 16 && a.CandidateCount >= 4 && b.CandidateCount >= 4
+                ? "stable_overlapping_layout_cluster_candidate"
+                : "overlapping_cluster_needs_more_evidence"
         };
+    }
 
-    private static string ClusterKey(StructureCluster cluster) =>
-        string.Join('|', cluster.BaseAddressHex, cluster.StartOffsetHex, cluster.EndOffsetHex);
-
+    private static int ParseHex(string value)
+    {
+        var normalized = value.StartsWith("0x", StringComparison.OrdinalIgnoreCase) ? value[2..] : value;
+        return Convert.ToInt32(normalized, 16);
+    }
     private static IReadOnlyList<string> BuildWarnings(
         SessionManifest manifestA,
         SessionManifest manifestB,
@@ -151,7 +163,7 @@ public sealed class SessionComparisonService
 
         if (clusterMatches.Count == 0)
         {
-            warnings.Add("no_exact_cluster_matches_by_base_address_and_span");
+            warnings.Add("no_overlapping_cluster_matches_by_base_address_and_span");
         }
 
         warnings.Add("comparison_is_candidate_evidence_not_truth_claim");

@@ -36,11 +36,14 @@ public sealed class SessionComparisonServiceTests
         try
         {
             Console.SetOut(output);
-            var exitCode = RiftScan.Cli.Program.Main(["compare", "sessions", sessionA.Path, sessionB.Path, "--top", "10"]);
+            var outputPath = Path.Combine(sessionA.Path, "comparison.json");
+            var exitCode = RiftScan.Cli.Program.Main(["compare", "sessions", sessionA.Path, sessionB.Path, "--top", "10", "--out", outputPath]);
 
             Assert.Equal(0, exitCode);
+            Assert.True(File.Exists(outputPath));
             Assert.Contains("matching_region_count", output.ToString(), StringComparison.Ordinal);
             Assert.Contains("matching_cluster_count", output.ToString(), StringComparison.Ordinal);
+            Assert.Contains("comparison_path", output.ToString(), StringComparison.Ordinal);
         }
         finally
         {

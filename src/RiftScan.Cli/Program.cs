@@ -96,8 +96,16 @@ public static class Program
             throw new ArgumentException("Compare requires two session paths.");
         }
 
-        var top = ParseTop(args[2..]);
+        var (top, outputPath) = ParseCompareOptions(args[2..]);
         var result = new SessionComparisonService().Compare(args[0], args[1], top);
+        if (!string.IsNullOrWhiteSpace(outputPath))
+        {
+            var fullOutputPath = Path.GetFullPath(outputPath);
+            Directory.CreateDirectory(Path.GetDirectoryName(fullOutputPath)!);
+            result = result with { ComparisonPath = fullOutputPath };
+            File.WriteAllText(fullOutputPath, JsonSerializer.Serialize(result, SessionJson.Options));
+        }
+
         Console.WriteLine(JsonSerializer.Serialize(result, SessionJson.Options));
         return result.Success ? 0 : 1;
     }
@@ -196,6 +204,32 @@ public static class Program
         return top;
     }
 
+    private static (int Top, string? OutputPath) ParseCompareOptions(string[] args)
+    {
+        var top = 100;
+        string? outputPath = null;
+        for (var index = 0; index < args.Length; index++)
+        {
+            var arg = args[index];
+            switch (arg)
+            {
+                case "--all":
+                    top = int.MaxValue;
+                    break;
+                case "--top":
+                    top = int.Parse(RequireValue(args, ref index, arg));
+                    break;
+                case "--out":
+                    outputPath = RequireValue(args, ref index, arg);
+                    break;
+                default:
+                    throw new ArgumentException($"Unknown compare option: {arg}");
+            }
+        }
+
+        return (top, outputPath);
+    }
+
     private static string RequireValue(string[] args, ref int index, string option)
     {
         if (index + 1 >= args.Length)
@@ -239,7 +273,7 @@ public static class Program
         Console.WriteLine("riftscan capture passive --pid <id> --out sessions/<id> [--samples 1] [--interval-ms 100] [--region-ids region-000001,region-000002]");
         Console.WriteLine("riftscan analyze session <session-path> [--all|--top 100]");
         Console.WriteLine("riftscan report session <session-path> [--top 100]");
-        Console.WriteLine("riftscan compare sessions <session-a> <session-b> [--top 100]");
+        Console.WriteLine("riftscan compare sessions <session-a> <session-b> [--top 100] [--out reports/generated/comparison.json]");
         Console.WriteLine("riftscan verify session <session-path>");
     }
 
