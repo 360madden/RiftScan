@@ -28,6 +28,8 @@ public sealed class TypedValueLaneAnalyzerTests
         var candidates = new TypedValueLaneAnalyzer().AnalyzeSession(session.Path);
 
         var candidate = Assert.Single(candidates, candidate => candidate.OffsetHex == "0x4");
+        Assert.Equal("typed_value_lane", candidate.AnalyzerId);
+        Assert.Equal("0.1.0", candidate.AnalyzerVersion);
         Assert.Equal("float32", candidate.DataType);
         Assert.Equal("float_lane_followup", candidate.Recommendation);
         Assert.Equal(3, candidate.DistinctValueCount);

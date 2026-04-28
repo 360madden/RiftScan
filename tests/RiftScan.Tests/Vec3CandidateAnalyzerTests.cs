@@ -17,6 +17,8 @@ public sealed class Vec3CandidateAnalyzerTests
         var candidates = new Vec3CandidateAnalyzer().AnalyzeSession(session.Path);
 
         var candidate = Assert.Single(candidates, candidate => candidate.RegionId == "region-0001" && candidate.OffsetHex == "0x0");
+        Assert.Equal("vec3_candidate", candidate.AnalyzerId);
+        Assert.Equal("0.1.0", candidate.AnalyzerVersion);
         Assert.Equal("vec3_float32", candidate.DataType);
         Assert.Equal("unvalidated_candidate", candidate.ValidationStatus);
         Assert.Equal("vec3_candidate_followup", candidate.Recommendation);

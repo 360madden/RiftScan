@@ -4,6 +4,12 @@ namespace RiftScan.Analysis.Vectors;
 
 public sealed record Vec3Candidate
 {
+    [JsonPropertyName("analyzer_id")]
+    public string AnalyzerId { get; init; } = "vec3_candidate";
+
+    [JsonPropertyName("analyzer_version")]
+    public string AnalyzerVersion { get; init; } = "0.1.0";
+
     [JsonPropertyName("candidate_id")]
     public string CandidateId { get; init; } = string.Empty;
 

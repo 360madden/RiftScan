@@ -4,6 +4,12 @@ namespace RiftScan.Analysis.Values;
 
 public sealed record TypedValueCandidate
 {
+    [JsonPropertyName("analyzer_id")]
+    public string AnalyzerId { get; init; } = "typed_value_lane";
+
+    [JsonPropertyName("analyzer_version")]
+    public string AnalyzerVersion { get; init; } = "0.1.0";
+
     [JsonPropertyName("candidate_id")]
     public string CandidateId { get; init; } = string.Empty;
 

@@ -26,6 +26,8 @@ public sealed class ByteDeltaAnalyzerTests
         var entries = new ByteDeltaAnalyzer().AnalyzeSession(session.Path);
 
         var entry = Assert.Single(entries);
+        Assert.Equal("byte_delta", entry.AnalyzerId);
+        Assert.Equal("0.1.0", entry.AnalyzerVersion);
         Assert.Equal("region-000001", entry.RegionId);
         Assert.Equal(1, entry.ChangedByteCount);
         Assert.Equal("sparse_offset_followup", entry.Recommendation);
