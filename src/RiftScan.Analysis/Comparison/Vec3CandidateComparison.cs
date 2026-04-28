@@ -40,6 +40,33 @@ public sealed record Vec3CandidateComparison
     [JsonPropertyName("session_b_snapshot_support")]
     public int SessionBSnapshotSupport { get; init; }
 
+    [JsonPropertyName("session_a_stimulus_label")]
+    public string SessionAStimulusLabel { get; init; } = string.Empty;
+
+    [JsonPropertyName("session_b_stimulus_label")]
+    public string SessionBStimulusLabel { get; init; } = string.Empty;
+
+    [JsonPropertyName("session_a_behavior_score")]
+    public double SessionABehaviorScore { get; init; }
+
+    [JsonPropertyName("session_b_behavior_score")]
+    public double SessionBBehaviorScore { get; init; }
+
+    [JsonPropertyName("behavior_score_delta")]
+    public double BehaviorScoreDelta { get; init; }
+
+    [JsonPropertyName("session_a_value_delta_magnitude")]
+    public double SessionAValueDeltaMagnitude { get; init; }
+
+    [JsonPropertyName("session_b_value_delta_magnitude")]
+    public double SessionBValueDeltaMagnitude { get; init; }
+
+    [JsonPropertyName("session_a_validation_status")]
+    public string SessionAValidationStatus { get; init; } = string.Empty;
+
+    [JsonPropertyName("session_b_validation_status")]
+    public string SessionBValidationStatus { get; init; } = string.Empty;
+
     [JsonPropertyName("recommendation")]
     public string Recommendation { get; init; } = string.Empty;
 }

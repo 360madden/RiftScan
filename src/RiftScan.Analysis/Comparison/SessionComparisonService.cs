@@ -230,13 +230,56 @@ public sealed class SessionComparisonService
             ScoreDelta = Math.Round(b.RankScore - a.RankScore, 3),
             SessionASnapshotSupport = a.SnapshotSupport,
             SessionBSnapshotSupport = b.SnapshotSupport,
-            Recommendation = a.RankScore >= 75 && b.RankScore >= 75
-                ? "stable_vec3_candidate_across_sessions"
-                : "matching_vec3_candidate_needs_more_evidence"
+            SessionAStimulusLabel = a.StimulusLabel,
+            SessionBStimulusLabel = b.StimulusLabel,
+            SessionABehaviorScore = a.BehaviorScore,
+            SessionBBehaviorScore = b.BehaviorScore,
+            BehaviorScoreDelta = Math.Round(b.BehaviorScore - a.BehaviorScore, 3),
+            SessionAValueDeltaMagnitude = a.ValueDeltaMagnitude,
+            SessionBValueDeltaMagnitude = b.ValueDeltaMagnitude,
+            SessionAValidationStatus = a.ValidationStatus,
+            SessionBValidationStatus = b.ValidationStatus,
+            Recommendation = RecommendVec3Candidate(a, b)
         };
 
     private static string Vec3CandidateKey(Vec3Candidate candidate) =>
         string.Join("|", candidate.BaseAddressHex, candidate.OffsetHex, candidate.DataType);
+
+    private static string RecommendVec3Candidate(Vec3Candidate a, Vec3Candidate b)
+    {
+        if (IsPassiveLabel(a.StimulusLabel) &&
+            IsMoveForwardLabel(b.StimulusLabel) &&
+            a.ValueDeltaMagnitude <= 0.01 &&
+            b.ValueDeltaMagnitude > 0.01)
+        {
+            return "passive_to_move_vec3_behavior_contrast_candidate";
+        }
+
+        if (IsMoveForwardLabel(a.StimulusLabel) &&
+            IsPassiveLabel(b.StimulusLabel) &&
+            a.ValueDeltaMagnitude > 0.01 &&
+            b.ValueDeltaMagnitude <= 0.01)
+        {
+            return "move_to_passive_vec3_behavior_contrast_candidate";
+        }
+
+        if (string.Equals(a.ValidationStatus, "behavior_consistent_candidate", StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(b.ValidationStatus, "behavior_consistent_candidate", StringComparison.OrdinalIgnoreCase))
+        {
+            return "stable_behavior_consistent_vec3_candidate";
+        }
+
+        return a.RankScore >= 75 && b.RankScore >= 75
+            ? "stable_vec3_candidate_across_sessions"
+            : "matching_vec3_candidate_needs_more_evidence";
+    }
+
+    private static bool IsPassiveLabel(string label) =>
+        string.Equals(label, "passive", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(label, "passive_idle", StringComparison.OrdinalIgnoreCase);
+
+    private static bool IsMoveForwardLabel(string label) =>
+        string.Equals(label, "move_forward", StringComparison.OrdinalIgnoreCase);
 
     private static IReadOnlyList<ValueCandidateComparison> CompareValueCandidates(
         IReadOnlyList<TypedValueCandidate> a,

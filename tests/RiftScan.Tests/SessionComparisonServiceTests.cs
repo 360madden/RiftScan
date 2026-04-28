@@ -60,6 +60,29 @@ public sealed class SessionComparisonServiceTests
     }
 
     [Fact]
+    public void Compare_sessions_reports_vec3_behavior_contrast_between_passive_and_move_forward()
+    {
+        using var passive = CaptureVec3Session(new FixedVec3ProcessMemoryReader(), "passive_idle");
+        using var moving = CaptureVec3Session(new MovingVec3ProcessMemoryReader(), "move_forward");
+        _ = new DynamicRegionTriageAnalyzer().AnalyzeSession(passive.Path);
+        _ = new DynamicRegionTriageAnalyzer().AnalyzeSession(moving.Path);
+
+        var result = new SessionComparisonService().Compare(passive.Path, moving.Path);
+
+        var match = Assert.Single(result.Vec3CandidateMatches, match => match.BaseAddressHex == "0x1000" && match.OffsetHex == "0x0");
+        Assert.Equal("passive_idle", match.SessionAStimulusLabel);
+        Assert.Equal("move_forward", match.SessionBStimulusLabel);
+        Assert.Equal(20, match.SessionABehaviorScore);
+        Assert.Equal(25, match.SessionBBehaviorScore);
+        Assert.Equal(5, match.BehaviorScoreDelta);
+        Assert.Equal(0, match.SessionAValueDeltaMagnitude);
+        Assert.True(match.SessionBValueDeltaMagnitude > 0);
+        Assert.Equal("behavior_consistent_candidate", match.SessionAValidationStatus);
+        Assert.Equal("behavior_consistent_candidate", match.SessionBValidationStatus);
+        Assert.Equal("passive_to_move_vec3_behavior_contrast_candidate", match.Recommendation);
+    }
+
+    [Fact]
     public void Cli_compare_sessions_returns_success()
     {
         using var sessionA = CopyFixtureToTemp();
@@ -100,6 +123,24 @@ public sealed class SessionComparisonServiceTests
             MaxRegions = 1,
             MaxBytesPerRegion = 16,
             MaxTotalBytes = 48
+        });
+
+        return session;
+    }
+
+    private static TempDirectory CaptureVec3Session(IProcessMemoryReader reader, string stimulusLabel)
+    {
+        var session = new TempDirectory();
+        _ = new PassiveCaptureService(reader).Capture(new PassiveCaptureOptions
+        {
+            ProcessName = "fixture_process",
+            OutputPath = session.Path,
+            Samples = 3,
+            IntervalMilliseconds = 0,
+            MaxRegions = 1,
+            MaxBytesPerRegion = 16,
+            MaxTotalBytes = 48,
+            StimulusLabel = stimulusLabel
         });
 
         return session;
@@ -167,6 +208,62 @@ public sealed class SessionComparisonServiceTests
         {
             var bytes = new byte[byteCount];
             BitConverter.GetBytes(1.5f + _readCount++).CopyTo(bytes, 4);
+            return bytes;
+        }
+    }
+
+    private sealed class FixedVec3ProcessMemoryReader : IProcessMemoryReader
+    {
+        public IReadOnlyList<ProcessDescriptor> FindProcessesByName(string processName) =>
+        [
+            new ProcessDescriptor(100, "fixture_process", DateTimeOffset.Parse("2026-04-28T17:00:00Z"), "fixture.exe")
+        ];
+
+        public ProcessDescriptor GetProcessById(int processId) =>
+            new(processId, "fixture_process", DateTimeOffset.Parse("2026-04-28T17:00:00Z"), "fixture.exe");
+
+        public IReadOnlyList<ProcessModuleInfo> GetModules(int processId) => [];
+
+        public IReadOnlyList<VirtualMemoryRegion> EnumerateRegions(int processId) =>
+        [
+            new VirtualMemoryRegion("region-000001", 0x1000, 16, MemoryRegionConstants.MemCommit, MemoryRegionConstants.PageReadWrite, MemoryRegionConstants.MemPrivate)
+        ];
+
+        public byte[] ReadMemory(int processId, ulong baseAddress, int byteCount)
+        {
+            var bytes = new byte[byteCount];
+            BitConverter.GetBytes(1.0f).CopyTo(bytes, 0);
+            BitConverter.GetBytes(2.0f).CopyTo(bytes, 4);
+            BitConverter.GetBytes(-3.0f).CopyTo(bytes, 8);
+            return bytes;
+        }
+    }
+
+    private sealed class MovingVec3ProcessMemoryReader : IProcessMemoryReader
+    {
+        private int _readCount;
+
+        public IReadOnlyList<ProcessDescriptor> FindProcessesByName(string processName) =>
+        [
+            new ProcessDescriptor(100, "fixture_process", DateTimeOffset.Parse("2026-04-28T17:00:00Z"), "fixture.exe")
+        ];
+
+        public ProcessDescriptor GetProcessById(int processId) =>
+            new(processId, "fixture_process", DateTimeOffset.Parse("2026-04-28T17:00:00Z"), "fixture.exe");
+
+        public IReadOnlyList<ProcessModuleInfo> GetModules(int processId) => [];
+
+        public IReadOnlyList<VirtualMemoryRegion> EnumerateRegions(int processId) =>
+        [
+            new VirtualMemoryRegion("region-000001", 0x1000, 16, MemoryRegionConstants.MemCommit, MemoryRegionConstants.PageReadWrite, MemoryRegionConstants.MemPrivate)
+        ];
+
+        public byte[] ReadMemory(int processId, ulong baseAddress, int byteCount)
+        {
+            var bytes = new byte[byteCount];
+            BitConverter.GetBytes(1.0f + _readCount++).CopyTo(bytes, 0);
+            BitConverter.GetBytes(2.0f).CopyTo(bytes, 4);
+            BitConverter.GetBytes(-3.0f).CopyTo(bytes, 8);
             return bytes;
         }
     }
