@@ -10,19 +10,12 @@ public sealed class PassiveCapturePlanService(IProcessMemoryReader processMemory
     {
         ValidateOptions(options);
 
-        var sourceSessionPath = Path.GetFullPath(options.SourceSessionPath);
-        var planPath = Path.Combine(sourceSessionPath, "next_capture_plan.json");
-        if (!File.Exists(planPath))
-        {
-            throw new InvalidOperationException($"Capture plan not found: {planPath}");
-        }
-
-        var plan = JsonSerializer.Deserialize<PassiveCapturePlanDocument>(File.ReadAllText(planPath), SessionJson.Options)
-            ?? throw new InvalidOperationException("Could not deserialize next_capture_plan.json.");
-        var plannedRegions = plan.Regions
-            .Where(region => !string.IsNullOrWhiteSpace(region.RegionId))
+        var (sourceSessionPath, planPath) = ResolvePlanPath(options.SourceSessionPath);
+        var plannedRegions = ReadPlannedRegions(planPath)
+            .Where(region => !string.IsNullOrWhiteSpace(region.RegionId) || !string.IsNullOrWhiteSpace(region.BaseAddressHex))
             .OrderByDescending(region => region.RankScore)
             .ThenBy(region => region.RegionId, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(region => region.BaseAddressHex, StringComparer.OrdinalIgnoreCase)
             .Take(options.TopRegions)
             .ToArray();
 
@@ -87,6 +80,57 @@ public sealed class PassiveCapturePlanService(IProcessMemoryReader processMemory
 
         return baseAddresses;
     }
+
+    private static (string SourceSessionPath, string PlanPath) ResolvePlanPath(string sourceSessionPath)
+    {
+        var fullPath = Path.GetFullPath(sourceSessionPath);
+        if (File.Exists(fullPath))
+        {
+            return (Path.GetDirectoryName(fullPath)!, fullPath);
+        }
+
+        var planPath = Path.Combine(fullPath, "next_capture_plan.json");
+        if (!File.Exists(planPath))
+        {
+            throw new InvalidOperationException($"Capture plan not found: {planPath}");
+        }
+
+        return (fullPath, planPath);
+    }
+
+    private static IReadOnlyList<PassiveCapturePlanRegion> ReadPlannedRegions(string planPath)
+    {
+        var json = File.ReadAllText(planPath);
+        using var document = JsonDocument.Parse(json);
+        if (document.RootElement.TryGetProperty("target_region_priorities", out _))
+        {
+            var comparisonPlan = JsonSerializer.Deserialize<PassiveComparisonCapturePlanDocument>(json, SessionJson.Options)
+                ?? throw new InvalidOperationException($"Could not deserialize comparison capture plan: {planPath}.");
+            return comparisonPlan.TargetRegionPriorities
+                .Select(target => new PassiveCapturePlanRegion
+                {
+                    RegionId = string.IsNullOrWhiteSpace(target.BaseAddressHex)
+                        ? FirstNonEmpty(target.SessionBRegionId, target.SessionARegionId)
+                        : string.Empty,
+                    RankScore = target.PriorityScore,
+                    BaseAddressHex = target.BaseAddressHex,
+                    Reason = target.Reason
+                })
+                .ToArray();
+        }
+
+        if (document.RootElement.TryGetProperty("regions", out _))
+        {
+            var plan = JsonSerializer.Deserialize<PassiveCapturePlanDocument>(json, SessionJson.Options)
+                ?? throw new InvalidOperationException($"Could not deserialize capture plan: {planPath}.");
+            return plan.Regions;
+        }
+
+        throw new InvalidOperationException($"Unsupported capture plan schema: {planPath}.");
+    }
+
+    private static string FirstNonEmpty(params string[] values) =>
+        values.FirstOrDefault(value => !string.IsNullOrWhiteSpace(value)) ?? string.Empty;
 
     private static ulong ParseHex(string value)
     {

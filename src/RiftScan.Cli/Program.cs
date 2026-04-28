@@ -406,7 +406,7 @@ public static class Program
     {
         Console.WriteLine("riftscan capture passive --process <name> --out sessions/<id> [--samples 1] [--interval-ms 100] [--stimulus passive_idle]");
         Console.WriteLine("riftscan capture passive --pid <id> --out sessions/<id> [--samples 1] [--interval-ms 100] [--region-ids region-000001,region-000002] [--stimulus move_forward]");
-        Console.WriteLine("riftscan capture plan <source-session> --pid <id> --out sessions/<id> [--top-regions 5] [--stimulus move_forward]");
+        Console.WriteLine("riftscan capture plan <source-session-or-plan-json> --pid <id> --out sessions/<id> [--top-regions 5] [--stimulus move_forward]");
         Console.WriteLine("riftscan analyze session <session-path> [--all|--top 100]");
         Console.WriteLine("riftscan report session <session-path> [--top 100]");
         Console.WriteLine("riftscan compare sessions <session-a> <session-b> [--top 100] [--out reports/generated/comparison.json] [--report-md reports/generated/comparison.md] [--next-plan reports/generated/next-capture-plan.json]");

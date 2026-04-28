@@ -232,6 +232,61 @@ public sealed class PassiveCaptureServiceTests
     }
 
     [Fact]
+    public void Capture_plan_can_read_comparison_next_capture_plan_file()
+    {
+        using var source = new TempDirectory();
+        using var output = new TempDirectory();
+        Directory.CreateDirectory(source.Path);
+        var planPath = Path.Combine(source.Path, "comparison-next-capture-plan.json");
+        File.WriteAllText(planPath, """
+            {
+              "schema_version": "comparison_next_capture_plan.v1",
+              "target_region_priorities": [
+                {
+                  "base_address_hex": "0x2000",
+                  "session_a_region_id": "region-000002",
+                  "session_b_region_id": "region-000002",
+                  "priority_score": 85,
+                  "reason": "stable_vec3_candidate_across_sessions"
+                },
+                {
+                  "base_address_hex": "0x1000",
+                  "session_a_region_id": "region-000001",
+                  "session_b_region_id": "region-000001",
+                  "priority_score": 10,
+                  "reason": "lower_priority_fixture"
+                }
+              ]
+            }
+            """);
+        var reader = new FakeProcessMemoryReader
+        {
+            Regions =
+            [
+                new VirtualMemoryRegion("region-000001", 0x1000, 16, MemoryRegionConstants.MemCommit, MemoryRegionConstants.PageReadWrite, MemoryRegionConstants.MemPrivate),
+                new VirtualMemoryRegion("region-000099", 0x2000, 16, MemoryRegionConstants.MemCommit, MemoryRegionConstants.PageReadWrite, MemoryRegionConstants.MemPrivate)
+            ]
+        };
+
+        var result = new PassiveCapturePlanService(reader).CaptureFromPlan(new PassiveCapturePlanOptions
+        {
+            SourceSessionPath = planPath,
+            ProcessName = "fixture_process",
+            OutputPath = output.Path,
+            TopRegions = 1,
+            Samples = 1,
+            IntervalMilliseconds = 0,
+            MaxBytesPerRegion = 16,
+            MaxTotalBytes = 16
+        });
+
+        Assert.True(result.Success);
+        Assert.Equal(1, result.RegionsCaptured);
+        Assert.Contains("snapshots/region-000099-sample-000001.bin", result.ArtifactsWritten);
+        Assert.DoesNotContain("snapshots/region-000001-sample-000001.bin", result.ArtifactsWritten);
+    }
+
+    [Fact]
     public void Capture_refuses_to_choose_between_duplicate_process_names()
     {
         using var output = new TempDirectory();

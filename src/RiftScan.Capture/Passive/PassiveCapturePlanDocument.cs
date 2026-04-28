@@ -34,3 +34,27 @@ public sealed record PassiveCapturePlanRegion
     [JsonPropertyName("reason")]
     public string Reason { get; init; } = string.Empty;
 }
+
+public sealed record PassiveComparisonCapturePlanDocument
+{
+    [JsonPropertyName("target_region_priorities")]
+    public IReadOnlyList<PassiveComparisonCaptureTarget> TargetRegionPriorities { get; init; } = [];
+}
+
+public sealed record PassiveComparisonCaptureTarget
+{
+    [JsonPropertyName("base_address_hex")]
+    public string BaseAddressHex { get; init; } = string.Empty;
+
+    [JsonPropertyName("session_a_region_id")]
+    public string SessionARegionId { get; init; } = string.Empty;
+
+    [JsonPropertyName("session_b_region_id")]
+    public string SessionBRegionId { get; init; } = string.Empty;
+
+    [JsonPropertyName("priority_score")]
+    public double PriorityScore { get; init; }
+
+    [JsonPropertyName("reason")]
+    public string Reason { get; init; } = string.Empty;
+}
