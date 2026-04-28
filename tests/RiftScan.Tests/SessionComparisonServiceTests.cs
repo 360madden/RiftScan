@@ -31,6 +31,12 @@ public sealed class SessionComparisonServiceTests
             match.OffsetHex == "0x0" &&
             match.StructureKind == "float32_triplet" &&
             match.Recommendation == "stable_structure_candidate");
+        Assert.True(result.MatchingVec3CandidateCount >= 1);
+        Assert.Contains(result.Vec3CandidateMatches, match =>
+            match.BaseAddressHex == "0x10000000" &&
+            match.OffsetHex == "0x0" &&
+            match.DataType == "vec3_float32" &&
+            match.Recommendation == "stable_vec3_candidate_across_sessions");
         Assert.Contains("comparison_is_candidate_evidence_not_truth_claim", result.Warnings);
     }
 
@@ -72,6 +78,7 @@ public sealed class SessionComparisonServiceTests
             Assert.Contains("matching_region_count", output.ToString(), StringComparison.Ordinal);
             Assert.Contains("matching_cluster_count", output.ToString(), StringComparison.Ordinal);
             Assert.Contains("matching_structure_candidate_count", output.ToString(), StringComparison.Ordinal);
+            Assert.Contains("matching_vec3_candidate_count", output.ToString(), StringComparison.Ordinal);
             Assert.Contains("matching_value_candidate_count", output.ToString(), StringComparison.Ordinal);
             Assert.Contains("comparison_path", output.ToString(), StringComparison.Ordinal);
         }

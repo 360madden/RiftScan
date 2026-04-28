@@ -34,6 +34,9 @@ public sealed record SessionComparisonResult
     [JsonPropertyName("matching_structure_candidate_count")]
     public int MatchingStructureCandidateCount { get; init; }
 
+    [JsonPropertyName("matching_vec3_candidate_count")]
+    public int MatchingVec3CandidateCount { get; init; }
+
     [JsonPropertyName("matching_value_candidate_count")]
     public int MatchingValueCandidateCount { get; init; }
 
@@ -45,6 +48,9 @@ public sealed record SessionComparisonResult
 
     [JsonPropertyName("structure_candidate_matches")]
     public IReadOnlyList<StructureCandidateComparison> StructureCandidateMatches { get; init; } = [];
+
+    [JsonPropertyName("vec3_candidate_matches")]
+    public IReadOnlyList<Vec3CandidateComparison> Vec3CandidateMatches { get; init; } = [];
 
     [JsonPropertyName("value_candidate_matches")]
     public IReadOnlyList<ValueCandidateComparison> ValueCandidateMatches { get; init; } = [];

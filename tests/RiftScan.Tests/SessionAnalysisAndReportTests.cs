@@ -22,6 +22,7 @@ public sealed class SessionAnalysisAndReportTests
         Assert.True(File.Exists(Path.Combine(session.Path, "typed_value_candidates.jsonl")));
         Assert.True(File.Exists(Path.Combine(session.Path, "next_capture_plan.json")));
         Assert.True(File.Exists(Path.Combine(session.Path, "structures.jsonl")));
+        Assert.True(File.Exists(Path.Combine(session.Path, "vec3_candidates.jsonl")));
         Assert.True(File.Exists(Path.Combine(session.Path, "clusters.jsonl")));
 
         var triageLine = File.ReadLines(Path.Combine(session.Path, "triage.jsonl")).Single();
@@ -51,6 +52,7 @@ public sealed class SessionAnalysisAndReportTests
         Assert.Contains("Dynamic region triage", report, StringComparison.Ordinal);
         Assert.Contains("Dynamic byte deltas", report, StringComparison.Ordinal);
         Assert.Contains("Typed value lanes", report, StringComparison.Ordinal);
+        Assert.Contains("Vec3 candidates", report, StringComparison.Ordinal);
         Assert.Contains("Structure clusters", report, StringComparison.Ordinal);
         Assert.Contains("Structure candidates", report, StringComparison.Ordinal);
         Assert.Contains("region-0001", report, StringComparison.Ordinal);
@@ -75,6 +77,7 @@ public sealed class SessionAnalysisAndReportTests
             Assert.Contains("deltas.jsonl", output.ToString(), StringComparison.Ordinal);
             Assert.Contains("typed_value_candidates.jsonl", output.ToString(), StringComparison.Ordinal);
             Assert.Contains("structures.jsonl", output.ToString(), StringComparison.Ordinal);
+            Assert.Contains("vec3_candidates.jsonl", output.ToString(), StringComparison.Ordinal);
             Assert.Contains("clusters.jsonl", output.ToString(), StringComparison.Ordinal);
             Assert.Contains("report.md", output.ToString(), StringComparison.Ordinal);
         }

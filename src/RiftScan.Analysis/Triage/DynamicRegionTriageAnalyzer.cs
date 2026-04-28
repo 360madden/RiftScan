@@ -4,6 +4,7 @@ using RiftScan.Analysis.Deltas;
 using RiftScan.Analysis.Regions;
 using RiftScan.Analysis.Structures;
 using RiftScan.Analysis.Values;
+using RiftScan.Analysis.Vectors;
 using RiftScan.Core.Sessions;
 
 namespace RiftScan.Analysis.Triage;
@@ -37,6 +38,7 @@ public sealed class DynamicRegionTriageAnalyzer
         _ = new ByteDeltaAnalyzer().AnalyzeSession(fullSessionPath, top);
         _ = new TypedValueLaneAnalyzer().AnalyzeSession(fullSessionPath, top);
         _ = new FloatTripletStructureAnalyzer().AnalyzeSession(fullSessionPath, top);
+        _ = new Vec3CandidateAnalyzer().AnalyzeSession(fullSessionPath, top);
         _ = new StructureClusterAnalyzer().AnalyzeSession(fullSessionPath, top);
         WriteJson(fullSessionPath, "next_capture_plan.json", BuildNextCapturePlan(manifest.SessionId, triageEntries));
 
@@ -46,7 +48,7 @@ public sealed class DynamicRegionTriageAnalyzer
             SessionPath = fullSessionPath,
             SessionId = manifest.SessionId,
             RegionsAnalyzed = triageEntries.Length,
-            ArtifactsWritten = ["triage.jsonl", "deltas.jsonl", "typed_value_candidates.jsonl", "structures.jsonl", "clusters.jsonl", "next_capture_plan.json"]
+            ArtifactsWritten = ["triage.jsonl", "deltas.jsonl", "typed_value_candidates.jsonl", "structures.jsonl", "vec3_candidates.jsonl", "clusters.jsonl", "next_capture_plan.json"]
         };
     }
 

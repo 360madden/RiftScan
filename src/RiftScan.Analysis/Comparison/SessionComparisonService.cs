@@ -3,6 +3,7 @@ using RiftScan.Analysis.Clusters;
 using RiftScan.Analysis.Structures;
 using RiftScan.Analysis.Triage;
 using RiftScan.Analysis.Values;
+using RiftScan.Analysis.Vectors;
 using RiftScan.Core.Sessions;
 
 namespace RiftScan.Analysis.Comparison;
@@ -25,8 +26,9 @@ public sealed class SessionComparisonService
         var regionMatches = CompareRegions(ReadTriage(fullAPath), ReadTriage(fullBPath), top);
         var clusterMatches = CompareClusters(ReadClusters(fullAPath), ReadClusters(fullBPath), top);
         var structureCandidateMatches = CompareStructureCandidates(ReadStructureCandidates(fullAPath), ReadStructureCandidates(fullBPath), top);
+        var vec3CandidateMatches = CompareVec3Candidates(ReadVec3Candidates(fullAPath), ReadVec3Candidates(fullBPath), top);
         var valueCandidateMatches = CompareValueCandidates(ReadValueCandidates(fullAPath), ReadValueCandidates(fullBPath), top);
-        var warnings = BuildWarnings(manifestA, manifestB, regionMatches, clusterMatches, structureCandidateMatches, valueCandidateMatches);
+        var warnings = BuildWarnings(manifestA, manifestB, regionMatches, clusterMatches, structureCandidateMatches, vec3CandidateMatches, valueCandidateMatches);
 
         return new SessionComparisonResult
         {
@@ -39,10 +41,12 @@ public sealed class SessionComparisonService
             MatchingRegionCount = regionMatches.Count,
             MatchingClusterCount = clusterMatches.Count,
             MatchingStructureCandidateCount = structureCandidateMatches.Count,
+            MatchingVec3CandidateCount = vec3CandidateMatches.Count,
             MatchingValueCandidateCount = valueCandidateMatches.Count,
             RegionMatches = regionMatches,
             ClusterMatches = clusterMatches,
             StructureCandidateMatches = structureCandidateMatches,
+            Vec3CandidateMatches = vec3CandidateMatches,
             ValueCandidateMatches = valueCandidateMatches,
             Warnings = warnings
         };
@@ -60,6 +64,7 @@ public sealed class SessionComparisonService
         if (!File.Exists(ResolveSessionPath(sessionPath, "triage.jsonl")) ||
             !File.Exists(ResolveSessionPath(sessionPath, "clusters.jsonl")) ||
             !File.Exists(ResolveSessionPath(sessionPath, "structures.jsonl")) ||
+            !File.Exists(ResolveSessionPath(sessionPath, "vec3_candidates.jsonl")) ||
             !File.Exists(ResolveSessionPath(sessionPath, "typed_value_candidates.jsonl")))
         {
             _ = new DynamicRegionTriageAnalyzer().AnalyzeSession(sessionPath, top);
@@ -190,6 +195,49 @@ public sealed class SessionComparisonService
     private static string StructureCandidateKey(StructureCandidate candidate) =>
         string.Join("|", candidate.BaseAddressHex, candidate.OffsetHex, candidate.StructureKind);
 
+    private static IReadOnlyList<Vec3CandidateComparison> CompareVec3Candidates(
+        IReadOnlyList<Vec3Candidate> a,
+        IReadOnlyList<Vec3Candidate> b,
+        int top)
+    {
+        var bByKey = b
+            .GroupBy(Vec3CandidateKey, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(group => group.Key, group => group.OrderByDescending(candidate => candidate.RankScore).First(), StringComparer.OrdinalIgnoreCase);
+
+        return a
+            .Where(candidate => bByKey.ContainsKey(Vec3CandidateKey(candidate)))
+            .Select(candidate => BuildVec3CandidateComparison(candidate, bByKey[Vec3CandidateKey(candidate)]))
+            .OrderByDescending(match => Math.Min(match.SessionARankScore, match.SessionBRankScore))
+            .ThenByDescending(match => Math.Min(match.SessionASnapshotSupport, match.SessionBSnapshotSupport))
+            .ThenBy(match => match.BaseAddressHex, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(match => match.OffsetHex, StringComparer.OrdinalIgnoreCase)
+            .Take(top)
+            .ToArray();
+    }
+
+    private static Vec3CandidateComparison BuildVec3CandidateComparison(Vec3Candidate a, Vec3Candidate b) =>
+        new()
+        {
+            BaseAddressHex = a.BaseAddressHex,
+            OffsetHex = a.OffsetHex,
+            DataType = a.DataType,
+            SessionACandidateId = a.CandidateId,
+            SessionBCandidateId = b.CandidateId,
+            SessionARegionId = a.RegionId,
+            SessionBRegionId = b.RegionId,
+            SessionARankScore = a.RankScore,
+            SessionBRankScore = b.RankScore,
+            ScoreDelta = Math.Round(b.RankScore - a.RankScore, 3),
+            SessionASnapshotSupport = a.SnapshotSupport,
+            SessionBSnapshotSupport = b.SnapshotSupport,
+            Recommendation = a.RankScore >= 75 && b.RankScore >= 75
+                ? "stable_vec3_candidate_across_sessions"
+                : "matching_vec3_candidate_needs_more_evidence"
+        };
+
+    private static string Vec3CandidateKey(Vec3Candidate candidate) =>
+        string.Join("|", candidate.BaseAddressHex, candidate.OffsetHex, candidate.DataType);
+
     private static IReadOnlyList<ValueCandidateComparison> CompareValueCandidates(
         IReadOnlyList<TypedValueCandidate> a,
         IReadOnlyList<TypedValueCandidate> b,
@@ -253,6 +301,7 @@ public sealed class SessionComparisonService
         IReadOnlyList<RegionComparison> regionMatches,
         IReadOnlyList<ClusterComparison> clusterMatches,
         IReadOnlyList<StructureCandidateComparison> structureCandidateMatches,
+        IReadOnlyList<Vec3CandidateComparison> vec3CandidateMatches,
         IReadOnlyList<ValueCandidateComparison> valueCandidateMatches)
     {
         var warnings = new List<string>();
@@ -274,6 +323,11 @@ public sealed class SessionComparisonService
         if (structureCandidateMatches.Count == 0)
         {
             warnings.Add("no_matching_structure_candidates_by_base_offset_kind");
+        }
+
+        if (vec3CandidateMatches.Count == 0)
+        {
+            warnings.Add("no_matching_vec3_candidates_by_base_offset_type");
         }
 
         if (valueCandidateMatches.Count == 0)
@@ -300,6 +354,9 @@ public sealed class SessionComparisonService
 
     private static IReadOnlyList<StructureCandidate> ReadStructureCandidates(string sessionPath) =>
         ReadJsonLines<StructureCandidate>(sessionPath, "structures.jsonl");
+
+    private static IReadOnlyList<Vec3Candidate> ReadVec3Candidates(string sessionPath) =>
+        ReadJsonLines<Vec3Candidate>(sessionPath, "vec3_candidates.jsonl");
 
     private static IReadOnlyList<TypedValueCandidate> ReadValueCandidates(string sessionPath) =>
         ReadJsonLines<TypedValueCandidate>(sessionPath, "typed_value_candidates.jsonl");

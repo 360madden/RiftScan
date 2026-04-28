@@ -5,6 +5,7 @@ using RiftScan.Analysis.Deltas;
 using RiftScan.Analysis.Structures;
 using RiftScan.Analysis.Triage;
 using RiftScan.Analysis.Values;
+using RiftScan.Analysis.Vectors;
 using RiftScan.Core.Sessions;
 
 namespace RiftScan.Analysis.Reports;
@@ -64,6 +65,12 @@ public sealed class SessionReportGenerator
             .ThenBy(candidate => candidate.OffsetHex, StringComparer.OrdinalIgnoreCase)
             .Take(top)
             .ToArray();
+        var vec3Candidates = ReadVec3Candidates(fullSessionPath)
+            .OrderByDescending(candidate => candidate.RankScore)
+            .ThenBy(candidate => candidate.RegionId, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(candidate => candidate.OffsetHex, StringComparer.OrdinalIgnoreCase)
+            .Take(top)
+            .ToArray();
         var clusters = ReadClusters(fullSessionPath)
             .OrderByDescending(cluster => cluster.RankScore)
             .ThenBy(cluster => cluster.RegionId, StringComparer.OrdinalIgnoreCase)
@@ -72,7 +79,7 @@ public sealed class SessionReportGenerator
             .ToArray();
 
         var reportPath = ResolveSessionPath(fullSessionPath, "report.md");
-        File.WriteAllLines(reportPath, BuildReport(manifest, triageEntries, deltaEntries, valueCandidates, clusters, structureCandidates));
+        File.WriteAllLines(reportPath, BuildReport(manifest, triageEntries, deltaEntries, valueCandidates, vec3Candidates, clusters, structureCandidates));
 
         return new SessionReportResult { Success = true, SessionPath = fullSessionPath, ReportPath = reportPath };
     }
@@ -82,6 +89,7 @@ public sealed class SessionReportGenerator
         IReadOnlyList<RegionTriageEntry> triageEntries,
         IReadOnlyList<RegionDeltaEntry> deltaEntries,
         IReadOnlyList<TypedValueCandidate> valueCandidates,
+        IReadOnlyList<Vec3Candidate> vec3Candidates,
         IReadOnlyList<StructureCluster> clusters,
         IReadOnlyList<StructureCandidate> structureCandidates)
     {
@@ -144,6 +152,24 @@ public sealed class SessionReportGenerator
         if (valueCandidates.Count == 0)
         {
             yield return "| 0 | none | - | - | - | 0 | 0 | - | - |";
+        }
+
+        yield return string.Empty;
+        yield return "## Vec3 candidates";
+        yield return string.Empty;
+        yield return "| Rank | Candidate | Region | Offset | Score | Support | Preview | Recommendation |";
+        yield return "|---:|---|---|---:|---:|---:|---|---|";
+
+        var vec3Rank = 1;
+        foreach (var candidate in vec3Candidates)
+        {
+            yield return $"| {vec3Rank} | `{candidate.CandidateId}` | `{candidate.RegionId}` | `{candidate.OffsetHex}` | {candidate.RankScore:F3} | {candidate.SnapshotSupport} | `{string.Join(", ", candidate.ValuePreview.Select(value => value.ToString("G6")))}` | `{candidate.Recommendation}` |";
+            vec3Rank++;
+        }
+
+        if (vec3Candidates.Count == 0)
+        {
+            yield return "| 0 | none | - | - | 0 | 0 | - | - |";
         }
 
         yield return string.Empty;
@@ -245,6 +271,20 @@ public sealed class SessionReportGenerator
         return File.ReadLines(path)
             .Where(line => !string.IsNullOrWhiteSpace(line))
             .Select(line => JsonSerializer.Deserialize<StructureCandidate>(line, SessionJson.Options) ?? throw new InvalidOperationException("Invalid structure candidate."))
+            .ToArray();
+    }
+
+    private static IReadOnlyList<Vec3Candidate> ReadVec3Candidates(string sessionPath)
+    {
+        var path = ResolveSessionPath(sessionPath, "vec3_candidates.jsonl");
+        if (!File.Exists(path))
+        {
+            _ = new Vec3CandidateAnalyzer().AnalyzeSession(sessionPath);
+        }
+
+        return File.ReadLines(path)
+            .Where(line => !string.IsNullOrWhiteSpace(line))
+            .Select(line => JsonSerializer.Deserialize<Vec3Candidate>(line, SessionJson.Options) ?? throw new InvalidOperationException("Invalid vec3 candidate."))
             .ToArray();
     }
 
