@@ -70,6 +70,7 @@ public sealed class SessionAnalysisAndReportTests
         Assert.True(result.Success);
         var report = File.ReadAllText(result.ReportPath);
         Assert.Contains("- Status: `interrupted`", report, StringComparison.Ordinal);
+        Assert.Contains("- Elapsed: `", report, StringComparison.Ordinal);
         Assert.Contains("## Capture interruption", report, StringComparison.Ordinal);
         Assert.Contains("intervention_wait_timed_out", report, StringComparison.Ordinal);
         Assert.Contains("restart_or_reselect_process_then_resume_capture", report, StringComparison.Ordinal);

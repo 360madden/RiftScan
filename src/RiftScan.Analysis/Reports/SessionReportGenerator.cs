@@ -27,6 +27,9 @@ internal sealed record CaptureInterventionHandoffReport
     [JsonPropertyName("reason")]
     public string Reason { get; init; } = string.Empty;
 
+    [JsonPropertyName("elapsed_ms")]
+    public long ElapsedMilliseconds { get; init; }
+
     [JsonPropertyName("samples_targeted")]
     public int SamplesTargeted { get; init; }
 
@@ -133,6 +136,11 @@ public sealed class SessionReportGenerator
         yield return $"- Process: `{manifest.ProcessName}` PID `{manifest.ProcessId}`";
         yield return $"- Capture mode: `{manifest.CaptureMode}`";
         yield return $"- Status: `{manifest.Status}`";
+        if (interventionHandoff is not null)
+        {
+            yield return $"- Elapsed: `{interventionHandoff.ElapsedMilliseconds}` ms";
+        }
+
         yield return $"- Snapshots: `{manifest.SnapshotCount}`";
         yield return $"- Regions: `{manifest.RegionCount}`";
         yield return $"- Bytes stored: `{manifest.TotalBytesStored}`";
@@ -142,6 +150,7 @@ public sealed class SessionReportGenerator
             yield return "## Capture interruption";
             yield return string.Empty;
             yield return $"- Reason: `{interventionHandoff.Reason}`";
+            yield return $"- Elapsed: `{interventionHandoff.ElapsedMilliseconds}` ms";
             yield return $"- Samples targeted: `{interventionHandoff.SamplesTargeted}`";
             yield return $"- Recommended next action: `{interventionHandoff.RecommendedNextAction}`";
             yield return string.Empty;
