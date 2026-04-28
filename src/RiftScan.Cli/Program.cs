@@ -1,4 +1,5 @@
 using System.Text.Json;
+using RiftScan.Analysis.Comparison;
 using RiftScan.Analysis.Reports;
 using RiftScan.Analysis.Triage;
 using RiftScan.Capture.Passive;
@@ -32,6 +33,11 @@ public static class Program
             if (args.Length >= 2 && Is(args[0], "report") && Is(args[1], "session"))
             {
                 return ReportSession(args[2..]);
+            }
+
+            if (args.Length >= 2 && Is(args[0], "compare") && Is(args[1], "sessions"))
+            {
+                return CompareSessions(args[2..]);
             }
 
             if (args.Length == 3 && Is(args[0], "verify") && Is(args[1], "session"))
@@ -79,6 +85,19 @@ public static class Program
         var sessionPath = args[0];
         var top = ParseTop(args[1..]);
         var result = new SessionReportGenerator().Generate(sessionPath, top);
+        Console.WriteLine(JsonSerializer.Serialize(result, SessionJson.Options));
+        return result.Success ? 0 : 1;
+    }
+
+    private static int CompareSessions(string[] args)
+    {
+        if (args.Length < 2)
+        {
+            throw new ArgumentException("Compare requires two session paths.");
+        }
+
+        var top = ParseTop(args[2..]);
+        var result = new SessionComparisonService().Compare(args[0], args[1], top);
         Console.WriteLine(JsonSerializer.Serialize(result, SessionJson.Options));
         return result.Success ? 0 : 1;
     }
@@ -220,6 +239,7 @@ public static class Program
         Console.WriteLine("riftscan capture passive --pid <id> --out sessions/<id> [--samples 1] [--interval-ms 100] [--region-ids region-000001,region-000002]");
         Console.WriteLine("riftscan analyze session <session-path> [--all|--top 100]");
         Console.WriteLine("riftscan report session <session-path> [--top 100]");
+        Console.WriteLine("riftscan compare sessions <session-a> <session-b> [--top 100]");
         Console.WriteLine("riftscan verify session <session-path>");
     }
 
