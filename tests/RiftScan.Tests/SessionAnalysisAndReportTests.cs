@@ -1,6 +1,8 @@
 using System.Text.Json;
 using RiftScan.Analysis.Reports;
 using RiftScan.Analysis.Triage;
+using RiftScan.Capture.Passive;
+using RiftScan.Core.Processes;
 using RiftScan.Core.Sessions;
 
 namespace RiftScan.Tests;
@@ -59,6 +61,23 @@ public sealed class SessionAnalysisAndReportTests
     }
 
     [Fact]
+    public void Report_session_includes_interrupted_capture_handoff_details()
+    {
+        using var session = CaptureInterruptedSession();
+
+        var result = new SessionReportGenerator().Generate(session.Path, top: 10);
+
+        Assert.True(result.Success);
+        var report = File.ReadAllText(result.ReportPath);
+        Assert.Contains("- Status: `interrupted`", report, StringComparison.Ordinal);
+        Assert.Contains("## Capture interruption", report, StringComparison.Ordinal);
+        Assert.Contains("intervention_wait_timed_out", report, StringComparison.Ordinal);
+        Assert.Contains("restart_or_reselect_process_then_resume_capture", report, StringComparison.Ordinal);
+        Assert.Contains("region-000001", report, StringComparison.Ordinal);
+        Assert.Contains("process unavailable", report, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Cli_analyze_and_report_session_return_success()
     {
         using var session = CopyFixtureToTemp();
@@ -94,6 +113,47 @@ public sealed class SessionAnalysisAndReportTests
         return temp;
     }
 
+    private static TempDirectory CaptureInterruptedSession()
+    {
+        var session = new TempDirectory();
+        var processLookupAttempts = 0;
+        var readAttempts = 0;
+        var process = new ProcessDescriptor(100, "fixture_process", DateTimeOffset.Parse("2026-04-28T17:00:00Z"), "fixture.exe");
+        var reader = new FakeProcessMemoryReader
+        {
+            Processes = [process],
+            FindProcessesByNameFunc = processName =>
+            {
+                processLookupAttempts++;
+                return processLookupAttempts == 1 && string.Equals(processName, "fixture_process", StringComparison.OrdinalIgnoreCase)
+                    ? [process]
+                    : [];
+            },
+            ReadMemoryFunc = (_, _, byteCount) =>
+            {
+                readAttempts++;
+                return readAttempts == 1
+                    ? Enumerable.Range(0, byteCount).Select(value => (byte)value).ToArray()
+                    : throw new InvalidOperationException("process unavailable");
+            }
+        };
+
+        _ = new PassiveCaptureService(reader).Capture(new PassiveCaptureOptions
+        {
+            ProcessName = "fixture_process",
+            OutputPath = session.Path,
+            Samples = 2,
+            IntervalMilliseconds = 0,
+            MaxRegions = 1,
+            MaxBytesPerRegion = 16,
+            MaxTotalBytes = 32,
+            InterventionWaitMilliseconds = 250,
+            InterventionPollIntervalMilliseconds = 50
+        });
+
+        return session;
+    }
+
     private static void CopyDirectory(string source, string destination)
     {
         Directory.CreateDirectory(destination);
@@ -124,5 +184,35 @@ public sealed class SessionAnalysisAndReportTests
                 Directory.Delete(Path, recursive: true);
             }
         }
+    }
+
+    private sealed class FakeProcessMemoryReader : IProcessMemoryReader
+    {
+        public IReadOnlyList<ProcessDescriptor> Processes { get; init; } =
+        [
+            new ProcessDescriptor(100, "fixture_process", DateTimeOffset.Parse("2026-04-28T17:00:00Z"), "fixture.exe")
+        ];
+
+        public Func<string, IReadOnlyList<ProcessDescriptor>>? FindProcessesByNameFunc { get; init; }
+
+        public Func<int, ulong, int, byte[]>? ReadMemoryFunc { get; init; }
+
+        public IReadOnlyList<ProcessDescriptor> FindProcessesByName(string processName) =>
+            FindProcessesByNameFunc?.Invoke(processName)
+            ?? Processes.Where(process => string.Equals(process.ProcessName, processName, StringComparison.OrdinalIgnoreCase)).ToArray();
+
+        public ProcessDescriptor GetProcessById(int processId) =>
+            Processes.Single(process => process.ProcessId == processId);
+
+        public IReadOnlyList<ProcessModuleInfo> GetModules(int processId) => [];
+
+        public IReadOnlyList<VirtualMemoryRegion> EnumerateRegions(int processId) =>
+        [
+            new VirtualMemoryRegion("region-000001", 0x1000, 16, MemoryRegionConstants.MemCommit, MemoryRegionConstants.PageReadWrite, MemoryRegionConstants.MemPrivate)
+        ];
+
+        public byte[] ReadMemory(int processId, ulong baseAddress, int byteCount) =>
+            ReadMemoryFunc?.Invoke(processId, baseAddress, byteCount)
+            ?? Enumerable.Range(0, byteCount).Select(value => (byte)value).ToArray();
     }
 }

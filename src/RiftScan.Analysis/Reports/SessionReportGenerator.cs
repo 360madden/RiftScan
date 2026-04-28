@@ -22,6 +22,36 @@ public sealed record SessionReportResult
     public string ReportPath { get; init; } = string.Empty;
 }
 
+internal sealed record CaptureInterventionHandoffReport
+{
+    [JsonPropertyName("reason")]
+    public string Reason { get; init; } = string.Empty;
+
+    [JsonPropertyName("samples_targeted")]
+    public int SamplesTargeted { get; init; }
+
+    [JsonPropertyName("recommended_next_action")]
+    public string RecommendedNextAction { get; init; } = string.Empty;
+
+    [JsonPropertyName("region_read_failures")]
+    public IReadOnlyList<CaptureInterventionRegionReadFailureReport> RegionReadFailures { get; init; } = [];
+}
+
+internal sealed record CaptureInterventionRegionReadFailureReport
+{
+    [JsonPropertyName("region_id")]
+    public string RegionId { get; init; } = string.Empty;
+
+    [JsonPropertyName("base_address_hex")]
+    public string BaseAddressHex { get; init; } = string.Empty;
+
+    [JsonPropertyName("requested_bytes")]
+    public int RequestedBytes { get; init; }
+
+    [JsonPropertyName("reason")]
+    public string Reason { get; init; } = string.Empty;
+}
+
 public sealed class SessionReportGenerator
 {
     public SessionReportResult Generate(string sessionPath, int top = 100)
@@ -78,14 +108,17 @@ public sealed class SessionReportGenerator
             .Take(top)
             .ToArray();
 
+        var interventionHandoff = ReadOptionalJson<CaptureInterventionHandoffReport>(fullSessionPath, "intervention_handoff.json");
+
         var reportPath = ResolveSessionPath(fullSessionPath, "report.md");
-        File.WriteAllLines(reportPath, BuildReport(manifest, triageEntries, deltaEntries, valueCandidates, vec3Candidates, clusters, structureCandidates));
+        File.WriteAllLines(reportPath, BuildReport(manifest, interventionHandoff, triageEntries, deltaEntries, valueCandidates, vec3Candidates, clusters, structureCandidates));
 
         return new SessionReportResult { Success = true, SessionPath = fullSessionPath, ReportPath = reportPath };
     }
 
     private static IEnumerable<string> BuildReport(
         SessionManifest manifest,
+        CaptureInterventionHandoffReport? interventionHandoff,
         IReadOnlyList<RegionTriageEntry> triageEntries,
         IReadOnlyList<RegionDeltaEntry> deltaEntries,
         IReadOnlyList<TypedValueCandidate> valueCandidates,
@@ -99,9 +132,33 @@ public sealed class SessionReportGenerator
         yield return string.Empty;
         yield return $"- Process: `{manifest.ProcessName}` PID `{manifest.ProcessId}`";
         yield return $"- Capture mode: `{manifest.CaptureMode}`";
+        yield return $"- Status: `{manifest.Status}`";
         yield return $"- Snapshots: `{manifest.SnapshotCount}`";
         yield return $"- Regions: `{manifest.RegionCount}`";
         yield return $"- Bytes stored: `{manifest.TotalBytesStored}`";
+        if (interventionHandoff is not null)
+        {
+            yield return string.Empty;
+            yield return "## Capture interruption";
+            yield return string.Empty;
+            yield return $"- Reason: `{interventionHandoff.Reason}`";
+            yield return $"- Samples targeted: `{interventionHandoff.SamplesTargeted}`";
+            yield return $"- Recommended next action: `{interventionHandoff.RecommendedNextAction}`";
+            yield return string.Empty;
+            yield return "| Region | Base address | Requested bytes | Failure reason |";
+            yield return "|---|---:|---:|---|";
+
+            foreach (var failure in interventionHandoff.RegionReadFailures)
+            {
+                yield return $"| `{failure.RegionId}` | `{failure.BaseAddressHex}` | {failure.RequestedBytes} | `{failure.Reason}` |";
+            }
+
+            if (interventionHandoff.RegionReadFailures.Count == 0)
+            {
+                yield return "| none | - | 0 | - |";
+            }
+        }
+
         yield return string.Empty;
         yield return "## Dynamic region triage";
         yield return string.Empty;
@@ -222,6 +279,14 @@ public sealed class SessionReportGenerator
         var path = ResolveSessionPath(sessionPath, relativePath);
         return JsonSerializer.Deserialize<T>(File.ReadAllText(path), SessionJson.Options)
             ?? throw new InvalidOperationException($"Could not deserialize {relativePath}.");
+    }
+
+    private static T? ReadOptionalJson<T>(string sessionPath, string relativePath)
+    {
+        var path = ResolveSessionPath(sessionPath, relativePath);
+        return File.Exists(path)
+            ? JsonSerializer.Deserialize<T>(File.ReadAllText(path), SessionJson.Options)
+            : default;
     }
 
     private static IReadOnlyList<RegionTriageEntry> ReadTriageEntries(string sessionPath)
