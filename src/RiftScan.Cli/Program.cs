@@ -1,4 +1,8 @@
 using System.Text.Json;
+using RiftScan.Analysis.Reports;
+using RiftScan.Analysis.Triage;
+using RiftScan.Capture.Passive;
+using RiftScan.Core.Processes;
 using RiftScan.Core.Sessions;
 
 namespace RiftScan.Cli;
@@ -13,17 +17,166 @@ public static class Program
             return args.Length == 0 ? 2 : 0;
         }
 
-        if (args.Length == 3 && Is(args[0], "verify") && Is(args[1], "session"))
+        try
         {
-            return VerifySession(args[2]);
+            if (args.Length >= 2 && Is(args[0], "capture") && Is(args[1], "passive"))
+            {
+                return CapturePassive(args[2..]);
+            }
+
+            if (args.Length >= 2 && Is(args[0], "analyze") && Is(args[1], "session"))
+            {
+                return AnalyzeSession(args[2..]);
+            }
+
+            if (args.Length >= 2 && Is(args[0], "report") && Is(args[1], "session"))
+            {
+                return ReportSession(args[2..]);
+            }
+
+            if (args.Length == 3 && Is(args[0], "verify") && Is(args[1], "session"))
+            {
+                return VerifySession(args[2]);
+            }
+
+            return PrintMachineReadableError("unknown_command", $"Unknown command: {string.Join(' ', args)}");
+        }
+        catch (Exception ex) when (ex is ArgumentException or ArgumentOutOfRangeException or InvalidOperationException or PlatformNotSupportedException)
+        {
+            return PrintMachineReadableError("command_failed", ex.Message);
+        }
+    }
+
+    private static int CapturePassive(string[] args)
+    {
+        var options = ParsePassiveCaptureOptions(args);
+        var result = new PassiveCaptureService(new WindowsProcessMemoryReader()).Capture(options);
+        Console.WriteLine(JsonSerializer.Serialize(result, SessionJson.Options));
+        return result.Success ? 0 : 1;
+    }
+
+    private static int AnalyzeSession(string[] args)
+    {
+        if (args.Length == 0)
+        {
+            throw new ArgumentException("Analyze requires a session path.");
         }
 
-        if (args.Length >= 1 && (Is(args[0], "capture") || Is(args[0], "analyze") || Is(args[0], "report")))
+        var sessionPath = args[0];
+        var top = ParseTop(args[1..]);
+        var result = new DynamicRegionTriageAnalyzer().AnalyzeSession(sessionPath, top);
+        Console.WriteLine(JsonSerializer.Serialize(result, SessionJson.Options));
+        return result.Success ? 0 : 1;
+    }
+
+    private static int ReportSession(string[] args)
+    {
+        if (args.Length == 0)
         {
-            return PrintMachineReadableError("command_not_implemented", $"Command '{string.Join(' ', args)}' is declared for the future CLI surface but is not implemented in the foundation slice.");
+            throw new ArgumentException("Report requires a session path.");
         }
 
-        return PrintMachineReadableError("unknown_command", $"Unknown command: {string.Join(' ', args)}");
+        var sessionPath = args[0];
+        var top = ParseTop(args[1..]);
+        var result = new SessionReportGenerator().Generate(sessionPath, top);
+        Console.WriteLine(JsonSerializer.Serialize(result, SessionJson.Options));
+        return result.Success ? 0 : 1;
+    }
+
+    private static PassiveCaptureOptions ParsePassiveCaptureOptions(string[] args)
+    {
+        string? processName = null;
+        int? processId = null;
+        string? outputPath = null;
+        var samples = 1;
+        var intervalMilliseconds = 100;
+        var maxRegions = 8;
+        var maxBytesPerRegion = 64 * 1024;
+        long maxTotalBytes = 1024 * 1024;
+        var includeImageRegions = false;
+
+        for (var index = 0; index < args.Length; index++)
+        {
+            var arg = args[index];
+            switch (arg)
+            {
+                case "--process":
+                    processName = RequireValue(args, ref index, arg);
+                    break;
+                case "--pid":
+                    processId = int.Parse(RequireValue(args, ref index, arg));
+                    break;
+                case "--out":
+                    outputPath = RequireValue(args, ref index, arg);
+                    break;
+                case "--samples":
+                    samples = int.Parse(RequireValue(args, ref index, arg));
+                    break;
+                case "--interval-ms":
+                    intervalMilliseconds = int.Parse(RequireValue(args, ref index, arg));
+                    break;
+                case "--max-regions":
+                    maxRegions = int.Parse(RequireValue(args, ref index, arg));
+                    break;
+                case "--max-bytes-per-region":
+                    maxBytesPerRegion = int.Parse(RequireValue(args, ref index, arg));
+                    break;
+                case "--max-total-bytes":
+                    maxTotalBytes = long.Parse(RequireValue(args, ref index, arg));
+                    break;
+                case "--include-image-regions":
+                    includeImageRegions = true;
+                    break;
+                default:
+                    throw new ArgumentException($"Unknown capture passive option: {arg}");
+            }
+        }
+
+        return new PassiveCaptureOptions
+        {
+            ProcessName = processName,
+            ProcessId = processId,
+            OutputPath = outputPath ?? throw new ArgumentException("Passive capture requires --out <session-path>."),
+            Samples = samples,
+            IntervalMilliseconds = intervalMilliseconds,
+            MaxRegions = maxRegions,
+            MaxBytesPerRegion = maxBytesPerRegion,
+            MaxTotalBytes = maxTotalBytes,
+            IncludeImageRegions = includeImageRegions
+        };
+    }
+
+    private static int ParseTop(string[] args)
+    {
+        var top = 100;
+        for (var index = 0; index < args.Length; index++)
+        {
+            var arg = args[index];
+            switch (arg)
+            {
+                case "--all":
+                    top = int.MaxValue;
+                    break;
+                case "--top":
+                    top = int.Parse(RequireValue(args, ref index, arg));
+                    break;
+                default:
+                    throw new ArgumentException($"Unknown option: {arg}");
+            }
+        }
+
+        return top;
+    }
+
+    private static string RequireValue(string[] args, ref int index, string option)
+    {
+        if (index + 1 >= args.Length)
+        {
+            throw new ArgumentException($"Option {option} requires a value.");
+        }
+
+        index++;
+        return args[index];
     }
 
     private static int VerifySession(string sessionPath)
@@ -54,6 +207,10 @@ public static class Program
 
     private static void PrintUsage()
     {
+        Console.WriteLine("riftscan capture passive --process <name> --out sessions/<id> [--samples 1] [--interval-ms 100]");
+        Console.WriteLine("riftscan capture passive --pid <id> --out sessions/<id> [--samples 1] [--interval-ms 100]");
+        Console.WriteLine("riftscan analyze session <session-path> [--all|--top 100]");
+        Console.WriteLine("riftscan report session <session-path> [--top 100]");
         Console.WriteLine("riftscan verify session <session-path>");
     }
 

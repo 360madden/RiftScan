@@ -21,6 +21,8 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\RiftScan.Core\RiftScan.Core.csproj" />
     <ProjectReference Include="..\..\src\RiftScan.Cli\RiftScan.Cli.csproj" />
+    <ProjectReference Include="..\..\src\RiftScan.Capture\RiftScan.Capture.csproj" />
+    <ProjectReference Include="..\..\src\RiftScan.Analysis\RiftScan.Analysis.csproj" />
   </ItemGroup>
 
 

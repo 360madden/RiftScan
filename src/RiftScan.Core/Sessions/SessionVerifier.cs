@@ -1,4 +1,3 @@
-using System.Security.Cryptography;
 using System.Text.Json;
 
 namespace RiftScan.Core.Sessions;
@@ -252,7 +251,7 @@ public sealed class SessionVerifier
                 issues.Add(Error("snapshot_size_mismatch", $"Snapshot {normalizedRelativePath} size is {fileInfo.Length}, expected {entry.SizeBytes}.", normalizedRelativePath));
             }
 
-            var actualHash = ComputeSha256Hex(absolutePath);
+            var actualHash = SessionChecksum.ComputeSha256Hex(absolutePath);
             if (!HashEquals(actualHash, entry.ChecksumSha256Hex))
             {
                 issues.Add(Error("snapshot_checksum_mismatch", $"Snapshot {normalizedRelativePath} SHA256 does not match snapshots/index.jsonl.", normalizedRelativePath));
@@ -298,7 +297,7 @@ public sealed class SessionVerifier
                 issues.Add(Error("checksum_size_mismatch", $"{normalizedRelativePath} size is {fileInfo.Length}, expected {entry.Bytes}.", normalizedRelativePath));
             }
 
-            var actualHash = ComputeSha256Hex(absolutePath);
+            var actualHash = SessionChecksum.ComputeSha256Hex(absolutePath);
             if (!HashEquals(actualHash, entry.Sha256Hex))
             {
                 issues.Add(Error("checksum_mismatch", $"{normalizedRelativePath} SHA256 does not match checksums.json.", normalizedRelativePath));
@@ -325,13 +324,6 @@ public sealed class SessionVerifier
 
     private static bool HashEquals(string actual, string expected) =>
         string.Equals(actual, expected, StringComparison.OrdinalIgnoreCase);
-
-    private static string ComputeSha256Hex(string path)
-    {
-        using var stream = File.OpenRead(path);
-        var hashBytes = SHA256.HashData(stream);
-        return Convert.ToHexString(hashBytes).ToLowerInvariant();
-    }
 
     private static VerificationIssue Error(string code, string message, string? path) =>
         new()
