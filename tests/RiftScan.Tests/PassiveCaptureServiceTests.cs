@@ -302,6 +302,70 @@ public sealed class PassiveCaptureServiceTests
     }
 
     [Fact]
+    public void Cli_capture_passive_accepts_intervention_flags()
+    {
+        using var output = new TempDirectory();
+        var processName = $"riftscan_missing_process_{Guid.NewGuid():N}";
+        var (exitCode, error) = RunWithCapturedError(() => RiftScan.Cli.Program.Main(
+        [
+            "capture",
+            "passive",
+            "--process",
+            processName,
+            "--out",
+            output.Path,
+            "--intervention-wait-ms",
+            "250",
+            "--intervention-poll-ms",
+            "50"
+        ]));
+
+        Assert.Equal(2, exitCode);
+        Assert.Contains("No process found with name", error, StringComparison.Ordinal);
+        Assert.Contains(processName, error, StringComparison.Ordinal);
+        Assert.DoesNotContain("Unknown capture passive option", error, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Cli_capture_plan_accepts_intervention_flags()
+    {
+        using var source = new TempDirectory();
+        using var output = new TempDirectory();
+        Directory.CreateDirectory(source.Path);
+        File.WriteAllText(Path.Combine(source.Path, "next_capture_plan.json"), """
+            {
+              "session_id": "source-session",
+              "analyzer_id": "dynamic_region_triage",
+              "recommendation": "test",
+              "regions": [
+                { "region_id": "region-000001", "rank_score": 10, "reason": "test" }
+              ]
+            }
+            """);
+        var processName = $"riftscan_missing_process_{Guid.NewGuid():N}";
+
+        var (exitCode, error) = RunWithCapturedError(() => RiftScan.Cli.Program.Main(
+        [
+            "capture",
+            "plan",
+            source.Path,
+            "--process",
+            processName,
+            "--out",
+            output.Path,
+            "--intervention-wait-ms",
+            "250",
+            "--intervention-poll-ms",
+            "50"
+        ]));
+
+        Assert.Equal(2, exitCode);
+        Assert.Contains("No process found with name", error, StringComparison.Ordinal);
+        Assert.Contains(processName, error, StringComparison.Ordinal);
+        Assert.DoesNotContain("Unknown capture plan option", error, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Capture_refuses_to_choose_between_duplicate_process_names()
     {
         using var output = new TempDirectory();
@@ -609,6 +673,22 @@ public sealed class PassiveCaptureServiceTests
         public byte[] ReadMemory(int processId, ulong baseAddress, int byteCount) =>
             ReadMemoryFunc?.Invoke(processId, baseAddress, byteCount)
             ?? Enumerable.Range(0, byteCount).Select(value => (byte)value).ToArray();
+    }
+
+    private static (int ExitCode, string Error) RunWithCapturedError(Func<int> action)
+    {
+        var originalError = Console.Error;
+        using var error = new StringWriter();
+
+        try
+        {
+            Console.SetError(error);
+            return (action(), error.ToString());
+        }
+        finally
+        {
+            Console.SetError(originalError);
+        }
     }
 
     private sealed class TempDirectory : IDisposable
