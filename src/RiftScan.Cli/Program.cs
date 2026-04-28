@@ -109,11 +109,16 @@ public static class Program
             throw new ArgumentException("Compare requires two session paths.");
         }
 
-        var (top, outputPath, reportPath) = ParseCompareOptions(args[2..]);
+        var (top, outputPath, reportPath, nextPlanPath) = ParseCompareOptions(args[2..]);
         var result = new SessionComparisonService().Compare(args[0], args[1], top);
         if (!string.IsNullOrWhiteSpace(reportPath))
         {
             result = result with { ComparisonReportPath = Path.GetFullPath(reportPath) };
+        }
+
+        if (!string.IsNullOrWhiteSpace(nextPlanPath))
+        {
+            result = result with { ComparisonNextCapturePlanPath = Path.GetFullPath(nextPlanPath) };
         }
 
         if (!string.IsNullOrWhiteSpace(outputPath))
@@ -124,6 +129,11 @@ public static class Program
         if (!string.IsNullOrWhiteSpace(result.ComparisonReportPath))
         {
             _ = new SessionComparisonReportGenerator().Generate(result, result.ComparisonReportPath, top);
+        }
+
+        if (!string.IsNullOrWhiteSpace(result.ComparisonNextCapturePlanPath))
+        {
+            _ = new SessionComparisonNextCapturePlanGenerator().Generate(result, result.ComparisonNextCapturePlanPath, top);
         }
 
         if (!string.IsNullOrWhiteSpace(outputPath))
@@ -321,11 +331,12 @@ public static class Program
         return top;
     }
 
-    private static (int Top, string? OutputPath, string? ReportPath) ParseCompareOptions(string[] args)
+    private static (int Top, string? OutputPath, string? ReportPath, string? NextPlanPath) ParseCompareOptions(string[] args)
     {
         var top = 100;
         string? outputPath = null;
         string? reportPath = null;
+        string? nextPlanPath = null;
         for (var index = 0; index < args.Length; index++)
         {
             var arg = args[index];
@@ -343,12 +354,15 @@ public static class Program
                 case "--report-md":
                     reportPath = RequireValue(args, ref index, arg);
                     break;
+                case "--next-plan":
+                    nextPlanPath = RequireValue(args, ref index, arg);
+                    break;
                 default:
                     throw new ArgumentException($"Unknown compare option: {arg}");
             }
         }
 
-        return (top, outputPath, reportPath);
+        return (top, outputPath, reportPath, nextPlanPath);
     }
 
     private static string RequireValue(string[] args, ref int index, string option)
@@ -395,7 +409,7 @@ public static class Program
         Console.WriteLine("riftscan capture plan <source-session> --pid <id> --out sessions/<id> [--top-regions 5] [--stimulus move_forward]");
         Console.WriteLine("riftscan analyze session <session-path> [--all|--top 100]");
         Console.WriteLine("riftscan report session <session-path> [--top 100]");
-        Console.WriteLine("riftscan compare sessions <session-a> <session-b> [--top 100] [--out reports/generated/comparison.json] [--report-md reports/generated/comparison.md]");
+        Console.WriteLine("riftscan compare sessions <session-a> <session-b> [--top 100] [--out reports/generated/comparison.json] [--report-md reports/generated/comparison.md] [--next-plan reports/generated/next-capture-plan.json]");
         Console.WriteLine("riftscan verify session <session-path>");
     }
 

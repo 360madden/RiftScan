@@ -86,6 +86,19 @@ public sealed class SessionComparisonServiceTests
         Assert.Equal(0, result.Vec3BehaviorSummary.UnlabeledMatchCount);
         Assert.Equal(["move_forward", "passive_idle"], result.Vec3BehaviorSummary.StimulusLabels);
         Assert.Equal("review_behavior_contrast_candidates_before_truth_claim", result.Vec3BehaviorSummary.NextRecommendedAction);
+
+        var plan = new SessionComparisonNextCapturePlanGenerator().Build(result);
+
+        Assert.Equal("review_existing_behavior_contrast", plan.RecommendedMode);
+        Assert.Equal("comparison_already_contains_behavior_contrast_candidates", plan.Reason);
+        var target = plan.TargetRegionPriorities.Single(candidate =>
+            candidate.BaseAddressHex == "0x1000" &&
+            candidate.OffsetHex == "0x0");
+        Assert.Equal("0x1000", target.BaseAddressHex);
+        Assert.Equal("0x0", target.OffsetHex);
+        Assert.Equal("passive_to_move_vec3_behavior_contrast_candidate", target.Reason);
+        Assert.Equal(100, target.PriorityScore);
+        Assert.Contains("next_capture_plan_is_recommendation_not_truth_claim", plan.Warnings);
     }
 
     [Fact]
@@ -101,11 +114,13 @@ public sealed class SessionComparisonServiceTests
             Console.SetOut(output);
             var outputPath = Path.Combine(sessionA.Path, "comparison.json");
             var reportPath = Path.Combine(sessionA.Path, "comparison.md");
-            var exitCode = RiftScan.Cli.Program.Main(["compare", "sessions", sessionA.Path, sessionB.Path, "--top", "10", "--out", outputPath, "--report-md", reportPath]);
+            var nextPlanPath = Path.Combine(sessionA.Path, "comparison-next-capture-plan.json");
+            var exitCode = RiftScan.Cli.Program.Main(["compare", "sessions", sessionA.Path, sessionB.Path, "--top", "10", "--out", outputPath, "--report-md", reportPath, "--next-plan", nextPlanPath]);
 
             Assert.Equal(0, exitCode);
             Assert.True(File.Exists(outputPath));
             Assert.True(File.Exists(reportPath));
+            Assert.True(File.Exists(nextPlanPath));
             Assert.Contains("matching_region_count", output.ToString(), StringComparison.Ordinal);
             Assert.Contains("matching_cluster_count", output.ToString(), StringComparison.Ordinal);
             Assert.Contains("matching_structure_candidate_count", output.ToString(), StringComparison.Ordinal);
@@ -114,9 +129,13 @@ public sealed class SessionComparisonServiceTests
             Assert.Contains("matching_value_candidate_count", output.ToString(), StringComparison.Ordinal);
             Assert.Contains("comparison_path", output.ToString(), StringComparison.Ordinal);
             Assert.Contains("comparison_report_path", output.ToString(), StringComparison.Ordinal);
+            Assert.Contains("comparison_next_capture_plan_path", output.ToString(), StringComparison.Ordinal);
             var report = File.ReadAllText(reportPath);
             Assert.Contains("Vec3 behavior summary", report, StringComparison.Ordinal);
             Assert.Contains("candidate evidence, not recovered truth", report, StringComparison.Ordinal);
+            var plan = File.ReadAllText(nextPlanPath);
+            Assert.Contains("recommended_mode", plan, StringComparison.Ordinal);
+            Assert.Contains("next_capture_plan_is_recommendation_not_truth_claim", plan, StringComparison.Ordinal);
         }
         finally
         {

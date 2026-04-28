@@ -19,6 +19,9 @@ public sealed record SessionComparisonResult
     [JsonPropertyName("comparison_report_path")]
     public string? ComparisonReportPath { get; init; }
 
+    [JsonPropertyName("comparison_next_capture_plan_path")]
+    public string? ComparisonNextCapturePlanPath { get; init; }
+
     [JsonPropertyName("session_a_id")]
     public string SessionAId { get; init; } = string.Empty;
 
