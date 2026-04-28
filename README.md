@@ -37,6 +37,7 @@ dotnet run --project src/RiftScan.Cli/RiftScan.Cli.csproj --configuration Releas
 ## Validation
 
 ```powershell
+pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/smoke-fixture.ps1
 dotnet build RiftScan.slnx --configuration Release --no-restore
 dotnet test RiftScan.slnx --configuration Release --no-build
 dotnet format RiftScan.slnx --verify-no-changes
