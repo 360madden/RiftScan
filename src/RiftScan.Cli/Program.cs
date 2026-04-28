@@ -109,13 +109,27 @@ public static class Program
             throw new ArgumentException("Compare requires two session paths.");
         }
 
-        var (top, outputPath) = ParseCompareOptions(args[2..]);
+        var (top, outputPath, reportPath) = ParseCompareOptions(args[2..]);
         var result = new SessionComparisonService().Compare(args[0], args[1], top);
+        if (!string.IsNullOrWhiteSpace(reportPath))
+        {
+            result = result with { ComparisonReportPath = Path.GetFullPath(reportPath) };
+        }
+
         if (!string.IsNullOrWhiteSpace(outputPath))
         {
-            var fullOutputPath = Path.GetFullPath(outputPath);
+            result = result with { ComparisonPath = Path.GetFullPath(outputPath) };
+        }
+
+        if (!string.IsNullOrWhiteSpace(result.ComparisonReportPath))
+        {
+            _ = new SessionComparisonReportGenerator().Generate(result, result.ComparisonReportPath, top);
+        }
+
+        if (!string.IsNullOrWhiteSpace(outputPath))
+        {
+            var fullOutputPath = result.ComparisonPath!;
             Directory.CreateDirectory(Path.GetDirectoryName(fullOutputPath)!);
-            result = result with { ComparisonPath = fullOutputPath };
             File.WriteAllText(fullOutputPath, JsonSerializer.Serialize(result, SessionJson.Options));
         }
 
@@ -307,10 +321,11 @@ public static class Program
         return top;
     }
 
-    private static (int Top, string? OutputPath) ParseCompareOptions(string[] args)
+    private static (int Top, string? OutputPath, string? ReportPath) ParseCompareOptions(string[] args)
     {
         var top = 100;
         string? outputPath = null;
+        string? reportPath = null;
         for (var index = 0; index < args.Length; index++)
         {
             var arg = args[index];
@@ -325,12 +340,15 @@ public static class Program
                 case "--out":
                     outputPath = RequireValue(args, ref index, arg);
                     break;
+                case "--report-md":
+                    reportPath = RequireValue(args, ref index, arg);
+                    break;
                 default:
                     throw new ArgumentException($"Unknown compare option: {arg}");
             }
         }
 
-        return (top, outputPath);
+        return (top, outputPath, reportPath);
     }
 
     private static string RequireValue(string[] args, ref int index, string option)
@@ -377,7 +395,7 @@ public static class Program
         Console.WriteLine("riftscan capture plan <source-session> --pid <id> --out sessions/<id> [--top-regions 5] [--stimulus move_forward]");
         Console.WriteLine("riftscan analyze session <session-path> [--all|--top 100]");
         Console.WriteLine("riftscan report session <session-path> [--top 100]");
-        Console.WriteLine("riftscan compare sessions <session-a> <session-b> [--top 100] [--out reports/generated/comparison.json]");
+        Console.WriteLine("riftscan compare sessions <session-a> <session-b> [--top 100] [--out reports/generated/comparison.json] [--report-md reports/generated/comparison.md]");
         Console.WriteLine("riftscan verify session <session-path>");
     }
 

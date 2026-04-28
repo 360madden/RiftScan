@@ -100,10 +100,12 @@ public sealed class SessionComparisonServiceTests
         {
             Console.SetOut(output);
             var outputPath = Path.Combine(sessionA.Path, "comparison.json");
-            var exitCode = RiftScan.Cli.Program.Main(["compare", "sessions", sessionA.Path, sessionB.Path, "--top", "10", "--out", outputPath]);
+            var reportPath = Path.Combine(sessionA.Path, "comparison.md");
+            var exitCode = RiftScan.Cli.Program.Main(["compare", "sessions", sessionA.Path, sessionB.Path, "--top", "10", "--out", outputPath, "--report-md", reportPath]);
 
             Assert.Equal(0, exitCode);
             Assert.True(File.Exists(outputPath));
+            Assert.True(File.Exists(reportPath));
             Assert.Contains("matching_region_count", output.ToString(), StringComparison.Ordinal);
             Assert.Contains("matching_cluster_count", output.ToString(), StringComparison.Ordinal);
             Assert.Contains("matching_structure_candidate_count", output.ToString(), StringComparison.Ordinal);
@@ -111,6 +113,10 @@ public sealed class SessionComparisonServiceTests
             Assert.Contains("vec3_behavior_summary", output.ToString(), StringComparison.Ordinal);
             Assert.Contains("matching_value_candidate_count", output.ToString(), StringComparison.Ordinal);
             Assert.Contains("comparison_path", output.ToString(), StringComparison.Ordinal);
+            Assert.Contains("comparison_report_path", output.ToString(), StringComparison.Ordinal);
+            var report = File.ReadAllText(reportPath);
+            Assert.Contains("Vec3 behavior summary", report, StringComparison.Ordinal);
+            Assert.Contains("candidate evidence, not recovered truth", report, StringComparison.Ordinal);
         }
         finally
         {
