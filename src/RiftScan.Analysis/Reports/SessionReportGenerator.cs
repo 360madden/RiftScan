@@ -66,8 +66,26 @@ internal sealed record SessionMachineReport
     [JsonPropertyName("artifact_counts")]
     public SessionReportArtifactCounts ArtifactCounts { get; init; } = new();
 
+    [JsonPropertyName("analyzers")]
+    public IReadOnlyList<SessionReportAnalyzerInfo> Analyzers { get; init; } = [];
+
     [JsonPropertyName("capture_interruption")]
     public CaptureInterventionHandoffReport? CaptureInterruption { get; init; }
+}
+
+internal sealed record SessionReportAnalyzerInfo
+{
+    [JsonPropertyName("analyzer_id")]
+    public string AnalyzerId { get; init; } = string.Empty;
+
+    [JsonPropertyName("analyzer_version")]
+    public string AnalyzerVersion { get; init; } = string.Empty;
+
+    [JsonPropertyName("artifact_path")]
+    public string ArtifactPath { get; init; } = string.Empty;
+
+    [JsonPropertyName("entry_count")]
+    public int EntryCount { get; init; }
 }
 
 internal sealed record SessionReportArtifactCounts
@@ -181,15 +199,71 @@ public sealed class SessionReportGenerator
             .ToArray();
 
         var interventionHandoff = ReadOptionalJson<CaptureInterventionHandoffReport>(fullSessionPath, "intervention_handoff.json");
+        var analyzers = BuildAnalyzerInfos(triageEntries, deltaEntries, valueCandidates, vec3Candidates, clusters, structureCandidates);
 
         var reportPath = ResolveSessionPath(fullSessionPath, "report.md");
-        File.WriteAllLines(reportPath, BuildReport(manifest, interventionHandoff, triageEntries, deltaEntries, valueCandidates, vec3Candidates, clusters, structureCandidates));
+        File.WriteAllLines(reportPath, BuildReport(manifest, interventionHandoff, analyzers, triageEntries, deltaEntries, valueCandidates, vec3Candidates, clusters, structureCandidates));
         var reportJsonPath = ResolveSessionPath(fullSessionPath, "report.json");
-        var machineReport = BuildMachineReport(fullSessionPath, reportPath, top, manifest, interventionHandoff, triageEntries, deltaEntries, valueCandidates, vec3Candidates, clusters, structureCandidates);
+        var machineReport = BuildMachineReport(fullSessionPath, reportPath, top, manifest, interventionHandoff, analyzers, triageEntries, deltaEntries, valueCandidates, vec3Candidates, clusters, structureCandidates);
         File.WriteAllText(reportJsonPath, JsonSerializer.Serialize(machineReport, SessionJson.Options));
 
         return new SessionReportResult { Success = true, SessionPath = fullSessionPath, ReportPath = reportPath, ReportJsonPath = reportJsonPath };
     }
+
+    private static IReadOnlyList<SessionReportAnalyzerInfo> BuildAnalyzerInfos(
+        IReadOnlyList<RegionTriageEntry> triageEntries,
+        IReadOnlyList<RegionDeltaEntry> deltaEntries,
+        IReadOnlyList<TypedValueCandidate> valueCandidates,
+        IReadOnlyList<Vec3Candidate> vec3Candidates,
+        IReadOnlyList<StructureCluster> clusters,
+        IReadOnlyList<StructureCandidate> structureCandidates) =>
+        [
+            new()
+            {
+                AnalyzerId = FirstNonEmpty(triageEntries.Select(entry => entry.AnalyzerId), "dynamic_region_triage"),
+                AnalyzerVersion = FirstNonEmpty(triageEntries.Select(entry => entry.AnalyzerVersion), "0.1.0"),
+                ArtifactPath = "triage.jsonl",
+                EntryCount = triageEntries.Count
+            },
+            new()
+            {
+                AnalyzerId = FirstNonEmpty(deltaEntries.Select(entry => entry.AnalyzerId), "byte_delta"),
+                AnalyzerVersion = FirstNonEmpty(deltaEntries.Select(entry => entry.AnalyzerVersion), "0.1.0"),
+                ArtifactPath = "deltas.jsonl",
+                EntryCount = deltaEntries.Count
+            },
+            new()
+            {
+                AnalyzerId = FirstNonEmpty(valueCandidates.Select(candidate => candidate.AnalyzerId), "typed_value_lane"),
+                AnalyzerVersion = FirstNonEmpty(valueCandidates.Select(candidate => candidate.AnalyzerVersion), "0.1.0"),
+                ArtifactPath = "typed_value_candidates.jsonl",
+                EntryCount = valueCandidates.Count
+            },
+            new()
+            {
+                AnalyzerId = FirstNonEmpty(vec3Candidates.Select(candidate => candidate.AnalyzerId), "vec3_candidate"),
+                AnalyzerVersion = FirstNonEmpty(vec3Candidates.Select(candidate => candidate.AnalyzerVersion), "0.1.0"),
+                ArtifactPath = "vec3_candidates.jsonl",
+                EntryCount = vec3Candidates.Count
+            },
+            new()
+            {
+                AnalyzerId = FirstNonEmpty(clusters.Select(cluster => cluster.AnalyzerId), "structure_cluster"),
+                AnalyzerVersion = FirstNonEmpty(clusters.Select(cluster => cluster.AnalyzerVersion), "0.1.0"),
+                ArtifactPath = "clusters.jsonl",
+                EntryCount = clusters.Count
+            },
+            new()
+            {
+                AnalyzerId = FirstNonEmpty(structureCandidates.Select(candidate => candidate.AnalyzerId), "finite_float_triplet_structure"),
+                AnalyzerVersion = FirstNonEmpty(structureCandidates.Select(candidate => candidate.AnalyzerVersion), "0.1.0"),
+                ArtifactPath = "structures.jsonl",
+                EntryCount = structureCandidates.Count
+            }
+        ];
+
+    private static string FirstNonEmpty(IEnumerable<string> values, string fallback) =>
+        values.FirstOrDefault(value => !string.IsNullOrWhiteSpace(value)) ?? fallback;
 
     private static SessionMachineReport BuildMachineReport(
         string sessionPath,
@@ -197,6 +271,7 @@ public sealed class SessionReportGenerator
         int top,
         SessionManifest manifest,
         CaptureInterventionHandoffReport? interventionHandoff,
+        IReadOnlyList<SessionReportAnalyzerInfo> analyzers,
         IReadOnlyList<RegionTriageEntry> triageEntries,
         IReadOnlyList<RegionDeltaEntry> deltaEntries,
         IReadOnlyList<TypedValueCandidate> valueCandidates,
@@ -225,12 +300,14 @@ public sealed class SessionReportGenerator
                 StructureClusters = clusters.Count,
                 StructureCandidates = structureCandidates.Count
             },
+            Analyzers = analyzers,
             CaptureInterruption = interventionHandoff
         };
 
     private static IEnumerable<string> BuildReport(
         SessionManifest manifest,
         CaptureInterventionHandoffReport? interventionHandoff,
+        IReadOnlyList<SessionReportAnalyzerInfo> analyzers,
         IReadOnlyList<RegionTriageEntry> triageEntries,
         IReadOnlyList<RegionDeltaEntry> deltaEntries,
         IReadOnlyList<TypedValueCandidate> valueCandidates,
@@ -253,6 +330,16 @@ public sealed class SessionReportGenerator
         yield return $"- Snapshots: `{manifest.SnapshotCount}`";
         yield return $"- Regions: `{manifest.RegionCount}`";
         yield return $"- Bytes stored: `{manifest.TotalBytesStored}`";
+        yield return string.Empty;
+        yield return "## Analyzers";
+        yield return string.Empty;
+        yield return "| Analyzer | Version | Artifact | Entries |";
+        yield return "|---|---|---|---:|";
+        foreach (var analyzer in analyzers)
+        {
+            yield return $"| `{analyzer.AnalyzerId}` | `{analyzer.AnalyzerVersion}` | `{analyzer.ArtifactPath}` | {analyzer.EntryCount} |";
+        }
+
         if (interventionHandoff is not null)
         {
             yield return string.Empty;

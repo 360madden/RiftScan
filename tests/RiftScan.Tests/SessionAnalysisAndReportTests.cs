@@ -56,6 +56,8 @@ public sealed class SessionAnalysisAndReportTests
         Assert.Contains("Dynamic byte deltas", report, StringComparison.Ordinal);
         Assert.Contains("Typed value lanes", report, StringComparison.Ordinal);
         Assert.Contains("Vec3 candidates", report, StringComparison.Ordinal);
+        Assert.Contains("Analyzers", report, StringComparison.Ordinal);
+        Assert.Contains("dynamic_region_triage", report, StringComparison.Ordinal);
         Assert.Contains("Structure clusters", report, StringComparison.Ordinal);
         Assert.Contains("Structure candidates", report, StringComparison.Ordinal);
         Assert.Contains("region-0001", report, StringComparison.Ordinal);
@@ -67,6 +69,7 @@ public sealed class SessionAnalysisAndReportTests
         Assert.Equal("rift_x64", root.GetProperty("process_name").GetString());
         Assert.Equal(10, root.GetProperty("top_limit").GetInt32());
         Assert.Equal(1, root.GetProperty("artifact_counts").GetProperty("triage_entries").GetInt32());
+        Assert.Equal("dynamic_region_triage", root.GetProperty("analyzers")[0].GetProperty("analyzer_id").GetString());
     }
 
     [Fact]
@@ -117,7 +120,16 @@ public sealed class SessionAnalysisAndReportTests
             "total_bytes_stored",
             "top_limit",
             "artifact_counts",
+            "analyzers",
             "capture_interruption");
+
+        var firstAnalyzer = root.GetProperty("analyzers")[0];
+        AssertJsonProperties(
+            firstAnalyzer,
+            "analyzer_id",
+            "analyzer_version",
+            "artifact_path",
+            "entry_count");
 
         AssertJsonProperties(
             root.GetProperty("artifact_counts"),
