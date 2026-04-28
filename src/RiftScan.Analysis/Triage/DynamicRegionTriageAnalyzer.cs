@@ -1,5 +1,6 @@
 using System.Text.Json;
 using RiftScan.Analysis.Clusters;
+using RiftScan.Analysis.Deltas;
 using RiftScan.Analysis.Structures;
 using RiftScan.Core.Sessions;
 
@@ -31,6 +32,7 @@ public sealed class DynamicRegionTriageAnalyzer
             .ToArray();
 
         WriteJsonLines(fullSessionPath, "triage.jsonl", triageEntries);
+        _ = new ByteDeltaAnalyzer().AnalyzeSession(fullSessionPath, top);
         _ = new FloatTripletStructureAnalyzer().AnalyzeSession(fullSessionPath, top);
         _ = new StructureClusterAnalyzer().AnalyzeSession(fullSessionPath, top);
         WriteJson(fullSessionPath, "next_capture_plan.json", BuildNextCapturePlan(manifest.SessionId, triageEntries));
@@ -41,7 +43,7 @@ public sealed class DynamicRegionTriageAnalyzer
             SessionPath = fullSessionPath,
             SessionId = manifest.SessionId,
             RegionsAnalyzed = triageEntries.Length,
-            ArtifactsWritten = ["triage.jsonl", "structures.jsonl", "clusters.jsonl", "next_capture_plan.json"]
+            ArtifactsWritten = ["triage.jsonl", "deltas.jsonl", "structures.jsonl", "clusters.jsonl", "next_capture_plan.json"]
         };
     }
 
