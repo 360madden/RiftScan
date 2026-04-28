@@ -35,6 +35,37 @@ public sealed class PassiveCaptureServiceTests
     }
 
     [Fact]
+    public void Capture_can_target_specific_region_ids()
+    {
+        using var output = new TempDirectory();
+        var reader = new FakeProcessMemoryReader
+        {
+            Regions =
+            [
+                new VirtualMemoryRegion("region-000001", 0x1000, 16, MemoryRegionConstants.MemCommit, MemoryRegionConstants.PageReadWrite, MemoryRegionConstants.MemPrivate),
+                new VirtualMemoryRegion("region-000002", 0x2000, 16, MemoryRegionConstants.MemCommit, MemoryRegionConstants.PageReadWrite, MemoryRegionConstants.MemPrivate)
+            ]
+        };
+
+        var result = new PassiveCaptureService(reader).Capture(new PassiveCaptureOptions
+        {
+            ProcessName = "fixture_process",
+            OutputPath = output.Path,
+            Samples = 1,
+            IntervalMilliseconds = 0,
+            MaxRegions = 8,
+            MaxBytesPerRegion = 16,
+            MaxTotalBytes = 32,
+            RegionIds = new HashSet<string>(["region-000002"], StringComparer.OrdinalIgnoreCase)
+        });
+
+        Assert.True(result.Success);
+        Assert.Equal(1, result.RegionsCaptured);
+        Assert.Contains("snapshots/region-000002-sample-000001.bin", result.ArtifactsWritten);
+        Assert.DoesNotContain("snapshots/region-000001-sample-000001.bin", result.ArtifactsWritten);
+    }
+
+    [Fact]
     public void Capture_refuses_to_choose_between_duplicate_process_names()
     {
         using var output = new TempDirectory();
@@ -62,15 +93,7 @@ public sealed class PassiveCaptureServiceTests
             new ProcessDescriptor(100, "fixture_process", DateTimeOffset.Parse("2026-04-28T17:00:00Z"), "fixture.exe")
         ];
 
-        public IReadOnlyList<ProcessDescriptor> FindProcessesByName(string processName) =>
-            Processes.Where(process => string.Equals(process.ProcessName, processName, StringComparison.OrdinalIgnoreCase)).ToArray();
-
-        public ProcessDescriptor GetProcessById(int processId) =>
-            Processes.Single(process => process.ProcessId == processId);
-
-        public IReadOnlyList<ProcessModuleInfo> GetModules(int processId) => [];
-
-        public IReadOnlyList<VirtualMemoryRegion> EnumerateRegions(int processId) =>
+        public IReadOnlyList<VirtualMemoryRegion> Regions { get; init; } =
         [
             new VirtualMemoryRegion(
                 "region-000001",
@@ -80,6 +103,16 @@ public sealed class PassiveCaptureServiceTests
                 MemoryRegionConstants.PageReadWrite,
                 MemoryRegionConstants.MemPrivate)
         ];
+
+        public IReadOnlyList<ProcessDescriptor> FindProcessesByName(string processName) =>
+            Processes.Where(process => string.Equals(process.ProcessName, processName, StringComparison.OrdinalIgnoreCase)).ToArray();
+
+        public ProcessDescriptor GetProcessById(int processId) =>
+            Processes.Single(process => process.ProcessId == processId);
+
+        public IReadOnlyList<ProcessModuleInfo> GetModules(int processId) => [];
+
+        public IReadOnlyList<VirtualMemoryRegion> EnumerateRegions(int processId) => Regions;
 
         public byte[] ReadMemory(int processId, ulong baseAddress, int byteCount) =>
             Enumerable.Range(0, byteCount).Select(value => (byte)value).ToArray();

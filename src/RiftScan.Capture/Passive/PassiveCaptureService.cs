@@ -13,20 +13,27 @@ public sealed class PassiveCaptureService(IProcessMemoryReader processMemoryRead
         var sessionPath = Path.GetFullPath(options.OutputPath);
         var process = ResolveProcess(options);
         var modules = processMemoryReader.GetModules(process.ProcessId);
-        var candidateRegions = processMemoryReader
+        var candidateRegionsQuery = processMemoryReader
             .EnumerateRegions(process.ProcessId)
             .Where(region => MemoryRegionFilter.IsDefaultCaptureCandidate(region, new MemoryRegionFilterOptions
             {
                 IncludeImageRegions = options.IncludeImageRegions,
                 MaxRegionBytes = (ulong)options.MaxBytesPerRegion
-            }))
+            }));
+
+        if (options.RegionIds.Count > 0)
+        {
+            candidateRegionsQuery = candidateRegionsQuery.Where(region => options.RegionIds.Contains(region.RegionId));
+        }
+
+        var candidateRegions = candidateRegionsQuery
             .OrderBy(region => region.BaseAddress)
             .Take(options.MaxRegions)
             .ToArray();
 
         if (candidateRegions.Length == 0)
         {
-            throw new InvalidOperationException("No readable committed memory regions matched the passive capture filter.");
+            throw new InvalidOperationException("No readable committed memory regions matched the passive capture filter or requested region IDs.");
         }
 
         PrepareSessionDirectory(sessionPath);
@@ -246,5 +253,3 @@ public sealed class PassiveCaptureService(IProcessMemoryReader processMemoryRead
     private static string ResolveSessionPath(string sessionPath, string relativePath) =>
         Path.GetFullPath(Path.Combine(sessionPath, relativePath.Replace('/', Path.DirectorySeparatorChar)));
 }
-
-

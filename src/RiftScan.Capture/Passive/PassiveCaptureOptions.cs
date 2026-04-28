@@ -19,4 +19,6 @@ public sealed record PassiveCaptureOptions
     public long MaxTotalBytes { get; init; } = 1024 * 1024;
 
     public bool IncludeImageRegions { get; init; }
+
+    public IReadOnlySet<string> RegionIds { get; init; } = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 }
