@@ -1,6 +1,7 @@
 using System.Text.Json;
 using RiftScan.Analysis.Clusters;
 using RiftScan.Analysis.Triage;
+using RiftScan.Analysis.Values;
 using RiftScan.Core.Sessions;
 
 namespace RiftScan.Analysis.Comparison;
@@ -22,7 +23,8 @@ public sealed class SessionComparisonService
         var manifestB = ReadJson<SessionManifest>(fullBPath, "manifest.json");
         var regionMatches = CompareRegions(ReadTriage(fullAPath), ReadTriage(fullBPath), top);
         var clusterMatches = CompareClusters(ReadClusters(fullAPath), ReadClusters(fullBPath), top);
-        var warnings = BuildWarnings(manifestA, manifestB, regionMatches, clusterMatches);
+        var valueCandidateMatches = CompareValueCandidates(ReadValueCandidates(fullAPath), ReadValueCandidates(fullBPath), top);
+        var warnings = BuildWarnings(manifestA, manifestB, regionMatches, clusterMatches, valueCandidateMatches);
 
         return new SessionComparisonResult
         {
@@ -34,8 +36,10 @@ public sealed class SessionComparisonService
             SameProcessName = string.Equals(manifestA.ProcessName, manifestB.ProcessName, StringComparison.OrdinalIgnoreCase),
             MatchingRegionCount = regionMatches.Count,
             MatchingClusterCount = clusterMatches.Count,
+            MatchingValueCandidateCount = valueCandidateMatches.Count,
             RegionMatches = regionMatches,
             ClusterMatches = clusterMatches,
+            ValueCandidateMatches = valueCandidateMatches,
             Warnings = warnings
         };
     }
@@ -50,7 +54,8 @@ public sealed class SessionComparisonService
         }
 
         if (!File.Exists(ResolveSessionPath(sessionPath, "triage.jsonl")) ||
-            !File.Exists(ResolveSessionPath(sessionPath, "clusters.jsonl")))
+            !File.Exists(ResolveSessionPath(sessionPath, "clusters.jsonl")) ||
+            !File.Exists(ResolveSessionPath(sessionPath, "typed_value_candidates.jsonl")))
         {
             _ = new DynamicRegionTriageAnalyzer().AnalyzeSession(sessionPath, top);
         }
@@ -139,6 +144,58 @@ public sealed class SessionComparisonService
         };
     }
 
+    private static IReadOnlyList<ValueCandidateComparison> CompareValueCandidates(
+        IReadOnlyList<TypedValueCandidate> a,
+        IReadOnlyList<TypedValueCandidate> b,
+        int top)
+    {
+        var bByKey = b
+            .GroupBy(ValueCandidateKey, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(group => group.Key, group => group.OrderByDescending(candidate => candidate.RankScore).First(), StringComparer.OrdinalIgnoreCase);
+
+        return a
+            .Where(candidate => bByKey.ContainsKey(ValueCandidateKey(candidate)))
+            .Select(candidate => BuildValueCandidateComparison(candidate, bByKey[ValueCandidateKey(candidate)]))
+            .OrderByDescending(match => Math.Min(match.SessionARankScore, match.SessionBRankScore))
+            .ThenBy(match => match.BaseAddressHex, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(match => match.OffsetHex, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(match => match.DataType, StringComparer.OrdinalIgnoreCase)
+            .Take(top)
+            .ToArray();
+    }
+
+    private static ValueCandidateComparison BuildValueCandidateComparison(TypedValueCandidate a, TypedValueCandidate b) =>
+        new()
+        {
+            BaseAddressHex = a.BaseAddressHex,
+            OffsetHex = a.OffsetHex,
+            DataType = a.DataType,
+            SessionACandidateId = a.CandidateId,
+            SessionBCandidateId = b.CandidateId,
+            SessionARegionId = a.RegionId,
+            SessionBRegionId = b.RegionId,
+            SessionARankScore = a.RankScore,
+            SessionBRankScore = b.RankScore,
+            ScoreDelta = Math.Round(b.RankScore - a.RankScore, 3),
+            SessionADistinctValues = a.DistinctValueCount,
+            SessionBDistinctValues = b.DistinctValueCount,
+            Recommendation = RecommendValueCandidate(a, b)
+        };
+
+    private static string ValueCandidateKey(TypedValueCandidate candidate) =>
+        string.Join("|", candidate.BaseAddressHex, candidate.OffsetHex, candidate.DataType);
+
+    private static string RecommendValueCandidate(TypedValueCandidate a, TypedValueCandidate b)
+    {
+        if (string.Equals(a.DataType, "float32", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(a.DataType, "int32", StringComparison.OrdinalIgnoreCase))
+        {
+            return "stable_typed_value_lane_candidate";
+        }
+
+        return "stable_raw_value_lane_candidate_not_semantic_claim";
+    }
+
     private static int ParseHex(string value)
     {
         var normalized = value.StartsWith("0x", StringComparison.OrdinalIgnoreCase) ? value[2..] : value;
@@ -148,7 +205,8 @@ public sealed class SessionComparisonService
         SessionManifest manifestA,
         SessionManifest manifestB,
         IReadOnlyList<RegionComparison> regionMatches,
-        IReadOnlyList<ClusterComparison> clusterMatches)
+        IReadOnlyList<ClusterComparison> clusterMatches,
+        IReadOnlyList<ValueCandidateComparison> valueCandidateMatches)
     {
         var warnings = new List<string>();
         if (!string.Equals(manifestA.ProcessName, manifestB.ProcessName, StringComparison.OrdinalIgnoreCase))
@@ -164,6 +222,11 @@ public sealed class SessionComparisonService
         if (clusterMatches.Count == 0)
         {
             warnings.Add("no_overlapping_cluster_matches_by_base_address_and_span");
+        }
+
+        if (valueCandidateMatches.Count == 0)
+        {
+            warnings.Add("no_matching_typed_value_candidates_by_base_offset_type");
         }
 
         warnings.Add("comparison_is_candidate_evidence_not_truth_claim");
@@ -182,6 +245,9 @@ public sealed class SessionComparisonService
 
     private static IReadOnlyList<StructureCluster> ReadClusters(string sessionPath) =>
         ReadJsonLines<StructureCluster>(sessionPath, "clusters.jsonl");
+
+    private static IReadOnlyList<TypedValueCandidate> ReadValueCandidates(string sessionPath) =>
+        ReadJsonLines<TypedValueCandidate>(sessionPath, "typed_value_candidates.jsonl");
 
     private static IReadOnlyList<T> ReadJsonLines<T>(string sessionPath, string relativePath)
     {

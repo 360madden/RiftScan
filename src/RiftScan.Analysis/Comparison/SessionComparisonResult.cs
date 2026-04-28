@@ -31,11 +31,17 @@ public sealed record SessionComparisonResult
     [JsonPropertyName("matching_cluster_count")]
     public int MatchingClusterCount { get; init; }
 
+    [JsonPropertyName("matching_value_candidate_count")]
+    public int MatchingValueCandidateCount { get; init; }
+
     [JsonPropertyName("region_matches")]
     public IReadOnlyList<RegionComparison> RegionMatches { get; init; } = [];
 
     [JsonPropertyName("cluster_matches")]
     public IReadOnlyList<ClusterComparison> ClusterMatches { get; init; } = [];
+
+    [JsonPropertyName("value_candidate_matches")]
+    public IReadOnlyList<ValueCandidateComparison> ValueCandidateMatches { get; init; } = [];
 
     [JsonPropertyName("warnings")]
     public IReadOnlyList<string> Warnings { get; init; } = [];
