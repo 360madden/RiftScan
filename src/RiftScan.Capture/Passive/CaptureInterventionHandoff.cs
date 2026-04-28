@@ -37,6 +37,9 @@ public sealed record CaptureInterventionHandoff
     [JsonPropertyName("bytes_captured")]
     public long BytesCaptured { get; init; }
 
+    [JsonPropertyName("region_read_failures")]
+    public IReadOnlyList<CaptureInterventionRegionReadFailure> RegionReadFailures { get; init; } = [];
+
     [JsonPropertyName("samples_targeted")]
     public int SamplesTargeted { get; init; }
 
@@ -48,4 +51,19 @@ public sealed record CaptureInterventionHandoff
 
     [JsonPropertyName("intervention_poll_ms")]
     public int InterventionPollIntervalMilliseconds { get; init; }
+}
+
+public sealed record CaptureInterventionRegionReadFailure
+{
+    [JsonPropertyName("region_id")]
+    public string RegionId { get; init; } = string.Empty;
+
+    [JsonPropertyName("base_address_hex")]
+    public string BaseAddressHex { get; init; } = string.Empty;
+
+    [JsonPropertyName("requested_bytes")]
+    public int RequestedBytes { get; init; }
+
+    [JsonPropertyName("reason")]
+    public string Reason { get; init; } = string.Empty;
 }

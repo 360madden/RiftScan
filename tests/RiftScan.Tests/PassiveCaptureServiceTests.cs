@@ -599,6 +599,11 @@ public sealed class PassiveCaptureServiceTests
         Assert.Contains("intervention_handoff.json", result.ArtifactsWritten);
         var handoff = JsonSerializer.Deserialize<CaptureInterventionHandoff>(File.ReadAllText(Path.Combine(output.Path, "intervention_handoff.json")), SessionJson.Options)!;
         Assert.Equal("no_snapshot_data_before_selected_regions_unreadable", handoff.Reason);
+        var failure = Assert.Single(handoff.RegionReadFailures);
+        Assert.Equal("region-000001", failure.RegionId);
+        Assert.Equal("0x1000", failure.BaseAddressHex);
+        Assert.Equal(16, failure.RequestedBytes);
+        Assert.Equal("selected region unreadable", failure.Reason);
         Assert.False(File.Exists(Path.Combine(output.Path, "manifest.json")));
     }
 

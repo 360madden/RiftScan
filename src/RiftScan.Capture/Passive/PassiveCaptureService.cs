@@ -44,6 +44,7 @@ public sealed class PassiveCaptureService(IProcessMemoryReader processMemoryRead
         long totalBytes = 0;
         bool interrupted = false;
         var interruptionReason = "intervention_wait_timed_out";
+        IReadOnlyList<CaptureInterventionRegionReadFailure> lastRegionReadFailures = [];
         var sampleCountAttempted = 0;
         var restoredProcess = process;
 
@@ -56,6 +57,7 @@ public sealed class PassiveCaptureService(IProcessMemoryReader processMemoryRead
 
             sampleCountAttempted = sample;
             var capturedThisSample = false;
+            var failedReadsThisSample = new List<CaptureInterventionRegionReadFailure>();
 
             foreach (var region in candidateRegions)
             {
@@ -78,13 +80,15 @@ public sealed class PassiveCaptureService(IProcessMemoryReader processMemoryRead
                 {
                     bytes = processMemoryReader.ReadMemory(restoredProcess.ProcessId, region.BaseAddress, bytesToRead);
                 }
-                catch (InvalidOperationException)
+                catch (InvalidOperationException ex)
                 {
+                    failedReadsThisSample.Add(ToRegionReadFailure(region, bytesToRead, ex.Message));
                     continue;
                 }
 
                 if (bytes.Length == 0)
                 {
+                    failedReadsThisSample.Add(ToRegionReadFailure(region, bytesToRead, "zero_bytes_read"));
                     continue;
                 }
 
@@ -113,6 +117,7 @@ public sealed class PassiveCaptureService(IProcessMemoryReader processMemoryRead
 
             if (!capturedThisSample)
             {
+                lastRegionReadFailures = failedReadsThisSample;
                 var resumedProcess = ResolveProcessForWaitOrNull(options);
                 if (resumedProcess is not null)
                 {
@@ -170,7 +175,8 @@ public sealed class PassiveCaptureService(IProcessMemoryReader processMemoryRead
                     0,
                     0,
                     0,
-                    sampleCountAttempted);
+                    sampleCountAttempted,
+                    lastRegionReadFailures);
 
                 return new PassiveCaptureResult
                 {
@@ -227,7 +233,8 @@ public sealed class PassiveCaptureService(IProcessMemoryReader processMemoryRead
                 capturedRegions.Count,
                 snapshotEntries.Count,
                 totalBytes,
-                sampleCountAttempted);
+                sampleCountAttempted,
+                lastRegionReadFailures);
         }
 
         WriteChecksums(sessionPath, snapshotEntries);
@@ -416,6 +423,15 @@ public sealed class PassiveCaptureService(IProcessMemoryReader processMemoryRead
             Type = region.TypeName
         };
 
+    private static CaptureInterventionRegionReadFailure ToRegionReadFailure(VirtualMemoryRegion region, int requestedBytes, string reason) =>
+        new()
+        {
+            RegionId = region.RegionId,
+            BaseAddressHex = region.BaseAddressHex,
+            RequestedBytes = requestedBytes,
+            Reason = reason
+        };
+
     private static void WriteJson<T>(string sessionPath, string relativePath, T payload)
     {
         var path = ResolveSessionPath(sessionPath, relativePath);
@@ -504,7 +520,8 @@ public sealed class PassiveCaptureService(IProcessMemoryReader processMemoryRead
         int regionCount,
         int snapshotCount,
         long bytesCaptured,
-        int samplesTargeted)
+        int samplesTargeted,
+        IReadOnlyList<CaptureInterventionRegionReadFailure> regionReadFailures)
     {
         var handoff = new CaptureInterventionHandoff
         {
@@ -518,6 +535,7 @@ public sealed class PassiveCaptureService(IProcessMemoryReader processMemoryRead
             RegionCount = regionCount,
             SnapshotCount = snapshotCount,
             BytesCaptured = bytesCaptured,
+            RegionReadFailures = regionReadFailures,
             SamplesTargeted = samplesTargeted,
             InterventionWaitMilliseconds = options.InterventionWaitMilliseconds,
             InterventionPollIntervalMilliseconds = options.InterventionPollIntervalMilliseconds
