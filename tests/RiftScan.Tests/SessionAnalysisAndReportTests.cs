@@ -94,6 +94,59 @@ public sealed class SessionAnalysisAndReportTests
     }
 
     [Fact]
+    public void Report_session_json_pins_machine_readable_contract_fields()
+    {
+        using var session = CaptureInterruptedSession();
+
+        var result = new SessionReportGenerator().Generate(session.Path, top: 10);
+
+        using var machineReport = JsonDocument.Parse(File.ReadAllText(result.ReportJsonPath));
+        var root = machineReport.RootElement;
+        AssertJsonProperties(
+            root,
+            "schema_version",
+            "session_id",
+            "session_path",
+            "markdown_report_path",
+            "process_name",
+            "process_id",
+            "capture_mode",
+            "status",
+            "snapshot_count",
+            "region_count",
+            "total_bytes_stored",
+            "top_limit",
+            "artifact_counts",
+            "capture_interruption");
+
+        AssertJsonProperties(
+            root.GetProperty("artifact_counts"),
+            "triage_entries",
+            "delta_entries",
+            "typed_value_candidates",
+            "vec3_candidates",
+            "structure_clusters",
+            "structure_candidates");
+
+        var interruption = root.GetProperty("capture_interruption");
+        AssertJsonProperties(
+            interruption,
+            "reason",
+            "elapsed_ms",
+            "samples_targeted",
+            "recommended_next_action",
+            "region_read_failures");
+
+        var firstFailure = interruption.GetProperty("region_read_failures")[0];
+        AssertJsonProperties(
+            firstFailure,
+            "region_id",
+            "base_address_hex",
+            "requested_bytes",
+            "reason");
+    }
+
+    [Fact]
     public void Cli_analyze_and_report_session_return_success()
     {
         using var session = CopyFixtureToTemp();
@@ -120,6 +173,14 @@ public sealed class SessionAnalysisAndReportTests
         finally
         {
             Console.SetOut(originalOut);
+        }
+    }
+
+    private static void AssertJsonProperties(JsonElement element, params string[] propertyNames)
+    {
+        foreach (var propertyName in propertyNames)
+        {
+            Assert.True(element.TryGetProperty(propertyName, out _), $"Missing JSON property: {propertyName}");
         }
     }
 
