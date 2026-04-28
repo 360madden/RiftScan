@@ -25,6 +25,11 @@ public static class Program
                 return CapturePassive(args[2..]);
             }
 
+            if (args.Length >= 2 && Is(args[0], "capture") && Is(args[1], "plan"))
+            {
+                return CapturePlan(args[2..]);
+            }
+
             if (args.Length >= 2 && Is(args[0], "analyze") && Is(args[1], "session"))
             {
                 return AnalyzeSession(args[2..]);
@@ -57,6 +62,14 @@ public static class Program
     {
         var options = ParsePassiveCaptureOptions(args);
         var result = new PassiveCaptureService(new WindowsProcessMemoryReader()).Capture(options);
+        Console.WriteLine(JsonSerializer.Serialize(result, SessionJson.Options));
+        return result.Success ? 0 : 1;
+    }
+
+    private static int CapturePlan(string[] args)
+    {
+        var options = ParsePassiveCapturePlanOptions(args);
+        var result = new PassiveCapturePlanService(new WindowsProcessMemoryReader()).CaptureFromPlan(options);
         Console.WriteLine(JsonSerializer.Serialize(result, SessionJson.Options));
         return result.Success ? 0 : 1;
     }
@@ -178,6 +191,76 @@ public static class Program
         };
     }
 
+    private static PassiveCapturePlanOptions ParsePassiveCapturePlanOptions(string[] args)
+    {
+        if (args.Length == 0)
+        {
+            throw new ArgumentException("Capture plan requires a source session path.");
+        }
+
+        var sourceSessionPath = args[0];
+        string? processName = null;
+        int? processId = null;
+        string? outputPath = null;
+        var topRegions = 5;
+        var samples = 3;
+        var intervalMilliseconds = 100;
+        var maxBytesPerRegion = 64 * 1024;
+        long maxTotalBytes = 1024 * 1024;
+        var includeImageRegions = false;
+
+        for (var index = 1; index < args.Length; index++)
+        {
+            var arg = args[index];
+            switch (arg)
+            {
+                case "--process":
+                    processName = RequireValue(args, ref index, arg);
+                    break;
+                case "--pid":
+                    processId = int.Parse(RequireValue(args, ref index, arg));
+                    break;
+                case "--out":
+                    outputPath = RequireValue(args, ref index, arg);
+                    break;
+                case "--top-regions":
+                    topRegions = int.Parse(RequireValue(args, ref index, arg));
+                    break;
+                case "--samples":
+                    samples = int.Parse(RequireValue(args, ref index, arg));
+                    break;
+                case "--interval-ms":
+                    intervalMilliseconds = int.Parse(RequireValue(args, ref index, arg));
+                    break;
+                case "--max-bytes-per-region":
+                    maxBytesPerRegion = int.Parse(RequireValue(args, ref index, arg));
+                    break;
+                case "--max-total-bytes":
+                    maxTotalBytes = long.Parse(RequireValue(args, ref index, arg));
+                    break;
+                case "--include-image-regions":
+                    includeImageRegions = true;
+                    break;
+                default:
+                    throw new ArgumentException($"Unknown capture plan option: {arg}");
+            }
+        }
+
+        return new PassiveCapturePlanOptions
+        {
+            SourceSessionPath = sourceSessionPath,
+            ProcessName = processName,
+            ProcessId = processId,
+            OutputPath = outputPath ?? throw new ArgumentException("Capture plan requires --out <session-path>."),
+            TopRegions = topRegions,
+            Samples = samples,
+            IntervalMilliseconds = intervalMilliseconds,
+            MaxBytesPerRegion = maxBytesPerRegion,
+            MaxTotalBytes = maxTotalBytes,
+            IncludeImageRegions = includeImageRegions
+        };
+    }
+
     private static IReadOnlySet<string> ParseRegionIds(string value) =>
         value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
@@ -271,6 +354,7 @@ public static class Program
     {
         Console.WriteLine("riftscan capture passive --process <name> --out sessions/<id> [--samples 1] [--interval-ms 100]");
         Console.WriteLine("riftscan capture passive --pid <id> --out sessions/<id> [--samples 1] [--interval-ms 100] [--region-ids region-000001,region-000002]");
+        Console.WriteLine("riftscan capture plan <source-session> --pid <id> --out sessions/<id> [--top-regions 5]");
         Console.WriteLine("riftscan analyze session <session-path> [--all|--top 100]");
         Console.WriteLine("riftscan report session <session-path> [--top 100]");
         Console.WriteLine("riftscan compare sessions <session-a> <session-b> [--top 100] [--out reports/generated/comparison.json]");

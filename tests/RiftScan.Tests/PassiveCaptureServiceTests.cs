@@ -66,6 +66,50 @@ public sealed class PassiveCaptureServiceTests
     }
 
     [Fact]
+    public void Capture_plan_uses_top_planned_region_ids()
+    {
+        using var source = new TempDirectory();
+        using var output = new TempDirectory();
+        Directory.CreateDirectory(source.Path);
+        File.WriteAllText(Path.Combine(source.Path, "next_capture_plan.json"), """
+            {
+              "session_id": "source-session",
+              "analyzer_id": "dynamic_region_triage",
+              "recommendation": "test",
+              "regions": [
+                { "region_id": "region-000002", "rank_score": 20, "reason": "test" },
+                { "region_id": "region-000001", "rank_score": 10, "reason": "test" }
+              ]
+            }
+            """);
+        var reader = new FakeProcessMemoryReader
+        {
+            Regions =
+            [
+                new VirtualMemoryRegion("region-000001", 0x1000, 16, MemoryRegionConstants.MemCommit, MemoryRegionConstants.PageReadWrite, MemoryRegionConstants.MemPrivate),
+                new VirtualMemoryRegion("region-000002", 0x2000, 16, MemoryRegionConstants.MemCommit, MemoryRegionConstants.PageReadWrite, MemoryRegionConstants.MemPrivate)
+            ]
+        };
+
+        var result = new PassiveCapturePlanService(reader).CaptureFromPlan(new PassiveCapturePlanOptions
+        {
+            SourceSessionPath = source.Path,
+            ProcessName = "fixture_process",
+            OutputPath = output.Path,
+            TopRegions = 1,
+            Samples = 1,
+            IntervalMilliseconds = 0,
+            MaxBytesPerRegion = 16,
+            MaxTotalBytes = 16
+        });
+
+        Assert.True(result.Success);
+        Assert.Equal(1, result.RegionsCaptured);
+        Assert.Contains("snapshots/region-000002-sample-000001.bin", result.ArtifactsWritten);
+        Assert.DoesNotContain("snapshots/region-000001-sample-000001.bin", result.ArtifactsWritten);
+    }
+
+    [Fact]
     public void Capture_refuses_to_choose_between_duplicate_process_names()
     {
         using var output = new TempDirectory();
