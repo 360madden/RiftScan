@@ -508,6 +508,7 @@ public sealed class PassiveCaptureServiceTests
 
         Assert.True(result.Success);
         Assert.Equal(newProcess.ProcessId, result.ProcessId);
+        Assert.True(result.ElapsedMilliseconds >= 0);
         Assert.Equal("complete", result.Status);
         Assert.Equal(1, result.SamplesRequested);
         Assert.Equal(1, result.SamplesAttempted);
@@ -566,6 +567,7 @@ public sealed class PassiveCaptureServiceTests
         });
 
         Assert.False(result.Success);
+        Assert.True(result.ElapsedMilliseconds >= 0);
         Assert.Equal("interrupted", result.Status);
         Assert.Equal(1, result.SamplesRequested);
         Assert.Equal(1, result.SamplesAttempted);
@@ -606,6 +608,7 @@ public sealed class PassiveCaptureServiceTests
         });
 
         Assert.False(result.Success);
+        Assert.True(result.ElapsedMilliseconds >= 0);
         Assert.Equal("interrupted", result.Status);
         Assert.Equal("no_snapshot_data_before_selected_regions_unreadable", result.InterruptionReason);
         Assert.Equal(1, result.RegionReadFailureCount);
@@ -613,6 +616,7 @@ public sealed class PassiveCaptureServiceTests
         Assert.Contains("intervention_handoff.json", result.ArtifactsWritten);
         var handoff = JsonSerializer.Deserialize<CaptureInterventionHandoff>(File.ReadAllText(Path.Combine(output.Path, "intervention_handoff.json")), SessionJson.Options)!;
         Assert.Equal("no_snapshot_data_before_selected_regions_unreadable", handoff.Reason);
+        Assert.True(handoff.ElapsedMilliseconds >= 0);
         Assert.Equal("review_region_read_failures_or_capture_from_a_fresh_plan", handoff.RecommendedNextAction);
         var failure = Assert.Single(handoff.RegionReadFailures);
         Assert.Equal("region-000001", failure.RegionId);
@@ -663,6 +667,7 @@ public sealed class PassiveCaptureServiceTests
         });
 
         Assert.False(result.Success);
+        Assert.True(result.ElapsedMilliseconds >= 0);
         Assert.Equal("interrupted", result.Status);
         Assert.Equal(2, result.SamplesRequested);
         Assert.Equal(2, result.SamplesAttempted);

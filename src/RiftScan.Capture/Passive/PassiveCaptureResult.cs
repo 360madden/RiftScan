@@ -22,6 +22,9 @@ public sealed record PassiveCaptureResult
     [JsonPropertyName("process_name")]
     public string ProcessName { get; init; } = string.Empty;
 
+    [JsonPropertyName("elapsed_ms")]
+    public long ElapsedMilliseconds { get; init; }
+
     [JsonPropertyName("status")]
     public string Status { get; init; } = string.Empty;
 

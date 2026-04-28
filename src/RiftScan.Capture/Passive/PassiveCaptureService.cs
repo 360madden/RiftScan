@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text.Json;
 using RiftScan.Core.Processes;
 using RiftScan.Core.Sessions;
@@ -24,6 +25,7 @@ public sealed class PassiveCaptureService(IProcessMemoryReader processMemoryRead
 
     public PassiveCaptureResult Capture(PassiveCaptureOptions options)
     {
+        var stopwatch = Stopwatch.StartNew();
         ValidateOptions(options);
 
         var sessionPath = Path.GetFullPath(options.OutputPath);
@@ -177,7 +179,8 @@ public sealed class PassiveCaptureService(IProcessMemoryReader processMemoryRead
                     0,
                     0,
                     sampleCountAttempted,
-                    lastRegionReadFailures);
+                    lastRegionReadFailures,
+                    stopwatch.ElapsedMilliseconds);
 
                 return new PassiveCaptureResult
                 {
@@ -186,6 +189,7 @@ public sealed class PassiveCaptureService(IProcessMemoryReader processMemoryRead
                     SessionId = Path.GetFileName(sessionPath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)),
                     ProcessId = restoredProcess.ProcessId,
                     ProcessName = restoredProcess.ProcessName,
+                    ElapsedMilliseconds = stopwatch.ElapsedMilliseconds,
                     Status = InterruptedSessionStatus,
                     SamplesRequested = options.Samples,
                     SamplesAttempted = sampleCountAttempted,
@@ -240,7 +244,8 @@ public sealed class PassiveCaptureService(IProcessMemoryReader processMemoryRead
                 snapshotEntries.Count,
                 totalBytes,
                 sampleCountAttempted,
-                lastRegionReadFailures);
+                lastRegionReadFailures,
+                stopwatch.ElapsedMilliseconds);
         }
 
         WriteChecksums(sessionPath, snapshotEntries);
@@ -252,6 +257,7 @@ public sealed class PassiveCaptureService(IProcessMemoryReader processMemoryRead
             SessionId = manifest.SessionId,
             ProcessId = restoredProcess.ProcessId,
             ProcessName = restoredProcess.ProcessName,
+            ElapsedMilliseconds = stopwatch.ElapsedMilliseconds,
             Status = manifest.Status,
             SamplesRequested = options.Samples,
             SamplesAttempted = sampleCountAttempted,
@@ -532,7 +538,8 @@ public sealed class PassiveCaptureService(IProcessMemoryReader processMemoryRead
         int snapshotCount,
         long bytesCaptured,
         int samplesTargeted,
-        IReadOnlyList<CaptureInterventionRegionReadFailure> regionReadFailures)
+        IReadOnlyList<CaptureInterventionRegionReadFailure> regionReadFailures,
+        long elapsedMilliseconds)
     {
         var handoff = new CaptureInterventionHandoff
         {
@@ -543,6 +550,7 @@ public sealed class PassiveCaptureService(IProcessMemoryReader processMemoryRead
             ProcessStartTimeUtc = process.StartTimeUtc,
             CreatedUtc = DateTimeOffset.UtcNow,
             Reason = reason,
+            ElapsedMilliseconds = elapsedMilliseconds,
             RegionCount = regionCount,
             SnapshotCount = snapshotCount,
             BytesCaptured = bytesCaptured,

@@ -28,6 +28,9 @@ public sealed record CaptureInterventionHandoff
     [JsonPropertyName("reason")]
     public string Reason { get; init; } = string.Empty;
 
+    [JsonPropertyName("elapsed_ms")]
+    public long ElapsedMilliseconds { get; init; }
+
     [JsonPropertyName("regions_captured")]
     public int RegionCount { get; init; }
 

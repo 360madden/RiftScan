@@ -16,6 +16,7 @@ public sealed class PassiveCaptureSerializationContractTests
             SessionId = "test-session",
             ProcessId = 1234,
             ProcessName = "fixture_process",
+            ElapsedMilliseconds = 123,
             Status = "interrupted",
             SamplesRequested = 3,
             SamplesAttempted = 2,
@@ -33,6 +34,7 @@ public sealed class PassiveCaptureSerializationContractTests
 
         Assert.Equal("riftscan.passive_capture_result.v1", root.GetProperty("result_schema_version").GetString());
         Assert.False(root.GetProperty("success").GetBoolean());
+        Assert.Equal(123, root.GetProperty("elapsed_ms").GetInt64());
         Assert.Equal("interrupted", root.GetProperty("status").GetString());
         Assert.Equal(3, root.GetProperty("samples_requested").GetInt32());
         Assert.Equal(2, root.GetProperty("samples_attempted").GetInt32());
@@ -52,6 +54,7 @@ public sealed class PassiveCaptureSerializationContractTests
             SessionId = "test-session",
             ProcessId = 1234,
             ProcessName = "fixture_process",
+            ElapsedMilliseconds = 12,
             Status = "complete",
             SamplesRequested = 1,
             SamplesAttempted = 1,
@@ -65,6 +68,7 @@ public sealed class PassiveCaptureSerializationContractTests
         var root = document.RootElement;
 
         Assert.Equal("riftscan.passive_capture_result.v1", root.GetProperty("result_schema_version").GetString());
+        Assert.Equal(12, root.GetProperty("elapsed_ms").GetInt64());
         Assert.Equal("complete", root.GetProperty("status").GetString());
         Assert.False(root.TryGetProperty("interruption_reason", out _));
         Assert.False(root.TryGetProperty("handoff_path", out _));
@@ -82,6 +86,7 @@ public sealed class PassiveCaptureSerializationContractTests
             ProcessId = 1234,
             ProcessStartTimeUtc = DateTimeOffset.Parse("2026-04-28T23:00:00Z"),
             Reason = "selected_regions_unreadable",
+            ElapsedMilliseconds = 456,
             RegionCount = 1,
             SnapshotCount = 1,
             BytesCaptured = 16,
@@ -107,6 +112,7 @@ public sealed class PassiveCaptureSerializationContractTests
 
         Assert.Equal("riftscan.capture_intervention_handoff.v1", root.GetProperty("schema_version").GetString());
         Assert.Equal("selected_regions_unreadable", root.GetProperty("reason").GetString());
+        Assert.Equal(456, root.GetProperty("elapsed_ms").GetInt64());
         Assert.Equal("review_region_read_failures_or_capture_from_a_fresh_plan", root.GetProperty("recommended_next_action").GetString());
         Assert.Equal("region-000001", failure.GetProperty("region_id").GetString());
         Assert.Equal("0x1000", failure.GetProperty("base_address_hex").GetString());
