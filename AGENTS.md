@@ -4,8 +4,8 @@
 riftscan_agent_contract:
   metadata:
     document_name: AGENTS.md
-    document_version: "0.7.0"
-    document_character_count: "025173"
+    document_version: "0.7.1"
+    document_character_count: "027056"
     project: RiftScan
     project_stream: RiftScan01
     purpose: root_machine_readable_contract_for_coding_agents
@@ -48,6 +48,36 @@ riftscan_agent_contract:
       - mix_launcher_input_or_window_control_into_scanner_core
       - handle_credentials_tokens_or_launcher_auth_material
 
+  model_routing:
+    purpose: conserve_quota_without_risking_truth_or_integrity
+    default:
+      low_risk_bounded_work: spark
+      medium_or_high_risk_work: stronger_model
+    spark_use:
+      rule: actively_use_spark_when_task_is_low_risk_bounded_and_reversible
+      allowed:
+        - read_only_repo_orientation
+        - docs_status_summaries
+        - simple_file_inventory_status_tables
+        - formatting_only_doc_cleanup
+        - fixture_review_without_verifier_behavior_changes
+    stronger_model_required:
+      rule: use_stronger_model_for_correctness_critical_or_behavior_affecting_work
+      required_for:
+        - live_process_capture_or_process_attachment
+        - memory_reader_logic
+        - checksum_or_session_integrity_logic
+        - cli_behavior_changes
+        - analyzer_scoring_or_truth_claim_logic
+        - architecture_boundary_decisions
+        - live_rift_interaction
+    escalation:
+      spark_must_stop_and_escalate_on:
+        - ambiguity
+        - failing_tests
+        - behavior_impacting_changes
+        - uncertainty
+      rule: spark_must_not_guess_or_patch_around_risk
   project_identity:
     name: RiftScan
     stream: RiftScan01
