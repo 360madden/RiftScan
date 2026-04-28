@@ -322,6 +322,121 @@ public sealed class PassiveCaptureServiceTests
         Assert.Contains("Use --pid", ex.Message, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void Capture_waits_for_process_return_then_resumes_capture()
+    {
+        using var output = new TempDirectory();
+        var process = new ProcessDescriptor(100, "fixture_process", DateTimeOffset.Parse("2026-04-28T17:00:00Z"), "fixture.exe");
+        var processLookupAttempts = 0;
+        var readAttempts = 0;
+
+        var reader = new FakeProcessMemoryReader
+        {
+            Regions =
+            [
+                new VirtualMemoryRegion(
+                    "region-000001",
+                    0x1000,
+                    16,
+                    MemoryRegionConstants.MemCommit,
+                    MemoryRegionConstants.PageReadWrite,
+                    MemoryRegionConstants.MemPrivate)
+            ],
+            Processes = [process],
+            FindProcessesByNameFunc = processName =>
+            {
+                if (processLookupAttempts == 0)
+                {
+                    processLookupAttempts++;
+                    return [process];
+                }
+
+                processLookupAttempts++;
+                return processLookupAttempts >= 3 ? [process] : [];
+            },
+            ReadMemoryFunc = (_, _, byteCount) =>
+            {
+                readAttempts++;
+                return readAttempts == 1
+                    ? throw new InvalidOperationException("process unavailable")
+                    : Enumerable.Range(0, byteCount).Select(value => (byte)value).ToArray();
+            }
+        };
+
+        var result = new PassiveCaptureService(reader).Capture(new PassiveCaptureOptions
+        {
+            ProcessName = "fixture_process",
+            OutputPath = output.Path,
+            Samples = 2,
+            IntervalMilliseconds = 0,
+            MaxRegions = 1,
+            MaxBytesPerRegion = 16,
+            MaxTotalBytes = 32,
+            InterventionWaitMilliseconds = 2000,
+            InterventionPollIntervalMilliseconds = 50
+        });
+
+        Assert.True(result.Success);
+        Assert.Equal(1, result.RegionsCaptured);
+        Assert.Equal(1, result.SnapshotsCaptured);
+        Assert.Contains("snapshots/region-000001-sample-000002.bin", result.ArtifactsWritten);
+    }
+
+    [Fact]
+    public void Capture_times_out_waiting_for_process_and_writes_intervention_handoff()
+    {
+        using var output = new TempDirectory();
+        var process = new ProcessDescriptor(100, "fixture_process", DateTimeOffset.Parse("2026-04-28T17:00:00Z"), "fixture.exe");
+        var getProcessByIdAttempts = 0;
+
+        var reader = new FakeProcessMemoryReader
+        {
+            Regions =
+            [
+                new VirtualMemoryRegion(
+                    "region-000001",
+                    0x1000,
+                    16,
+                    MemoryRegionConstants.MemCommit,
+                    MemoryRegionConstants.PageReadWrite,
+                    MemoryRegionConstants.MemPrivate)
+            ],
+            Processes = [process],
+            FindProcessesByNameFunc = _ => [],
+            ReadMemoryFunc = (_, _, _) => throw new InvalidOperationException("process unavailable"),
+            GetProcessByIdFunc = _ =>
+            {
+                getProcessByIdAttempts++;
+                return getProcessByIdAttempts == 1
+                    ? process
+                    : throw new InvalidOperationException("process unavailable");
+            }
+        };
+
+        var result = new PassiveCaptureService(reader).Capture(new PassiveCaptureOptions
+        {
+            ProcessId = 100,
+            OutputPath = output.Path,
+            Samples = 1,
+            IntervalMilliseconds = 0,
+            MaxRegions = 1,
+            MaxBytesPerRegion = 16,
+            MaxTotalBytes = 16,
+            InterventionWaitMilliseconds = 250,
+            InterventionPollIntervalMilliseconds = 50
+        });
+
+        Assert.False(result.Success);
+        Assert.Equal(0, result.SnapshotsCaptured);
+        Assert.Contains("intervention_handoff.json", result.ArtifactsWritten);
+        var handoff = JsonSerializer.Deserialize<CaptureInterventionHandoff>(File.ReadAllText(Path.Combine(output.Path, "intervention_handoff.json")), SessionJson.Options)!;
+        Assert.Equal("no_snapshot_data_before_intervention_timeout", handoff.Reason);
+        Assert.Equal(0, handoff.SnapshotCount);
+        Assert.Equal(1, handoff.SamplesTargeted);
+        Assert.Equal(100, handoff.ProcessId);
+        Assert.False(File.Exists(Path.Combine(output.Path, "manifest.json")));
+    }
+
     private sealed class FakeProcessMemoryReader : IProcessMemoryReader
     {
         public IReadOnlyList<ProcessDescriptor> Processes { get; init; } =
@@ -340,18 +455,30 @@ public sealed class PassiveCaptureServiceTests
                 MemoryRegionConstants.MemPrivate)
         ];
 
+        public Func<string, IReadOnlyList<ProcessDescriptor>>? FindProcessesByNameFunc { get; init; }
+
+        public Func<int, ProcessDescriptor>? GetProcessByIdFunc { get; init; }
+
+        public Func<int, IReadOnlyList<VirtualMemoryRegion>>? EnumerateRegionsFunc { get; init; }
+
+        public Func<int, ulong, int, byte[]>? ReadMemoryFunc { get; init; }
+
         public IReadOnlyList<ProcessDescriptor> FindProcessesByName(string processName) =>
-            Processes.Where(process => string.Equals(process.ProcessName, processName, StringComparison.OrdinalIgnoreCase)).ToArray();
+            FindProcessesByNameFunc?.Invoke(processName)
+            ?? Processes.Where(process => string.Equals(process.ProcessName, processName, StringComparison.OrdinalIgnoreCase)).ToArray();
 
         public ProcessDescriptor GetProcessById(int processId) =>
-            Processes.Single(process => process.ProcessId == processId);
+            GetProcessByIdFunc?.Invoke(processId)
+            ?? Processes.Single(process => process.ProcessId == processId);
 
         public IReadOnlyList<ProcessModuleInfo> GetModules(int processId) => [];
 
-        public IReadOnlyList<VirtualMemoryRegion> EnumerateRegions(int processId) => Regions;
+        public IReadOnlyList<VirtualMemoryRegion> EnumerateRegions(int processId) =>
+            EnumerateRegionsFunc?.Invoke(processId) ?? Regions;
 
         public byte[] ReadMemory(int processId, ulong baseAddress, int byteCount) =>
-            Enumerable.Range(0, byteCount).Select(value => (byte)value).ToArray();
+            ReadMemoryFunc?.Invoke(processId, baseAddress, byteCount)
+            ?? Enumerable.Range(0, byteCount).Select(value => (byte)value).ToArray();
     }
 
     private sealed class TempDirectory : IDisposable

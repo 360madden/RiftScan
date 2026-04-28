@@ -161,6 +161,8 @@ public static class Program
         IReadOnlySet<string> regionIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         string? stimulusLabel = null;
         string? stimulusNotes = null;
+        var interventionWaitMilliseconds = 20 * 60 * 1000;
+        var interventionPollMilliseconds = 2_000;
 
         for (var index = 0; index < args.Length; index++)
         {
@@ -203,6 +205,12 @@ public static class Program
                 case "--stimulus-note":
                     stimulusNotes = RequireValue(args, ref index, arg);
                     break;
+                case "--intervention-wait-ms":
+                    interventionWaitMilliseconds = int.Parse(RequireValue(args, ref index, arg));
+                    break;
+                case "--intervention-poll-ms":
+                    interventionPollMilliseconds = int.Parse(RequireValue(args, ref index, arg));
+                    break;
                 default:
                     throw new ArgumentException($"Unknown capture passive option: {arg}");
             }
@@ -221,7 +229,9 @@ public static class Program
             IncludeImageRegions = includeImageRegions,
             RegionIds = regionIds,
             StimulusLabel = stimulusLabel,
-            StimulusNotes = stimulusNotes
+            StimulusNotes = stimulusNotes,
+            InterventionWaitMilliseconds = interventionWaitMilliseconds,
+            InterventionPollIntervalMilliseconds = interventionPollMilliseconds
         };
     }
 
@@ -244,6 +254,8 @@ public static class Program
         var includeImageRegions = false;
         string? stimulusLabel = null;
         string? stimulusNotes = null;
+        var interventionWaitMilliseconds = 20 * 60 * 1000;
+        var interventionPollMilliseconds = 2_000;
 
         for (var index = 1; index < args.Length; index++)
         {
@@ -283,6 +295,12 @@ public static class Program
                 case "--stimulus-note":
                     stimulusNotes = RequireValue(args, ref index, arg);
                     break;
+                case "--intervention-wait-ms":
+                    interventionWaitMilliseconds = int.Parse(RequireValue(args, ref index, arg));
+                    break;
+                case "--intervention-poll-ms":
+                    interventionPollMilliseconds = int.Parse(RequireValue(args, ref index, arg));
+                    break;
                 default:
                     throw new ArgumentException($"Unknown capture plan option: {arg}");
             }
@@ -301,7 +319,9 @@ public static class Program
             MaxTotalBytes = maxTotalBytes,
             IncludeImageRegions = includeImageRegions,
             StimulusLabel = stimulusLabel,
-            StimulusNotes = stimulusNotes
+            StimulusNotes = stimulusNotes,
+            InterventionWaitMilliseconds = interventionWaitMilliseconds,
+            InterventionPollIntervalMilliseconds = interventionPollMilliseconds
         };
     }
 
@@ -404,9 +424,9 @@ public static class Program
 
     private static void PrintUsage()
     {
-        Console.WriteLine("riftscan capture passive --process <name> --out sessions/<id> [--samples 1] [--interval-ms 100] [--stimulus passive_idle]");
+        Console.WriteLine("riftscan capture passive --process <name> --out sessions/<id> [--samples 1] [--interval-ms 100] [--stimulus passive_idle] [--intervention-wait-ms 1200000] [--intervention-poll-ms 2000]");
         Console.WriteLine("riftscan capture passive --pid <id> --out sessions/<id> [--samples 1] [--interval-ms 100] [--region-ids region-000001,region-000002] [--stimulus move_forward]");
-        Console.WriteLine("riftscan capture plan <source-session-or-plan-json> --pid <id> --out sessions/<id> [--top-regions 5] [--stimulus move_forward]");
+        Console.WriteLine("riftscan capture plan <source-session-or-plan-json> --pid <id> --out sessions/<id> [--top-regions 5] [--stimulus move_forward] [--intervention-wait-ms 1200000] [--intervention-poll-ms 2000]");
         Console.WriteLine("riftscan analyze session <session-path> [--all|--top 100]");
         Console.WriteLine("riftscan report session <session-path> [--top 100]");
         Console.WriteLine("riftscan compare sessions <session-a> <session-b> [--top 100] [--out reports/generated/comparison.json] [--report-md reports/generated/comparison.md] [--next-plan reports/generated/next-capture-plan.json]");
