@@ -266,6 +266,42 @@ public sealed class PassiveCaptureServiceTests
     }
 
     [Fact]
+    public void Capture_plan_rejects_unsupported_comparison_next_capture_plan_schema()
+    {
+        using var source = new TempDirectory();
+        using var output = new TempDirectory();
+        Directory.CreateDirectory(source.Path);
+        var planPath = Path.Combine(source.Path, "bad-comparison-next-capture-plan.json");
+        File.WriteAllText(planPath, """
+            {
+              "schema_version": "comparison_next_capture_plan.v999",
+              "target_region_priorities": [
+                {
+                  "base_address_hex": "0x2000",
+                  "priority_score": 85,
+                  "reason": "bad_schema_fixture"
+                }
+              ]
+            }
+            """);
+
+        var ex = Assert.Throws<InvalidOperationException>(() => new PassiveCapturePlanService(new FakeProcessMemoryReader()).CaptureFromPlan(new PassiveCapturePlanOptions
+        {
+            SourceSessionPath = planPath,
+            ProcessName = "fixture_process",
+            OutputPath = output.Path,
+            TopRegions = 1,
+            Samples = 1,
+            IntervalMilliseconds = 0,
+            MaxBytesPerRegion = 16,
+            MaxTotalBytes = 16
+        }));
+
+        Assert.Contains("Unsupported comparison capture plan schema_version", ex.Message, StringComparison.Ordinal);
+        Assert.Contains("comparison_next_capture_plan.v1", ex.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Capture_refuses_to_choose_between_duplicate_process_names()
     {
         using var output = new TempDirectory();

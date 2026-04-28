@@ -37,6 +37,9 @@ public sealed record PassiveCapturePlanRegion
 
 public sealed record PassiveComparisonCapturePlanDocument
 {
+    [JsonPropertyName("schema_version")]
+    public string SchemaVersion { get; init; } = string.Empty;
+
     [JsonPropertyName("target_region_priorities")]
     public IReadOnlyList<PassiveComparisonCaptureTarget> TargetRegionPriorities { get; init; } = [];
 }
