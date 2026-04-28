@@ -75,6 +75,31 @@ public sealed class PassiveCaptureProcessIntegrationTests
         }
     }
 
+    [Fact]
+    public void Windows_reader_finds_dotted_process_name_and_exe_name()
+    {
+        if (!OperatingSystem.IsWindows())
+        {
+            return;
+        }
+
+        using var ready = new TempDirectory();
+        var fixturePath = ResolveFixturePath();
+        using var process = StartFixture(fixturePath, Path.Combine(ready.Path, "lookup.ready"));
+
+        try
+        {
+            var reader = new WindowsProcessMemoryReader();
+            Assert.Contains(reader.FindProcessesByName(process.ProcessName), match => match.ProcessId == process.Id);
+            Assert.Contains(reader.FindProcessesByName($"{process.ProcessName}.exe"), match => match.ProcessId == process.Id);
+            Assert.Contains(reader.FindProcessesByName(Path.GetFileName(fixturePath)), match => match.ProcessId == process.Id);
+        }
+        finally
+        {
+            StopProcess(process);
+        }
+    }
+
     private static Process StartFixture(string fixturePath, string readyFile, int? exitAfterMilliseconds = null)
     {
         var startInfo = new ProcessStartInfo
