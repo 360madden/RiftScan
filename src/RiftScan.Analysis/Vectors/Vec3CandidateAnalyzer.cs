@@ -81,6 +81,7 @@ public sealed class Vec3CandidateAnalyzer
             RankScore = rankScore,
             ValidationStatus = behavior.ValidationStatus,
             ConfidenceLevel = ToConfidenceLevel(rankScore),
+            ExplanationShort = behavior.Recommendation,
             Recommendation = behavior.Recommendation,
             ValuePreview = source.ValuePreview,
             Diagnostics = diagnostics

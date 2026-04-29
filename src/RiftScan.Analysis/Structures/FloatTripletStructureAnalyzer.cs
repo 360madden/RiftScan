@@ -90,6 +90,7 @@ public sealed class FloatTripletStructureAnalyzer
                 SnapshotSupport = accumulator.Support,
                 Score = score,
                 ConfidenceLevel = ToConfidenceLevel(score),
+                ExplanationShort = $"finite_float32_triplet_supported_in_{accumulator.Support}_of_{snapshots.Count}_snapshots",
                 ValuePreview = accumulator.FirstValues,
                 Diagnostics = diagnostics
             };

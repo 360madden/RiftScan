@@ -22,6 +22,7 @@ public sealed class StructureAnalyzerTests
         Assert.Equal("float32_triplet", first.StructureKind);
         Assert.Equal("unvalidated_candidate", first.ValidationStatus);
         Assert.Equal("high", first.ConfidenceLevel);
+        Assert.Equal("finite_float32_triplet_supported_in_1_of_1_snapshots", first.ExplanationShort);
         Assert.True(first.Score > 0);
     }
 

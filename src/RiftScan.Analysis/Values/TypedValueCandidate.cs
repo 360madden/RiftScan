@@ -49,6 +49,9 @@ public sealed record TypedValueCandidate
     [JsonPropertyName("confidence_level")]
     public string ConfidenceLevel { get; init; } = "low";
 
+    [JsonPropertyName("explanation_short")]
+    public string ExplanationShort { get; init; } = string.Empty;
+
     [JsonPropertyName("recommendation")]
     public string Recommendation { get; init; } = string.Empty;
 

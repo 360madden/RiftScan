@@ -67,6 +67,7 @@ public sealed class AnalyzerOutputContractTests
             "rank_score",
             "validation_status",
             "confidence_level",
+            "explanation_short",
             "recommendation",
             "value_preview",
             "diagnostics");
@@ -88,6 +89,7 @@ public sealed class AnalyzerOutputContractTests
             "score",
             "validation_status",
             "confidence_level",
+            "explanation_short",
             "value_preview",
             "diagnostics");
 
@@ -113,6 +115,7 @@ public sealed class AnalyzerOutputContractTests
             "rank_score",
             "validation_status",
             "confidence_level",
+            "explanation_short",
             "recommendation",
             "value_preview",
             "diagnostics");

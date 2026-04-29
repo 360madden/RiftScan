@@ -153,6 +153,7 @@ public sealed class TypedValueLaneAnalyzer
             ChangedSampleCount = changedSampleCount,
             RankScore = rankScore,
             ConfidenceLevel = ToConfidenceLevel(rankScore),
+            ExplanationShort = $"{dataType}_lane_changed_{changedSampleCount}_of_{comparedPairCount}_pairs",
             Recommendation = recommendation,
             ValuePreview = valuePreview.Take(8).ToArray(),
             Diagnostics = diagnostics
