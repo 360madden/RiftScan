@@ -216,6 +216,32 @@ public sealed class SmokeManifestVerifierScriptTests
     }
 
     [Fact]
+    public void Verify_smoke_manifest_accepts_downloaded_artifact_with_stale_recorded_output_root()
+    {
+        var tempDirectory = CreateTempDirectory();
+        try
+        {
+            var artifactPath = Path.Combine(tempDirectory, "proof.bin");
+            File.WriteAllText(artifactPath, "proof\n");
+            var manifestPath = WriteCustomManifest(
+                tempDirectory,
+                artifactPath,
+                manifest => manifest["output_root"] = @"D:\a\RiftScan\RiftScan\artifacts\smoke-fixture");
+
+            var result = RunVerifier(manifestPath);
+
+            Assert.Equal(0, result.ExitCode);
+            using var document = JsonDocument.Parse(result.Stdout);
+            Assert.Equal(Path.GetFullPath(tempDirectory), document.RootElement.GetProperty("output_root").GetString());
+            Assert.Equal(@"D:\a\RiftScan\RiftScan\artifacts\smoke-fixture", document.RootElement.GetProperty("recorded_output_root").GetString());
+        }
+        finally
+        {
+            Directory.Delete(tempDirectory, recursive: true);
+        }
+    }
+
+    [Fact]
     public void Verify_smoke_manifest_rejects_missing_listed_file()
     {
         var tempDirectory = CreateTempDirectory();

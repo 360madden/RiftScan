@@ -104,6 +104,11 @@ jobs:
         shell: pwsh
         run: pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/verify-ci-diagnostics-index.ps1 -Root artifacts/ci-diagnostics
 
+      - name: Verify CI artifact bundle
+        if: always()
+        shell: pwsh
+        run: pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/verify-ci-artifacts.ps1 -Root artifacts
+
       - name: Upload smoke artifacts
         if: always()
         uses: actions/upload-artifact@v4

@@ -44,8 +44,7 @@ The `ci-diagnostics/` files are written early so failed runs still upload useful
 From the repository root:
 
 ```powershell
-pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/verify-smoke-manifest.ps1 -Root artifacts
-pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/verify-ci-diagnostics-index.ps1 -Root artifacts/ci-diagnostics
+pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/verify-ci-artifacts.ps1 -Root artifacts
 ```
 
 Expected output is JSON similar to:
@@ -67,7 +66,14 @@ Expected output is JSON similar to:
 ]
 ```
 
-The smoke manifest verifier fails nonzero if a manifest is missing required fields, `created_utc` is malformed, a listed file is missing, a file size differs, a SHA256 hash is malformed or differs, a manifest has a bad file count, or a manifest path attempts to escape its output root.
+The bundle verifier runs both lower-level checks:
+
+```powershell
+pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/verify-smoke-manifest.ps1 -Root artifacts
+pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/verify-ci-diagnostics-index.ps1 -Root artifacts/ci-diagnostics
+```
+
+The smoke manifest verifier fails nonzero if a manifest is missing required fields, `created_utc` is malformed, a listed file is missing, a file size differs, a SHA256 hash is malformed or differs, a manifest has a bad file count, or a manifest path attempts to escape its output root. It validates files relative to each extracted `smoke-manifest.json` location, so downloaded GitHub Actions artifacts remain verifiable even though their recorded `output_root` path was on the runner.
 
 The CI diagnostics index verifier fails nonzero if `ci-diagnostics/index.json` is missing, malformed, lists itself, points outside the extracted diagnostics directory, or has a byte/hash/total mismatch. It validates files relative to the extracted artifact path, so indexes downloaded from GitHub Actions remain verifiable even though their recorded CI root path was on the runner.
 

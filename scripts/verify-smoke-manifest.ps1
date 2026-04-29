@@ -63,7 +63,7 @@ function Assert-Manifest {
         -Value (Assert-JsonProperty -Object $manifest -Name "smoke_name" -Context $fullManifestPath) `
         -Name "smoke_name" `
         -Context $fullManifestPath
-    $outputRootValue = Assert-NonEmptyString `
+    $recordedOutputRoot = Assert-NonEmptyString `
         -Value (Assert-JsonProperty -Object $manifest -Name "output_root" -Context $fullManifestPath) `
         -Name "output_root" `
         -Context $fullManifestPath
@@ -92,9 +92,9 @@ function Assert-Manifest {
         throw "$fullManifestPath has empty required field: files"
     }
 
-    $outputRoot = [System.IO.Path]::GetFullPath($outputRootValue)
-    if (-not (Test-Path -LiteralPath $outputRoot -PathType Container)) {
-        throw "Smoke manifest output_root does not exist: $outputRoot"
+    $actualOutputRoot = [System.IO.Path]::GetDirectoryName($fullManifestPath)
+    if (-not (Test-Path -LiteralPath $actualOutputRoot -PathType Container)) {
+        throw "Smoke manifest directory does not exist: $actualOutputRoot"
     }
 
     $files = @($filesValue)
@@ -127,8 +127,8 @@ function Assert-Manifest {
             throw "Smoke manifest SHA256 must be 64 lowercase hex characters for ${filePath}: $expectedHash"
         }
 
-        $artifactPath = [System.IO.Path]::GetFullPath((Join-Path $outputRoot $filePath))
-        $relativeArtifactPath = [System.IO.Path]::GetRelativePath($outputRoot, $artifactPath)
+        $artifactPath = [System.IO.Path]::GetFullPath((Join-Path $actualOutputRoot $filePath))
+        $relativeArtifactPath = [System.IO.Path]::GetRelativePath($actualOutputRoot, $artifactPath)
         if ($relativeArtifactPath.StartsWith("..", [StringComparison]::Ordinal) -or [System.IO.Path]::IsPathRooted($relativeArtifactPath)) {
             throw "Smoke manifest file escapes output_root: $filePath"
         }
@@ -151,7 +151,8 @@ function Assert-Manifest {
         manifest_path = $fullManifestPath
         smoke_name = $smokeName
         file_count = $files.Count
-        output_root = $outputRoot
+        output_root = $actualOutputRoot
+        recorded_output_root = $recordedOutputRoot
     }
 }
 
