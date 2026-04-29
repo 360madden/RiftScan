@@ -1,4 +1,5 @@
 using System.Reflection;
+using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using RiftScan.Analysis.Comparison;
@@ -7,6 +8,7 @@ using RiftScan.Analysis.Triage;
 using RiftScan.Capture.Passive;
 using RiftScan.Core.Processes;
 using RiftScan.Core.Sessions;
+using RiftScan.Rift.Addons;
 
 namespace RiftScan.Cli;
 
@@ -57,6 +59,16 @@ public static class Program
             if (args.Length >= 2 && Is(args[0], "report") && Is(args[1], "capability"))
             {
                 return ReportCapability(args[2..]);
+            }
+
+            if (args.Length >= 2 && Is(args[0], "rift") && Is(args[1], "addon-coords"))
+            {
+                return RiftAddonCoords(args[2..]);
+            }
+
+            if (args.Length >= 2 && Is(args[0], "rift") && Is(args[1], "addon-corroboration"))
+            {
+                return RiftAddonCorroboration(args[2..]);
             }
 
             if (args.Length >= 2 && Is(args[0], "compare") && Is(args[1], "sessions"))
@@ -335,6 +347,113 @@ public static class Program
 
         var (truthReadinessPaths, scalarEvidenceSetPaths, scalarTruthRecoveryPaths, scalarTruthPromotionPaths, scalarPromotionReviewPaths, jsonOutputPath) = ParseReportCapabilityOptions(args);
         var result = new CapabilityStatusService().Build(truthReadinessPaths, scalarEvidenceSetPaths, scalarTruthRecoveryPaths, scalarTruthPromotionPaths, scalarPromotionReviewPaths);
+        WriteOptionalJson(jsonOutputPath, result);
+        Console.WriteLine(JsonSerializer.Serialize(result, SessionJson.Options));
+        return result.Success ? 0 : 1;
+    }
+
+    private static int RiftAddonCoords(string[] args)
+    {
+        if (args.Length == 1 && IsHelp(args[0]))
+        {
+            PrintRiftAddonCoordsUsage();
+            return 0;
+        }
+
+        string? rootPath = null;
+        string? jsonOutputPath = null;
+        string? jsonlOutputPath = null;
+        var maxFiles = 5000;
+        for (var index = 0; index < args.Length; index++)
+        {
+            var arg = args[index];
+            switch (arg)
+            {
+                case "--json-out":
+                    jsonOutputPath = RequireValue(args, ref index, arg);
+                    break;
+                case "--jsonl-out":
+                    jsonlOutputPath = RequireValue(args, ref index, arg);
+                    break;
+                case "--max-files":
+                    maxFiles = int.Parse(RequireValue(args, ref index, arg));
+                    break;
+                default:
+                    if (rootPath is not null)
+                    {
+                        throw new ArgumentException($"Unknown rift addon-coords option: {arg}");
+                    }
+
+                    rootPath = arg;
+                    break;
+            }
+        }
+
+        if (string.IsNullOrWhiteSpace(rootPath))
+        {
+            throw new ArgumentException("rift addon-coords requires a SavedVariables file or directory path.");
+        }
+
+        var result = new RiftAddonCoordinateObservationService().Scan(rootPath, maxFiles, jsonlOutputPath);
+        WriteOptionalJson(jsonOutputPath, result);
+        Console.WriteLine(JsonSerializer.Serialize(result, SessionJson.Options));
+        return result.Success ? 0 : 1;
+    }
+
+    private static int RiftAddonCorroboration(string[] args)
+    {
+        if (args.Length == 1 && IsHelp(args[0]))
+        {
+            PrintRiftAddonCorroborationUsage();
+            return 0;
+        }
+
+        string? candidatePath = null;
+        string? observationPath = null;
+        string? outputPath = null;
+        string? jsonOutputPath = null;
+        var tolerance = 5d;
+        for (var index = 0; index < args.Length; index++)
+        {
+            var arg = args[index];
+            switch (arg)
+            {
+                case "--candidates":
+                    candidatePath = RequireValue(args, ref index, arg);
+                    break;
+                case "--observations":
+                    observationPath = RequireValue(args, ref index, arg);
+                    break;
+                case "--out":
+                    outputPath = RequireValue(args, ref index, arg);
+                    break;
+                case "--json-out":
+                    jsonOutputPath = RequireValue(args, ref index, arg);
+                    break;
+                case "--tolerance":
+                    tolerance = double.Parse(RequireValue(args, ref index, arg), CultureInfo.InvariantCulture);
+                    break;
+                default:
+                    throw new ArgumentException($"Unknown rift addon-corroboration option: {arg}");
+            }
+        }
+
+        if (string.IsNullOrWhiteSpace(candidatePath))
+        {
+            throw new ArgumentException("rift addon-corroboration requires --candidates <vec3-truth-candidates.jsonl>.");
+        }
+
+        if (string.IsNullOrWhiteSpace(observationPath))
+        {
+            throw new ArgumentException("rift addon-corroboration requires --observations <addon-coordinate-observations.jsonl>.");
+        }
+
+        if (string.IsNullOrWhiteSpace(outputPath))
+        {
+            throw new ArgumentException("rift addon-corroboration requires --out <vec3-truth-corroboration.jsonl>.");
+        }
+
+        var result = new RiftAddonCoordinateCorroborationService().Build(candidatePath, observationPath, outputPath, tolerance);
         WriteOptionalJson(jsonOutputPath, result);
         Console.WriteLine(JsonSerializer.Serialize(result, SessionJson.Options));
         return result.Success ? 0 : 1;
@@ -1511,6 +1630,8 @@ public static class Program
         PrintAnalyzeSessionUsage();
         PrintReportSessionUsage();
         PrintReportCapabilityUsage();
+        PrintRiftAddonCoordsUsage();
+        PrintRiftAddonCorroborationUsage();
         PrintCompareSessionsUsage();
         PrintCompareScalarSetUsage();
         PrintCompareScalarTruthUsage();
@@ -1591,6 +1712,12 @@ public static class Program
 
     private static void PrintReportCapabilityUsage() =>
         Console.WriteLine("riftscan report capability [--truth-readiness reports/generated/truth-readiness.json ...] [--scalar-evidence-set reports/generated/scalar-evidence-set.json ...] [--scalar-truth-recovery reports/generated/scalar-truth-recovery.json ...] [--scalar-truth-promotion reports/generated/scalar-truth-promotion.json ...] [--scalar-promotion-review reports/generated/scalar-promotion-review.json ...] [--json-out reports/generated/capability-status.json]");
+
+    private static void PrintRiftAddonCoordsUsage() =>
+        Console.WriteLine("riftscan rift addon-coords <savedvariables-file-or-directory> [--jsonl-out reports/generated/addon-coordinate-observations.jsonl] [--json-out reports/generated/addon-coordinate-scan.json] [--max-files 5000]");
+
+    private static void PrintRiftAddonCorroborationUsage() =>
+        Console.WriteLine("riftscan rift addon-corroboration --candidates reports/generated/vec3-truth-candidates.jsonl --observations reports/generated/addon-coordinate-observations.jsonl --out reports/generated/vec3-truth-corroboration.jsonl [--json-out reports/generated/addon-coordinate-corroboration.json] [--tolerance 5]");
 
     private static void PrintCompareSessionsUsage() =>
         Console.WriteLine("riftscan compare sessions <session-a> <session-b> [--top 100] [--out reports/generated/comparison.json] [--report-md reports/generated/comparison.md] [--next-plan reports/generated/next-capture-plan.json] [--truth-readiness reports/generated/truth-readiness.json] [--vec3-truth-out reports/generated/vec3-truth-candidates.jsonl] [--vec3-corroboration reports/generated/vec3-truth-corroboration.jsonl]");

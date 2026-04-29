@@ -93,3 +93,36 @@ Recovered candidates are stronger than one-run candidates, but still need addon 
 When addon telemetry is available, record the addon coordinate source, observed player/world coordinates, and timing beside the RiftScan session artifacts. Use it to confirm the memory candidate's vec3 values and axis order.
 
 Do not add addon/window control to RiftScan core. Keep addon/reader usage at the operator or adapter-validation layer.
+
+### SavedVariables scan helper
+
+RiftScan's RIFT adapter can scan addon SavedVariables for coordinate observations without adding addon logic to scanner core:
+
+```powershell
+riftscan rift addon-coords `
+  "C:\Users\<user>\OneDrive\Documents\RIFT\Interface\Saved" `
+  --jsonl-out reports/generated/addon-coordinate-observations.jsonl `
+  --json-out reports/generated/addon-coordinate-scan.json
+```
+
+The scan emits `riftscan.rift_addon_coordinate_observation.v1` JSONL and redacts account-like path segments. It recognizes:
+
+- `coord = { x = ..., y = ..., z = ... }`
+- `coordX = ...`, `coordY = ...`, `coordZ = ...`
+
+### Candidate corroboration helper
+
+After exporting vec3 truth candidates and addon observations:
+
+```powershell
+riftscan rift addon-corroboration `
+  --candidates reports/generated/<run>-vec3-truth-candidates.jsonl `
+  --observations reports/generated/addon-coordinate-observations.jsonl `
+  --out reports/generated/<run>-vec3-truth-corroboration.jsonl `
+  --json-out reports/generated/<run>-addon-coordinate-corroboration.json `
+  --tolerance 5
+
+riftscan verify vec3-corroboration reports/generated/<run>-vec3-truth-corroboration.jsonl
+```
+
+This matches addon coordinates to candidate preview vectors within tolerance. A match is corroboration evidence, not final coordinate truth by itself.
