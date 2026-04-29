@@ -15,6 +15,7 @@ Retention is currently 14 days.
 The artifact contains:
 
 - `ci-diagnostics/run-info.json` - workflow/run metadata written before restore/build/test.
+- `ci-diagnostics/index.json` - file list, byte sizes, and SHA256 hashes for the diagnostics files present at upload time.
 - `ci-diagnostics/dotnet-restore.log` - captured `dotnet restore` output.
 - `ci-diagnostics/dotnet-restore-status.json` - machine-readable restore step status with exit code, command, elapsed time, and log path.
 - `ci-diagnostics/dotnet-build.log` - captured `dotnet build` output.
