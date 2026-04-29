@@ -109,6 +109,7 @@ public sealed class ScalarEvidenceSetService
         var rightChanged = rightEntries.Any(entry => HasDirectedBehaviorChange(entry.Candidate));
         var cameraChanged = cameraEntries.Any(entry => HasDirectedBehaviorChange(entry.Candidate));
         var cameraOnlyIsZoom = cameraEntries.Any(entry => IsCameraZoomNote(entry.Session.Summary.StimulusNotes));
+        var cameraOnlyIsYawOrPitch = !cameraOnlyIsZoom && cameraEntries.Any(entry => IsCameraYawOrPitchNote(entry.Session.Summary.StimulusNotes));
         var leftSignedDelta = SumSignedDelta(leftEntries);
         var rightSignedDelta = SumSignedDelta(rightEntries);
         var cameraSignedDelta = SumSignedDelta(cameraEntries);
@@ -129,7 +130,7 @@ public sealed class ScalarEvidenceSetService
         scoreBreakdown["turn_polarity_score"] = turnScore;
         var cameraScore = ScoreCameraSeparation(cameraTurnSeparation, supportingReasons, rejectionReasons);
         scoreBreakdown["camera_turn_separation_score"] = cameraScore;
-        AddCameraStimulusReasons(cameraOnlyIsZoom, cameraEntries.Length > 0, supportingReasons);
+        AddCameraStimulusReasons(cameraOnlyIsZoom, cameraOnlyIsYawOrPitch, cameraEntries.Length > 0, supportingReasons);
         var rawScore = labelScore + angleScore + passiveScore + turnScore + cameraScore;
         var scoreTotal = Math.Round(Math.Clamp(rawScore, 0, 100), 3);
         scoreBreakdown["score_total"] = scoreTotal;
@@ -158,8 +159,8 @@ public sealed class ScalarEvidenceSetService
             CameraOnlySignedDelta = Math.Round(cameraSignedDelta, 6),
             SupportingReasons = supportingReasons.Distinct(StringComparer.OrdinalIgnoreCase).ToArray(),
             RejectionReasons = rejectionReasons.Distinct(StringComparer.OrdinalIgnoreCase).ToArray(),
-            EvidenceSummary = $"labels={string.Join(",", labels)};passive_stable={passiveStable};left_delta={leftSignedDelta:F6};right_delta={rightSignedDelta:F6};camera_delta={cameraSignedDelta:F6};camera_turn={cameraTurnSeparation};camera_stimulus={(cameraOnlyIsZoom ? "zoom" : "yaw_or_pitch_unspecified")}",
-            NextValidationStep = NextValidation(scoreTotal, passiveStable, cameraTurnSeparation, oppositePolarity, cameraOnlyIsZoom)
+            EvidenceSummary = $"labels={string.Join(",", labels)};passive_stable={passiveStable};left_delta={leftSignedDelta:F6};right_delta={rightSignedDelta:F6};camera_delta={cameraSignedDelta:F6};camera_turn={cameraTurnSeparation};camera_stimulus={CameraStimulusSummary(cameraOnlyIsZoom, cameraOnlyIsYawOrPitch)}",
+            NextValidationStep = NextValidation(scoreTotal, passiveStable, cameraTurnSeparation, oppositePolarity, cameraOnlyIsZoom, cameraOnlyIsYawOrPitch)
         };
     }
 
@@ -285,7 +286,11 @@ public sealed class ScalarEvidenceSetService
         return 0;
     }
 
-    private static void AddCameraStimulusReasons(bool cameraOnlyIsZoom, bool hasCameraSession, ICollection<string> supportingReasons)
+    private static void AddCameraStimulusReasons(
+        bool cameraOnlyIsZoom,
+        bool cameraOnlyIsYawOrPitch,
+        bool hasCameraSession,
+        ICollection<string> supportingReasons)
     {
         if (!hasCameraSession)
         {
@@ -294,7 +299,9 @@ public sealed class ScalarEvidenceSetService
 
         supportingReasons.Add(cameraOnlyIsZoom
             ? "camera_zoom_stimulus_note_present"
-            : "camera_yaw_or_pitch_stimulus_not_proven_by_note");
+            : cameraOnlyIsYawOrPitch
+                ? "camera_yaw_or_pitch_stimulus_note_present"
+                : "camera_yaw_or_pitch_stimulus_not_proven_by_note");
     }
 
     private static string Classify(double scoreTotal, bool oppositePolarity, string cameraTurnSeparation, string valueFamily, bool cameraOnlyIsZoom)
@@ -380,13 +387,24 @@ public sealed class ScalarEvidenceSetService
         return "candidate";
     }
 
-    private static string NextValidation(double scoreTotal, bool passiveStable, string cameraTurnSeparation, bool oppositePolarity, bool cameraOnlyIsZoom)
+    private static string NextValidation(
+        double scoreTotal,
+        bool passiveStable,
+        string cameraTurnSeparation,
+        bool oppositePolarity,
+        bool cameraOnlyIsZoom,
+        bool cameraOnlyIsYawOrPitch)
     {
         if (string.Equals(cameraTurnSeparation, "camera_only_changes_turn_stable", StringComparison.OrdinalIgnoreCase))
         {
             if (cameraOnlyIsZoom)
             {
                 return "add_yaw_or_pitch_camera_only_capture_for_orientation";
+            }
+
+            if (scoreTotal >= 80 && passiveStable && cameraOnlyIsYawOrPitch)
+            {
+                return "repeat_opposite_camera_yaw_or_pitch_capture_or_validate_against_camera_truth";
             }
 
             return scoreTotal >= 80 && passiveStable
@@ -527,6 +545,21 @@ public sealed class ScalarEvidenceSetService
         !string.IsNullOrWhiteSpace(notes) &&
         (notes.Contains("zoom", StringComparison.OrdinalIgnoreCase) ||
          notes.Contains("wheel", StringComparison.OrdinalIgnoreCase));
+
+    private static bool IsCameraYawOrPitchNote(string notes) =>
+        !string.IsNullOrWhiteSpace(notes) &&
+        (notes.Contains("yaw", StringComparison.OrdinalIgnoreCase) ||
+         notes.Contains("pitch", StringComparison.OrdinalIgnoreCase));
+
+    private static string CameraStimulusSummary(bool cameraOnlyIsZoom, bool cameraOnlyIsYawOrPitch)
+    {
+        if (cameraOnlyIsZoom)
+        {
+            return "zoom";
+        }
+
+        return cameraOnlyIsYawOrPitch ? "yaw_or_pitch" : "yaw_or_pitch_unspecified";
+    }
 
     private static double SumSignedDelta(IEnumerable<SessionScalarCandidate> entries) =>
         entries.Sum(entry => entry.Candidate.SignedCircularDelta);

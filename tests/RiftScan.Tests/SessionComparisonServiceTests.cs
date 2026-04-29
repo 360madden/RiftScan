@@ -1058,6 +1058,26 @@ public sealed class SessionComparisonServiceTests
     }
 
     [Fact]
+    public void Aggregate_scalar_evidence_set_uses_yaw_pitch_note_for_orientation_followup()
+    {
+        using var passive = CaptureStableFloatSession("passive_idle");
+        using var turnLeft = CaptureStableFloatSession("turn_left");
+        using var turnRight = CaptureStableFloatSession("turn_right");
+        using var camera = CaptureChangingFloatSession("camera_only", "fixture_horizontal_yaw_drag_camera_only");
+
+        var result = new ScalarEvidenceSetService().Aggregate([passive.Path, turnLeft.Path, turnRight.Path, camera.Path]);
+
+        var candidate = Assert.Single(result.RankedCandidates, candidate =>
+            candidate.BaseAddressHex == "0x1000" &&
+            candidate.OffsetHex == "0x4");
+        Assert.Equal("camera_orientation_angle_scalar_candidate", candidate.Classification);
+        Assert.Equal("validated_candidate", candidate.TruthReadiness);
+        Assert.Contains("camera_yaw_or_pitch_stimulus_note_present", candidate.SupportingReasons);
+        Assert.Contains("camera_stimulus=yaw_or_pitch", candidate.EvidenceSummary, StringComparison.Ordinal);
+        Assert.Equal("repeat_opposite_camera_yaw_or_pitch_capture_or_validate_against_camera_truth", candidate.NextValidationStep);
+    }
+
+    [Fact]
     public void Aggregate_scalar_evidence_set_does_not_promote_zero_net_camera_blip()
     {
         using var passive = CaptureDualScalarSession("passive_idle", [1.5f, 1.5f, 1.5f], [20.0f, 20.0f, 20.0f]);
