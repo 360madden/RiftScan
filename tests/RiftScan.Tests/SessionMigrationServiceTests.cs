@@ -96,6 +96,41 @@ public sealed class SessionMigrationServiceTests
     }
 
     [Fact]
+    public void Migrate_unsupported_source_with_plan_out_writes_blocked_plan()
+    {
+        var tempDirectory = CreateTempDirectory();
+        var legacySessionPath = Path.Combine(tempDirectory, "legacy-session");
+        var planPath = Path.Combine(tempDirectory, "source-blocked-plan.json");
+
+        try
+        {
+            CopyDirectory(ValidFixturePath, legacySessionPath);
+            RewriteManifestSchemaVersion(legacySessionPath, "riftscan.session.v0");
+
+            var result = new SessionMigrationService().Migrate(
+                legacySessionPath,
+                SessionMigrationService.SupportedSessionSchemaVersion,
+                planOutputPath: planPath);
+
+            Assert.False(result.Success);
+            Assert.Equal("unsupported_source_schema", result.Status);
+            var fullPlanPath = Path.GetFullPath(planPath);
+            Assert.Equal([fullPlanPath], result.ArtifactsWritten);
+
+            using var document = JsonDocument.Parse(File.ReadAllText(fullPlanPath));
+            Assert.Equal("riftscan.session.v0", document.RootElement.GetProperty("from_schema_version").GetString());
+            Assert.Equal("unsupported_source_schema", document.RootElement.GetProperty("status").GetString());
+            Assert.False(document.RootElement.GetProperty("can_apply").GetBoolean());
+            Assert.Equal("define-source-schema-migrator", document.RootElement.GetProperty("actions")[0].GetProperty("action_id").GetString());
+            Assert.False(document.RootElement.GetProperty("actions")[0].GetProperty("writes_raw_artifacts").GetBoolean());
+        }
+        finally
+        {
+            Directory.Delete(tempDirectory, recursive: true);
+        }
+    }
+
+    [Fact]
     public void Migrate_apply_request_fails_without_mutating_and_can_write_blocked_plan()
     {
         var tempDirectory = CreateTempDirectory();
@@ -279,6 +314,36 @@ public sealed class SessionMigrationServiceTests
         var path = Path.Combine(Path.GetTempPath(), "riftscan-tests", Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(path);
         return path;
+    }
+
+    private static void CopyDirectory(string sourceDirectory, string targetDirectory)
+    {
+        Directory.CreateDirectory(targetDirectory);
+        foreach (var sourceFile in Directory.EnumerateFiles(sourceDirectory, "*", SearchOption.AllDirectories))
+        {
+            var relativePath = Path.GetRelativePath(sourceDirectory, sourceFile);
+            var targetFile = Path.Combine(targetDirectory, relativePath);
+            Directory.CreateDirectory(Path.GetDirectoryName(targetFile)!);
+            File.Copy(sourceFile, targetFile);
+        }
+    }
+
+    private static void RewriteManifestSchemaVersion(string sessionPath, string schemaVersion)
+    {
+        var manifestPath = Path.Combine(sessionPath, "manifest.json");
+        var manifest = JsonSerializer.Deserialize<SessionManifest>(File.ReadAllText(manifestPath), SessionJson.Options)!;
+        File.WriteAllText(manifestPath, JsonSerializer.Serialize(manifest with { SchemaVersion = schemaVersion }, SessionJson.Options));
+
+        var checksumsPath = Path.Combine(sessionPath, "checksums.json");
+        var checksums = JsonSerializer.Deserialize<ChecksumManifest>(File.ReadAllText(checksumsPath), SessionJson.Options)!;
+        var manifestInfo = new FileInfo(manifestPath);
+        var updatedEntries = checksums.Entries
+            .Select(entry => entry.Path == "manifest.json"
+                ? entry with { Sha256Hex = SessionChecksum.ComputeSha256Hex(manifestPath), Bytes = manifestInfo.Length }
+                : entry)
+            .ToArray();
+
+        File.WriteAllText(checksumsPath, JsonSerializer.Serialize(checksums with { Entries = updatedEntries }, SessionJson.Options));
     }
 
     private static (int ExitCode, string Stdout, string Stderr) RunCli(params string[] args)
