@@ -206,6 +206,72 @@ public sealed class SessionMigrationServiceTests
     }
 
     [Fact]
+    public void Migrate_v0_apply_writes_verified_v1_copy_without_mutating_source()
+    {
+        var tempDirectory = CreateTempDirectory();
+        var legacySessionPath = Path.Combine(tempDirectory, "legacy-v0-session");
+        var migratedSessionPath = Path.Combine(tempDirectory, "migrated-v1-session");
+
+        try
+        {
+            CopyDirectory(ValidFixturePath, legacySessionPath);
+            RewriteManifestSchemaVersion(legacySessionPath, SessionMigrationService.LegacySessionSchemaVersionV0);
+
+            var result = new SessionMigrationService().Migrate(
+                legacySessionPath,
+                SessionMigrationService.SupportedSessionSchemaVersion,
+                dryRun: false,
+                migrationOutputPath: migratedSessionPath);
+
+            Assert.True(result.Success, string.Join(Environment.NewLine, result.Issues.Select(issue => $"{issue.Code}: {issue.Message}")));
+            Assert.False(result.DryRun);
+            Assert.Equal("applied_source_schema_upgrade", result.Status);
+            Assert.Contains(Path.GetFullPath(migratedSessionPath), result.ArtifactsWritten);
+
+            var sourceManifest = JsonSerializer.Deserialize<SessionManifest>(
+                File.ReadAllText(Path.Combine(legacySessionPath, "manifest.json")),
+                SessionJson.Options)!;
+            var migratedManifest = JsonSerializer.Deserialize<SessionManifest>(
+                File.ReadAllText(Path.Combine(migratedSessionPath, "manifest.json")),
+                SessionJson.Options)!;
+
+            Assert.Equal(SessionMigrationService.LegacySessionSchemaVersionV0, sourceManifest.SchemaVersion);
+            Assert.Equal(SessionMigrationService.SupportedSessionSchemaVersion, migratedManifest.SchemaVersion);
+            Assert.True(new SessionVerifier().Verify(migratedSessionPath).Success);
+        }
+        finally
+        {
+            Directory.Delete(tempDirectory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void Migrate_v0_apply_requires_output_directory()
+    {
+        var tempDirectory = CreateTempDirectory();
+        var legacySessionPath = Path.Combine(tempDirectory, "legacy-v0-session");
+
+        try
+        {
+            CopyDirectory(ValidFixturePath, legacySessionPath);
+            RewriteManifestSchemaVersion(legacySessionPath, SessionMigrationService.LegacySessionSchemaVersionV0);
+
+            var result = new SessionMigrationService().Migrate(
+                legacySessionPath,
+                SessionMigrationService.SupportedSessionSchemaVersion,
+                dryRun: false);
+
+            Assert.False(result.Success);
+            Assert.Equal("apply_output_required", result.Status);
+            Assert.Contains(result.Issues, issue => issue.Code == "apply_output_required");
+        }
+        finally
+        {
+            Directory.Delete(tempDirectory, recursive: true);
+        }
+    }
+
+    [Fact]
     public void Migrate_verification_failure_with_plan_out_writes_blocked_plan()
     {
         var tempDirectory = CreateTempDirectory();
@@ -346,6 +412,41 @@ public sealed class SessionMigrationServiceTests
         using var document = JsonDocument.Parse(result.Stderr);
         Assert.Equal("command_failed", document.RootElement.GetProperty("issues")[0].GetProperty("code").GetString());
         Assert.Contains("--dry-run and --apply cannot be used together", document.RootElement.GetProperty("issues")[0].GetProperty("message").GetString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Cli_migrate_session_v0_apply_writes_verified_output_directory()
+    {
+        var tempDirectory = CreateTempDirectory();
+        var legacySessionPath = Path.Combine(tempDirectory, "legacy-v0-session");
+        var migratedSessionPath = Path.Combine(tempDirectory, "migrated-v1-session");
+
+        try
+        {
+            CopyDirectory(ValidFixturePath, legacySessionPath);
+            RewriteManifestSchemaVersion(legacySessionPath, SessionMigrationService.LegacySessionSchemaVersionV0);
+
+            var result = RunCli(
+                "migrate",
+                "session",
+                legacySessionPath,
+                "--to-schema",
+                SessionMigrationService.SupportedSessionSchemaVersion,
+                "--apply",
+                "--out",
+                migratedSessionPath);
+
+            Assert.Equal(0, result.ExitCode);
+            Assert.Equal(string.Empty, result.Stderr);
+            using var document = JsonDocument.Parse(result.Stdout);
+            Assert.True(document.RootElement.GetProperty("success").GetBoolean());
+            Assert.Equal("applied_source_schema_upgrade", document.RootElement.GetProperty("status").GetString());
+            Assert.True(new SessionVerifier().Verify(migratedSessionPath).Success);
+        }
+        finally
+        {
+            Directory.Delete(tempDirectory, recursive: true);
+        }
     }
 
     private static string ValidFixturePath => Path.Combine(AppContext.BaseDirectory, "Fixtures", "valid-session");
