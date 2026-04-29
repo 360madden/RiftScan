@@ -15,8 +15,14 @@ Retention is currently 14 days.
 The artifact contains:
 
 - `ci-diagnostics/run-info.json` - workflow/run metadata written before restore/build/test.
+- `ci-diagnostics/dotnet-restore.log` - captured `dotnet restore` output.
+- `ci-diagnostics/dotnet-restore-status.json` - machine-readable restore step status with exit code, command, elapsed time, and log path.
+- `ci-diagnostics/dotnet-build.log` - captured `dotnet build` output.
+- `ci-diagnostics/dotnet-build-status.json` - machine-readable build step status with exit code, command, elapsed time, and log path.
 - `ci-diagnostics/dotnet-test.log` - captured `dotnet test` output.
-- `ci-diagnostics/dotnet-test-status.json` - machine-readable test step status with exit code and log path.
+- `ci-diagnostics/dotnet-test-status.json` - machine-readable test step status with exit code, command, elapsed time, and log path.
+- `ci-diagnostics/dotnet-format.log` - captured `dotnet format --verify-no-changes` output.
+- `ci-diagnostics/dotnet-format-status.json` - machine-readable format step status with exit code, command, elapsed time, and log path.
 - `smoke-fixture/` - fixture verify/analyze/report/compare/summary/inventory/prune outputs.
 - `smoke-migration/` - v0-to-v1 migration plan/apply/verify outputs.
 - `smoke-fixture/smoke-manifest.json` - file list, byte sizes, and SHA256 hashes for fixture smoke artifacts.

@@ -43,32 +43,40 @@ jobs:
           dotnet-version: 10.0.x
 
       - name: Restore
-        run: dotnet restore RiftScan.slnx
+        shell: pwsh
+        run: |
+          & scripts/invoke-ci-step.ps1 `
+            -Step Restore `
+            -LogPath artifacts/ci-diagnostics/dotnet-restore.log `
+            -StatusPath artifacts/ci-diagnostics/dotnet-restore-status.json `
+            -Command @("dotnet", "restore", "RiftScan.slnx")
 
       - name: Build
-        run: dotnet build RiftScan.slnx --configuration Release --no-restore
+        shell: pwsh
+        run: |
+          & scripts/invoke-ci-step.ps1 `
+            -Step Build `
+            -LogPath artifacts/ci-diagnostics/dotnet-build.log `
+            -StatusPath artifacts/ci-diagnostics/dotnet-build-status.json `
+            -Command @("dotnet", "build", "RiftScan.slnx", "--configuration", "Release", "--no-restore")
 
       - name: Test
         shell: pwsh
         run: |
-          New-Item -ItemType Directory -Path artifacts/ci-diagnostics -Force | Out-Null
-          $logPath = "artifacts/ci-diagnostics/dotnet-test.log"
-          $output = & dotnet test RiftScan.slnx --configuration Release --no-build 2>&1
-          $exitCode = $LASTEXITCODE
-          $output | Tee-Object -FilePath $logPath
-          [ordered]@{
-            schema_version = "riftscan.ci_step_status.v1"
-            step = "Test"
-            exit_code = $exitCode
-            log_path = $logPath.Replace('\', '/')
-            completed_utc = (Get-Date).ToUniversalTime().ToString("O")
-          } | ConvertTo-Json -Depth 3 | Set-Content -LiteralPath artifacts/ci-diagnostics/dotnet-test-status.json -Encoding utf8
-          if ($exitCode -ne 0) {
-            exit $exitCode
-          }
+          & scripts/invoke-ci-step.ps1 `
+            -Step Test `
+            -LogPath artifacts/ci-diagnostics/dotnet-test.log `
+            -StatusPath artifacts/ci-diagnostics/dotnet-test-status.json `
+            -Command @("dotnet", "test", "RiftScan.slnx", "--configuration", "Release", "--no-build")
 
       - name: Format check
-        run: dotnet format RiftScan.slnx --verify-no-changes --no-restore
+        shell: pwsh
+        run: |
+          & scripts/invoke-ci-step.ps1 `
+            -Step "Format check" `
+            -LogPath artifacts/ci-diagnostics/dotnet-format.log `
+            -StatusPath artifacts/ci-diagnostics/dotnet-format-status.json `
+            -Command @("dotnet", "format", "RiftScan.slnx", "--verify-no-changes", "--no-restore")
 
       - name: Fixture smoke
         shell: pwsh
