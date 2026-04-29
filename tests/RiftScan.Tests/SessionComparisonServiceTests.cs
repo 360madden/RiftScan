@@ -1038,6 +1038,26 @@ public sealed class SessionComparisonServiceTests
     }
 
     [Fact]
+    public void Aggregate_scalar_evidence_set_does_not_promote_zero_net_camera_blip()
+    {
+        using var passive = CaptureDualScalarSession("passive_idle", [1.5f, 1.5f, 1.5f], [20.0f, 20.0f, 20.0f]);
+        using var turnLeft = CaptureDualScalarSession("turn_left", [1.5f, 1.5f, 1.5f], [20.0f, 20.0f, 20.0f]);
+        using var turnRight = CaptureDualScalarSession("turn_right", [1.5f, 1.5f, 1.5f], [20.0f, 20.0f, 20.0f]);
+        using var cameraOnly = CaptureDualScalarSession("camera_only", [1.5f, 1.5f, 1.5f], [20.0f, 0.0f, 20.0f]);
+
+        var result = new ScalarEvidenceSetService().Aggregate([passive.Path, turnLeft.Path, turnRight.Path, cameraOnly.Path]);
+
+        var candidate = Assert.Single(result.RankedCandidates, candidate =>
+            candidate.BaseAddressHex == "0x1000" &&
+            candidate.OffsetHex == "0x8");
+        Assert.False(candidate.CameraOnlyChanged);
+        Assert.Equal("camera_and_turn_both_stable", candidate.CameraTurnSeparation);
+        Assert.NotEqual("camera_orientation_angle_scalar_candidate", candidate.Classification);
+        Assert.NotEqual("validated_candidate", candidate.TruthReadiness);
+        Assert.Contains("no_turn_labeled_scalar_change", candidate.RejectionReasons);
+    }
+
+    [Fact]
     public void Aggregate_scalar_evidence_set_summarizes_rejected_candidates()
     {
         using var passiveA = CaptureStableFloatSession("passive_idle");

@@ -7,6 +7,8 @@ namespace RiftScan.Analysis.Comparison;
 
 public sealed class ScalarEvidenceSetService
 {
+    private const double MinMeaningfulBehaviorDelta = 0.0001;
+
     public ScalarEvidenceSetResult Aggregate(IReadOnlyList<string> sessionPaths, int top = 100)
     {
         ArgumentNullException.ThrowIfNull(sessionPaths);
@@ -102,9 +104,9 @@ public sealed class ScalarEvidenceSetService
 
         var passiveStable = passiveEntries.Length > 0 && passiveEntries.All(entry => entry.Candidate.ChangedSampleCount == 0);
         var passiveChanged = passiveEntries.Any(entry => entry.Candidate.ChangedSampleCount > 0);
-        var leftChanged = leftEntries.Any(entry => entry.Candidate.ChangedSampleCount > 0);
-        var rightChanged = rightEntries.Any(entry => entry.Candidate.ChangedSampleCount > 0);
-        var cameraChanged = cameraEntries.Any(entry => entry.Candidate.ChangedSampleCount > 0);
+        var leftChanged = leftEntries.Any(entry => HasDirectedBehaviorChange(entry.Candidate));
+        var rightChanged = rightEntries.Any(entry => HasDirectedBehaviorChange(entry.Candidate));
+        var cameraChanged = cameraEntries.Any(entry => HasDirectedBehaviorChange(entry.Candidate));
         var leftSignedDelta = SumSignedDelta(leftEntries);
         var rightSignedDelta = SumSignedDelta(rightEntries);
         var cameraSignedDelta = SumSignedDelta(cameraEntries);
@@ -154,7 +156,7 @@ public sealed class ScalarEvidenceSetService
             SupportingReasons = supportingReasons.Distinct(StringComparer.OrdinalIgnoreCase).ToArray(),
             RejectionReasons = rejectionReasons.Distinct(StringComparer.OrdinalIgnoreCase).ToArray(),
             EvidenceSummary = $"labels={string.Join(",", labels)};passive_stable={passiveStable};left_delta={leftSignedDelta:F6};right_delta={rightSignedDelta:F6};camera_delta={cameraSignedDelta:F6};camera_turn={cameraTurnSeparation}",
-            NextValidationStep = NextValidation(scoreTotal, cameraTurnSeparation, oppositePolarity)
+            NextValidationStep = NextValidation(scoreTotal, passiveStable, cameraTurnSeparation, oppositePolarity)
         };
     }
 
@@ -358,8 +360,15 @@ public sealed class ScalarEvidenceSetService
         return "candidate";
     }
 
-    private static string NextValidation(double scoreTotal, string cameraTurnSeparation, bool oppositePolarity)
+    private static string NextValidation(double scoreTotal, bool passiveStable, string cameraTurnSeparation, bool oppositePolarity)
     {
+        if (string.Equals(cameraTurnSeparation, "camera_only_changes_turn_stable", StringComparison.OrdinalIgnoreCase))
+        {
+            return scoreTotal >= 80 && passiveStable
+                ? "repeat_camera_only_capture_or_validate_against_camera_truth"
+                : "repeat_passive_baseline_and_camera_only_capture";
+        }
+
         if (scoreTotal >= 80 && oppositePolarity && !string.IsNullOrWhiteSpace(cameraTurnSeparation))
         {
             return "repeat_labeled_capture_or_validate_against_addon_truth";
@@ -483,6 +492,11 @@ public sealed class ScalarEvidenceSetService
             (true, true) => "camera_and_turn_both_change",
             _ => "camera_and_turn_both_stable"
         };
+
+    private static bool HasDirectedBehaviorChange(ScalarCandidate candidate) =>
+        candidate.ChangedSampleCount > 0 &&
+        (Math.Abs(candidate.SignedCircularDelta) >= MinMeaningfulBehaviorDelta ||
+         candidate.ValueDeltaMagnitude >= MinMeaningfulBehaviorDelta);
 
     private static double SumSignedDelta(IEnumerable<SessionScalarCandidate> entries) =>
         entries.Sum(entry => entry.Candidate.SignedCircularDelta);
