@@ -23,6 +23,8 @@ public sealed class StructureAnalyzerTests
         Assert.Equal("unvalidated_candidate", first.ValidationStatus);
         Assert.Equal("high", first.ConfidenceLevel);
         Assert.Equal("finite_float32_triplet_supported_in_1_of_1_snapshots", first.ExplanationShort);
+        Assert.Equal(first.Score, first.ScoreBreakdown["score_total"]);
+        Assert.Equal(1, first.ScoreBreakdown["snapshot_support_ratio"]);
         Assert.True(first.Score > 0);
     }
 

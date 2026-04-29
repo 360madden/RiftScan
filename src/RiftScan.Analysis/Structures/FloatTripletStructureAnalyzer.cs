@@ -89,6 +89,7 @@ public sealed class FloatTripletStructureAnalyzer
                 AbsoluteAddressHex = $"0x{absoluteAddress:X}",
                 SnapshotSupport = accumulator.Support,
                 Score = score,
+                ScoreBreakdown = BuildScoreBreakdown(supportRatio, score),
                 ConfidenceLevel = ToConfidenceLevel(score),
                 ExplanationShort = $"finite_float32_triplet_supported_in_{accumulator.Support}_of_{snapshots.Count}_snapshots",
                 ValuePreview = accumulator.FirstValues,
@@ -96,6 +97,14 @@ public sealed class FloatTripletStructureAnalyzer
             };
         }
     }
+
+    private static IReadOnlyDictionary<string, double> BuildScoreBreakdown(double supportRatio, double scoreTotal) =>
+        new Dictionary<string, double>
+        {
+            ["snapshot_support_ratio"] = Math.Round(supportRatio, 6),
+            ["support_score"] = Math.Round(scoreTotal, 3),
+            ["score_total"] = Math.Round(scoreTotal, 3)
+        };
 
     private static string ToConfidenceLevel(double score)
     {

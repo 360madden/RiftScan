@@ -123,16 +123,22 @@ public sealed class TypedValueLaneAnalyzer
         var comparedPairCount = Math.Max(1, valuePreview.Count - 1);
         var changeRatio = changedSampleCount / (double)comparedPairCount;
         var distinctRatio = distinctValueCount / (double)valuePreview.Count;
-        var rankScore = Math.Min(100.0, changeRatio * 60.0 + distinctRatio * 25.0 + typeBonus);
+        var changeRatioScore = changeRatio * 60.0;
+        var distinctRatioScore = distinctRatio * 25.0;
+        var preCapScore = changeRatioScore + distinctRatioScore + typeBonus;
+        var scoreCap = 100.0;
+        var rankScore = Math.Min(scoreCap, preCapScore);
         if (dataType == "uint32")
         {
-            rankScore = Math.Min(rankScore, 55.0);
+            scoreCap = 55.0;
+            rankScore = Math.Min(rankScore, scoreCap);
         }
 
         var recommendation = Recommend(dataType, changedSampleCount);
         if (KnownSystemRegionClassifier.IsKnownSystemNoise(delta.BaseAddressHex))
         {
             diagnostics.Add(KnownSystemRegionClassifier.Diagnostic);
+            scoreCap = Math.Min(scoreCap, KnownSystemRegionClassifier.ValueRankScoreCap);
             rankScore = Math.Min(rankScore, KnownSystemRegionClassifier.ValueRankScoreCap);
             recommendation = KnownSystemRegionClassifier.ValueRecommendation;
         }
@@ -152,6 +158,7 @@ public sealed class TypedValueLaneAnalyzer
             DistinctValueCount = distinctValueCount,
             ChangedSampleCount = changedSampleCount,
             RankScore = rankScore,
+            ScoreBreakdown = BuildScoreBreakdown(changeRatioScore, distinctRatioScore, typeBonus, preCapScore, scoreCap, rankScore),
             ConfidenceLevel = ToConfidenceLevel(rankScore),
             ExplanationShort = $"{dataType}_lane_changed_{changedSampleCount}_of_{comparedPairCount}_pairs",
             Recommendation = recommendation,
@@ -159,6 +166,23 @@ public sealed class TypedValueLaneAnalyzer
             Diagnostics = diagnostics
         };
     }
+
+    private static IReadOnlyDictionary<string, double> BuildScoreBreakdown(
+        double changeRatioScore,
+        double distinctRatioScore,
+        double typeBonus,
+        double preCapScore,
+        double scoreCap,
+        double scoreTotal) =>
+        new Dictionary<string, double>
+        {
+            ["change_ratio_score"] = Math.Round(changeRatioScore, 3),
+            ["distinct_ratio_score"] = Math.Round(distinctRatioScore, 3),
+            ["type_bonus"] = Math.Round(typeBonus, 3),
+            ["pre_cap_score"] = Math.Round(preCapScore, 3),
+            ["score_cap"] = Math.Round(scoreCap, 3),
+            ["score_total"] = Math.Round(scoreTotal, 3)
+        };
 
     private static string ToConfidenceLevel(double rankScore)
     {

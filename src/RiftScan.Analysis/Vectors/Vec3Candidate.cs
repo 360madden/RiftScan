@@ -52,6 +52,9 @@ public sealed record Vec3Candidate
     [JsonPropertyName("rank_score")]
     public double RankScore { get; init; }
 
+    [JsonPropertyName("score_breakdown")]
+    public IReadOnlyDictionary<string, double> ScoreBreakdown { get; init; } = new Dictionary<string, double>();
+
     [JsonPropertyName("validation_status")]
     public string ValidationStatus { get; init; } = "unvalidated_candidate";
 

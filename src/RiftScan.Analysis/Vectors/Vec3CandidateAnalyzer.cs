@@ -57,7 +57,9 @@ public sealed class Vec3CandidateAnalyzer
         var values = ReadVec3Values(sessionPath, source, snapshotEntries);
         var deltaMagnitude = CalculateDeltaMagnitude(values);
         var behavior = ScoreBehavior(stimulusLabel, deltaMagnitude);
-        var rankScore = Math.Round(Math.Min(100.0, source.Score * 0.75 + behavior.Score), 3);
+        var sourceStructureScore = source.Score * 0.75;
+        var preCapScore = sourceStructureScore + behavior.Score;
+        var rankScore = Math.Round(Math.Min(100.0, preCapScore), 3);
         var diagnostics = source.Diagnostics
             .Concat(behavior.Diagnostics)
             .Append("promoted_from_float32_triplet_structure")
@@ -79,6 +81,7 @@ public sealed class Vec3CandidateAnalyzer
             ValueDeltaMagnitude = Math.Round(deltaMagnitude, 6),
             BehaviorScore = behavior.Score,
             RankScore = rankScore,
+            ScoreBreakdown = BuildScoreBreakdown(sourceStructureScore, behavior.Score, preCapScore, rankScore),
             ValidationStatus = behavior.ValidationStatus,
             ConfidenceLevel = ToConfidenceLevel(rankScore),
             ExplanationShort = behavior.Recommendation,
@@ -87,6 +90,20 @@ public sealed class Vec3CandidateAnalyzer
             Diagnostics = diagnostics
         };
     }
+
+    private static IReadOnlyDictionary<string, double> BuildScoreBreakdown(
+        double sourceStructureScore,
+        double behaviorScore,
+        double preCapScore,
+        double scoreTotal) =>
+        new Dictionary<string, double>
+        {
+            ["source_structure_score"] = Math.Round(sourceStructureScore, 3),
+            ["behavior_score"] = Math.Round(behaviorScore, 3),
+            ["pre_cap_score"] = Math.Round(preCapScore, 3),
+            ["score_cap"] = 100.0,
+            ["score_total"] = Math.Round(scoreTotal, 3)
+        };
 
     private static string ToConfidenceLevel(double rankScore)
     {

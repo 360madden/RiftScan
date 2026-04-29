@@ -37,6 +37,9 @@ public sealed record StructureCandidate
     [JsonPropertyName("score")]
     public double Score { get; init; }
 
+    [JsonPropertyName("score_breakdown")]
+    public IReadOnlyDictionary<string, double> ScoreBreakdown { get; init; } = new Dictionary<string, double>();
+
     [JsonPropertyName("validation_status")]
     public string ValidationStatus { get; init; } = "unvalidated_candidate";
 
