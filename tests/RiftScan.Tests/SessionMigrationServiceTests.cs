@@ -130,6 +130,37 @@ public sealed class SessionMigrationServiceTests
     }
 
     [Fact]
+    public void Migrate_verification_failure_with_plan_out_writes_blocked_plan()
+    {
+        var tempDirectory = CreateTempDirectory();
+        var missingSessionPath = Path.Combine(tempDirectory, "missing-session");
+        var planPath = Path.Combine(tempDirectory, "verification-blocked-plan.json");
+
+        try
+        {
+            var result = new SessionMigrationService().Migrate(
+                missingSessionPath,
+                SessionMigrationService.SupportedSessionSchemaVersion,
+                planOutputPath: planPath);
+
+            Assert.False(result.Success);
+            Assert.Equal("verification_failed", result.Status);
+            var fullPlanPath = Path.GetFullPath(planPath);
+            Assert.Equal([fullPlanPath], result.ArtifactsWritten);
+
+            using var document = JsonDocument.Parse(File.ReadAllText(fullPlanPath));
+            Assert.Equal("verification_failed", document.RootElement.GetProperty("status").GetString());
+            Assert.False(document.RootElement.GetProperty("can_apply").GetBoolean());
+            Assert.Equal("repair-session-integrity", document.RootElement.GetProperty("actions")[0].GetProperty("action_id").GetString());
+            Assert.False(document.RootElement.GetProperty("actions")[0].GetProperty("writes_raw_artifacts").GetBoolean());
+        }
+        finally
+        {
+            Directory.Delete(tempDirectory, recursive: true);
+        }
+    }
+
+    [Fact]
     public void Cli_migrate_session_emits_machine_readable_noop_result()
     {
         var result = RunCli(

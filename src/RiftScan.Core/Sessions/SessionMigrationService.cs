@@ -15,7 +15,7 @@ public sealed class SessionMigrationService
         var verification = new SessionVerifier().Verify(fullSessionPath);
         if (!verification.Success)
         {
-            return CreateResult(
+            var verificationFailedResult = CreateResult(
                 fullSessionPath,
                 verification.SessionId,
                 fromSchemaVersion: null,
@@ -23,6 +23,8 @@ public sealed class SessionMigrationService
                 dryRun,
                 status: "verification_failed",
                 issues: verification.Issues);
+
+            return WritePlanIfRequested(verificationFailedResult, planOutputPath);
         }
 
         var manifest = ReadManifest(fullSessionPath);
@@ -202,6 +204,17 @@ public sealed class SessionMigrationService
                     ActionId = "implement-apply-path",
                     ActionType = "blocked",
                     Description = "Apply mode is intentionally disabled until a fixture-backed migrator can write migrated generated artifacts without mutating raw evidence.",
+                    WritesRawArtifacts = false,
+                    TargetPath = null
+                }
+            ],
+            "verification_failed" =>
+            [
+                new SessionMigrationPlanAction
+                {
+                    ActionId = "repair-session-integrity",
+                    ActionType = "blocked",
+                    Description = "Session verification failed. Preserve the original artifacts and fix or recapture the session before migration.",
                     WritesRawArtifacts = false,
                     TargetPath = null
                 }
