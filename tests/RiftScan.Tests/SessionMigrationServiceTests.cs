@@ -277,6 +277,29 @@ public sealed class SessionMigrationServiceTests
     }
 
     [Fact]
+    public void Migrate_v0_apply_matches_expected_migrated_v1_fixture()
+    {
+        var tempDirectory = CreateTempDirectory();
+        var migratedSessionPath = Path.Combine(tempDirectory, "migrated-v1-session");
+
+        try
+        {
+            var result = new SessionMigrationService().Migrate(
+                ValidV0FixturePath,
+                SessionMigrationService.SupportedSessionSchemaVersion,
+                dryRun: false,
+                migrationOutputPath: migratedSessionPath);
+
+            Assert.True(result.Success, string.Join(Environment.NewLine, result.Issues.Select(issue => $"{issue.Code}: {issue.Message}")));
+            AssertDirectoriesHaveSameFilesAndHashes(ExpectedMigratedV1FixturePath, migratedSessionPath);
+        }
+        finally
+        {
+            Directory.Delete(tempDirectory, recursive: true);
+        }
+    }
+
+    [Fact]
     public void Migrate_v0_apply_rejects_non_empty_output_directory()
     {
         var tempDirectory = CreateTempDirectory();
@@ -526,6 +549,8 @@ public sealed class SessionMigrationServiceTests
 
     private static string ValidV0FixturePath => Path.Combine(AppContext.BaseDirectory, "Fixtures", "valid-session-v0");
 
+    private static string ExpectedMigratedV1FixturePath => Path.Combine(AppContext.BaseDirectory, "Fixtures", "migrated-session-v1-from-v0");
+
     private static string CreateTempDirectory()
     {
         var path = Path.Combine(Path.GetTempPath(), "riftscan-tests", Guid.NewGuid().ToString("N"));
@@ -562,6 +587,26 @@ public sealed class SessionMigrationServiceTests
 
         File.WriteAllText(checksumsPath, JsonSerializer.Serialize(checksums with { Entries = updatedEntries }, SessionJson.Options));
     }
+
+    private static void AssertDirectoriesHaveSameFilesAndHashes(string expectedDirectory, string actualDirectory)
+    {
+        var expectedFiles = RelativeFilePaths(expectedDirectory);
+        var actualFiles = RelativeFilePaths(actualDirectory);
+        Assert.Equal(expectedFiles, actualFiles);
+
+        foreach (var relativePath in expectedFiles)
+        {
+            Assert.Equal(
+                SessionChecksum.ComputeSha256Hex(Path.Combine(expectedDirectory, relativePath)),
+                SessionChecksum.ComputeSha256Hex(Path.Combine(actualDirectory, relativePath)));
+        }
+    }
+
+    private static string[] RelativeFilePaths(string directory) =>
+        Directory.EnumerateFiles(directory, "*", SearchOption.AllDirectories)
+            .Select(path => Path.GetRelativePath(directory, path).Replace('\\', '/'))
+            .OrderBy(path => path, StringComparer.Ordinal)
+            .ToArray();
 
     private static (int ExitCode, string Stdout, string Stderr) RunCli(params string[] args)
     {
