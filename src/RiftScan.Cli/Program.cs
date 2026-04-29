@@ -39,6 +39,11 @@ public static class Program
                 return CapturePlan(args[2..]);
             }
 
+            if (args.Length >= 2 && Is(args[0], "process") && Is(args[1], "inventory"))
+            {
+                return ProcessInventory(args[2..]);
+            }
+
             if (args.Length >= 2 && Is(args[0], "analyze") && Is(args[1], "session"))
             {
                 return AnalyzeSession(args[2..]);
@@ -95,8 +100,32 @@ public static class Program
             return 0;
         }
 
+        if (args.Any(arg => Is(arg, "--dry-run")))
+        {
+            var (dryRunOptions, jsonOutputPath) = ParsePassiveCaptureDryRunOptions(args.Where(arg => !Is(arg, "--dry-run")).ToArray(), allowSessionOutOption: true);
+            var dryRun = new PassiveCaptureDryRunService(new WindowsProcessMemoryReader()).Inspect(dryRunOptions);
+            WriteOptionalJson(jsonOutputPath, dryRun);
+            Console.WriteLine(JsonSerializer.Serialize(dryRun, SessionJson.Options));
+            return dryRun.Success ? 0 : 1;
+        }
+
         var options = ParsePassiveCaptureOptions(args);
         var result = new PassiveCaptureService(new WindowsProcessMemoryReader()).Capture(options);
+        Console.WriteLine(JsonSerializer.Serialize(result, SessionJson.Options));
+        return result.Success ? 0 : 1;
+    }
+
+    private static int ProcessInventory(string[] args)
+    {
+        if (args.Length == 1 && IsHelp(args[0]))
+        {
+            PrintProcessInventoryUsage();
+            return 0;
+        }
+
+        var (options, jsonOutputPath) = ParsePassiveCaptureDryRunOptions(args, allowSessionOutOption: false);
+        var result = new PassiveCaptureDryRunService(new WindowsProcessMemoryReader()).Inspect(options);
+        WriteOptionalJson(jsonOutputPath, result);
         Console.WriteLine(JsonSerializer.Serialize(result, SessionJson.Options));
         return result.Success ? 0 : 1;
     }
@@ -298,6 +327,7 @@ public static class Program
         long maxTotalBytes = 1024 * 1024;
         var includeImageRegions = false;
         IReadOnlySet<string> regionIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        IReadOnlySet<ulong> baseAddresses = new HashSet<ulong>();
         string? stimulusLabel = null;
         string? stimulusNotes = null;
         var interventionWaitMilliseconds = 20 * 60 * 1000;
@@ -338,6 +368,9 @@ public static class Program
                 case "--region-ids":
                     regionIds = ParseRegionIds(RequireValue(args, ref index, arg));
                     break;
+                case "--base-addresses":
+                    baseAddresses = ParseBaseAddresses(RequireValue(args, ref index, arg));
+                    break;
                 case "--stimulus":
                     stimulusLabel = RequireValue(args, ref index, arg);
                     break;
@@ -367,11 +400,99 @@ public static class Program
             MaxTotalBytes = maxTotalBytes,
             IncludeImageRegions = includeImageRegions,
             RegionIds = regionIds,
+            BaseAddresses = baseAddresses,
             StimulusLabel = stimulusLabel,
             StimulusNotes = stimulusNotes,
             InterventionWaitMilliseconds = interventionWaitMilliseconds,
             InterventionPollIntervalMilliseconds = interventionPollMilliseconds
         };
+    }
+
+    private static (PassiveCaptureDryRunOptions Options, string? JsonOutputPath) ParsePassiveCaptureDryRunOptions(string[] args, bool allowSessionOutOption)
+    {
+        string? processName = null;
+        int? processId = null;
+        string? jsonOutputPath = null;
+        var samples = 1;
+        var maxRegions = 8;
+        var maxBytesPerRegion = 64 * 1024;
+        long maxTotalBytes = 1024 * 1024;
+        var regionOutputLimit = 250;
+        var includeImageRegions = false;
+        IReadOnlySet<string> regionIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        IReadOnlySet<ulong> baseAddresses = new HashSet<ulong>();
+
+        for (var index = 0; index < args.Length; index++)
+        {
+            var arg = args[index];
+            switch (arg)
+            {
+                case "--process":
+                    processName = RequireValue(args, ref index, arg);
+                    break;
+                case "--pid":
+                    processId = int.Parse(RequireValue(args, ref index, arg));
+                    break;
+                case "--out" when allowSessionOutOption:
+                    _ = RequireValue(args, ref index, arg);
+                    break;
+                case "--json-out":
+                    jsonOutputPath = RequireValue(args, ref index, arg);
+                    break;
+                case "--samples":
+                    samples = int.Parse(RequireValue(args, ref index, arg));
+                    break;
+                case "--interval-ms" when allowSessionOutOption:
+                    _ = RequireValue(args, ref index, arg);
+                    break;
+                case "--max-regions":
+                    maxRegions = int.Parse(RequireValue(args, ref index, arg));
+                    break;
+                case "--max-bytes-per-region":
+                    maxBytesPerRegion = int.Parse(RequireValue(args, ref index, arg));
+                    break;
+                case "--max-total-bytes":
+                    maxTotalBytes = long.Parse(RequireValue(args, ref index, arg));
+                    break;
+                case "--region-output-limit":
+                    regionOutputLimit = int.Parse(RequireValue(args, ref index, arg));
+                    break;
+                case "--all-regions":
+                    regionOutputLimit = 0;
+                    break;
+                case "--include-image-regions":
+                    includeImageRegions = true;
+                    break;
+                case "--region-ids":
+                    regionIds = ParseRegionIds(RequireValue(args, ref index, arg));
+                    break;
+                case "--base-addresses":
+                    baseAddresses = ParseBaseAddresses(RequireValue(args, ref index, arg));
+                    break;
+                case "--stimulus" when allowSessionOutOption:
+                case "--stimulus-note" when allowSessionOutOption:
+                case "--intervention-wait-ms" when allowSessionOutOption:
+                case "--intervention-poll-ms" when allowSessionOutOption:
+                    _ = RequireValue(args, ref index, arg);
+                    break;
+                default:
+                    throw new ArgumentException($"Unknown {(allowSessionOutOption ? "capture passive dry-run" : "process inventory")} option: {arg}");
+            }
+        }
+
+        return (new PassiveCaptureDryRunOptions
+        {
+            ProcessName = processName,
+            ProcessId = processId,
+            Samples = samples,
+            MaxRegions = maxRegions,
+            MaxBytesPerRegion = maxBytesPerRegion,
+            MaxTotalBytes = maxTotalBytes,
+            RegionOutputLimit = regionOutputLimit,
+            IncludeImageRegions = includeImageRegions,
+            RegionIds = regionIds,
+            BaseAddresses = baseAddresses
+        }, jsonOutputPath);
     }
 
     private static PassiveCapturePlanOptions ParsePassiveCapturePlanOptions(string[] args)
@@ -467,6 +588,19 @@ public static class Program
     private static IReadOnlySet<string> ParseRegionIds(string value) =>
         value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+    private static IReadOnlySet<ulong> ParseBaseAddresses(string value) =>
+        value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(ParseUnsignedHexOrDecimal)
+            .ToHashSet();
+
+    private static ulong ParseUnsignedHexOrDecimal(string value)
+    {
+        var normalized = value.StartsWith("0x", StringComparison.OrdinalIgnoreCase) ? value[2..] : value;
+        return value.StartsWith("0x", StringComparison.OrdinalIgnoreCase)
+            ? Convert.ToUInt64(normalized, 16)
+            : ulong.Parse(normalized);
+    }
 
     private static int ParseTop(string[] args)
     {
@@ -645,6 +779,18 @@ public static class Program
         return args[index];
     }
 
+    private static void WriteOptionalJson<T>(string? outputPath, T result)
+    {
+        if (string.IsNullOrWhiteSpace(outputPath))
+        {
+            return;
+        }
+
+        var fullOutputPath = Path.GetFullPath(outputPath);
+        Directory.CreateDirectory(Path.GetDirectoryName(fullOutputPath)!);
+        File.WriteAllText(fullOutputPath, JsonSerializer.Serialize(result, SessionJson.Options));
+    }
+
     private static int VerifySession(string[] args)
     {
         if (args.Length == 1 && IsHelp(args[0]))
@@ -697,6 +843,7 @@ public static class Program
         PrintCapturePassiveUsage();
         Console.WriteLine("riftscan capture passive --pid <id> [--process <name>] --out sessions/<id> [--samples 1] [--interval-ms 100] [--region-ids region-000001,region-000002] [--stimulus move_forward]");
         PrintCapturePlanUsage();
+        PrintProcessInventoryUsage();
         PrintAnalyzeSessionUsage();
         PrintReportSessionUsage();
         PrintCompareSessionsUsage();
@@ -749,10 +896,13 @@ public static class Program
     }
 
     private static void PrintCapturePassiveUsage() =>
-        Console.WriteLine("riftscan capture passive --process <name> --out sessions/<id> [--samples 1] [--interval-ms 100] [--stimulus passive_idle] [--intervention-wait-ms 1200000] [--intervention-poll-ms 2000]");
+        Console.WriteLine("riftscan capture passive --process <name> --out sessions/<id> [--dry-run] [--samples 1] [--interval-ms 100] [--max-regions 8] [--max-bytes-per-region 65536] [--max-total-bytes 1048576] [--region-ids ids] [--base-addresses hexes] [--region-output-limit 250|--all-regions] [--stimulus passive_idle]");
 
     private static void PrintCapturePlanUsage() =>
         Console.WriteLine("riftscan capture plan <source-session-or-plan-json> --pid <id> [--process <name>] --out sessions/<id> [--top-regions 5] [--stimulus move_forward] [--intervention-wait-ms 1200000] [--intervention-poll-ms 2000]");
+
+    private static void PrintProcessInventoryUsage() =>
+        Console.WriteLine("riftscan process inventory --process <name>|--pid <id> [--max-regions 8] [--max-bytes-per-region 65536] [--max-total-bytes 1048576] [--region-ids ids] [--base-addresses hexes] [--region-output-limit 250|--all-regions] [--include-image-regions] [--json-out reports/generated/process-inventory.json]");
 
     private static void PrintAnalyzeSessionUsage() =>
         Console.WriteLine("riftscan analyze session <session-path> [--all|--top 100]");

@@ -12,6 +12,16 @@ Use PowerShell from the repository root.
 dotnet build RiftScan.slnx --configuration Release
 
 dotnet run --project src/RiftScan.Cli/RiftScan.Cli.csproj --configuration Release --no-build -- `
+  process inventory --pid <rift_pid> `
+  --max-regions 16 --max-bytes-per-region 65536 --max-total-bytes 1048576 `
+  --json-out reports/generated/<process-inventory>.json
+
+dotnet run --project src/RiftScan.Cli/RiftScan.Cli.csproj --configuration Release --no-build -- `
+  capture passive --dry-run --pid <rift_pid> --out sessions/<passive_id> `
+  --samples 3 --max-regions 16 --max-bytes-per-region 65536 --max-total-bytes 1048576 `
+  --json-out reports/generated/<capture-dry-run>.json
+
+dotnet run --project src/RiftScan.Cli/RiftScan.Cli.csproj --configuration Release --no-build -- `
   capture passive --pid <rift_pid> --out sessions/<passive_id> --samples 3 --interval-ms 100 --stimulus passive_idle
 
 dotnet run --project src/RiftScan.Cli/RiftScan.Cli.csproj --configuration Release --no-build -- `
@@ -31,6 +41,7 @@ dotnet run --project src/RiftScan.Cli/RiftScan.Cli.csproj --configuration Releas
 ## Guardrails
 
 - Capture is external read-only observation only.
+- `process inventory` and `capture passive --dry-run` enumerate and plan reads without calling `ReadProcessMemory`.
 - Analysis, reports, comparisons, and next plans replay from stored artifacts.
 - Comparison output is candidate evidence, not recovered truth.
 - Use explicit stimulus labels before behavior claims.
