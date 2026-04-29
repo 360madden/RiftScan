@@ -9,6 +9,26 @@ namespace RiftScan.Tests;
 public sealed class GeneratedAnalyzerArtifactSchemaTests
 {
     [Fact]
+    public void Prune_inventory_artifact_includes_schema_and_candidate_contract()
+    {
+        using var session = CopyFixtureToTemp();
+        File.WriteAllText(Path.Combine(session.Path, "report.md"), "# generated report\n");
+        var inventoryPath = Path.Combine(session.Path, "prune-inventory.json");
+
+        _ = new SessionPruneService().Prune(session.Path, inventoryOutputPath: inventoryPath);
+
+        using var document = JsonDocument.Parse(File.ReadAllText(inventoryPath));
+        Assert.Equal("riftscan.session_prune_result.v1", document.RootElement.GetProperty("result_schema_version").GetString());
+        Assert.Equal("preserve_raw_artifacts_no_mutation", document.RootElement.GetProperty("raw_data_policy").GetString());
+        Assert.Equal(inventoryPath, document.RootElement.GetProperty("inventory_path").GetString());
+
+        var candidate = document.RootElement.GetProperty("candidates")[0];
+        Assert.Equal("report.md", candidate.GetProperty("path").GetString());
+        Assert.True(candidate.GetProperty("bytes").GetInt64() > 0);
+        Assert.Equal("generated_report", candidate.GetProperty("reason").GetString());
+    }
+
+    [Fact]
     public void Fixture_generated_analyzer_artifacts_include_schema_versions()
     {
         using var session = CopyFixtureToTemp();
