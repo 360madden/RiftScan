@@ -40,11 +40,27 @@ public sealed class CommandResultContractTests
             "issues");
 
     [Fact]
+    public void Session_migration_result_pins_json_contract_fields() =>
+        AssertJsonPropertySet(
+            new SessionMigrationResult(),
+            "result_schema_version",
+            "success",
+            "session_path",
+            "session_id",
+            "from_schema_version",
+            "to_schema_version",
+            "dry_run",
+            "status",
+            "artifacts_written",
+            "issues");
+
+    [Fact]
     public void Command_result_schema_versions_are_stable()
     {
         Assert.Equal("riftscan.session_analysis_result.v1", ReadSchema(new SessionAnalysisResult()));
         Assert.Equal("riftscan.session_report_result.v1", ReadSchema(new SessionReportResult()));
         Assert.Equal("riftscan.session_verification_result.v1", ReadSchema(new SessionVerificationResult()));
+        Assert.Equal("riftscan.session_migration_result.v1", ReadSchema(new SessionMigrationResult()));
     }
 
     private static string? ReadSchema<T>(T value)
