@@ -91,7 +91,42 @@ public sealed class PassiveCaptureDryRunServiceTests
         Assert.Contains(result.Regions, region =>
             region.RegionId == "region-000002" &&
             !region.Selected &&
-            region.SkipReasons.Contains("max_regions_budget_exhausted"));
+            region.Reason == "skipped_after_max_regions");
+    }
+
+    [Fact]
+    public void Dry_run_default_selection_includes_large_writable_regions_with_read_cap()
+    {
+        var reader = new FakeProcessMemoryReader
+        {
+            Regions =
+            [
+                new VirtualMemoryRegion("region-readonly-small", 0x1000, 16, MemoryRegionConstants.MemCommit, MemoryRegionConstants.PageReadOnly, MemoryRegionConstants.MemPrivate),
+                new VirtualMemoryRegion("region-writable-large", 0x2000, 4096, MemoryRegionConstants.MemCommit, MemoryRegionConstants.PageReadWrite, MemoryRegionConstants.MemPrivate)
+            ]
+        };
+
+        var result = new PassiveCaptureDryRunService(reader).Inspect(new PassiveCaptureDryRunOptions
+        {
+            ProcessName = "fixture_process",
+            MaxRegions = 1,
+            MaxBytesPerRegion = 16,
+            MaxTotalBytes = 16
+        });
+
+        Assert.True(result.Success);
+        Assert.Equal(1, result.SelectedRegionCount);
+        Assert.Contains("some_selected_regions_read_capped_to_max_bytes_per_region", result.Warnings);
+        Assert.Contains(result.Regions, region =>
+            region.RegionId == "region-writable-large" &&
+            region.Selected &&
+            region.SelectedOrder == 1 &&
+            region.EstimatedReadBytes == 16 &&
+            region.SkipReasons.Count == 0);
+        Assert.Contains(result.Regions, region =>
+            region.RegionId == "region-readonly-small" &&
+            !region.Selected &&
+            region.Reason == "skipped_after_max_regions");
     }
 
     [Fact]

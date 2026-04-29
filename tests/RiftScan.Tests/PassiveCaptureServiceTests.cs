@@ -98,6 +98,37 @@ public sealed class PassiveCaptureServiceTests
     }
 
     [Fact]
+    public void Capture_default_selection_reads_capped_prefix_from_large_writable_regions_first()
+    {
+        using var output = new TempDirectory();
+        var reader = new FakeProcessMemoryReader
+        {
+            Regions =
+            [
+                new VirtualMemoryRegion("region-readonly-small", 0x1000, 16, MemoryRegionConstants.MemCommit, MemoryRegionConstants.PageReadOnly, MemoryRegionConstants.MemPrivate),
+                new VirtualMemoryRegion("region-writable-large", 0x2000, 4096, MemoryRegionConstants.MemCommit, MemoryRegionConstants.PageReadWrite, MemoryRegionConstants.MemPrivate)
+            ]
+        };
+
+        var result = new PassiveCaptureService(reader).Capture(new PassiveCaptureOptions
+        {
+            ProcessName = "fixture_process",
+            OutputPath = output.Path,
+            Samples = 1,
+            IntervalMilliseconds = 0,
+            MaxRegions = 1,
+            MaxBytesPerRegion = 16,
+            MaxTotalBytes = 16
+        });
+
+        Assert.True(result.Success);
+        Assert.Equal(1, result.RegionsCaptured);
+        Assert.Equal(16, result.BytesCaptured);
+        Assert.Contains("snapshots/region-writable-large-sample-000001.bin", result.ArtifactsWritten);
+        Assert.DoesNotContain("snapshots/region-readonly-small-sample-000001.bin", result.ArtifactsWritten);
+    }
+
+    [Fact]
     public void Capture_writes_optional_stimulus_label()
     {
         using var output = new TempDirectory();

@@ -62,4 +62,22 @@ public sealed class MemoryRegionFilterTests
 
         Assert.False(MemoryRegionFilter.IsDefaultCaptureCandidate(region, new MemoryRegionFilterOptions { MaxRegionBytes = 1024 }));
     }
+
+    [Fact]
+    public void Default_filter_can_accept_large_regions_when_reader_uses_per_region_read_cap()
+    {
+        var region = new VirtualMemoryRegion(
+            "region-000001",
+            0x1000,
+            4096,
+            MemoryRegionConstants.MemCommit,
+            MemoryRegionConstants.PageReadOnly,
+            MemoryRegionConstants.MemPrivate);
+
+        Assert.True(MemoryRegionFilter.IsDefaultCaptureCandidate(region, new MemoryRegionFilterOptions
+        {
+            MaxRegionBytes = 1024,
+            RejectRegionsLargerThanMaxRegionBytes = false
+        }));
+    }
 }

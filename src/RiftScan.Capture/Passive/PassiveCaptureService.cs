@@ -361,7 +361,8 @@ public sealed class PassiveCaptureService(IProcessMemoryReader processMemoryRead
             .Where(region => MemoryRegionFilter.IsDefaultCaptureCandidate(region, new MemoryRegionFilterOptions
             {
                 IncludeImageRegions = options.IncludeImageRegions,
-                MaxRegionBytes = (ulong)options.MaxBytesPerRegion
+                MaxRegionBytes = (ulong)options.MaxBytesPerRegion,
+                RejectRegionsLargerThanMaxRegionBytes = false
             }));
 
         if (options.RegionIds.Count > 0 || options.BaseAddresses.Count > 0)
@@ -369,10 +370,15 @@ public sealed class PassiveCaptureService(IProcessMemoryReader processMemoryRead
             candidateRegionsQuery = candidateRegionsQuery.Where(region =>
                 options.RegionIds.Contains(region.RegionId) ||
                 options.BaseAddresses.Contains(region.BaseAddress));
+
+            return candidateRegionsQuery
+                .OrderBy(region => region.BaseAddress)
+                .Take(options.MaxRegions)
+                .ToArray();
         }
 
-        return candidateRegionsQuery
-            .OrderBy(region => region.BaseAddress)
+        return PassiveCaptureRegionPriority
+            .OrderForDefaultCapture(candidateRegionsQuery, options.MaxBytesPerRegion)
             .Take(options.MaxRegions)
             .ToArray();
     }

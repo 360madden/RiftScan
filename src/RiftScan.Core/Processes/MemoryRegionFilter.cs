@@ -4,7 +4,12 @@ public static class MemoryRegionFilter
 {
     public static bool IsDefaultCaptureCandidate(VirtualMemoryRegion region, MemoryRegionFilterOptions options)
     {
-        if (region.SizeBytes == 0 || region.SizeBytes > options.MaxRegionBytes)
+        if (region.SizeBytes == 0)
+        {
+            return false;
+        }
+
+        if (options.RejectRegionsLargerThanMaxRegionBytes && region.SizeBytes > options.MaxRegionBytes)
         {
             return false;
         }

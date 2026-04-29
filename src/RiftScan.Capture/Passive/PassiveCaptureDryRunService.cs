@@ -14,49 +14,54 @@ public sealed class PassiveCaptureDryRunService(IProcessMemoryReader processMemo
             .OrderBy(region => region.BaseAddress)
             .ToArray();
 
-        var regionRows = new List<PassiveCaptureDryRunRegion>();
-        var selectedCount = 0;
+        var skipReasonsByRegionId = allRegions.ToDictionary(
+            region => region.RegionId,
+            region => GetSkipReasons(region, options).ToArray(),
+            StringComparer.OrdinalIgnoreCase);
+        var selectedRegionIds = new Dictionary<string, (int Order, int EstimatedReadBytes)>(StringComparer.OrdinalIgnoreCase);
         long estimatedBytesPerSample = 0;
 
+        var candidateRegions = allRegions.Where(region => skipReasonsByRegionId[region.RegionId].Length == 0);
+        if (options.RegionIds.Count > 0 || options.BaseAddresses.Count > 0)
+        {
+            candidateRegions = candidateRegions.OrderBy(region => region.BaseAddress);
+        }
+        else
+        {
+            candidateRegions = PassiveCaptureRegionPriority.OrderForDefaultCapture(candidateRegions, options.MaxBytesPerRegion);
+        }
+
+        foreach (var region in candidateRegions)
+        {
+            if (selectedRegionIds.Count >= options.MaxRegions || estimatedBytesPerSample >= options.MaxTotalBytes)
+            {
+                break;
+            }
+
+            var remainingBudget = options.MaxTotalBytes - estimatedBytesPerSample;
+            var estimatedReadBytes = (int)Math.Min(
+                (ulong)Math.Min(options.MaxBytesPerRegion, int.MaxValue),
+                Math.Min(region.SizeBytes, (ulong)remainingBudget));
+
+            if (estimatedReadBytes <= 0)
+            {
+                break;
+            }
+
+            var order = selectedRegionIds.Count + 1;
+            selectedRegionIds.Add(region.RegionId, (order, estimatedReadBytes));
+            estimatedBytesPerSample += estimatedReadBytes;
+        }
+
+        var regionRows = new List<PassiveCaptureDryRunRegion>();
         foreach (var region in allRegions)
         {
-            var skipReasons = GetSkipReasons(region, options).ToArray();
-            var remainingBudget = options.MaxTotalBytes - estimatedBytesPerSample;
-            var canFitBudget = remainingBudget > 0;
-            var selected = skipReasons.Length == 0 && selectedCount < options.MaxRegions && canFitBudget;
-            int estimatedReadBytes = 0;
-            int? selectedOrder = null;
-            string reason;
-
-            if (selected)
-            {
-                estimatedReadBytes = (int)Math.Min(
-                    (ulong)Math.Min(options.MaxBytesPerRegion, int.MaxValue),
-                    Math.Min(region.SizeBytes, (ulong)remainingBudget));
-                selected = estimatedReadBytes > 0;
-            }
-
-            if (selected)
-            {
-                selectedCount++;
-                selectedOrder = selectedCount;
-                estimatedBytesPerSample += estimatedReadBytes;
-                reason = "selected_for_passive_capture";
-            }
-            else if (skipReasons.Length == 0 && selectedCount >= options.MaxRegions)
-            {
-                reason = "skipped_after_max_regions";
-                skipReasons = ["max_regions_budget_exhausted"];
-            }
-            else if (skipReasons.Length == 0 && !canFitBudget)
-            {
-                reason = "skipped_after_max_total_bytes";
-                skipReasons = ["max_total_bytes_budget_exhausted"];
-            }
-            else
-            {
-                reason = "not_selected";
-            }
+            var skipReasons = skipReasonsByRegionId[region.RegionId];
+            var selected = selectedRegionIds.TryGetValue(region.RegionId, out var selection);
+            var selectedOrder = selected ? selection.Order : (int?)null;
+            var estimatedReadBytes = selected ? selection.EstimatedReadBytes : 0;
+            var reason = ResolveReason(skipReasons, selected, selectedRegionIds.Count, options);
+            var displaySkipReasons = ResolveDisplaySkipReasons(skipReasons, selected, selectedRegionIds.Count, options);
 
             regionRows.Add(new PassiveCaptureDryRunRegion
             {
@@ -70,16 +75,16 @@ public sealed class PassiveCaptureDryRunService(IProcessMemoryReader processMemo
                 SelectedOrder = selectedOrder,
                 EstimatedReadBytes = estimatedReadBytes,
                 Reason = reason,
-                SkipReasons = skipReasons
+                SkipReasons = displaySkipReasons
             });
         }
 
         var reportedRegions = LimitReportedRegions(regionRows, options.RegionOutputLimit);
-        var candidateCount = regionRows.Count(region => region.SkipReasons.Count == 0 || region.Selected);
-        var warnings = BuildWarnings(regionRows, selectedCount, reportedRegions.Count != regionRows.Count);
+        var candidateCount = skipReasonsByRegionId.Values.Count(skipReasons => skipReasons.Length == 0);
+        var warnings = BuildWarnings(regionRows, selectedRegionIds.Count, reportedRegions.Count != regionRows.Count);
         return new PassiveCaptureDryRunResult
         {
-            Success = selectedCount > 0,
+            Success = selectedRegionIds.Count > 0,
             ProcessId = process.ProcessId,
             ProcessName = process.ProcessName,
             ProcessStartTimeUtc = process.StartTimeUtc,
@@ -94,13 +99,50 @@ public sealed class PassiveCaptureDryRunService(IProcessMemoryReader processMemo
             ReportedRegionCount = reportedRegions.Count,
             RegionOutputTruncated = reportedRegions.Count != regionRows.Count,
             CandidateRegionCount = candidateCount,
-            SelectedRegionCount = selectedCount,
-            SkippedRegionCount = regionRows.Count - selectedCount,
+            SelectedRegionCount = selectedRegionIds.Count,
+            SkippedRegionCount = regionRows.Count - selectedRegionIds.Count,
             EstimatedBytesPerSample = estimatedBytesPerSample,
             EstimatedTotalBytes = estimatedBytesPerSample * options.Samples,
             Regions = reportedRegions,
             Warnings = warnings
         };
+    }
+
+    private static string ResolveReason(
+        IReadOnlyList<string> skipReasons,
+        bool selected,
+        int selectedCount,
+        PassiveCaptureDryRunOptions options)
+    {
+        if (selected)
+        {
+            return "selected_for_passive_capture";
+        }
+
+        if (skipReasons.Count > 0)
+        {
+            return "not_selected";
+        }
+
+        return selectedCount >= options.MaxRegions
+            ? "skipped_after_max_regions"
+            : "skipped_after_max_total_bytes";
+    }
+
+    private static IReadOnlyList<string> ResolveDisplaySkipReasons(
+        IReadOnlyList<string> skipReasons,
+        bool selected,
+        int selectedCount,
+        PassiveCaptureDryRunOptions options)
+    {
+        if (selected || skipReasons.Count > 0)
+        {
+            return skipReasons;
+        }
+
+        return selectedCount >= options.MaxRegions
+            ? ["max_regions_budget_exhausted"]
+            : ["max_total_bytes_budget_exhausted"];
     }
 
     private static IReadOnlyList<PassiveCaptureDryRunRegion> LimitReportedRegions(
@@ -146,9 +188,9 @@ public sealed class PassiveCaptureDryRunService(IProcessMemoryReader processMemo
             warnings.Add("image_regions_excluded_use_include_image_regions_if_needed");
         }
 
-        if (regions.Any(region => region.SkipReasons.Contains("region_size_exceeds_max_bytes_per_region", StringComparer.OrdinalIgnoreCase)))
+        if (regions.Any(region => region.Selected && region.SizeBytes > (ulong)region.EstimatedReadBytes))
         {
-            warnings.Add("some_regions_excluded_by_max_bytes_per_region");
+            warnings.Add("some_selected_regions_read_capped_to_max_bytes_per_region");
         }
 
         return warnings.Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
@@ -168,10 +210,6 @@ public sealed class PassiveCaptureDryRunService(IProcessMemoryReader processMemo
         if (region.SizeBytes == 0)
         {
             yield return "zero_size_region";
-        }
-        else if (region.SizeBytes > (ulong)options.MaxBytesPerRegion)
-        {
-            yield return "region_size_exceeds_max_bytes_per_region";
         }
 
         if (region.State != MemoryRegionConstants.MemCommit)

@@ -13,16 +13,18 @@ dotnet build RiftScan.slnx --configuration Release
 
 dotnet run --project src/RiftScan.Cli/RiftScan.Cli.csproj --configuration Release --no-build -- `
   process inventory --pid <rift_pid> `
-  --max-regions 16 --max-bytes-per-region 65536 --max-total-bytes 1048576 `
+  --max-regions 8 --max-bytes-per-region 65536 --max-total-bytes 524288 `
   --json-out reports/generated/<process-inventory>.json
 
 dotnet run --project src/RiftScan.Cli/RiftScan.Cli.csproj --configuration Release --no-build -- `
   capture passive --dry-run --pid <rift_pid> --out sessions/<passive_id> `
-  --samples 3 --max-regions 16 --max-bytes-per-region 65536 --max-total-bytes 1048576 `
+  --samples 3 --max-regions 8 --max-bytes-per-region 65536 --max-total-bytes 1572864 `
   --json-out reports/generated/<capture-dry-run>.json
 
 dotnet run --project src/RiftScan.Cli/RiftScan.Cli.csproj --configuration Release --no-build -- `
-  capture passive --pid <rift_pid> --out sessions/<passive_id> --samples 3 --interval-ms 100 --stimulus passive_idle
+  capture passive --pid <rift_pid> --out sessions/<passive_id> `
+  --samples 3 --interval-ms 100 --max-regions 8 --max-bytes-per-region 65536 --max-total-bytes 1572864 `
+  --stimulus passive_idle
 
 dotnet run --project src/RiftScan.Cli/RiftScan.Cli.csproj --configuration Release --no-build -- `
   analyze session sessions/<passive_id> --top 100
@@ -42,6 +44,7 @@ dotnet run --project src/RiftScan.Cli/RiftScan.Cli.csproj --configuration Releas
 
 - Capture is external read-only observation only.
 - `process inventory` and `capture passive --dry-run` enumerate and plan reads without calling `ReadProcessMemory`.
+- Default live capture prioritizes writable private/mapped regions and reads a capped prefix from large regions; `--max-bytes-per-region` is a read cap, not a reason to skip heap-sized regions.
 - Analysis, reports, comparisons, and next plans replay from stored artifacts.
 - Comparison output is candidate evidence, not recovered truth.
 - Use explicit stimulus labels before behavior claims.
