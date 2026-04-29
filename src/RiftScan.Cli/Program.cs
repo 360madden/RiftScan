@@ -9,6 +9,7 @@ using RiftScan.Capture.Passive;
 using RiftScan.Core.Processes;
 using RiftScan.Core.Sessions;
 using RiftScan.Rift.Addons;
+using RiftScan.Rift.Validation;
 
 namespace RiftScan.Cli;
 
@@ -69,6 +70,11 @@ public static class Program
             if (args.Length >= 2 && Is(args[0], "rift") && Is(args[1], "addon-corroboration"))
             {
                 return RiftAddonCorroboration(args[2..]);
+            }
+
+            if (args.Length >= 2 && Is(args[0], "rift") && Is(args[1], "verify-promoted-coordinate"))
+            {
+                return RiftVerifyPromotedCoordinate(args[2..]);
             }
 
             if (args.Length >= 2 && Is(args[0], "compare") && Is(args[1], "sessions"))
@@ -164,6 +170,11 @@ public static class Program
             if (args.Length >= 2 && Is(args[0], "verify") && Is(args[1], "vec3-truth-promotion"))
             {
                 return VerifyVec3TruthPromotion(args[2..]);
+            }
+
+            if (args.Length >= 2 && Is(args[0], "verify") && Is(args[1], "rift-promoted-coordinate-live"))
+            {
+                return VerifyRiftPromotedCoordinateLive(args[2..]);
             }
 
             if (args.Length >= 2 && Is(args[0], "verify") && Is(args[1], "scalar-promotion-review"))
@@ -465,6 +476,75 @@ public static class Program
 
         var result = new RiftAddonCoordinateCorroborationService().Build(candidatePath, observationPath, outputPath, tolerance);
         WriteOptionalJson(jsonOutputPath, result);
+        Console.WriteLine(JsonSerializer.Serialize(result, SessionJson.Options));
+        return result.Success ? 0 : 1;
+    }
+
+    private static int RiftVerifyPromotedCoordinate(string[] args)
+    {
+        if (args.Length == 1 && IsHelp(args[0]))
+        {
+            PrintRiftVerifyPromotedCoordinateUsage();
+            return 0;
+        }
+
+        string? promotionPath = null;
+        string? savedVariablesPath = null;
+        string? outputPath = null;
+        string? candidateId = null;
+        string? processName = null;
+        int? processId = null;
+        var tolerance = 5d;
+        for (var index = 0; index < args.Length; index++)
+        {
+            var arg = args[index];
+            switch (arg)
+            {
+                case "--promotion":
+                    promotionPath = RequireValue(args, ref index, arg);
+                    break;
+                case "--savedvariables":
+                    savedVariablesPath = RequireValue(args, ref index, arg);
+                    break;
+                case "--pid":
+                    processId = int.Parse(RequireValue(args, ref index, arg), CultureInfo.InvariantCulture);
+                    break;
+                case "--process":
+                    processName = RequireValue(args, ref index, arg);
+                    break;
+                case "--candidate-id":
+                    candidateId = RequireValue(args, ref index, arg);
+                    break;
+                case "--out":
+                    outputPath = RequireValue(args, ref index, arg);
+                    break;
+                case "--tolerance":
+                    tolerance = double.Parse(RequireValue(args, ref index, arg), CultureInfo.InvariantCulture);
+                    break;
+                default:
+                    throw new ArgumentException($"Unknown rift verify-promoted-coordinate option: {arg}");
+            }
+        }
+
+        if (string.IsNullOrWhiteSpace(promotionPath))
+        {
+            throw new ArgumentException("rift verify-promoted-coordinate requires --promotion <vec3-truth-promotion.json>.");
+        }
+
+        if (string.IsNullOrWhiteSpace(savedVariablesPath))
+        {
+            throw new ArgumentException("rift verify-promoted-coordinate requires --savedvariables <SavedVariables-file-or-directory>.");
+        }
+
+        var result = new RiftPromotedCoordinateLiveVerificationService(new WindowsProcessMemoryReader())
+            .Verify(promotionPath, savedVariablesPath, processId, processName, candidateId, tolerance);
+        if (!string.IsNullOrWhiteSpace(outputPath))
+        {
+            result = result with { OutputPath = Path.GetFullPath(outputPath) };
+            Directory.CreateDirectory(Path.GetDirectoryName(result.OutputPath)!);
+            File.WriteAllText(result.OutputPath, JsonSerializer.Serialize(result, SessionJson.Options));
+        }
+
         Console.WriteLine(JsonSerializer.Serialize(result, SessionJson.Options));
         return result.Success ? 0 : 1;
     }
@@ -1619,6 +1699,29 @@ public static class Program
         return result.Success ? 0 : 1;
     }
 
+    private static int VerifyRiftPromotedCoordinateLive(string[] args)
+    {
+        if (args.Length == 1 && IsHelp(args[0]))
+        {
+            PrintVerifyRiftPromotedCoordinateLiveUsage();
+            return 0;
+        }
+
+        if (args.Length == 0)
+        {
+            throw new ArgumentException("Verify rift-promoted-coordinate-live requires a JSON path.");
+        }
+
+        if (args.Length > 1)
+        {
+            throw new ArgumentException($"Unknown verify rift-promoted-coordinate-live option: {args[1]}");
+        }
+
+        var result = new RiftPromotedCoordinateLiveVerificationVerifier().Verify(args[0]);
+        Console.WriteLine(JsonSerializer.Serialize(result, SessionJson.Options));
+        return result.Success ? 0 : 1;
+    }
+
     private static int VerifyScalarPromotionReview(string[] args)
     {
         if (args.Length == 1 && IsHelp(args[0]))
@@ -1725,6 +1828,7 @@ public static class Program
         PrintReportCapabilityUsage();
         PrintRiftAddonCoordsUsage();
         PrintRiftAddonCorroborationUsage();
+        PrintRiftVerifyPromotedCoordinateUsage();
         PrintCompareSessionsUsage();
         PrintCompareScalarSetUsage();
         PrintCompareScalarTruthUsage();
@@ -1744,6 +1848,7 @@ public static class Program
         PrintVerifyVec3TruthRecoveryUsage();
         PrintVerifyScalarTruthPromotionUsage();
         PrintVerifyVec3TruthPromotionUsage();
+        PrintVerifyRiftPromotedCoordinateLiveUsage();
         PrintVerifyScalarPromotionReviewUsage();
         PrintVerifyComparisonReadinessUsage();
         PrintVerifyCapabilityStatusUsage();
@@ -1814,6 +1919,9 @@ public static class Program
     private static void PrintRiftAddonCorroborationUsage() =>
         Console.WriteLine("riftscan rift addon-corroboration --candidates reports/generated/vec3-truth-candidates.jsonl --observations reports/generated/addon-coordinate-observations.jsonl --out reports/generated/vec3-truth-corroboration.jsonl [--json-out reports/generated/addon-coordinate-corroboration.json] [--tolerance 5]");
 
+    private static void PrintRiftVerifyPromotedCoordinateUsage() =>
+        Console.WriteLine("riftscan rift verify-promoted-coordinate --promotion reports/generated/vec3-truth-promotion.json --pid <id>|--process rift_x64 --savedvariables \"C:\\Users\\<user>\\OneDrive\\Documents\\RIFT\\Interface\\Saved\" [--candidate-id vec3-promoted-000001] [--out reports/generated/rift-promoted-coordinate-live.json] [--tolerance 5]");
+
     private static void PrintCompareSessionsUsage() =>
         Console.WriteLine("riftscan compare sessions <session-a> <session-b> [--top 100] [--out reports/generated/comparison.json] [--report-md reports/generated/comparison.md] [--next-plan reports/generated/next-capture-plan.json] [--truth-readiness reports/generated/truth-readiness.json] [--vec3-truth-out reports/generated/vec3-truth-candidates.jsonl] [--vec3-corroboration reports/generated/vec3-truth-corroboration.jsonl]");
 
@@ -1870,6 +1978,9 @@ public static class Program
 
     private static void PrintVerifyVec3TruthPromotionUsage() =>
         Console.WriteLine("riftscan verify vec3-truth-promotion <vec3-truth-promotion.json>");
+
+    private static void PrintVerifyRiftPromotedCoordinateLiveUsage() =>
+        Console.WriteLine("riftscan verify rift-promoted-coordinate-live <rift-promoted-coordinate-live.json>");
 
     private static void PrintVerifyScalarPromotionReviewUsage() =>
         Console.WriteLine("riftscan verify scalar-promotion-review <scalar-promotion-review.json>");

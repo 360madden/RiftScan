@@ -104,6 +104,24 @@ riftscan verify vec3-truth-promotion reports/generated/<combined>-vec3-truth-pro
 
 The output is a manual-review promotion packet. A `corroborated_candidate` is still not final coordinate truth until reviewed against the session evidence and current addon export timing.
 
+## Live promoted-coordinate verification
+
+For the top promoted candidate, optionally compare the live process value at `base_address_hex + offset_hex` against the freshest addon SavedVariables coordinate observation:
+
+```powershell
+riftscan rift verify-promoted-coordinate `
+  --promotion reports/generated/<combined>-vec3-truth-promotion.json `
+  --pid <rift_pid> `
+  --savedvariables "C:\Users\<user>\OneDrive\Documents\RIFT\Interface\Saved" `
+  --candidate-id vec3-promoted-000001 `
+  --out reports/generated/<run>-rift-promoted-coordinate-live.json `
+  --tolerance 5
+
+riftscan verify rift-promoted-coordinate-live reports/generated/<run>-rift-promoted-coordinate-live.json
+```
+
+This performs one read-only 12-byte `vec3_float32` read and scans addon SavedVariables. It is validation evidence only; it must not be promoted to final truth without review.
+
 ## Addon waypoint/player-coordinate use
 
 When addon telemetry is available, record the addon coordinate source, observed player/world coordinates, and timing beside the RiftScan session artifacts. Use it to confirm the memory candidate's vec3 values and axis order.

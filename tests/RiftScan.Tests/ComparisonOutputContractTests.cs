@@ -2,6 +2,7 @@ using System.Text.Json;
 using RiftScan.Analysis.Comparison;
 using RiftScan.Analysis.Reports;
 using RiftScan.Core.Sessions;
+using RiftScan.Rift.Validation;
 
 namespace RiftScan.Tests;
 
@@ -528,6 +529,77 @@ public sealed class ComparisonOutputContractTests
             "code",
             "message",
             "candidate_index");
+
+    [Fact]
+    public void Rift_promoted_coordinate_live_verification_result_pins_json_contract_fields() =>
+        AssertJsonPropertySet(
+            new RiftPromotedCoordinateLiveVerificationResult(),
+            "schema_version",
+            "success",
+            "promotion_path",
+            "savedvariables_path_redacted",
+            "output_path",
+            "process_id",
+            "process_name",
+            "process_start_time_utc",
+            "read_utc",
+            "candidate_id",
+            "source_recovered_candidate_id",
+            "base_address_hex",
+            "offset_hex",
+            "absolute_address_hex",
+            "x_offset_hex",
+            "y_offset_hex",
+            "z_offset_hex",
+            "read_byte_count",
+            "memory_x",
+            "memory_y",
+            "memory_z",
+            "addon_observation_id",
+            "addon_source",
+            "addon_file_last_write_utc",
+            "addon_observed_x",
+            "addon_observed_y",
+            "addon_observed_z",
+            "addon_observation_count",
+            "max_abs_distance",
+            "tolerance",
+            "validation_status",
+            "claim_level",
+            "evidence_summary",
+            "warnings",
+            "issues");
+
+    [Fact]
+    public void Rift_promoted_coordinate_live_verification_issue_pins_json_contract_fields() =>
+        AssertJsonPropertySet(
+            new RiftPromotedCoordinateLiveVerificationIssue(),
+            "severity",
+            "code",
+            "message",
+            "path");
+
+    [Fact]
+    public void Rift_promoted_coordinate_live_verification_verification_result_pins_json_contract_fields() =>
+        AssertJsonPropertySet(
+            new RiftPromotedCoordinateLiveVerificationVerificationResult(),
+            "schema_version",
+            "success",
+            "path",
+            "validation_status",
+            "candidate_id",
+            "max_abs_distance",
+            "tolerance",
+            "issues");
+
+    [Fact]
+    public void Rift_promoted_coordinate_live_verification_verification_issue_pins_json_contract_fields() =>
+        AssertJsonPropertySet(
+            new RiftPromotedCoordinateLiveVerificationVerificationIssue(),
+            "severity",
+            "code",
+            "message",
+            "path");
 
     [Fact]
     public void Scalar_promotion_review_result_pins_json_contract_fields() =>
