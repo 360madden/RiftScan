@@ -366,9 +366,10 @@ public static class Program
             return 0;
         }
 
-        var (truthReadinessPaths, scalarEvidenceSetPaths, scalarTruthRecoveryPaths, scalarTruthPromotionPaths, scalarPromotionReviewPaths, riftPromotedCoordinateLivePaths, jsonOutputPath) = ParseReportCapabilityOptions(args);
+        var (truthReadinessPaths, scalarEvidenceSetPaths, scalarTruthRecoveryPaths, scalarTruthPromotionPaths, scalarPromotionReviewPaths, riftPromotedCoordinateLivePaths, jsonOutputPath, reportMarkdownPath) = ParseReportCapabilityOptions(args);
         var result = new CapabilityStatusService().Build(truthReadinessPaths, scalarEvidenceSetPaths, scalarTruthRecoveryPaths, scalarTruthPromotionPaths, scalarPromotionReviewPaths, riftPromotedCoordinateLivePaths);
         WriteOptionalJson(jsonOutputPath, result);
+        WriteOptionalCapabilityReport(reportMarkdownPath, result);
         Console.WriteLine(JsonSerializer.Serialize(result, SessionJson.Options));
         return result.Success ? 0 : 1;
     }
@@ -1383,7 +1384,7 @@ public static class Program
         return inventoryOutputPath;
     }
 
-    private static (IReadOnlyList<string> TruthReadinessPaths, IReadOnlyList<string> ScalarEvidenceSetPaths, IReadOnlyList<string> ScalarTruthRecoveryPaths, IReadOnlyList<string> ScalarTruthPromotionPaths, IReadOnlyList<string> ScalarPromotionReviewPaths, IReadOnlyList<string> RiftPromotedCoordinateLivePaths, string? JsonOutputPath) ParseReportCapabilityOptions(string[] args)
+    private static (IReadOnlyList<string> TruthReadinessPaths, IReadOnlyList<string> ScalarEvidenceSetPaths, IReadOnlyList<string> ScalarTruthRecoveryPaths, IReadOnlyList<string> ScalarTruthPromotionPaths, IReadOnlyList<string> ScalarPromotionReviewPaths, IReadOnlyList<string> RiftPromotedCoordinateLivePaths, string? JsonOutputPath, string? ReportMarkdownPath) ParseReportCapabilityOptions(string[] args)
     {
         var truthReadinessPaths = new List<string>();
         var scalarEvidenceSetPaths = new List<string>();
@@ -1392,6 +1393,7 @@ public static class Program
         var scalarPromotionReviewPaths = new List<string>();
         var riftPromotedCoordinateLivePaths = new List<string>();
         string? jsonOutputPath = null;
+        string? reportMarkdownPath = null;
         for (var index = 0; index < args.Length; index++)
         {
             var arg = args[index];
@@ -1418,12 +1420,15 @@ public static class Program
                 case "--json-out":
                     jsonOutputPath = RequireValue(args, ref index, arg);
                     break;
+                case "--report-md":
+                    reportMarkdownPath = RequireValue(args, ref index, arg);
+                    break;
                 default:
                     throw new ArgumentException($"Unknown report capability option: {arg}");
             }
         }
 
-        return (truthReadinessPaths, scalarEvidenceSetPaths, scalarTruthRecoveryPaths, scalarTruthPromotionPaths, scalarPromotionReviewPaths, riftPromotedCoordinateLivePaths, jsonOutputPath);
+        return (truthReadinessPaths, scalarEvidenceSetPaths, scalarTruthRecoveryPaths, scalarTruthPromotionPaths, scalarPromotionReviewPaths, riftPromotedCoordinateLivePaths, jsonOutputPath, reportMarkdownPath);
     }
 
     private static (bool DryRun, string? InventoryOutputPath) ParsePruneOptions(string[] args)
@@ -1519,6 +1524,16 @@ public static class Program
         var fullOutputPath = Path.GetFullPath(outputPath);
         Directory.CreateDirectory(Path.GetDirectoryName(fullOutputPath)!);
         File.WriteAllText(fullOutputPath, JsonSerializer.Serialize(result, SessionJson.Options));
+    }
+
+    private static void WriteOptionalCapabilityReport(string? outputPath, CapabilityStatusResult result)
+    {
+        if (string.IsNullOrWhiteSpace(outputPath))
+        {
+            return;
+        }
+
+        _ = new CapabilityStatusReportGenerator().Generate(result, outputPath);
     }
 
     private static int VerifySession(string[] args)
@@ -1915,7 +1930,7 @@ public static class Program
         Console.WriteLine("riftscan report session <session-path> [--top 100]");
 
     private static void PrintReportCapabilityUsage() =>
-        Console.WriteLine("riftscan report capability [--truth-readiness reports/generated/truth-readiness.json ...] [--scalar-evidence-set reports/generated/scalar-evidence-set.json ...] [--scalar-truth-recovery reports/generated/scalar-truth-recovery.json ...] [--scalar-truth-promotion reports/generated/scalar-truth-promotion.json ...] [--scalar-promotion-review reports/generated/scalar-promotion-review.json ...] [--rift-promoted-coordinate-live reports/generated/rift-promoted-coordinate-live.json ...] [--json-out reports/generated/capability-status.json]");
+        Console.WriteLine("riftscan report capability [--truth-readiness reports/generated/truth-readiness.json ...] [--scalar-evidence-set reports/generated/scalar-evidence-set.json ...] [--scalar-truth-recovery reports/generated/scalar-truth-recovery.json ...] [--scalar-truth-promotion reports/generated/scalar-truth-promotion.json ...] [--scalar-promotion-review reports/generated/scalar-promotion-review.json ...] [--rift-promoted-coordinate-live reports/generated/rift-promoted-coordinate-live.json ...] [--json-out reports/generated/capability-status.json] [--report-md reports/generated/capability-status.md]");
 
     private static void PrintRiftAddonCoordsUsage() =>
         Console.WriteLine("riftscan rift addon-coords <savedvariables-file-or-directory> [--jsonl-out reports/generated/addon-coordinate-observations.jsonl] [--json-out reports/generated/addon-coordinate-scan.json] [--max-files 5000]");

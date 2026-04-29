@@ -68,7 +68,9 @@ dotnet run --project src/RiftScan.Cli/RiftScan.Cli.csproj --configuration Releas
   --scalar-truth-recovery reports/generated/<scalar-truth-recovery>.json `
   --scalar-truth-promotion reports/generated/<scalar-truth-promotion>.json `
   --scalar-promotion-review reports/generated/<scalar-promotion-review>.json `
-  --json-out reports/generated/<capability-status>.json
+  --rift-promoted-coordinate-live reports/generated/<rift-promoted-coordinate-live>.json `
+  --json-out reports/generated/<capability-status>.json `
+  --report-md reports/generated/<capability-status>.md
 ```
 
 This reports:
@@ -78,6 +80,7 @@ This reports:
 - truth component readiness
 - evidence gaps
 - top next recommended actions
+- optional Markdown summary for handoff/current-status review
 
 ## 4. Verify the capability/status matrix
 
@@ -106,7 +109,7 @@ It performs:
 3. `report capability --truth-readiness ... --scalar-evidence-set ... --json-out ...`
 4. `verify capability-status`
 
-`report capability` accepts repeated `--truth-readiness`, `--scalar-evidence-set`, `--scalar-truth-recovery`, `--scalar-truth-promotion`, and `--scalar-promotion-review` inputs when entity-layout, position, actor-yaw, and camera-orientation evidence were produced as separate replayable packets.
+`report capability` accepts repeated `--truth-readiness`, `--scalar-evidence-set`, `--scalar-truth-recovery`, `--scalar-truth-promotion`, `--scalar-promotion-review`, and `--rift-promoted-coordinate-live` inputs when entity-layout, position, actor-yaw, and camera-orientation evidence were produced as separate replayable packets.
 
 After `--scalar-truth-promotion` verifies, create the manual review artifact separately:
 

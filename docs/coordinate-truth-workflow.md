@@ -127,7 +127,8 @@ Feed the verified live packet into the capability/status report so the position 
 ```powershell
 riftscan report capability `
   --rift-promoted-coordinate-live reports/generated/<run>-rift-promoted-coordinate-live.json `
-  --json-out reports/generated/<run>-capability-status.json
+  --json-out reports/generated/<run>-capability-status.json `
+  --report-md reports/generated/<run>-capability-status.md
 
 riftscan verify capability-status reports/generated/<run>-capability-status.json
 ```

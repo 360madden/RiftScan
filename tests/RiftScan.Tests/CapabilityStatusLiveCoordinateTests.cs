@@ -38,6 +38,7 @@ public sealed class CapabilityStatusLiveCoordinateTests
         using var temp = new TempDirectory();
         var livePath = WriteMatchedLiveVerification(temp.Path);
         var capabilityPath = Path.Combine(temp.Path, "capability-status.json");
+        var capabilityReportPath = Path.Combine(temp.Path, "capability-status.md");
 
         var exitCode = RiftScan.Cli.Program.Main([
             "report",
@@ -45,14 +46,21 @@ public sealed class CapabilityStatusLiveCoordinateTests
             "--rift-promoted-coordinate-live",
             livePath,
             "--json-out",
-            capabilityPath
+            capabilityPath,
+            "--report-md",
+            capabilityReportPath
         ]);
 
         Assert.Equal(0, exitCode);
         Assert.True(File.Exists(capabilityPath));
+        Assert.True(File.Exists(capabilityReportPath));
         var result = JsonSerializer.Deserialize<CapabilityStatusResult>(File.ReadAllText(capabilityPath), SessionJson.Options)!;
         Assert.Equal([Path.GetFullPath(livePath)], result.RiftPromotedCoordinateLivePaths);
         Assert.Equal("live_validated_candidate", Assert.Single(result.TruthComponents, component => component.Component == "position").EvidenceReadiness);
+        var report = File.ReadAllText(capabilityReportPath);
+        Assert.Contains("# RiftScan capability status", report, StringComparison.Ordinal);
+        Assert.Contains("live_validated_candidate", report, StringComparison.Ordinal);
+        Assert.Contains("RIFT promoted coordinate live", report, StringComparison.Ordinal);
         Assert.Equal(0, RiftScan.Cli.Program.Main(["verify", "capability-status", capabilityPath]));
     }
 
