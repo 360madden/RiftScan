@@ -63,6 +63,7 @@ Migration apply refuses missing `--out`, non-empty output directories, unsupport
 
 ```powershell
 pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/smoke-fixture.ps1
+pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/smoke-migration.ps1
 dotnet build RiftScan.slnx --configuration Release --no-restore
 dotnet test RiftScan.slnx --configuration Release --no-build
 dotnet format RiftScan.slnx --verify-no-changes
