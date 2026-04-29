@@ -1,0 +1,4 @@
+# Preserve fixture artifact bytes for checksum verification across Windows and non-Windows checkouts.
+tests/RiftScan.Tests/Fixtures/**/*.json text eol=crlf
+tests/RiftScan.Tests/Fixtures/**/*.jsonl text eol=crlf
+tests/RiftScan.Tests/Fixtures/**/*.bin binary
