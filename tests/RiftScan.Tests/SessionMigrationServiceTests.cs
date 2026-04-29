@@ -34,6 +34,66 @@ public sealed class SessionMigrationServiceTests
     }
 
     [Fact]
+    public void Migration_plan_outputs_pin_status_actions_and_raw_artifact_policy()
+    {
+        var tempDirectory = CreateTempDirectory();
+
+        try
+        {
+            var unsupportedSourcePath = Path.Combine(tempDirectory, "unsupported-source-session");
+            CopyDirectory(ValidFixturePath, unsupportedSourcePath);
+            RewriteManifestSchemaVersion(unsupportedSourcePath, "riftscan.session.v9");
+
+            var nonEmptyOutputPath = Path.Combine(tempDirectory, "non-empty-output");
+            Directory.CreateDirectory(nonEmptyOutputPath);
+            File.WriteAllText(Path.Combine(nonEmptyOutputPath, "existing.txt"), "do-not-overwrite");
+
+            var cases = new[]
+            {
+                CreatePlanCase("noop_current_schema", ValidFixturePath, SessionMigrationService.SupportedSessionSchemaVersion, true, null, "verify-current-schema-noop", "noop"),
+                CreatePlanCase("unsupported_target_schema", ValidFixturePath, "riftscan.session.v2", true, null, "define-target-schema-contract", "blocked"),
+                CreatePlanCase("unsupported_source_schema", unsupportedSourcePath, SessionMigrationService.SupportedSessionSchemaVersion, true, null, "define-source-schema-migrator", "blocked"),
+                CreatePlanCase("planned_source_schema_upgrade", ValidV0FixturePath, SessionMigrationService.SupportedSessionSchemaVersion, true, null, "copy-session-artifacts-to-migrated-output", "planned"),
+                CreatePlanCase("applied_source_schema_upgrade", ValidV0FixturePath, SessionMigrationService.SupportedSessionSchemaVersion, false, Path.Combine(tempDirectory, "applied-output"), "wrote-migrated-session-output", "applied"),
+                CreatePlanCase("verification_failed", Path.Combine(tempDirectory, "missing-session"), SessionMigrationService.SupportedSessionSchemaVersion, true, null, "repair-session-integrity", "blocked"),
+                CreatePlanCase("apply_not_supported", ValidFixturePath, SessionMigrationService.SupportedSessionSchemaVersion, false, Path.Combine(tempDirectory, "unsupported-apply-output"), "implement-apply-path", "blocked"),
+                CreatePlanCase("apply_output_required", ValidV0FixturePath, SessionMigrationService.SupportedSessionSchemaVersion, false, null, "provide-migration-output-directory", "blocked"),
+                CreatePlanCase("apply_output_exists", ValidV0FixturePath, SessionMigrationService.SupportedSessionSchemaVersion, false, nonEmptyOutputPath, "choose-empty-migration-output-directory", "blocked")
+            };
+
+            foreach (var planCase in cases)
+            {
+                var planPath = Path.Combine(tempDirectory, $"{planCase.ExpectedStatus}.json");
+                var result = new SessionMigrationService().Migrate(
+                    planCase.SessionPath,
+                    planCase.ToSchemaVersion,
+                    dryRun: planCase.DryRun,
+                    planOutputPath: planPath,
+                    migrationOutputPath: planCase.MigrationOutputPath);
+
+                Assert.Equal(planCase.ExpectedStatus, result.Status);
+                Assert.True(File.Exists(planPath));
+
+                using var document = JsonDocument.Parse(File.ReadAllText(planPath));
+                Assert.Equal("riftscan.session_migration_plan.v1", document.RootElement.GetProperty("plan_schema_version").GetString());
+                Assert.Equal(planCase.ExpectedStatus, document.RootElement.GetProperty("status").GetString());
+                Assert.False(document.RootElement.GetProperty("can_apply").GetBoolean());
+                Assert.Equal("preserve_raw_artifacts_no_mutation", document.RootElement.GetProperty("raw_data_policy").GetString());
+
+                var firstAction = document.RootElement.GetProperty("actions")[0];
+                Assert.Equal(planCase.ExpectedFirstActionId, firstAction.GetProperty("action_id").GetString());
+                Assert.Equal(planCase.ExpectedFirstActionType, firstAction.GetProperty("action_type").GetString());
+                Assert.False(firstAction.GetProperty("writes_raw_artifacts").GetBoolean());
+                Assert.False(string.IsNullOrWhiteSpace(firstAction.GetProperty("description").GetString()));
+            }
+        }
+        finally
+        {
+            Directory.Delete(tempDirectory, recursive: true);
+        }
+    }
+
+    [Fact]
     public void Migrate_unsupported_target_schema_fails_without_writing_artifacts()
     {
         var result = new SessionMigrationService().Migrate(ValidFixturePath, "riftscan.session.v2");
@@ -550,6 +610,32 @@ public sealed class SessionMigrationServiceTests
     private static string ValidV0FixturePath => Path.Combine(AppContext.BaseDirectory, "Fixtures", "valid-session-v0");
 
     private static string ExpectedMigratedV1FixturePath => Path.Combine(AppContext.BaseDirectory, "Fixtures", "migrated-session-v1-from-v0");
+
+    private static MigrationPlanCase CreatePlanCase(
+        string expectedStatus,
+        string sessionPath,
+        string toSchemaVersion,
+        bool dryRun,
+        string? migrationOutputPath,
+        string expectedFirstActionId,
+        string expectedFirstActionType) =>
+        new(
+            expectedStatus,
+            sessionPath,
+            toSchemaVersion,
+            dryRun,
+            migrationOutputPath,
+            expectedFirstActionId,
+            expectedFirstActionType);
+
+    private sealed record MigrationPlanCase(
+        string ExpectedStatus,
+        string SessionPath,
+        string ToSchemaVersion,
+        bool DryRun,
+        string? MigrationOutputPath,
+        string ExpectedFirstActionId,
+        string ExpectedFirstActionType);
 
     private static string CreateTempDirectory()
     {
