@@ -4,6 +4,9 @@ namespace RiftScan.Analysis.Comparison;
 
 public sealed record SessionComparisonResult
 {
+    [JsonPropertyName("schema_version")]
+    public string SchemaVersion { get; init; } = "riftscan.session_comparison.v1";
+
     [JsonPropertyName("success")]
     public bool Success { get; init; }
 

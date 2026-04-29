@@ -10,6 +10,7 @@ public sealed class ComparisonOutputContractTests
     public void Session_comparison_result_pins_json_contract_fields() =>
         AssertJsonPropertySet(
             new SessionComparisonResult(),
+            "schema_version",
             "success",
             "session_a_path",
             "session_b_path",

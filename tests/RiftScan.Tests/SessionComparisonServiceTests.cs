@@ -3,6 +3,7 @@ using RiftScan.Analysis.Triage;
 using RiftScan.Capture.Passive;
 using RiftScan.Core.Processes;
 using RiftScan.Core.Sessions;
+using System.Text.Json;
 
 namespace RiftScan.Tests;
 
@@ -136,6 +137,15 @@ public sealed class SessionComparisonServiceTests
             Assert.True(File.Exists(outputPath));
             Assert.True(File.Exists(reportPath));
             Assert.True(File.Exists(nextPlanPath));
+            using var comparisonJson = JsonDocument.Parse(File.ReadAllText(outputPath));
+            var comparisonRoot = comparisonJson.RootElement;
+            Assert.Equal("riftscan.session_comparison.v1", comparisonRoot.GetProperty("schema_version").GetString());
+            Assert.True(comparisonRoot.GetProperty("structure_candidate_matches").GetArrayLength() >= 1);
+            Assert.True(comparisonRoot.GetProperty("vec3_candidate_matches").GetArrayLength() >= 1);
+            var structureMatch = comparisonRoot.GetProperty("structure_candidate_matches")[0];
+            Assert.True(structureMatch.TryGetProperty("session_a_candidate_id", out _));
+            Assert.True(structureMatch.TryGetProperty("session_a_value_sequence_summary", out _));
+            Assert.True(structureMatch.TryGetProperty("session_a_analyzer_sources", out _));
             Assert.Contains("matching_region_count", output.ToString(), StringComparison.Ordinal);
             Assert.Contains("matching_cluster_count", output.ToString(), StringComparison.Ordinal);
             Assert.Contains("matching_structure_candidate_count", output.ToString(), StringComparison.Ordinal);
