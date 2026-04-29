@@ -14,7 +14,7 @@ public sealed class CapabilityStatusService
         var scalarEvidenceSetPaths = string.IsNullOrWhiteSpace(scalarEvidenceSetPath)
             ? Array.Empty<string>()
             : [scalarEvidenceSetPath];
-        return Build(truthReadinessPaths, scalarEvidenceSetPaths, [], [], []);
+        return Build(truthReadinessPaths, scalarEvidenceSetPaths, [], [], [], []);
     }
 
     public CapabilityStatusResult Build(string? truthReadinessPath, IReadOnlyList<string> scalarEvidenceSetPaths)
@@ -22,33 +22,42 @@ public sealed class CapabilityStatusService
         var truthReadinessPaths = string.IsNullOrWhiteSpace(truthReadinessPath)
             ? Array.Empty<string>()
             : [truthReadinessPath];
-        return Build(truthReadinessPaths, scalarEvidenceSetPaths, [], [], []);
+        return Build(truthReadinessPaths, scalarEvidenceSetPaths, [], [], [], []);
     }
 
     public CapabilityStatusResult Build(
         IReadOnlyList<string> truthReadinessPaths,
         IReadOnlyList<string> scalarEvidenceSetPaths) =>
-        Build(truthReadinessPaths, scalarEvidenceSetPaths, [], [], []);
+        Build(truthReadinessPaths, scalarEvidenceSetPaths, [], [], [], []);
 
     public CapabilityStatusResult Build(
         IReadOnlyList<string> truthReadinessPaths,
         IReadOnlyList<string> scalarEvidenceSetPaths,
         IReadOnlyList<string> scalarTruthRecoveryPaths) =>
-        Build(truthReadinessPaths, scalarEvidenceSetPaths, scalarTruthRecoveryPaths, [], []);
+        Build(truthReadinessPaths, scalarEvidenceSetPaths, scalarTruthRecoveryPaths, [], [], []);
 
     public CapabilityStatusResult Build(
         IReadOnlyList<string> truthReadinessPaths,
         IReadOnlyList<string> scalarEvidenceSetPaths,
         IReadOnlyList<string> scalarTruthRecoveryPaths,
         IReadOnlyList<string> scalarTruthPromotionPaths) =>
-        Build(truthReadinessPaths, scalarEvidenceSetPaths, scalarTruthRecoveryPaths, scalarTruthPromotionPaths, []);
+        Build(truthReadinessPaths, scalarEvidenceSetPaths, scalarTruthRecoveryPaths, scalarTruthPromotionPaths, [], []);
 
     public CapabilityStatusResult Build(
         IReadOnlyList<string> truthReadinessPaths,
         IReadOnlyList<string> scalarEvidenceSetPaths,
         IReadOnlyList<string> scalarTruthRecoveryPaths,
         IReadOnlyList<string> scalarTruthPromotionPaths,
-        IReadOnlyList<string> scalarPromotionReviewPaths)
+        IReadOnlyList<string> scalarPromotionReviewPaths) =>
+        Build(truthReadinessPaths, scalarEvidenceSetPaths, scalarTruthRecoveryPaths, scalarTruthPromotionPaths, scalarPromotionReviewPaths, []);
+
+    public CapabilityStatusResult Build(
+        IReadOnlyList<string> truthReadinessPaths,
+        IReadOnlyList<string> scalarEvidenceSetPaths,
+        IReadOnlyList<string> scalarTruthRecoveryPaths,
+        IReadOnlyList<string> scalarTruthPromotionPaths,
+        IReadOnlyList<string> scalarPromotionReviewPaths,
+        IReadOnlyList<string> riftPromotedCoordinateLivePaths)
     {
         var capabilities = BuildCapabilities();
         var warnings = new List<string>
@@ -69,6 +78,7 @@ public sealed class CapabilityStatusService
         var fullScalarTruthRecoveryPaths = new List<string>();
         var fullScalarTruthPromotionPaths = new List<string>();
         var fullScalarPromotionReviewPaths = new List<string>();
+        var fullRiftPromotedCoordinateLivePaths = new List<string>();
 
         foreach (var truthReadinessPath in truthReadinessPaths.Where(path => !string.IsNullOrWhiteSpace(path)))
         {
@@ -161,6 +171,23 @@ public sealed class CapabilityStatusService
                 .ToList();
         }
 
+        foreach (var riftPromotedCoordinateLivePath in riftPromotedCoordinateLivePaths.Where(path => !string.IsNullOrWhiteSpace(path)))
+        {
+            var fullRiftPromotedCoordinateLivePath = Path.GetFullPath(riftPromotedCoordinateLivePath);
+            fullRiftPromotedCoordinateLivePaths.Add(fullRiftPromotedCoordinateLivePath);
+            var riftPromotedCoordinateLive = ReadRiftPromotedCoordinateLive(fullRiftPromotedCoordinateLivePath);
+            truthComponents = MergeRiftPromotedCoordinateLiveComponents(truthComponents, riftPromotedCoordinateLive);
+            evidenceMissing = truthComponents
+                .Where(component => !IsStrongOrValidated(component.EvidenceReadiness))
+                .Select(component => $"{component.Component}:{component.EvidenceReadiness}")
+                .ToArray();
+            nextActions = BuildNextActions(nextRequiredCaptureModes, truthComponents, scalarEvidenceSets);
+            warnings = warnings
+                .Concat(riftPromotedCoordinateLive.Warnings)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+
         return new CapabilityStatusResult
         {
             Capabilities = capabilities,
@@ -174,6 +201,8 @@ public sealed class CapabilityStatusService
             ScalarTruthPromotionPaths = fullScalarTruthPromotionPaths,
             ScalarPromotionReviewPath = fullScalarPromotionReviewPaths.Count == 0 ? null : fullScalarPromotionReviewPaths[0],
             ScalarPromotionReviewPaths = fullScalarPromotionReviewPaths,
+            RiftPromotedCoordinateLivePath = fullRiftPromotedCoordinateLivePaths.Count == 0 ? null : fullRiftPromotedCoordinateLivePaths[0],
+            RiftPromotedCoordinateLivePaths = fullRiftPromotedCoordinateLivePaths,
             TruthComponents = truthComponents,
             EvidenceMissing = evidenceMissing,
             NextRecommendedActions = nextActions,
@@ -198,6 +227,7 @@ public sealed class CapabilityStatusService
         Capability("scalar_truth_export_and_recovery", "riftscan compare scalar-set --truth-out; riftscan compare scalar-truth", "truth-candidate and repeat recovery packets", ["scalar_truth_candidates.jsonl", "scalar-truth-recovery.json"], "candidate evidence until externally corroborated or repeated"),
         Capability("external_corroboration_hook", "riftscan verify scalar-corroboration", "addon/external corroboration JSONL verification", ["scalar_truth_corroboration.jsonl"], ""),
         Capability("scalar_truth_promotion_review", "riftscan compare scalar-promotion; riftscan review scalar-promotion", "recovered-plus-corroborated scalar promotion and manual review packets", ["scalar-truth-promotion.json", "scalar-promotion-review.json", "scalar-promotion-review.md"], "manual confirmation still required before final truth claim"),
+        Capability("rift_promoted_coordinate_live_verify", "riftscan rift verify-promoted-coordinate", "live read-only memory coordinate plus refreshed addon observation verification", ["rift-promoted-coordinate-live.json"], "candidate validation evidence only; manual review still required before final truth claim"),
         Capability("comparison_truth_readiness_export", "riftscan compare sessions --truth-readiness", "comparison readiness packet", ["truth-readiness.json"], "readiness is not recovered truth"),
         Capability("comparison_truth_readiness_verify", "riftscan verify comparison-readiness", "readiness packet invariant check", ["comparison_truth_readiness_verification.v1"], "")
     ];
@@ -335,6 +365,170 @@ public sealed class CapabilityStatusService
         }
     }
 
+    private static RiftPromotedCoordinateLiveCapabilityEvidence ReadRiftPromotedCoordinateLive(string path)
+    {
+        if (!File.Exists(path))
+        {
+            throw new InvalidOperationException($"RIFT promoted coordinate live verification file does not exist: {path}");
+        }
+
+        JsonDocument document;
+        try
+        {
+            document = JsonDocument.Parse(File.ReadAllText(path));
+        }
+        catch (JsonException ex)
+        {
+            throw new InvalidOperationException($"Invalid RIFT promoted coordinate live verification JSON: {ex.Message}", ex);
+        }
+
+        using (document)
+        {
+            var root = document.RootElement;
+            var schemaVersion = RequireString(root, "schema_version", path);
+            if (!string.Equals(schemaVersion, "riftscan.rift_promoted_coordinate_live_verification.v1", StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException("RIFT promoted coordinate live verification schema_version must be riftscan.rift_promoted_coordinate_live_verification.v1.");
+            }
+
+            var success = RequireBoolean(root, "success", path);
+            var candidateId = RequireString(root, "candidate_id", path);
+            var validationStatus = RequireString(root, "validation_status", path);
+            var claimLevel = RequireString(root, "claim_level", path);
+            var maxAbsDistance = ReadOptionalDouble(root, "max_abs_distance", path);
+            var tolerance = RequireDouble(root, "tolerance", path);
+            var warnings = ReadStringArray(root, "warnings", path);
+
+            if (!string.Equals(claimLevel, "candidate_validation", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException("RIFT promoted coordinate live verification claim_level must be candidate_validation.");
+            }
+
+            if (tolerance < 0 || double.IsNaN(tolerance) || double.IsInfinity(tolerance))
+            {
+                throw new InvalidOperationException("RIFT promoted coordinate live verification tolerance must be finite and non-negative.");
+            }
+
+            if (!warnings.Contains("rift_promoted_coordinate_live_verification_is_not_final_truth_without_manual_review", StringComparer.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException("RIFT promoted coordinate live verification warnings must include rift_promoted_coordinate_live_verification_is_not_final_truth_without_manual_review.");
+            }
+
+            if (HasErrorIssue(root, path) && success)
+            {
+                throw new InvalidOperationException("RIFT promoted coordinate live verification cannot be successful while issues contains an error.");
+            }
+
+            if (success && !string.Equals(validationStatus, "live_memory_and_addon_coordinate_matched_candidate", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException("Successful RIFT promoted coordinate live verification must use live_memory_and_addon_coordinate_matched_candidate status.");
+            }
+
+            if (string.Equals(validationStatus, "live_memory_and_addon_coordinate_matched_candidate", StringComparison.OrdinalIgnoreCase) &&
+                (maxAbsDistance is null || maxAbsDistance > tolerance))
+            {
+                throw new InvalidOperationException("Matched RIFT promoted coordinate live verification requires max_abs_distance <= tolerance.");
+            }
+
+            return new RiftPromotedCoordinateLiveCapabilityEvidence(
+                success,
+                validationStatus,
+                candidateId,
+                maxAbsDistance,
+                tolerance,
+                warnings);
+        }
+    }
+
+    private static string RequireString(JsonElement root, string propertyName, string path)
+    {
+        if (!root.TryGetProperty(propertyName, out var value) ||
+            value.ValueKind != JsonValueKind.String ||
+            string.IsNullOrWhiteSpace(value.GetString()))
+        {
+            throw new InvalidOperationException($"RIFT promoted coordinate live verification {propertyName} is required: {path}");
+        }
+
+        return value.GetString()!;
+    }
+
+    private static bool RequireBoolean(JsonElement root, string propertyName, string path)
+    {
+        if (!root.TryGetProperty(propertyName, out var value) ||
+            (value.ValueKind != JsonValueKind.True && value.ValueKind != JsonValueKind.False))
+        {
+            throw new InvalidOperationException($"RIFT promoted coordinate live verification {propertyName} boolean is required: {path}");
+        }
+
+        return value.GetBoolean();
+    }
+
+    private static double RequireDouble(JsonElement root, string propertyName, string path)
+    {
+        if (!root.TryGetProperty(propertyName, out var value) ||
+            value.ValueKind != JsonValueKind.Number ||
+            !value.TryGetDouble(out var number))
+        {
+            throw new InvalidOperationException($"RIFT promoted coordinate live verification {propertyName} number is required: {path}");
+        }
+
+        return number;
+    }
+
+    private static double? ReadOptionalDouble(JsonElement root, string propertyName, string path)
+    {
+        if (!root.TryGetProperty(propertyName, out var value) || value.ValueKind == JsonValueKind.Null)
+        {
+            return null;
+        }
+
+        if (value.ValueKind != JsonValueKind.Number || !value.TryGetDouble(out var number) ||
+            double.IsNaN(number) || double.IsInfinity(number))
+        {
+            throw new InvalidOperationException($"RIFT promoted coordinate live verification {propertyName} must be finite when present: {path}");
+        }
+
+        return number;
+    }
+
+    private static IReadOnlyList<string> ReadStringArray(JsonElement root, string propertyName, string path)
+    {
+        if (!root.TryGetProperty(propertyName, out var value) || value.ValueKind == JsonValueKind.Null)
+        {
+            return [];
+        }
+
+        if (value.ValueKind != JsonValueKind.Array)
+        {
+            throw new InvalidOperationException($"RIFT promoted coordinate live verification {propertyName} must be an array: {path}");
+        }
+
+        return value.EnumerateArray()
+            .Where(item => item.ValueKind == JsonValueKind.String && !string.IsNullOrWhiteSpace(item.GetString()))
+            .Select(item => item.GetString()!)
+            .ToArray();
+    }
+
+    private static bool HasErrorIssue(JsonElement root, string path)
+    {
+        if (!root.TryGetProperty("issues", out var issues) || issues.ValueKind == JsonValueKind.Null)
+        {
+            return false;
+        }
+
+        if (issues.ValueKind != JsonValueKind.Array)
+        {
+            throw new InvalidOperationException($"RIFT promoted coordinate live verification issues must be an array: {path}");
+        }
+
+        return issues.EnumerateArray()
+            .Any(issue =>
+                issue.ValueKind == JsonValueKind.Object &&
+                issue.TryGetProperty("severity", out var severity) &&
+                severity.ValueKind == JsonValueKind.String &&
+                string.Equals(severity.GetString(), "error", StringComparison.OrdinalIgnoreCase));
+    }
+
     private static IReadOnlyList<CapabilityTruthComponentStatus> BuildTruthComponents(ComparisonTruthReadinessResult readiness) =>
     [
         TruthComponent(readiness.EntityLayout),
@@ -403,6 +597,15 @@ public sealed class CapabilityStatusService
         var components = EnsureTruthComponents(existingComponents).ToDictionary(component => component.Component, StringComparer.OrdinalIgnoreCase);
         MergeComponent(components, BuildReviewScalarComponent("actor_yaw", scalarPromotionReview));
         MergeComponent(components, BuildReviewScalarComponent("camera_orientation", scalarPromotionReview));
+        return OrderedTruthComponents(components);
+    }
+
+    private static IReadOnlyList<CapabilityTruthComponentStatus> MergeRiftPromotedCoordinateLiveComponents(
+        IReadOnlyList<CapabilityTruthComponentStatus> existingComponents,
+        RiftPromotedCoordinateLiveCapabilityEvidence riftPromotedCoordinateLive)
+    {
+        var components = EnsureTruthComponents(existingComponents).ToDictionary(component => component.Component, StringComparer.OrdinalIgnoreCase);
+        MergeComponent(components, BuildRiftPromotedCoordinateLiveComponent(riftPromotedCoordinateLive));
         return OrderedTruthComponents(components);
     }
 
@@ -588,6 +791,39 @@ public sealed class CapabilityStatusService
         };
     }
 
+    private static CapabilityTruthComponentStatus BuildRiftPromotedCoordinateLiveComponent(
+        RiftPromotedCoordinateLiveCapabilityEvidence riftPromotedCoordinateLive)
+    {
+        if (riftPromotedCoordinateLive.Success &&
+            string.Equals(riftPromotedCoordinateLive.ValidationStatus, "live_memory_and_addon_coordinate_matched_candidate", StringComparison.OrdinalIgnoreCase) &&
+            riftPromotedCoordinateLive.MaxAbsDistance is { } maxAbsDistance &&
+            maxAbsDistance <= riftPromotedCoordinateLive.Tolerance)
+        {
+            return new CapabilityTruthComponentStatus
+            {
+                Component = "position",
+                CodeStatus = "coded",
+                EvidenceReadiness = "live_validated_candidate",
+                EvidenceCount = 1,
+                NextAction = "manual_review_live_validated_coordinate_candidate_before_final_truth_claim"
+            };
+        }
+
+        var readiness = string.Equals(riftPromotedCoordinateLive.ValidationStatus, "verification_incomplete", StringComparison.OrdinalIgnoreCase)
+            ? "live_validation_incomplete"
+            : "live_validation_mismatch";
+        return new CapabilityTruthComponentStatus
+        {
+            Component = "position",
+            CodeStatus = "coded",
+            EvidenceReadiness = readiness,
+            EvidenceCount = 1,
+            NextAction = string.Equals(readiness, "live_validation_incomplete", StringComparison.OrdinalIgnoreCase)
+                ? "complete_live_promoted_coordinate_verification"
+                : "refresh_addon_export_and_repeat_live_promoted_coordinate_verification"
+        };
+    }
+
     private static void MergeComponent(
         IDictionary<string, CapabilityTruthComponentStatus> components,
         CapabilityTruthComponentStatus candidate)
@@ -648,6 +884,7 @@ public sealed class CapabilityStatusService
     private static bool IsStrongOrValidated(string readiness) =>
         string.Equals(readiness, "strong_candidate", StringComparison.OrdinalIgnoreCase) ||
         string.Equals(readiness, "validated_candidate", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(readiness, "live_validated_candidate", StringComparison.OrdinalIgnoreCase) ||
         string.Equals(readiness, "recovered_candidate", StringComparison.OrdinalIgnoreCase) ||
         string.Equals(readiness, "corroborated_candidate", StringComparison.OrdinalIgnoreCase) ||
         string.Equals(readiness, "corroborated", StringComparison.OrdinalIgnoreCase) ||
@@ -706,6 +943,16 @@ public sealed class CapabilityStatusService
             return true;
         }
 
+        if (IsComponentStrongOrValidated("position", readinessByComponent) &&
+            (action.Contains("position", StringComparison.OrdinalIgnoreCase) ||
+                action.Contains("move", StringComparison.OrdinalIgnoreCase) ||
+                action.Contains("vec3", StringComparison.OrdinalIgnoreCase)) &&
+            !action.Contains("actor", StringComparison.OrdinalIgnoreCase) &&
+            !action.Contains("camera", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
         return false;
     }
 
@@ -731,6 +978,7 @@ public sealed class CapabilityStatusService
     private static int ReadinessRank(string readiness) =>
         readiness.ToLowerInvariant() switch
         {
+            "live_validated_candidate" => 8,
             "corroborated" => 5,
             "corroborated_candidate" => 5,
             "ready_for_manual_truth_review" => 6,
@@ -741,4 +989,12 @@ public sealed class CapabilityStatusService
             "candidate" => 1,
             _ => 0
         };
+
+    private sealed record RiftPromotedCoordinateLiveCapabilityEvidence(
+        bool Success,
+        string ValidationStatus,
+        string CandidateId,
+        double? MaxAbsDistance,
+        double Tolerance,
+        IReadOnlyList<string> Warnings);
 }

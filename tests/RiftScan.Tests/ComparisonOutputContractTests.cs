@@ -690,6 +690,8 @@ public sealed class ComparisonOutputContractTests
             "scalar_truth_promotion_paths",
             "scalar_promotion_review_path",
             "scalar_promotion_review_paths",
+            "rift_promoted_coordinate_live_path",
+            "rift_promoted_coordinate_live_paths",
             "truth_components",
             "evidence_missing",
             "next_recommended_actions",

@@ -22,6 +22,7 @@ public sealed class CapabilityStatusVerifier
         "scalar_truth_export_and_recovery",
         "external_corroboration_hook",
         "scalar_truth_promotion_review",
+        "rift_promoted_coordinate_live_verify",
         "comparison_truth_readiness_export",
         "comparison_truth_readiness_verify"
     };

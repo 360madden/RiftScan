@@ -52,6 +52,12 @@ public sealed record CapabilityStatusResult
     [JsonPropertyName("scalar_promotion_review_paths")]
     public IReadOnlyList<string> ScalarPromotionReviewPaths { get; init; } = [];
 
+    [JsonPropertyName("rift_promoted_coordinate_live_path")]
+    public string? RiftPromotedCoordinateLivePath { get; init; }
+
+    [JsonPropertyName("rift_promoted_coordinate_live_paths")]
+    public IReadOnlyList<string> RiftPromotedCoordinateLivePaths { get; init; } = [];
+
     [JsonPropertyName("truth_components")]
     public IReadOnlyList<CapabilityTruthComponentStatus> TruthComponents { get; init; } = [];
 

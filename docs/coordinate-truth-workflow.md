@@ -122,6 +122,18 @@ riftscan verify rift-promoted-coordinate-live reports/generated/<run>-rift-promo
 
 This performs one read-only 12-byte `vec3_float32` read and scans addon SavedVariables. It is validation evidence only; it must not be promoted to final truth without review.
 
+Feed the verified live packet into the capability/status report so the position component is marked as live-validated candidate evidence:
+
+```powershell
+riftscan report capability `
+  --rift-promoted-coordinate-live reports/generated/<run>-rift-promoted-coordinate-live.json `
+  --json-out reports/generated/<run>-capability-status.json
+
+riftscan verify capability-status reports/generated/<run>-capability-status.json
+```
+
+This advances `position` to `live_validated_candidate` only when the packet reports a successful live memory/addon match within tolerance. It remains candidate-validation evidence, not final coordinate truth.
+
 ## Addon waypoint/player-coordinate use
 
 When addon telemetry is available, record the addon coordinate source, observed player/world coordinates, and timing beside the RiftScan session artifacts. Use it to confirm the memory candidate's vec3 values and axis order.
