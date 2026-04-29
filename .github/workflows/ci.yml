@@ -43,10 +43,15 @@ jobs:
         shell: pwsh
         run: pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/smoke-migration.ps1 -KeepOutput -OutputRoot artifacts/smoke-migration
 
+      - name: Verify smoke manifests
+        shell: pwsh
+        run: pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/verify-smoke-manifest.ps1 -ManifestPath artifacts/smoke-fixture/smoke-manifest.json,artifacts/smoke-migration/smoke-manifest.json
+
       - name: Upload smoke artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: riftscan-smoke-artifacts
+          name: riftscan-smoke-artifacts-${{ github.sha }}
           path: artifacts
           if-no-files-found: error
+          retention-days: 14
