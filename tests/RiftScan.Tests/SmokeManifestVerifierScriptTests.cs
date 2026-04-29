@@ -75,6 +75,33 @@ public sealed class SmokeManifestVerifierScriptTests
     }
 
     [Fact]
+    public void Verify_smoke_manifest_rejects_byte_mismatch()
+    {
+        var tempDirectory = CreateTempDirectory();
+        try
+        {
+            var artifactPath = Path.Combine(tempDirectory, "proof.bin");
+            File.WriteAllText(artifactPath, "proof\n");
+            var artifactBytes = File.ReadAllBytes(artifactPath);
+            var manifestPath = WriteManifestEntry(
+                outputRoot: tempDirectory,
+                relativePath: "proof.bin",
+                bytes: artifactBytes.LongLength + 1,
+                sha256: Convert.ToHexString(SHA256.HashData(artifactBytes)).ToLowerInvariant(),
+                fileCount: 1);
+
+            var result = RunVerifier(manifestPath);
+
+            Assert.NotEqual(0, result.ExitCode);
+            Assert.Contains("byte mismatch", result.Stderr, StringComparison.OrdinalIgnoreCase);
+        }
+        finally
+        {
+            Directory.Delete(tempDirectory, recursive: true);
+        }
+    }
+
+    [Fact]
     public void Verify_smoke_manifest_rejects_unsupported_schema()
     {
         var tempDirectory = CreateTempDirectory();

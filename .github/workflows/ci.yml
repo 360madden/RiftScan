@@ -21,6 +21,22 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Prepare CI diagnostics artifact
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path artifacts/ci-diagnostics -Force | Out-Null
+          [ordered]@{
+            schema_version = "riftscan.ci_diagnostics.v1"
+            workflow = "${{ github.workflow }}"
+            job = "build-test-smoke"
+            run_id = "${{ github.run_id }}"
+            run_attempt = "${{ github.run_attempt }}"
+            event_name = "${{ github.event_name }}"
+            ref = "${{ github.ref }}"
+            head_sha = "${{ github.sha }}"
+            created_utc = (Get-Date).ToUniversalTime().ToString("O")
+          } | ConvertTo-Json -Depth 3 | Set-Content -LiteralPath artifacts/ci-diagnostics/run-info.json -Encoding utf8
+
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
