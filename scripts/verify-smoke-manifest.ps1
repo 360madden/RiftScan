@@ -9,6 +9,39 @@ param(
 $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
 
+function Assert-JsonProperty {
+    param(
+        [Parameter(Mandatory = $true)]
+        [object]$Object,
+
+        [Parameter(Mandatory = $true)]
+        [string]$Name,
+
+        [Parameter(Mandatory = $true)]
+        [string]$Context
+    )
+
+    if ($null -eq $Object -or -not ($Object.PSObject.Properties.Name -contains $Name)) {
+        throw "$Context is missing required field: $Name"
+    }
+
+    return $Object.$Name
+}
+
+function Assert-NonEmptyString {
+    param(
+        [object]$Value,
+        [string]$Name,
+        [string]$Context
+    )
+
+    if ($null -eq $Value -or [string]::IsNullOrWhiteSpace([string]$Value)) {
+        throw "$Context has empty required field: $Name"
+    }
+
+    return [string]$Value
+}
+
 function Assert-Manifest {
     param([string]$Path)
 
@@ -18,48 +51,105 @@ function Assert-Manifest {
     }
 
     $manifest = Get-Content -LiteralPath $fullManifestPath -Raw | ConvertFrom-Json
-    if ($manifest.schema_version -ne "riftscan.smoke_manifest.v1") {
-        throw "Unsupported smoke manifest schema in ${fullManifestPath}: $($manifest.schema_version)"
+    $schemaVersion = Assert-NonEmptyString `
+        -Value (Assert-JsonProperty -Object $manifest -Name "schema_version" -Context $fullManifestPath) `
+        -Name "schema_version" `
+        -Context $fullManifestPath
+    if ($schemaVersion -ne "riftscan.smoke_manifest.v1") {
+        throw "Unsupported smoke manifest schema in ${fullManifestPath}: $schemaVersion"
     }
 
-    $outputRoot = [System.IO.Path]::GetFullPath($manifest.output_root)
+    $smokeName = Assert-NonEmptyString `
+        -Value (Assert-JsonProperty -Object $manifest -Name "smoke_name" -Context $fullManifestPath) `
+        -Name "smoke_name" `
+        -Context $fullManifestPath
+    $outputRootValue = Assert-NonEmptyString `
+        -Value (Assert-JsonProperty -Object $manifest -Name "output_root" -Context $fullManifestPath) `
+        -Name "output_root" `
+        -Context $fullManifestPath
+    $createdUtc = Assert-NonEmptyString `
+        -Value (Assert-JsonProperty -Object $manifest -Name "created_utc" -Context $fullManifestPath) `
+        -Name "created_utc" `
+        -Context $fullManifestPath
+    $createdUtcParsed = [DateTimeOffset]::MinValue
+    if (-not [DateTimeOffset]::TryParse($createdUtc, [ref]$createdUtcParsed)) {
+        throw "Smoke manifest created_utc is not a valid timestamp in ${fullManifestPath}: $createdUtc"
+    }
+
+    $fileCountValue = Assert-JsonProperty -Object $manifest -Name "file_count" -Context $fullManifestPath
+    try {
+        $expectedFileCount = [int]$fileCountValue
+    }
+    catch {
+        throw "Smoke manifest file_count is not a valid integer in ${fullManifestPath}: $fileCountValue"
+    }
+    if ($expectedFileCount -lt 0) {
+        throw "Smoke manifest file_count must be non-negative in ${fullManifestPath}: $expectedFileCount"
+    }
+
+    $filesValue = Assert-JsonProperty -Object $manifest -Name "files" -Context $fullManifestPath
+    if ($null -eq $filesValue) {
+        throw "$fullManifestPath has empty required field: files"
+    }
+
+    $outputRoot = [System.IO.Path]::GetFullPath($outputRootValue)
     if (-not (Test-Path -LiteralPath $outputRoot -PathType Container)) {
         throw "Smoke manifest output_root does not exist: $outputRoot"
     }
 
-    $files = @($manifest.files)
-    if ($manifest.file_count -ne $files.Count) {
-        throw "Smoke manifest file_count mismatch in ${fullManifestPath}: expected $($manifest.file_count), found $($files.Count)."
+    $files = @($filesValue)
+    if ($expectedFileCount -ne $files.Count) {
+        throw "Smoke manifest file_count mismatch in ${fullManifestPath}: expected $expectedFileCount, found $($files.Count)."
     }
 
     foreach ($file in $files) {
-        if ([string]::IsNullOrWhiteSpace($file.path)) {
-            throw "Smoke manifest contains a file entry with an empty path: $fullManifestPath"
+        $fileContext = "Smoke manifest file entry in $fullManifestPath"
+        $filePath = Assert-NonEmptyString `
+            -Value (Assert-JsonProperty -Object $file -Name "path" -Context $fileContext) `
+            -Name "path" `
+            -Context $fileContext
+        $bytesValue = Assert-JsonProperty -Object $file -Name "bytes" -Context $fileContext
+        try {
+            $expectedLength = [int64]$bytesValue
+        }
+        catch {
+            throw "Smoke manifest file bytes is not a valid Int64 for ${filePath}: $bytesValue"
+        }
+        if ($expectedLength -lt 0) {
+            throw "Smoke manifest file bytes must be non-negative for ${filePath}: $expectedLength"
         }
 
-        $artifactPath = [System.IO.Path]::GetFullPath((Join-Path $outputRoot $file.path))
+        $expectedHash = Assert-NonEmptyString `
+            -Value (Assert-JsonProperty -Object $file -Name "sha256" -Context $fileContext) `
+            -Name "sha256" `
+            -Context $fileContext
+        if ($expectedHash -notmatch '^[0-9a-f]{64}$') {
+            throw "Smoke manifest SHA256 must be 64 lowercase hex characters for ${filePath}: $expectedHash"
+        }
+
+        $artifactPath = [System.IO.Path]::GetFullPath((Join-Path $outputRoot $filePath))
         $relativeArtifactPath = [System.IO.Path]::GetRelativePath($outputRoot, $artifactPath)
         if ($relativeArtifactPath.StartsWith("..", [StringComparison]::Ordinal) -or [System.IO.Path]::IsPathRooted($relativeArtifactPath)) {
-            throw "Smoke manifest file escapes output_root: $($file.path)"
+            throw "Smoke manifest file escapes output_root: $filePath"
         }
         if (-not (Test-Path -LiteralPath $artifactPath -PathType Leaf)) {
             throw "Smoke manifest file is missing: $artifactPath"
         }
 
         $actualLength = (Get-Item -LiteralPath $artifactPath).Length
-        if ($actualLength -ne [int64]$file.bytes) {
-            throw "Smoke manifest byte mismatch for $artifactPath. Expected $($file.bytes), found $actualLength."
+        if ($actualLength -ne $expectedLength) {
+            throw "Smoke manifest byte mismatch for $artifactPath. Expected $expectedLength, found $actualLength."
         }
 
         $actualHash = (Get-FileHash -LiteralPath $artifactPath -Algorithm SHA256).Hash.ToLowerInvariant()
-        if ($actualHash -ne $file.sha256) {
-            throw "Smoke manifest SHA256 mismatch for $artifactPath. Expected $($file.sha256), found $actualHash."
+        if ($actualHash -ne $expectedHash) {
+            throw "Smoke manifest SHA256 mismatch for $artifactPath. Expected $expectedHash, found $actualHash."
         }
     }
 
     [ordered]@{
         manifest_path = $fullManifestPath
-        smoke_name = $manifest.smoke_name
+        smoke_name = $smokeName
         file_count = $files.Count
         output_root = $outputRoot
     }

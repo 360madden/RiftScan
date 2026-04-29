@@ -130,6 +130,92 @@ public sealed class SmokeManifestVerifierScriptTests
     }
 
     [Fact]
+    public void Verify_smoke_manifest_rejects_missing_manifest_required_field()
+    {
+        var tempDirectory = CreateTempDirectory();
+        try
+        {
+            var artifactPath = Path.Combine(tempDirectory, "proof.bin");
+            File.WriteAllText(artifactPath, "proof\n");
+            var manifestPath = WriteCustomManifest(tempDirectory, artifactPath, manifest => manifest.Remove("smoke_name"));
+
+            var result = RunVerifier(manifestPath);
+
+            Assert.NotEqual(0, result.ExitCode);
+            Assert.Contains("required field", result.Stderr, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("smoke_name", result.Stderr, StringComparison.OrdinalIgnoreCase);
+        }
+        finally
+        {
+            Directory.Delete(tempDirectory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void Verify_smoke_manifest_rejects_bad_created_utc()
+    {
+        var tempDirectory = CreateTempDirectory();
+        try
+        {
+            var artifactPath = Path.Combine(tempDirectory, "proof.bin");
+            File.WriteAllText(artifactPath, "proof\n");
+            var manifestPath = WriteCustomManifest(tempDirectory, artifactPath, manifest => manifest["created_utc"] = "not-a-timestamp");
+
+            var result = RunVerifier(manifestPath);
+
+            Assert.NotEqual(0, result.ExitCode);
+            Assert.Contains("created_utc is not a valid timestamp", result.Stderr, StringComparison.OrdinalIgnoreCase);
+        }
+        finally
+        {
+            Directory.Delete(tempDirectory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void Verify_smoke_manifest_rejects_missing_file_entry_required_field()
+    {
+        var tempDirectory = CreateTempDirectory();
+        try
+        {
+            var artifactPath = Path.Combine(tempDirectory, "proof.bin");
+            File.WriteAllText(artifactPath, "proof\n");
+            var manifestPath = WriteCustomManifest(tempDirectory, artifactPath, entryMutation: entry => entry.Remove("sha256"));
+
+            var result = RunVerifier(manifestPath);
+
+            Assert.NotEqual(0, result.ExitCode);
+            Assert.Contains("required field", result.Stderr, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("sha256", result.Stderr, StringComparison.OrdinalIgnoreCase);
+        }
+        finally
+        {
+            Directory.Delete(tempDirectory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void Verify_smoke_manifest_rejects_malformed_sha256()
+    {
+        var tempDirectory = CreateTempDirectory();
+        try
+        {
+            var artifactPath = Path.Combine(tempDirectory, "proof.bin");
+            File.WriteAllText(artifactPath, "proof\n");
+            var manifestPath = WriteCustomManifest(tempDirectory, artifactPath, entryMutation: entry => entry["sha256"] = "BADHASH");
+
+            var result = RunVerifier(manifestPath);
+
+            Assert.NotEqual(0, result.ExitCode);
+            Assert.Contains("SHA256 must be 64 lowercase hex characters", result.Stderr, StringComparison.OrdinalIgnoreCase);
+        }
+        finally
+        {
+            Directory.Delete(tempDirectory, recursive: true);
+        }
+    }
+
+    [Fact]
     public void Verify_smoke_manifest_rejects_missing_listed_file()
     {
         var tempDirectory = CreateTempDirectory();
@@ -271,6 +357,37 @@ public sealed class SmokeManifestVerifierScriptTests
             }
         };
 
+        File.WriteAllText(manifestPath, JsonSerializer.Serialize(manifest));
+        return manifestPath;
+    }
+
+    private static string WriteCustomManifest(
+        string outputRoot,
+        string artifactPath,
+        Action<Dictionary<string, object?>>? manifestMutation = null,
+        Action<Dictionary<string, object?>>? entryMutation = null)
+    {
+        var artifactBytes = File.ReadAllBytes(artifactPath);
+        var entry = new Dictionary<string, object?>
+        {
+            ["path"] = Path.GetRelativePath(outputRoot, artifactPath).Replace('\\', '/'),
+            ["bytes"] = artifactBytes.LongLength,
+            ["sha256"] = Convert.ToHexString(SHA256.HashData(artifactBytes)).ToLowerInvariant()
+        };
+        entryMutation?.Invoke(entry);
+
+        var manifest = new Dictionary<string, object?>
+        {
+            ["schema_version"] = "riftscan.smoke_manifest.v1",
+            ["smoke_name"] = "fixture",
+            ["output_root"] = Path.GetFullPath(outputRoot),
+            ["created_utc"] = DateTimeOffset.UtcNow.ToString("O"),
+            ["file_count"] = 1,
+            ["files"] = new[] { entry }
+        };
+        manifestMutation?.Invoke(manifest);
+
+        var manifestPath = Path.Combine(outputRoot, "smoke-manifest.json");
         File.WriteAllText(manifestPath, JsonSerializer.Serialize(manifest));
         return manifestPath;
     }

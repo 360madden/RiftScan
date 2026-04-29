@@ -65,7 +65,7 @@ Expected output is JSON similar to:
 ]
 ```
 
-The verifier fails nonzero if a listed file is missing, a file size differs, a SHA256 hash differs, a manifest has a bad file count, or a manifest path attempts to escape its output root.
+The verifier fails nonzero if a manifest is missing required fields, `created_utc` is malformed, a listed file is missing, a file size differs, a SHA256 hash is malformed or differs, a manifest has a bad file count, or a manifest path attempts to escape its output root.
 
 ## Regenerate proof artifacts locally
 
