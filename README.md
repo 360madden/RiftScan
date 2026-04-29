@@ -79,6 +79,10 @@ dotnet run --project src/RiftScan.Cli/RiftScan.Cli.csproj --configuration Releas
   --json-out reports/generated/<session_id>-prune-inventory.json
 ```
 
+## CI smoke artifacts
+
+CI uploads commit-scoped smoke proof artifacts with SHA256 manifests. See [docs/ci-artifacts.md](docs/ci-artifacts.md) for download and verification steps.
+
 ## Validation
 
 `scripts/smoke-fixture.ps1` is fixture-only and does not attach to RIFT. Live capture and plan-follow-up need an explicit process ID; fake-process plan coverage runs in unit tests.
