@@ -15,7 +15,7 @@ public sealed class SessionInventoryServiceTests
         {
             CopyDirectory(ValidFixturePath, sessionPath);
             File.WriteAllText(Path.Combine(sessionPath, "report.md"), "# report\n");
-            File.WriteAllText(Path.Combine(sessionPath, "clusters.jsonl"), "{}\n");
+            File.WriteAllText(Path.Combine(sessionPath, "clusters.jsonl"), "{\"schema_version\":\"riftscan.structure_cluster.v1\"}\n");
 
             var beforeFiles = RelativeFilePaths(sessionPath);
             var result = new SessionInventoryService().Inventory(sessionPath);
@@ -47,7 +47,7 @@ public sealed class SessionInventoryServiceTests
         try
         {
             CopyDirectory(ValidFixturePath, sessionPath);
-            File.WriteAllText(Path.Combine(sessionPath, "next_capture_plan.json"), "{}\n");
+            File.WriteAllText(Path.Combine(sessionPath, "next_capture_plan.json"), "{\"schema_version\":\"riftscan.next_capture_plan.v1\"}\n");
 
             var result = new SessionInventoryService().Inventory(sessionPath, inventoryPath);
 
@@ -78,7 +78,7 @@ public sealed class SessionInventoryServiceTests
         try
         {
             CopyDirectory(ValidFixturePath, sessionPath);
-            File.WriteAllText(Path.Combine(sessionPath, "triage.jsonl"), "{}\n");
+            File.WriteAllText(Path.Combine(sessionPath, "triage.jsonl"), "{\"schema_version\":\"riftscan.region_triage_entry.v1\"}\n");
 
             var result = RunCli("session", "inventory", sessionPath, "--json-out", inventoryPath);
 
@@ -156,7 +156,7 @@ public sealed class SessionInventoryServiceTests
         {
             CopyDirectory(ValidFixturePath, sessionPath);
             File.WriteAllText(Path.Combine(sessionPath, "regions.json"), "{ definitely-not-json");
-            File.WriteAllText(Path.Combine(sessionPath, "clusters.jsonl"), "{}\n");
+            File.WriteAllText(Path.Combine(sessionPath, "clusters.jsonl"), "{\"schema_version\":\"riftscan.structure_cluster.v1\"}\n");
 
             var result = new SessionInventoryService().Inventory(sessionPath);
 
@@ -182,7 +182,7 @@ public sealed class SessionInventoryServiceTests
         {
             CopyDirectory(ValidFixturePath, sessionPath);
             File.WriteAllText(Path.Combine(sessionPath, "snapshots", "index.jsonl"), "{ definitely-not-json\n");
-            File.WriteAllText(Path.Combine(sessionPath, "report.json"), "{}\n");
+            File.WriteAllText(Path.Combine(sessionPath, "report.json"), "{\"schema_version\":\"riftscan.session_report.v1\"}\n");
 
             var result = new SessionInventoryService().Inventory(sessionPath);
 

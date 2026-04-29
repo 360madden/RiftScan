@@ -118,7 +118,9 @@ try {
     Invoke-RiftScan -Arguments @("verify", "session", $sessionA)
     Invoke-RiftScan -Arguments @("analyze", "session", $sessionA, "--top", "10")
     Invoke-RiftScan -Arguments @("report", "session", $sessionA, "--top", "10")
+    Invoke-RiftScan -Arguments @("verify", "session", $sessionA)
     Invoke-RiftScan -Arguments @("analyze", "session", $sessionB, "--top", "10")
+    Invoke-RiftScan -Arguments @("verify", "session", $sessionB)
 
     $comparisonJson = Join-Path $reportRoot "fixture-comparison.json"
     $comparisonMarkdown = Join-Path $reportRoot "fixture-comparison.md"

@@ -13,6 +13,22 @@ public sealed class SessionVerifier
         "checksums.json"
     ];
 
+    private static readonly (string Path, string SchemaVersion)[] GeneratedJsonLineArtifacts =
+    [
+        ("triage.jsonl", "riftscan.region_triage_entry.v1"),
+        ("deltas.jsonl", "riftscan.region_delta_entry.v1"),
+        ("typed_value_candidates.jsonl", "riftscan.typed_value_candidate.v1"),
+        ("structures.jsonl", "riftscan.structure_candidate.v1"),
+        ("vec3_candidates.jsonl", "riftscan.vec3_candidate.v1"),
+        ("clusters.jsonl", "riftscan.structure_cluster.v1")
+    ];
+
+    private static readonly (string Path, string SchemaVersion)[] GeneratedJsonArtifacts =
+    [
+        ("next_capture_plan.json", "riftscan.next_capture_plan.v1"),
+        ("report.json", "riftscan.session_report.v1")
+    ];
+
     public SessionVerificationResult Verify(string sessionPath)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(sessionPath);
@@ -68,6 +84,8 @@ public sealed class SessionVerifier
         {
             VerifyChecksumManifest(fullSessionPath, checksumManifest, verifiedArtifacts, issues);
         }
+
+        VerifyGeneratedArtifacts(fullSessionPath, verifiedArtifacts, issues);
 
         return CreateResult(fullSessionPath, sessionId, verifiedArtifacts, issues);
     }
@@ -305,6 +323,126 @@ public sealed class SessionVerifier
             }
 
             verifiedArtifacts.Add(normalizedRelativePath);
+        }
+    }
+
+    private static void VerifyGeneratedArtifacts(string sessionPath, ISet<string> verifiedArtifacts, ICollection<VerificationIssue> issues)
+    {
+        foreach (var (relativePath, schemaVersion) in GeneratedJsonLineArtifacts)
+        {
+            VerifyGeneratedJsonLines(sessionPath, relativePath, schemaVersion, verifiedArtifacts, issues);
+        }
+
+        foreach (var (relativePath, schemaVersion) in GeneratedJsonArtifacts)
+        {
+            VerifyGeneratedJsonFile(sessionPath, relativePath, schemaVersion, verifiedArtifacts, issues);
+        }
+    }
+
+    private static void VerifyGeneratedJsonLines(
+        string sessionPath,
+        string relativePath,
+        string expectedSchemaVersion,
+        ISet<string> verifiedArtifacts,
+        ICollection<VerificationIssue> issues)
+    {
+        var absolutePath = Resolve(sessionPath, relativePath);
+        if (!File.Exists(absolutePath))
+        {
+            return;
+        }
+
+        var hadError = false;
+        var lineNumber = 0;
+        foreach (var line in File.ReadLines(absolutePath))
+        {
+            lineNumber++;
+            if (string.IsNullOrWhiteSpace(line))
+            {
+                continue;
+            }
+
+            try
+            {
+                using var document = JsonDocument.Parse(line);
+                if (document.RootElement.ValueKind != JsonValueKind.Object)
+                {
+                    issues.Add(Error("generated_jsonl_entry_not_object", $"{relativePath} line {lineNumber} must be a JSON object.", relativePath));
+                    hadError = true;
+                    continue;
+                }
+
+                VerifyGeneratedSchema(relativePath, expectedSchemaVersion, document.RootElement, issues, ref hadError);
+            }
+            catch (JsonException ex)
+            {
+                issues.Add(Error("generated_jsonl_invalid", $"Invalid JSONL entry in {relativePath} at line {lineNumber}: {ex.Message}", relativePath));
+                hadError = true;
+            }
+        }
+
+        if (!hadError)
+        {
+            verifiedArtifacts.Add(relativePath);
+        }
+    }
+
+    private static void VerifyGeneratedJsonFile(
+        string sessionPath,
+        string relativePath,
+        string expectedSchemaVersion,
+        ISet<string> verifiedArtifacts,
+        ICollection<VerificationIssue> issues)
+    {
+        var absolutePath = Resolve(sessionPath, relativePath);
+        if (!File.Exists(absolutePath))
+        {
+            return;
+        }
+
+        var hadError = false;
+        try
+        {
+            using var document = JsonDocument.Parse(File.ReadAllText(absolutePath));
+            if (document.RootElement.ValueKind != JsonValueKind.Object)
+            {
+                issues.Add(Error("generated_json_not_object", $"{relativePath} must be a JSON object.", relativePath));
+                return;
+            }
+
+            VerifyGeneratedSchema(relativePath, expectedSchemaVersion, document.RootElement, issues, ref hadError);
+        }
+        catch (JsonException ex)
+        {
+            issues.Add(Error("generated_json_invalid", $"Invalid JSON in generated artifact {relativePath}: {ex.Message}", relativePath));
+            hadError = true;
+        }
+
+        if (!hadError)
+        {
+            verifiedArtifacts.Add(relativePath);
+        }
+    }
+
+    private static void VerifyGeneratedSchema(
+        string relativePath,
+        string expectedSchemaVersion,
+        JsonElement element,
+        ICollection<VerificationIssue> issues,
+        ref bool hadError)
+    {
+        if (!element.TryGetProperty("schema_version", out var schemaVersionElement) || schemaVersionElement.ValueKind != JsonValueKind.String)
+        {
+            issues.Add(Error("generated_schema_missing", $"Generated artifact {relativePath} is missing string field: schema_version.", relativePath));
+            hadError = true;
+            return;
+        }
+
+        var actualSchemaVersion = schemaVersionElement.GetString();
+        if (!StringComparer.Ordinal.Equals(actualSchemaVersion, expectedSchemaVersion))
+        {
+            issues.Add(Error("generated_schema_mismatch", $"Generated artifact {relativePath} schema_version is {actualSchemaVersion}, expected {expectedSchemaVersion}.", relativePath));
+            hadError = true;
         }
     }
 

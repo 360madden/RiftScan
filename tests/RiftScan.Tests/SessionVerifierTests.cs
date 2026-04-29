@@ -1,4 +1,6 @@
 using RiftScan.Core.Sessions;
+using RiftScan.Analysis.Reports;
+using RiftScan.Analysis.Triage;
 
 namespace RiftScan.Tests;
 
@@ -54,6 +56,56 @@ public sealed class SessionVerifierTests
         Assert.Contains(result.Issues, issue => issue.Code == "manifest_session_id_missing");
     }
 
+    [Fact]
+    public void Verify_generated_analyzer_artifacts_after_analysis_succeeds()
+    {
+        using var fixtureCopy = CopyFixtureToTemp();
+        _ = new DynamicRegionTriageAnalyzer().AnalyzeSession(fixtureCopy.Path, top: 10);
+        _ = new SessionReportGenerator().Generate(fixtureCopy.Path, top: 10);
+
+        var result = new SessionVerifier().Verify(fixtureCopy.Path);
+
+        Assert.True(result.Success, string.Join(Environment.NewLine, result.Issues.Select(issue => $"{issue.Code}: {issue.Message}")));
+        Assert.Contains("triage.jsonl", result.ArtifactsVerified);
+        Assert.Contains("deltas.jsonl", result.ArtifactsVerified);
+        Assert.Contains("typed_value_candidates.jsonl", result.ArtifactsVerified);
+        Assert.Contains("structures.jsonl", result.ArtifactsVerified);
+        Assert.Contains("vec3_candidates.jsonl", result.ArtifactsVerified);
+        Assert.Contains("clusters.jsonl", result.ArtifactsVerified);
+        Assert.Contains("next_capture_plan.json", result.ArtifactsVerified);
+        Assert.Contains("report.json", result.ArtifactsVerified);
+    }
+
+    [Fact]
+    public void Verify_generated_analyzer_artifact_schema_mismatch_fails()
+    {
+        using var fixtureCopy = CopyFixtureToTemp();
+        _ = new DynamicRegionTriageAnalyzer().AnalyzeSession(fixtureCopy.Path, top: 10);
+        var triagePath = Path.Combine(fixtureCopy.Path, "triage.jsonl");
+        var corrupted = File.ReadAllText(triagePath).Replace(
+            "riftscan.region_triage_entry.v1",
+            "riftscan.region_triage_entry.v999",
+            StringComparison.Ordinal);
+        File.WriteAllText(triagePath, corrupted);
+
+        var result = new SessionVerifier().Verify(fixtureCopy.Path);
+
+        Assert.False(result.Success);
+        Assert.Contains(result.Issues, issue => issue.Code == "generated_schema_mismatch" && issue.Path == "triage.jsonl");
+    }
+
+    [Fact]
+    public void Verify_generated_analyzer_artifact_invalid_json_fails()
+    {
+        using var fixtureCopy = CopyFixtureToTemp();
+        _ = new DynamicRegionTriageAnalyzer().AnalyzeSession(fixtureCopy.Path, top: 10);
+        File.WriteAllText(Path.Combine(fixtureCopy.Path, "next_capture_plan.json"), "{not-json");
+
+        var result = new SessionVerifier().Verify(fixtureCopy.Path);
+
+        Assert.False(result.Success);
+        Assert.Contains(result.Issues, issue => issue.Code == "generated_json_invalid" && issue.Path == "next_capture_plan.json");
+    }
 
     [Fact]
     public void Cli_verify_session_returns_success_for_fixture_session()

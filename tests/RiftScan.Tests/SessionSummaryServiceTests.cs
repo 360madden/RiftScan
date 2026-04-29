@@ -15,7 +15,7 @@ public sealed class SessionSummaryServiceTests
         {
             CopyDirectory(ValidFixturePath, sessionPath);
             File.WriteAllText(Path.Combine(sessionPath, "report.md"), "# report\n");
-            File.WriteAllText(Path.Combine(sessionPath, "clusters.jsonl"), "{}\n");
+            File.WriteAllText(Path.Combine(sessionPath, "clusters.jsonl"), "{\"schema_version\":\"riftscan.structure_cluster.v1\"}\n");
 
             var beforeFiles = RelativeFilePaths(sessionPath);
             var result = new SessionSummaryService().Summarize(sessionPath);
@@ -49,7 +49,7 @@ public sealed class SessionSummaryServiceTests
         try
         {
             CopyDirectory(ValidFixturePath, sessionPath);
-            File.WriteAllText(Path.Combine(sessionPath, "next_capture_plan.json"), "{}\n");
+            File.WriteAllText(Path.Combine(sessionPath, "next_capture_plan.json"), "{\"schema_version\":\"riftscan.next_capture_plan.v1\"}\n");
 
             var result = RunCli("session", "summary", sessionPath);
 
@@ -78,7 +78,7 @@ public sealed class SessionSummaryServiceTests
         try
         {
             CopyDirectory(ValidFixturePath, sessionPath);
-            File.WriteAllText(Path.Combine(sessionPath, "report.json"), "{}\n");
+            File.WriteAllText(Path.Combine(sessionPath, "report.json"), "{\"schema_version\":\"riftscan.session_report.v1\"}\n");
 
             var result = new SessionSummaryService().Summarize(sessionPath, summaryPath);
 
@@ -108,7 +108,7 @@ public sealed class SessionSummaryServiceTests
         try
         {
             CopyDirectory(ValidFixturePath, sessionPath);
-            File.WriteAllText(Path.Combine(sessionPath, "clusters.jsonl"), "{}\n");
+            File.WriteAllText(Path.Combine(sessionPath, "clusters.jsonl"), "{\"schema_version\":\"riftscan.structure_cluster.v1\"}\n");
 
             var result = RunCli("session", "summary", sessionPath, "--json-out", summaryPath);
 
