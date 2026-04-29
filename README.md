@@ -47,6 +47,7 @@ dotnet run --project src/RiftScan.Cli/RiftScan.Cli.csproj --configuration Releas
   --scalar-evidence-set reports/generated/<additional-scalar-evidence-set>.json `
   --scalar-truth-recovery reports/generated/<scalar-truth-recovery>.json `
   --scalar-truth-promotion reports/generated/<scalar-truth-promotion>.json `
+  --scalar-promotion-review reports/generated/<scalar-promotion-review>.json `
   --json-out reports/generated/<capability-status>.json
 
 dotnet run --project src/RiftScan.Cli/RiftScan.Cli.csproj --configuration Release --no-build -- `

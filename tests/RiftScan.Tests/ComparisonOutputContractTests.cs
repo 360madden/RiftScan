@@ -540,6 +540,8 @@ public sealed class ComparisonOutputContractTests
             "scalar_truth_recovery_paths",
             "scalar_truth_promotion_path",
             "scalar_truth_promotion_paths",
+            "scalar_promotion_review_path",
+            "scalar_promotion_review_paths",
             "truth_components",
             "evidence_missing",
             "next_recommended_actions",

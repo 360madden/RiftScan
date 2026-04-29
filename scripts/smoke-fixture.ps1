@@ -1034,6 +1034,7 @@ try {
         "--scalar-evidence-set", $validatedCombinedScalarEvidenceSetJson,
         "--scalar-truth-recovery", $combinedScalarTruthRecovery,
         "--scalar-truth-promotion", $combinedScalarTruthPromotion,
+        "--scalar-promotion-review", $combinedScalarPromotionReview,
         "--json-out", $combinedCapabilityStatus
     )
     Assert-FileExists -Path $combinedCapabilityStatus
@@ -1054,6 +1055,10 @@ try {
         @($combinedCapabilityStatusJson.scalar_truth_promotion_paths)[0] -ne $combinedScalarTruthPromotion) {
         throw "Expected combined capability status to record the dual-lane scalar truth promotion path."
     }
+    if (@($combinedCapabilityStatusJson.scalar_promotion_review_paths).Count -ne 1 -or
+        @($combinedCapabilityStatusJson.scalar_promotion_review_paths)[0] -ne $combinedScalarPromotionReview) {
+        throw "Expected combined capability status to record the dual-lane scalar promotion review path."
+    }
     if (@($combinedCapabilityStatusJson.truth_readiness_paths).Count -lt 2) {
         throw "Expected combined capability status to record both truth-readiness paths."
     }
@@ -1069,11 +1074,11 @@ try {
     if ($null -eq $combinedEntityLayoutStatus -or $combinedEntityLayoutStatus.evidence_readiness -ne "strong_candidate") {
         throw "Expected combined capability status to keep entity_layout readiness as strong_candidate."
     }
-    if ($null -eq $combinedActorYawStatus -or $combinedActorYawStatus.evidence_readiness -ne "corroborated_candidate") {
-        throw "Expected combined capability status to promote scalar actor_yaw readiness to corroborated_candidate."
+    if ($null -eq $combinedActorYawStatus -or $combinedActorYawStatus.evidence_readiness -ne "ready_for_manual_truth_review") {
+        throw "Expected combined capability status to promote scalar actor_yaw readiness to ready_for_manual_truth_review."
     }
-    if ($null -eq $combinedCameraStatus -or $combinedCameraStatus.evidence_readiness -ne "corroborated_candidate") {
-        throw "Expected combined capability status to promote scalar camera_orientation readiness to corroborated_candidate."
+    if ($null -eq $combinedCameraStatus -or $combinedCameraStatus.evidence_readiness -ne "ready_for_manual_truth_review") {
+        throw "Expected combined capability status to promote scalar camera_orientation readiness to ready_for_manual_truth_review."
     }
     if (@($combinedCapabilityStatusJson.evidence_missing).Count -ne 0) {
         throw "Expected combined capability status to have no missing evidence after merged entity, position, actor, and camera packets."

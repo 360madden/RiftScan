@@ -14,7 +14,7 @@ public sealed class CapabilityStatusService
         var scalarEvidenceSetPaths = string.IsNullOrWhiteSpace(scalarEvidenceSetPath)
             ? Array.Empty<string>()
             : [scalarEvidenceSetPath];
-        return Build(truthReadinessPaths, scalarEvidenceSetPaths, [], []);
+        return Build(truthReadinessPaths, scalarEvidenceSetPaths, [], [], []);
     }
 
     public CapabilityStatusResult Build(string? truthReadinessPath, IReadOnlyList<string> scalarEvidenceSetPaths)
@@ -22,25 +22,33 @@ public sealed class CapabilityStatusService
         var truthReadinessPaths = string.IsNullOrWhiteSpace(truthReadinessPath)
             ? Array.Empty<string>()
             : [truthReadinessPath];
-        return Build(truthReadinessPaths, scalarEvidenceSetPaths, [], []);
+        return Build(truthReadinessPaths, scalarEvidenceSetPaths, [], [], []);
     }
 
     public CapabilityStatusResult Build(
         IReadOnlyList<string> truthReadinessPaths,
         IReadOnlyList<string> scalarEvidenceSetPaths) =>
-        Build(truthReadinessPaths, scalarEvidenceSetPaths, [], []);
+        Build(truthReadinessPaths, scalarEvidenceSetPaths, [], [], []);
 
     public CapabilityStatusResult Build(
         IReadOnlyList<string> truthReadinessPaths,
         IReadOnlyList<string> scalarEvidenceSetPaths,
         IReadOnlyList<string> scalarTruthRecoveryPaths) =>
-        Build(truthReadinessPaths, scalarEvidenceSetPaths, scalarTruthRecoveryPaths, []);
+        Build(truthReadinessPaths, scalarEvidenceSetPaths, scalarTruthRecoveryPaths, [], []);
 
     public CapabilityStatusResult Build(
         IReadOnlyList<string> truthReadinessPaths,
         IReadOnlyList<string> scalarEvidenceSetPaths,
         IReadOnlyList<string> scalarTruthRecoveryPaths,
-        IReadOnlyList<string> scalarTruthPromotionPaths)
+        IReadOnlyList<string> scalarTruthPromotionPaths) =>
+        Build(truthReadinessPaths, scalarEvidenceSetPaths, scalarTruthRecoveryPaths, scalarTruthPromotionPaths, []);
+
+    public CapabilityStatusResult Build(
+        IReadOnlyList<string> truthReadinessPaths,
+        IReadOnlyList<string> scalarEvidenceSetPaths,
+        IReadOnlyList<string> scalarTruthRecoveryPaths,
+        IReadOnlyList<string> scalarTruthPromotionPaths,
+        IReadOnlyList<string> scalarPromotionReviewPaths)
     {
         var capabilities = BuildCapabilities();
         var warnings = new List<string>
@@ -60,6 +68,7 @@ public sealed class CapabilityStatusService
         var scalarEvidenceSets = new List<ScalarEvidenceSetResult>();
         var fullScalarTruthRecoveryPaths = new List<string>();
         var fullScalarTruthPromotionPaths = new List<string>();
+        var fullScalarPromotionReviewPaths = new List<string>();
 
         foreach (var truthReadinessPath in truthReadinessPaths.Where(path => !string.IsNullOrWhiteSpace(path)))
         {
@@ -135,6 +144,23 @@ public sealed class CapabilityStatusService
                 .ToList();
         }
 
+        foreach (var scalarPromotionReviewPath in scalarPromotionReviewPaths.Where(path => !string.IsNullOrWhiteSpace(path)))
+        {
+            var fullScalarPromotionReviewPath = Path.GetFullPath(scalarPromotionReviewPath);
+            fullScalarPromotionReviewPaths.Add(fullScalarPromotionReviewPath);
+            var scalarPromotionReview = ReadScalarPromotionReview(fullScalarPromotionReviewPath);
+            truthComponents = MergeScalarPromotionReviewComponents(truthComponents, scalarPromotionReview);
+            evidenceMissing = truthComponents
+                .Where(component => !IsStrongOrValidated(component.EvidenceReadiness))
+                .Select(component => $"{component.Component}:{component.EvidenceReadiness}")
+                .ToArray();
+            nextActions = BuildNextActions(nextRequiredCaptureModes, truthComponents, scalarEvidenceSets);
+            warnings = warnings
+                .Concat(scalarPromotionReview.Warnings)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+
         return new CapabilityStatusResult
         {
             Capabilities = capabilities,
@@ -146,6 +172,8 @@ public sealed class CapabilityStatusService
             ScalarTruthRecoveryPaths = fullScalarTruthRecoveryPaths,
             ScalarTruthPromotionPath = fullScalarTruthPromotionPaths.Count == 0 ? null : fullScalarTruthPromotionPaths[0],
             ScalarTruthPromotionPaths = fullScalarTruthPromotionPaths,
+            ScalarPromotionReviewPath = fullScalarPromotionReviewPaths.Count == 0 ? null : fullScalarPromotionReviewPaths[0],
+            ScalarPromotionReviewPaths = fullScalarPromotionReviewPaths,
             TruthComponents = truthComponents,
             EvidenceMissing = evidenceMissing,
             NextRecommendedActions = nextActions,
@@ -282,6 +310,31 @@ public sealed class CapabilityStatusService
         }
     }
 
+    private static ScalarPromotionReviewResult ReadScalarPromotionReview(string path)
+    {
+        if (!File.Exists(path))
+        {
+            throw new InvalidOperationException($"Scalar promotion review file does not exist: {path}");
+        }
+
+        var verification = new ScalarPromotionReviewVerifier().Verify(path);
+        if (!verification.Success)
+        {
+            var issues = string.Join("; ", verification.Issues.Select(issue => $"{issue.Code}: {issue.Message}"));
+            throw new InvalidOperationException($"Scalar promotion review verification failed: {issues}");
+        }
+
+        try
+        {
+            return JsonSerializer.Deserialize<ScalarPromotionReviewResult>(File.ReadAllText(path), SessionJson.Options)
+                ?? throw new InvalidOperationException("Could not deserialize scalar promotion review packet.");
+        }
+        catch (JsonException ex)
+        {
+            throw new InvalidOperationException($"Invalid scalar promotion review JSON: {ex.Message}", ex);
+        }
+    }
+
     private static IReadOnlyList<CapabilityTruthComponentStatus> BuildTruthComponents(ComparisonTruthReadinessResult readiness) =>
     [
         TruthComponent(readiness.EntityLayout),
@@ -340,6 +393,16 @@ public sealed class CapabilityStatusService
         var components = EnsureTruthComponents(existingComponents).ToDictionary(component => component.Component, StringComparer.OrdinalIgnoreCase);
         MergeComponent(components, BuildPromotedScalarComponent("actor_yaw", scalarTruthPromotion));
         MergeComponent(components, BuildPromotedScalarComponent("camera_orientation", scalarTruthPromotion));
+        return OrderedTruthComponents(components);
+    }
+
+    private static IReadOnlyList<CapabilityTruthComponentStatus> MergeScalarPromotionReviewComponents(
+        IReadOnlyList<CapabilityTruthComponentStatus> existingComponents,
+        ScalarPromotionReviewResult scalarPromotionReview)
+    {
+        var components = EnsureTruthComponents(existingComponents).ToDictionary(component => component.Component, StringComparer.OrdinalIgnoreCase);
+        MergeComponent(components, BuildReviewScalarComponent("actor_yaw", scalarPromotionReview));
+        MergeComponent(components, BuildReviewScalarComponent("camera_orientation", scalarPromotionReview));
         return OrderedTruthComponents(components);
     }
 
@@ -493,6 +556,38 @@ public sealed class CapabilityStatusService
         };
     }
 
+    private static CapabilityTruthComponentStatus BuildReviewScalarComponent(string component, ScalarPromotionReviewResult scalarPromotionReview)
+    {
+        var reviews = scalarPromotionReview.CandidateReviews
+            .Where(candidate => candidate.Classification.Contains(component, StringComparison.OrdinalIgnoreCase))
+            .OrderByDescending(candidate => ReadinessRank(candidate.DecisionState))
+            .ThenByDescending(candidate => candidate.BestScoreTotal)
+            .ToArray();
+        if (reviews.Length == 0)
+        {
+            return new CapabilityTruthComponentStatus
+            {
+                Component = component,
+                CodeStatus = "coded",
+                EvidenceReadiness = "missing",
+                EvidenceCount = 0,
+                NextAction = component.Equals("actor_yaw", StringComparison.OrdinalIgnoreCase)
+                    ? "create_scalar_promotion_review_for_actor_yaw"
+                    : "create_scalar_promotion_review_for_camera_orientation"
+            };
+        }
+
+        var best = reviews[0];
+        return new CapabilityTruthComponentStatus
+        {
+            Component = component,
+            CodeStatus = "coded",
+            EvidenceReadiness = best.DecisionState,
+            EvidenceCount = reviews.Length,
+            NextAction = best.NextAction
+        };
+    }
+
     private static void MergeComponent(
         IDictionary<string, CapabilityTruthComponentStatus> components,
         CapabilityTruthComponentStatus candidate)
@@ -523,6 +618,11 @@ public sealed class CapabilityStatusService
             .Select(component => component.NextAction)
             .Where(action => !string.IsNullOrWhiteSpace(action)));
 
+        actions.AddRange(truthComponents
+            .Where(component => string.Equals(component.EvidenceReadiness, "ready_for_manual_truth_review", StringComparison.OrdinalIgnoreCase))
+            .Select(component => component.NextAction)
+            .Where(action => !string.IsNullOrWhiteSpace(action)));
+
         actions.AddRange(scalarEvidenceSets
             .SelectMany(scalarEvidenceSet => scalarEvidenceSet.RankedCandidates)
             .Where(candidate => !IsStrongOrValidated(candidate.TruthReadiness))
@@ -536,16 +636,22 @@ public sealed class CapabilityStatusService
             .ToArray();
 
         return normalized.Length == 0
-            ? ["repeat_or_external_corroborate_validated_candidates"]
+            ? DefaultCompletedAction(truthComponents)
             : normalized;
     }
+
+    private static IReadOnlyList<string> DefaultCompletedAction(IReadOnlyList<CapabilityTruthComponentStatus> truthComponents) =>
+        truthComponents.Any(component => string.Equals(component.EvidenceReadiness, "ready_for_manual_truth_review", StringComparison.OrdinalIgnoreCase))
+            ? ["perform_manual_truth_review_before_final_truth_claim"]
+            : ["repeat_or_external_corroborate_validated_candidates"];
 
     private static bool IsStrongOrValidated(string readiness) =>
         string.Equals(readiness, "strong_candidate", StringComparison.OrdinalIgnoreCase) ||
         string.Equals(readiness, "validated_candidate", StringComparison.OrdinalIgnoreCase) ||
         string.Equals(readiness, "recovered_candidate", StringComparison.OrdinalIgnoreCase) ||
         string.Equals(readiness, "corroborated_candidate", StringComparison.OrdinalIgnoreCase) ||
-        string.Equals(readiness, "corroborated", StringComparison.OrdinalIgnoreCase);
+        string.Equals(readiness, "corroborated", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(readiness, "ready_for_manual_truth_review", StringComparison.OrdinalIgnoreCase);
 
     private static IReadOnlyList<string> NormalizeWarnings(
         IReadOnlyList<string> warnings,
@@ -627,7 +733,8 @@ public sealed class CapabilityStatusService
         {
             "corroborated" => 5,
             "corroborated_candidate" => 5,
-            "blocked_conflict" => 5,
+            "ready_for_manual_truth_review" => 6,
+            "blocked_conflict" => 7,
             "recovered_candidate" => 4,
             "validated_candidate" => 3,
             "strong_candidate" => 2,

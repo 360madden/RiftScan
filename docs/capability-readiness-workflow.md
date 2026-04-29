@@ -67,6 +67,7 @@ dotnet run --project src/RiftScan.Cli/RiftScan.Cli.csproj --configuration Releas
   --scalar-evidence-set reports/generated/<additional-scalar-evidence-set>.json `
   --scalar-truth-recovery reports/generated/<scalar-truth-recovery>.json `
   --scalar-truth-promotion reports/generated/<scalar-truth-promotion>.json `
+  --scalar-promotion-review reports/generated/<scalar-promotion-review>.json `
   --json-out reports/generated/<capability-status>.json
 ```
 
@@ -105,7 +106,7 @@ It performs:
 3. `report capability --truth-readiness ... --scalar-evidence-set ... --json-out ...`
 4. `verify capability-status`
 
-`report capability` accepts repeated `--truth-readiness`, `--scalar-evidence-set`, `--scalar-truth-recovery`, and `--scalar-truth-promotion` inputs when entity-layout, position, actor-yaw, and camera-orientation evidence were produced as separate replayable packets.
+`report capability` accepts repeated `--truth-readiness`, `--scalar-evidence-set`, `--scalar-truth-recovery`, `--scalar-truth-promotion`, and `--scalar-promotion-review` inputs when entity-layout, position, actor-yaw, and camera-orientation evidence were produced as separate replayable packets.
 
 After `--scalar-truth-promotion` verifies, create the manual review artifact separately:
 
@@ -120,6 +121,8 @@ dotnet run --project src/RiftScan.Cli/RiftScan.Cli.csproj --configuration Releas
 ```
 
 The review packet is the handoff point for human/manual truth review. It must keep conflicts visible and keep final truth claims disabled until explicitly confirmed.
+
+Once the review packet verifies, pass it into capability status with `--scalar-promotion-review`; ready candidates become `ready_for_manual_truth_review`, while conflicts remain `blocked_conflict`.
 
 ## Current interpretation rules
 

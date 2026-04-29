@@ -313,8 +313,8 @@ public static class Program
             return 0;
         }
 
-        var (truthReadinessPaths, scalarEvidenceSetPaths, scalarTruthRecoveryPaths, scalarTruthPromotionPaths, jsonOutputPath) = ParseReportCapabilityOptions(args);
-        var result = new CapabilityStatusService().Build(truthReadinessPaths, scalarEvidenceSetPaths, scalarTruthRecoveryPaths, scalarTruthPromotionPaths);
+        var (truthReadinessPaths, scalarEvidenceSetPaths, scalarTruthRecoveryPaths, scalarTruthPromotionPaths, scalarPromotionReviewPaths, jsonOutputPath) = ParseReportCapabilityOptions(args);
+        var result = new CapabilityStatusService().Build(truthReadinessPaths, scalarEvidenceSetPaths, scalarTruthRecoveryPaths, scalarTruthPromotionPaths, scalarPromotionReviewPaths);
         WriteOptionalJson(jsonOutputPath, result);
         Console.WriteLine(JsonSerializer.Serialize(result, SessionJson.Options));
         return result.Success ? 0 : 1;
@@ -1036,12 +1036,13 @@ public static class Program
         return inventoryOutputPath;
     }
 
-    private static (IReadOnlyList<string> TruthReadinessPaths, IReadOnlyList<string> ScalarEvidenceSetPaths, IReadOnlyList<string> ScalarTruthRecoveryPaths, IReadOnlyList<string> ScalarTruthPromotionPaths, string? JsonOutputPath) ParseReportCapabilityOptions(string[] args)
+    private static (IReadOnlyList<string> TruthReadinessPaths, IReadOnlyList<string> ScalarEvidenceSetPaths, IReadOnlyList<string> ScalarTruthRecoveryPaths, IReadOnlyList<string> ScalarTruthPromotionPaths, IReadOnlyList<string> ScalarPromotionReviewPaths, string? JsonOutputPath) ParseReportCapabilityOptions(string[] args)
     {
         var truthReadinessPaths = new List<string>();
         var scalarEvidenceSetPaths = new List<string>();
         var scalarTruthRecoveryPaths = new List<string>();
         var scalarTruthPromotionPaths = new List<string>();
+        var scalarPromotionReviewPaths = new List<string>();
         string? jsonOutputPath = null;
         for (var index = 0; index < args.Length; index++)
         {
@@ -1060,6 +1061,9 @@ public static class Program
                 case "--scalar-truth-promotion":
                     scalarTruthPromotionPaths.Add(RequireValue(args, ref index, arg));
                     break;
+                case "--scalar-promotion-review":
+                    scalarPromotionReviewPaths.Add(RequireValue(args, ref index, arg));
+                    break;
                 case "--json-out":
                     jsonOutputPath = RequireValue(args, ref index, arg);
                     break;
@@ -1068,7 +1072,7 @@ public static class Program
             }
         }
 
-        return (truthReadinessPaths, scalarEvidenceSetPaths, scalarTruthRecoveryPaths, scalarTruthPromotionPaths, jsonOutputPath);
+        return (truthReadinessPaths, scalarEvidenceSetPaths, scalarTruthRecoveryPaths, scalarTruthPromotionPaths, scalarPromotionReviewPaths, jsonOutputPath);
     }
 
     private static (bool DryRun, string? InventoryOutputPath) ParsePruneOptions(string[] args)
@@ -1459,7 +1463,7 @@ public static class Program
         Console.WriteLine("riftscan report session <session-path> [--top 100]");
 
     private static void PrintReportCapabilityUsage() =>
-        Console.WriteLine("riftscan report capability [--truth-readiness reports/generated/truth-readiness.json ...] [--scalar-evidence-set reports/generated/scalar-evidence-set.json ...] [--scalar-truth-recovery reports/generated/scalar-truth-recovery.json ...] [--scalar-truth-promotion reports/generated/scalar-truth-promotion.json ...] [--json-out reports/generated/capability-status.json]");
+        Console.WriteLine("riftscan report capability [--truth-readiness reports/generated/truth-readiness.json ...] [--scalar-evidence-set reports/generated/scalar-evidence-set.json ...] [--scalar-truth-recovery reports/generated/scalar-truth-recovery.json ...] [--scalar-truth-promotion reports/generated/scalar-truth-promotion.json ...] [--scalar-promotion-review reports/generated/scalar-promotion-review.json ...] [--json-out reports/generated/capability-status.json]");
 
     private static void PrintCompareSessionsUsage() =>
         Console.WriteLine("riftscan compare sessions <session-a> <session-b> [--top 100] [--out reports/generated/comparison.json] [--report-md reports/generated/comparison.md] [--next-plan reports/generated/next-capture-plan.json] [--truth-readiness reports/generated/truth-readiness.json]");
