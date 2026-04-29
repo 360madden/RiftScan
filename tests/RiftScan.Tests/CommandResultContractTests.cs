@@ -1,6 +1,7 @@
 using System.Text.Json;
 using RiftScan.Analysis.Reports;
 using RiftScan.Analysis.Triage;
+using RiftScan.Analysis.Xrefs;
 using RiftScan.Core.Sessions;
 
 namespace RiftScan.Tests;
@@ -114,6 +115,164 @@ public sealed class CommandResultContractTests
             "kind");
 
     [Fact]
+    public void Session_xref_analysis_result_pins_json_contract_fields() =>
+        AssertJsonPropertySet(
+            new SessionXrefAnalysisResult(),
+            "result_schema_version",
+            "success",
+            "session_path",
+            "session_id",
+            "analyzer_id",
+            "analyzer_version",
+            "analyzer_sources",
+            "target_base_address_hex",
+            "target_size_bytes",
+            "target_region_ids",
+            "target_offsets",
+            "snapshot_count",
+            "region_count",
+            "regions_scanned",
+            "bytes_scanned",
+            "pointer_hit_count",
+            "exact_target_pointer_count",
+            "outside_target_region_pointer_count",
+            "outside_exact_target_pointer_count",
+            "pointer_hits",
+            "pattern_definition_count",
+            "pattern_hit_count",
+            "outside_target_region_pattern_hit_count",
+            "pattern_hits",
+            "output_path",
+            "markdown_report_path",
+            "warnings",
+            "diagnostics");
+
+    [Fact]
+    public void Session_xref_target_offset_pins_json_contract_fields() =>
+        AssertJsonPropertySet(
+            new SessionXrefTargetOffset(),
+            "offset_hex",
+            "absolute_address_hex");
+
+    [Fact]
+    public void Session_xref_pointer_hit_pins_json_contract_fields() =>
+        AssertJsonPropertySet(
+            new SessionXrefPointerHit(),
+            "snapshot_id",
+            "source_region_id",
+            "source_base_address_hex",
+            "source_offset_hex",
+            "source_absolute_address_hex",
+            "pointer_value_hex",
+            "target_offset_hex",
+            "match_kind",
+            "source_is_target_region");
+
+    [Fact]
+    public void Session_xref_pattern_hit_pins_json_contract_fields() =>
+        AssertJsonPropertySet(
+            new SessionXrefPatternHit(),
+            "pattern_id",
+            "pattern_source_snapshot_id",
+            "pattern_source_offset_hex",
+            "pattern_length_bytes",
+            "snapshot_id",
+            "source_region_id",
+            "source_base_address_hex",
+            "source_offset_hex",
+            "source_absolute_address_hex",
+            "match_kind",
+            "source_is_target_region");
+
+    [Fact]
+    public void Session_xref_chain_summary_result_pins_json_contract_fields() =>
+        AssertJsonPropertySet(
+            new SessionXrefChainSummaryResult(),
+            "result_schema_version",
+            "success",
+            "input_paths",
+            "input_count",
+            "min_support",
+            "top_limit",
+            "stable_edge_count",
+            "reciprocal_pair_count",
+            "stable_edges",
+            "reciprocal_pairs",
+            "output_path",
+            "markdown_report_path",
+            "warnings",
+            "diagnostics");
+
+    [Fact]
+    public void Session_xref_stable_edge_pins_json_contract_fields() =>
+        AssertJsonPropertySet(
+            new SessionXrefStableEdge(),
+            "edge_id",
+            "source_region_id",
+            "source_base_address_hex",
+            "source_offset_hex",
+            "source_absolute_address_hex",
+            "pointer_value_hex",
+            "target_offset_hex",
+            "match_kind",
+            "source_is_target_region",
+            "classification",
+            "support_count",
+            "input_path_count",
+            "supporting_input_paths",
+            "supporting_snapshot_ids",
+            "target_base_address_hexes",
+            "evidence_summary");
+
+    [Fact]
+    public void Session_xref_reciprocal_pair_pins_json_contract_fields() =>
+        AssertJsonPropertySet(
+            new SessionXrefReciprocalPair(),
+            "pair_id",
+            "first_base_address_hex",
+            "second_base_address_hex",
+            "first_to_second_edge_ids",
+            "second_to_first_edge_ids",
+            "support_count",
+            "evidence_summary");
+
+    [Fact]
+    public void Session_xref_required_edge_pins_json_contract_fields() =>
+        AssertJsonPropertySet(
+            new SessionXrefRequiredEdge(),
+            "source_base_address_hex",
+            "pointer_value_hex");
+
+    [Fact]
+    public void Session_xref_required_reciprocal_pair_pins_json_contract_fields() =>
+        AssertJsonPropertySet(
+            new SessionXrefRequiredReciprocalPair(),
+            "first_base_address_hex",
+            "second_base_address_hex");
+
+    [Fact]
+    public void Session_xref_chain_summary_verification_result_pins_json_contract_fields() =>
+        AssertJsonPropertySet(
+            new SessionXrefChainSummaryVerificationResult(),
+            "result_schema_version",
+            "success",
+            "path",
+            "min_support",
+            "required_edge_count",
+            "required_reciprocal_pair_count",
+            "stable_edge_count",
+            "reciprocal_pair_count",
+            "issues");
+
+    [Fact]
+    public void Session_xref_chain_summary_verification_issue_pins_json_contract_fields() =>
+        AssertJsonPropertySet(
+            new SessionXrefChainSummaryVerificationIssue(),
+            "code",
+            "message",
+            "severity");
+
+    [Fact]
     public void Session_prune_candidate_pins_json_contract_fields() =>
         AssertJsonPropertySet(
             new SessionPruneCandidate(),
@@ -156,6 +315,9 @@ public sealed class CommandResultContractTests
         Assert.Equal("riftscan.session_prune_result.v1", ReadSchema(new SessionPruneResult()));
         Assert.Equal("riftscan.session_inventory_result.v1", ReadSchema(new SessionInventoryResult()));
         Assert.Equal("riftscan.session_summary_result.v1", ReadSchema(new SessionSummaryResult()));
+        Assert.Equal("riftscan.session_xref_analysis_result.v1", ReadSchema(new SessionXrefAnalysisResult()));
+        Assert.Equal("riftscan.session_xref_chain_summary_result.v1", ReadSchema(new SessionXrefChainSummaryResult()));
+        Assert.Equal("riftscan.session_xref_chain_summary_verification_result.v1", ReadSchema(new SessionXrefChainSummaryVerificationResult()));
     }
 
     private static string? ReadSchema<T>(T value)

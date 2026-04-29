@@ -9,6 +9,8 @@ public sealed class CliSessionHelpTests
     [InlineData("capture passive --help", "riftscan capture passive --process <name>")]
     [InlineData("capture plan --help", "riftscan capture plan <source-session-or-plan-json>")]
     [InlineData("analyze session --help", "riftscan analyze session <session-path>")]
+    [InlineData("analyze xrefs --help", "riftscan analyze xrefs <session-path>")]
+    [InlineData("analyze xref-chain --help", "riftscan analyze xref-chain <xref-json>")]
     [InlineData("report session --help", "riftscan report session <session-path>")]
     [InlineData("compare sessions --help", "riftscan compare sessions <session-a> <session-b>")]
     [InlineData("migrate session --help", "riftscan migrate session <session-path>")]
@@ -16,6 +18,7 @@ public sealed class CliSessionHelpTests
     [InlineData("session inventory --help", "riftscan session inventory <session-path>")]
     [InlineData("session summary --help", "riftscan session summary <session-path>")]
     [InlineData("verify session --help", "riftscan verify session <session-path>")]
+    [InlineData("verify xref-chain-summary --help", "riftscan verify xref-chain-summary <xref-chain-summary.json>")]
     public void Cli_public_help_prints_usage_without_error(string commandLine, string expectedUsage)
     {
         var result = RunCli(commandLine.Split(' ', StringSplitOptions.RemoveEmptyEntries));

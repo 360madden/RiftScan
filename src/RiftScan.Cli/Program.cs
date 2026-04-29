@@ -5,6 +5,7 @@ using System.Text.Json.Serialization;
 using RiftScan.Analysis.Comparison;
 using RiftScan.Analysis.Reports;
 using RiftScan.Analysis.Triage;
+using RiftScan.Analysis.Xrefs;
 using RiftScan.Capture.Passive;
 using RiftScan.Core.Processes;
 using RiftScan.Core.Sessions;
@@ -50,6 +51,16 @@ public static class Program
             if (args.Length >= 2 && Is(args[0], "analyze") && Is(args[1], "session"))
             {
                 return AnalyzeSession(args[2..]);
+            }
+
+            if (args.Length >= 2 && Is(args[0], "analyze") && Is(args[1], "xrefs"))
+            {
+                return AnalyzeXrefs(args[2..]);
+            }
+
+            if (args.Length >= 2 && Is(args[0], "analyze") && Is(args[1], "xref-chain"))
+            {
+                return AnalyzeXrefChain(args[2..]);
             }
 
             if (args.Length >= 2 && Is(args[0], "report") && Is(args[1], "session"))
@@ -135,6 +146,11 @@ public static class Program
             if (args.Length >= 2 && Is(args[0], "verify") && Is(args[1], "session"))
             {
                 return VerifySession(args[2..]);
+            }
+
+            if (args.Length >= 2 && Is(args[0], "verify") && Is(args[1], "xref-chain-summary"))
+            {
+                return VerifyXrefChainSummary(args[2..]);
             }
 
             if (args.Length >= 2 && Is(args[0], "verify") && Is(args[1], "scalar-corroboration"))
@@ -268,6 +284,72 @@ public static class Program
         var sessionPath = args[0];
         var top = ParseTop(args[1..]);
         var result = new DynamicRegionTriageAnalyzer().AnalyzeSession(sessionPath, top);
+        Console.WriteLine(JsonSerializer.Serialize(result, SessionJson.Options));
+        return result.Success ? 0 : 1;
+    }
+
+    private static int AnalyzeXrefs(string[] args)
+    {
+        if (args.Length == 1 && IsHelp(args[0]))
+        {
+            PrintAnalyzeXrefsUsage();
+            return 0;
+        }
+
+        var (options, outputPath, reportPath) = ParseXrefOptions(args);
+        var result = new SessionXrefAnalysisService().Analyze(options);
+        if (!string.IsNullOrWhiteSpace(outputPath))
+        {
+            result = result with { OutputPath = Path.GetFullPath(outputPath) };
+        }
+
+        if (!string.IsNullOrWhiteSpace(reportPath))
+        {
+            result = result with { MarkdownReportPath = Path.GetFullPath(reportPath) };
+        }
+
+        if (!string.IsNullOrWhiteSpace(result.MarkdownReportPath))
+        {
+            new SessionXrefAnalysisService().WriteMarkdown(result, result.MarkdownReportPath);
+        }
+
+        if (!string.IsNullOrWhiteSpace(result.OutputPath))
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(result.OutputPath)!);
+            File.WriteAllText(result.OutputPath, JsonSerializer.Serialize(result, SessionJson.Options));
+        }
+
+        Console.WriteLine(JsonSerializer.Serialize(result, SessionJson.Options));
+        return result.Success ? 0 : 1;
+    }
+
+    private static int AnalyzeXrefChain(string[] args)
+    {
+        if (args.Length == 1 && IsHelp(args[0]))
+        {
+            PrintAnalyzeXrefChainUsage();
+            return 0;
+        }
+
+        var (options, outputPath, reportPath) = ParseXrefChainOptions(args);
+        var service = new SessionXrefChainSummaryService();
+        var result = service.Summarize(options);
+        if (!string.IsNullOrWhiteSpace(outputPath))
+        {
+            result = result with { OutputPath = Path.GetFullPath(outputPath) };
+        }
+
+        if (!string.IsNullOrWhiteSpace(reportPath))
+        {
+            result = result with { MarkdownReportPath = Path.GetFullPath(reportPath) };
+        }
+
+        if (!string.IsNullOrWhiteSpace(result.MarkdownReportPath))
+        {
+            service.WriteMarkdown(result, result.MarkdownReportPath);
+        }
+
+        WriteOptionalJson(result.OutputPath, result);
         Console.WriteLine(JsonSerializer.Serialize(result, SessionJson.Options));
         return result.Success ? 0 : 1;
     }
@@ -1276,6 +1358,8 @@ public static class Program
             : ulong.Parse(normalized);
     }
 
+    private static string FormatHex(ulong value) => $"0x{value:X}";
+
     private static int ParseTop(string[] args)
     {
         var top = 100;
@@ -1296,6 +1380,185 @@ public static class Program
         }
 
         return top;
+    }
+
+    private static (SessionXrefAnalysisOptions Options, string? OutputPath, string? ReportPath) ParseXrefOptions(string[] args)
+    {
+        if (args.Length == 0)
+        {
+            throw new ArgumentException("Xref analysis requires a session path.");
+        }
+
+        var sessionPath = args[0];
+        ulong? targetBaseAddress = null;
+        ulong? targetSizeBytes = null;
+        IReadOnlyList<ulong> targetOffsets = [];
+        IReadOnlyList<ulong> patternOffsets = [];
+        var patternLengthBytes = 12;
+        var maxHits = 500;
+        string? outputPath = null;
+        string? reportPath = null;
+
+        for (var index = 1; index < args.Length; index++)
+        {
+            var arg = args[index];
+            switch (arg)
+            {
+                case "--target-base":
+                    targetBaseAddress = ParseUnsignedHexOrDecimal(RequireValue(args, ref index, arg));
+                    break;
+                case "--target-size":
+                    targetSizeBytes = ParseUnsignedHexOrDecimal(RequireValue(args, ref index, arg));
+                    break;
+                case "--target-offsets":
+                    targetOffsets = ParseOffsetList(RequireValue(args, ref index, arg));
+                    break;
+                case "--pattern-offsets":
+                    patternOffsets = ParseOffsetList(RequireValue(args, ref index, arg));
+                    break;
+                case "--pattern-length":
+                    patternLengthBytes = int.Parse(RequireValue(args, ref index, arg), CultureInfo.InvariantCulture);
+                    break;
+                case "--max-hits":
+                    maxHits = int.Parse(RequireValue(args, ref index, arg), CultureInfo.InvariantCulture);
+                    break;
+                case "--out":
+                case "--json-out":
+                    outputPath = RequireValue(args, ref index, arg);
+                    break;
+                case "--report-md":
+                    reportPath = RequireValue(args, ref index, arg);
+                    break;
+                default:
+                    throw new ArgumentException($"Unknown analyze xrefs option: {arg}");
+            }
+        }
+
+        return (new SessionXrefAnalysisOptions
+        {
+            SessionPath = sessionPath,
+            TargetBaseAddress = targetBaseAddress ?? throw new ArgumentException("Xref analysis requires --target-base <address>."),
+            TargetSizeBytes = targetSizeBytes,
+            TargetOffsets = targetOffsets,
+            PatternOffsets = patternOffsets,
+            PatternLengthBytes = patternLengthBytes,
+            MaxHits = maxHits
+        }, outputPath, reportPath);
+    }
+
+    private static (string Path, SessionXrefChainSummaryVerificationOptions Options) ParseVerifyXrefChainSummaryOptions(string[] args)
+    {
+        if (args.Length == 0)
+        {
+            throw new ArgumentException("Verify xref-chain-summary requires a JSON path.");
+        }
+
+        var requiredEdges = new List<SessionXrefRequiredEdge>();
+        var requiredPairs = new List<SessionXrefRequiredReciprocalPair>();
+        var minSupport = 1;
+        for (var index = 1; index < args.Length; index++)
+        {
+            var arg = args[index];
+            switch (arg)
+            {
+                case "--min-support":
+                    minSupport = int.Parse(RequireValue(args, ref index, arg), CultureInfo.InvariantCulture);
+                    break;
+                case "--require-edge":
+                    requiredEdges.Add(ParseRequiredEdge(RequireValue(args, ref index, arg)));
+                    break;
+                case "--require-reciprocal":
+                    requiredPairs.Add(ParseRequiredPair(RequireValue(args, ref index, arg)));
+                    break;
+                default:
+                    throw new ArgumentException($"Unknown verify xref-chain-summary option: {arg}");
+            }
+        }
+
+        return (args[0], new SessionXrefChainSummaryVerificationOptions
+        {
+            MinSupport = minSupport,
+            RequiredEdges = requiredEdges,
+            RequiredReciprocalPairs = requiredPairs
+        });
+    }
+
+    private static SessionXrefRequiredEdge ParseRequiredEdge(string value)
+    {
+        var parts = SplitRequiredPairValue(value, "--require-edge");
+        return new SessionXrefRequiredEdge
+        {
+            SourceBaseAddressHex = FormatHex(ParseUnsignedHexOrDecimal(parts[0])),
+            PointerValueHex = FormatHex(ParseUnsignedHexOrDecimal(parts[1]))
+        };
+    }
+
+    private static SessionXrefRequiredReciprocalPair ParseRequiredPair(string value)
+    {
+        var parts = SplitRequiredPairValue(value, "--require-reciprocal");
+        return new SessionXrefRequiredReciprocalPair
+        {
+            FirstBaseAddressHex = FormatHex(ParseUnsignedHexOrDecimal(parts[0])),
+            SecondBaseAddressHex = FormatHex(ParseUnsignedHexOrDecimal(parts[1]))
+        };
+    }
+
+    private static string[] SplitRequiredPairValue(string value, string option)
+    {
+        var parts = value.Contains("=", StringComparison.Ordinal)
+            ? value.Split('=', 2, StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
+            : value.Split(',', 2, StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length != 2)
+        {
+            throw new ArgumentException($"{option} requires two addresses formatted as 0xSOURCE=0xTARGET.");
+        }
+
+        return parts;
+    }
+
+    private static (SessionXrefChainSummaryOptions Options, string? OutputPath, string? ReportPath) ParseXrefChainOptions(string[] args)
+    {
+        var inputPaths = new List<string>();
+        var minSupport = 2;
+        var top = 100;
+        string? outputPath = null;
+        string? reportPath = null;
+
+        for (var index = 0; index < args.Length; index++)
+        {
+            var arg = args[index];
+            switch (arg)
+            {
+                case "--min-support":
+                    minSupport = int.Parse(RequireValue(args, ref index, arg), CultureInfo.InvariantCulture);
+                    break;
+                case "--top":
+                    top = int.Parse(RequireValue(args, ref index, arg), CultureInfo.InvariantCulture);
+                    break;
+                case "--out":
+                case "--json-out":
+                    outputPath = RequireValue(args, ref index, arg);
+                    break;
+                case "--report-md":
+                    reportPath = RequireValue(args, ref index, arg);
+                    break;
+                default:
+                    if (arg.StartsWith("--", StringComparison.Ordinal))
+                    {
+                        throw new ArgumentException($"Unknown analyze xref-chain option: {arg}");
+                    }
+
+                    inputPaths.Add(arg);
+                    break;
+            }
+        }
+
+        return (new SessionXrefChainSummaryOptions
+        {
+            InputPaths = inputPaths,
+            MinSupport = minSupport,
+            Top = top
+        }, outputPath, reportPath);
     }
 
     private static (int Top, string? OutputPath, string? ReportPath, string? NextPlanPath, string? TruthReadinessPath, string? Vec3TruthCandidatePath, string? Vec3CorroborationPath) ParseCompareOptions(string[] args)
@@ -1555,6 +1818,20 @@ public static class Program
         }
 
         return VerifySessionPath(args[0]);
+    }
+
+    private static int VerifyXrefChainSummary(string[] args)
+    {
+        if (args.Length == 1 && IsHelp(args[0]))
+        {
+            PrintVerifyXrefChainSummaryUsage();
+            return 0;
+        }
+
+        var (path, options) = ParseVerifyXrefChainSummaryOptions(args);
+        var result = new SessionXrefChainSummaryVerifier().Verify(path, options);
+        Console.WriteLine(JsonSerializer.Serialize(result, SessionJson.Options));
+        return result.Success ? 0 : 1;
     }
 
     private static int VerifyScalarCorroboration(string[] args)
@@ -1843,6 +2120,8 @@ public static class Program
         PrintCapturePlanUsage();
         PrintProcessInventoryUsage();
         PrintAnalyzeSessionUsage();
+        PrintAnalyzeXrefsUsage();
+        PrintAnalyzeXrefChainUsage();
         PrintReportSessionUsage();
         PrintReportCapabilityUsage();
         PrintRiftAddonCoordsUsage();
@@ -1860,6 +2139,7 @@ public static class Program
         PrintSessionInventoryUsage();
         PrintSessionSummaryUsage();
         PrintVerifySessionUsage();
+        PrintVerifyXrefChainSummaryUsage();
         PrintVerifyScalarCorroborationUsage();
         PrintVerifyVec3CorroborationUsage();
         PrintVerifyScalarEvidenceSetUsage();
@@ -1926,6 +2206,12 @@ public static class Program
     private static void PrintAnalyzeSessionUsage() =>
         Console.WriteLine("riftscan analyze session <session-path> [--all|--top 100]");
 
+    private static void PrintAnalyzeXrefsUsage() =>
+        Console.WriteLine("riftscan analyze xrefs <session-path> --target-base 0xADDR [--target-size 0xSIZE] [--target-offsets 0xOFF,...] [--pattern-offsets 0xOFF,...] [--pattern-length 12] [--max-hits 500] [--out reports/generated/session-xrefs.json] [--report-md reports/generated/session-xrefs.md]");
+
+    private static void PrintAnalyzeXrefChainUsage() =>
+        Console.WriteLine("riftscan analyze xref-chain <xref-json> [xref-json ...] [--min-support 2] [--top 100] [--out reports/generated/xref-chain.json] [--report-md reports/generated/xref-chain.md]");
+
     private static void PrintReportSessionUsage() =>
         Console.WriteLine("riftscan report session <session-path> [--top 100]");
 
@@ -1976,6 +2262,9 @@ public static class Program
 
     private static void PrintVerifySessionUsage() =>
         Console.WriteLine("riftscan verify session <session-path>");
+
+    private static void PrintVerifyXrefChainSummaryUsage() =>
+        Console.WriteLine("riftscan verify xref-chain-summary <xref-chain-summary.json> [--min-support 1] [--require-edge 0xSOURCE=0xTARGET] [--require-reciprocal 0xA=0xB]");
 
     private static void PrintVerifyScalarCorroborationUsage() =>
         Console.WriteLine("riftscan verify scalar-corroboration <corroboration.jsonl>");
