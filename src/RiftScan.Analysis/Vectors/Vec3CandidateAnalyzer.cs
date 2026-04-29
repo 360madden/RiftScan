@@ -184,10 +184,22 @@ public sealed class Vec3CandidateAnalyzer
 
         var first = values[0];
         var last = values[^1];
-        var dx = last[0] - first[0];
-        var dy = last[1] - first[1];
-        var dz = last[2] - first[2];
-        return Math.Sqrt(dx * dx + dy * dy + dz * dz);
+        if (first.Any(value => !float.IsFinite(value)) || last.Any(value => !float.IsFinite(value)))
+        {
+            return 0;
+        }
+
+        var dx = (double)last[0] - first[0];
+        var dy = (double)last[1] - first[1];
+        var dz = (double)last[2] - first[2];
+        var magnitudeSquared = dx * dx + dy * dy + dz * dz;
+        if (!double.IsFinite(magnitudeSquared))
+        {
+            return 0;
+        }
+
+        var magnitude = Math.Sqrt(magnitudeSquared);
+        return double.IsFinite(magnitude) ? magnitude : 0;
     }
 
     private static BehaviorScore ScoreBehavior(string stimulusLabel, double deltaMagnitude)

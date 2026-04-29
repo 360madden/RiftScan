@@ -33,11 +33,30 @@ dotnet run --project src/RiftScan.Cli/RiftScan.Cli.csproj --configuration Releas
   compare sessions sessions/<baseline_id> sessions/<passive_id> --top 10 `
   --out reports/generated/<compare>.json `
   --report-md reports/generated/<compare>.md `
-  --next-plan reports/generated/<next-plan>.json
+  --next-plan reports/generated/<next-plan>.json `
+  --truth-readiness reports/generated/<compare>.truth-readiness.json
+
+dotnet run --project src/RiftScan.Cli/RiftScan.Cli.csproj --configuration Release --no-build -- `
+  verify comparison-readiness reports/generated/<compare>.truth-readiness.json
+
+dotnet run --project src/RiftScan.Cli/RiftScan.Cli.csproj --configuration Release --no-build -- `
+  report capability `
+  --truth-readiness reports/generated/<compare>.truth-readiness.json `
+  --truth-readiness reports/generated/<additional-compare>.truth-readiness.json `
+  --scalar-evidence-set reports/generated/<scalar-evidence-set>.json `
+  --scalar-evidence-set reports/generated/<additional-scalar-evidence-set>.json `
+  --json-out reports/generated/<capability-status>.json
+
+dotnet run --project src/RiftScan.Cli/RiftScan.Cli.csproj --configuration Release --no-build -- `
+  verify capability-status reports/generated/<capability-status>.json
+
+dotnet run --project src/RiftScan.Cli/RiftScan.Cli.csproj --configuration Release --no-build -- `
+  verify scalar-evidence-set reports/generated/<scalar-evidence-set>.json
 
 dotnet run --project src/RiftScan.Cli/RiftScan.Cli.csproj --configuration Release --no-build -- `
   capture plan reports/generated/<next-plan>.json --pid <rift_pid> `
-  --out sessions/<followup_id> --samples 3 --interval-ms 100 --stimulus move_forward
+  --out sessions/<followup_id> --samples 3 --interval-ms 100 `
+  --windows-per-region 3 --stimulus move_forward
 ```
 
 ## Guardrails
@@ -45,6 +64,7 @@ dotnet run --project src/RiftScan.Cli/RiftScan.Cli.csproj --configuration Releas
 - Capture is external read-only observation only.
 - `process inventory` and `capture passive --dry-run` enumerate and plan reads without calling `ReadProcessMemory`.
 - Default live capture prioritizes writable private/mapped regions and reads a capped prefix from large regions; `--max-bytes-per-region` is a read cap, not a reason to skip heap-sized regions.
+- Plan follow-up can inspect multiple deterministic windows inside each selected large region with `--windows-per-region <n>` or explicit `--window-offsets 0,0x10000`.
 - Analysis, reports, comparisons, and next plans replay from stored artifacts.
 - Comparison output is candidate evidence, not recovered truth.
 - Use explicit stimulus labels before behavior claims.
@@ -98,6 +118,23 @@ dotnet run --project src/RiftScan.Cli/RiftScan.Cli.csproj --configuration Releas
 ## CI smoke artifacts
 
 CI uploads commit-scoped smoke proof artifacts with SHA256 manifests. See [docs/ci-artifacts.md](docs/ci-artifacts.md) for download and verification steps.
+
+## Scalar truth workflow
+
+Actor-yaw / camera-yaw scalar discovery now has a replayable workflow for passive, turn-left, turn-right, camera-only, optional corroboration, truth-candidate export, and repeat recovery. See [docs/scalar-truth-workflow.md](docs/scalar-truth-workflow.md).
+
+## Capability and readiness workflow
+
+The scanner can now emit and verify a machine-readable capability/status matrix that separates coded capability from missing evidence. Use it to answer "what is coded in?" without treating candidates as recovered truth. See [docs/capability-readiness-workflow.md](docs/capability-readiness-workflow.md).
+
+Shortcut:
+
+```powershell
+pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/verify-readiness-workflow.ps1 `
+  -TruthReadinessPath reports/generated/<compare>.truth-readiness.json `
+  -ScalarEvidenceSetPath reports/generated/<scalar-evidence-set>.json `
+  -CapabilityStatusPath reports/generated/<capability-status>.json
+```
 
 ## Validation
 

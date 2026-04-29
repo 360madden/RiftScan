@@ -39,6 +39,7 @@ public sealed class GeneratedAnalyzerArtifactSchemaTests
         AssertJsonLineSchema(session.Path, "structures.jsonl", "riftscan.structure_candidate.v1");
         AssertJsonLineSchema(session.Path, "vec3_candidates.jsonl", "riftscan.vec3_candidate.v1");
         AssertJsonLineSchema(session.Path, "clusters.jsonl", "riftscan.structure_cluster.v1");
+        AssertJsonLineSchema(session.Path, "entity_layout_candidates.jsonl", "riftscan.entity_layout_candidate.v1");
         AssertJsonFileSchema(session.Path, "next_capture_plan.json", "riftscan.next_capture_plan.v1");
     }
 

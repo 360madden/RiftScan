@@ -37,13 +37,30 @@ public sealed class SessionComparisonNextCapturePlanGenerator
         };
     }
 
-    private static IReadOnlyList<ComparisonCaptureTarget> BuildTargets(SessionComparisonResult result, int top) =>
-        result.Vec3CandidateMatches
+    private static IReadOnlyList<ComparisonCaptureTarget> BuildTargets(SessionComparisonResult result, int top)
+    {
+        var layoutTargets = result.EntityLayoutMatches
+            .OrderByDescending(match => TargetPriority(match))
+            .ThenByDescending(match => Math.Min(match.SessionAScore, match.SessionBScore))
+            .ThenBy(match => match.BaseAddressHex, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(match => match.StartOffsetHex, StringComparer.OrdinalIgnoreCase)
+            .Select(match => new ComparisonCaptureTarget
+            {
+                BaseAddressHex = AddHex(match.BaseAddressHex, match.StartOffsetHex),
+                OffsetHex = match.StartOffsetHex,
+                DataType = match.LayoutKind,
+                SessionARegionId = match.SessionARegionId,
+                SessionBRegionId = match.SessionBRegionId,
+                SessionACandidateId = match.SessionACandidateId,
+                SessionBCandidateId = match.SessionBCandidateId,
+                PriorityScore = TargetPriority(match),
+                Reason = match.Recommendation
+            });
+        var vec3Targets = result.Vec3CandidateMatches
             .OrderByDescending(match => TargetPriority(match))
             .ThenByDescending(match => Math.Min(match.SessionARankScore, match.SessionBRankScore))
             .ThenBy(match => match.BaseAddressHex, StringComparer.OrdinalIgnoreCase)
             .ThenBy(match => match.OffsetHex, StringComparer.OrdinalIgnoreCase)
-            .Take(top)
             .Select(match => new ComparisonCaptureTarget
             {
                 BaseAddressHex = match.BaseAddressHex,
@@ -55,8 +72,28 @@ public sealed class SessionComparisonNextCapturePlanGenerator
                 SessionBCandidateId = match.SessionBCandidateId,
                 PriorityScore = TargetPriority(match),
                 Reason = match.Recommendation
-            })
+            });
+
+        return layoutTargets
+            .Concat(vec3Targets)
+            .GroupBy(target => string.Join("|", target.BaseAddressHex, target.OffsetHex), StringComparer.OrdinalIgnoreCase)
+            .Select(group => group.OrderByDescending(target => target.PriorityScore).First())
+            .OrderByDescending(target => target.PriorityScore)
+            .ThenBy(target => target.BaseAddressHex, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(target => target.OffsetHex, StringComparer.OrdinalIgnoreCase)
+            .Take(top)
             .ToArray();
+    }
+
+    private static double TargetPriority(EntityLayoutComparison match)
+    {
+        if (string.Equals(match.Recommendation, "stable_entity_layout_candidate_across_sessions", StringComparison.OrdinalIgnoreCase))
+        {
+            return 95;
+        }
+
+        return Math.Min(match.SessionAScore, match.SessionBScore);
+    }
 
     private static double TargetPriority(Vec3CandidateComparison match)
     {
@@ -86,6 +123,11 @@ public sealed class SessionComparisonNextCapturePlanGenerator
             return "review_existing_behavior_contrast";
         }
 
+        if (result.MatchingEntityLayoutCount > 0 && result.MatchingVec3CandidateCount == 0)
+        {
+            return "capture_labeled_entity_layout_followup";
+        }
+
         if (result.Vec3BehaviorSummary.UnlabeledMatchCount > 0)
         {
             return HasPassiveLabel(result) && !HasMoveForwardLabel(result)
@@ -112,6 +154,11 @@ public sealed class SessionComparisonNextCapturePlanGenerator
             return "comparison_already_contains_behavior_contrast_candidates";
         }
 
+        if (result.MatchingEntityLayoutCount > 0 && result.MatchingVec3CandidateCount == 0)
+        {
+            return "entity_layout_matches_need_labeled_behavior_evidence";
+        }
+
         if (result.Vec3BehaviorSummary.UnlabeledMatchCount > 0)
         {
             return "matching_vec3_candidates_include_unlabeled_sessions";
@@ -132,6 +179,7 @@ public sealed class SessionComparisonNextCapturePlanGenerator
         {
             "review_existing_behavior_contrast" => "existing_vec3_candidates_show_stimulus_specific_delta",
             "capture_labeled_move_forward" => "target_vec3_candidates_change_during_move_forward",
+            "capture_labeled_entity_layout_followup" => "top_entity_layout_regions_produce_vec3_or_scalar_behavior_candidates",
             "capture_labeled_passive_idle" => "target_vec3_candidates_remain_stable_during_passive_idle",
             "recapture_with_explicit_stimulus_labels" => "previous_matches_gain_explicit_stimulus_labels",
             "capture_labeled_contrast_session" => "same_base_offsets_can_be_compared_across_contrasting_labels",
@@ -143,6 +191,7 @@ public sealed class SessionComparisonNextCapturePlanGenerator
         {
             "review_existing_behavior_contrast" => "candidate_reviewed_before_truth_claim",
             "capture_labeled_move_forward" => "at_least_one_matching_vec3_candidate_has_move_forward_delta",
+            "capture_labeled_entity_layout_followup" => "entity_layout_followup_emits_vec3_or_scalar_behavior_candidates",
             "capture_labeled_passive_idle" => "at_least_one_matching_vec3_candidate_has_passive_stability",
             "recapture_with_explicit_stimulus_labels" => "comparison_has_no_unlabeled_vec3_matches",
             "capture_labeled_contrast_session" => "comparison_emits_behavior_contrast_or_rejection",
@@ -169,4 +218,17 @@ public sealed class SessionComparisonNextCapturePlanGenerator
     private static bool HasMoveForwardLabel(SessionComparisonResult result) =>
         result.Vec3BehaviorSummary.StimulusLabels.Any(label =>
             string.Equals(label, "move_forward", StringComparison.OrdinalIgnoreCase));
+
+    private static string AddHex(string baseAddressHex, string offsetHex)
+    {
+        var baseAddress = ParseHex(baseAddressHex);
+        var offset = ParseHex(offsetHex);
+        return $"0x{baseAddress + offset:X}";
+    }
+
+    private static ulong ParseHex(string value)
+    {
+        var normalized = value.StartsWith("0x", StringComparison.OrdinalIgnoreCase) ? value[2..] : value;
+        return Convert.ToUInt64(normalized, 16);
+    }
 }

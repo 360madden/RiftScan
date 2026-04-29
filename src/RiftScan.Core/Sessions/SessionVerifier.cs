@@ -18,9 +18,11 @@ public sealed class SessionVerifier
         ("triage.jsonl", "riftscan.region_triage_entry.v1"),
         ("deltas.jsonl", "riftscan.region_delta_entry.v1"),
         ("typed_value_candidates.jsonl", "riftscan.typed_value_candidate.v1"),
+        ("scalar_candidates.jsonl", "riftscan.scalar_candidate.v1"),
         ("structures.jsonl", "riftscan.structure_candidate.v1"),
         ("vec3_candidates.jsonl", "riftscan.vec3_candidate.v1"),
-        ("clusters.jsonl", "riftscan.structure_cluster.v1")
+        ("clusters.jsonl", "riftscan.structure_cluster.v1"),
+        ("entity_layout_candidates.jsonl", "riftscan.entity_layout_candidate.v1")
     ];
 
     private static readonly (string Path, string SchemaVersion)[] GeneratedJsonArtifacts =

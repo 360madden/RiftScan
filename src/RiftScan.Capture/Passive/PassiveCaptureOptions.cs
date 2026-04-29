@@ -24,6 +24,10 @@ public sealed record PassiveCaptureOptions
 
     public IReadOnlySet<ulong> BaseAddresses { get; init; } = new HashSet<ulong>();
 
+    public int WindowsPerRegion { get; init; } = 1;
+
+    public IReadOnlyList<ulong> WindowOffsets { get; init; } = [];
+
     public string? StimulusLabel { get; init; }
 
     public string? StimulusNotes { get; init; }

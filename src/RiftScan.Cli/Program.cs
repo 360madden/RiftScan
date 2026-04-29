@@ -54,9 +54,24 @@ public static class Program
                 return ReportSession(args[2..]);
             }
 
+            if (args.Length >= 2 && Is(args[0], "report") && Is(args[1], "capability"))
+            {
+                return ReportCapability(args[2..]);
+            }
+
             if (args.Length >= 2 && Is(args[0], "compare") && Is(args[1], "sessions"))
             {
                 return CompareSessions(args[2..]);
+            }
+
+            if (args.Length >= 2 && Is(args[0], "compare") && Is(args[1], "scalar-set"))
+            {
+                return CompareScalarSet(args[2..]);
+            }
+
+            if (args.Length >= 2 && Is(args[0], "compare") && Is(args[1], "scalar-truth"))
+            {
+                return CompareScalarTruth(args[2..]);
             }
 
             if (args.Length >= 2 && Is(args[0], "migrate") && Is(args[1], "session"))
@@ -82,6 +97,31 @@ public static class Program
             if (args.Length >= 2 && Is(args[0], "verify") && Is(args[1], "session"))
             {
                 return VerifySession(args[2..]);
+            }
+
+            if (args.Length >= 2 && Is(args[0], "verify") && Is(args[1], "scalar-corroboration"))
+            {
+                return VerifyScalarCorroboration(args[2..]);
+            }
+
+            if (args.Length >= 2 && Is(args[0], "verify") && Is(args[1], "scalar-evidence-set"))
+            {
+                return VerifyScalarEvidenceSet(args[2..]);
+            }
+
+            if (args.Length >= 2 && Is(args[0], "verify") && Is(args[1], "scalar-truth-recovery"))
+            {
+                return VerifyScalarTruthRecovery(args[2..]);
+            }
+
+            if (args.Length >= 2 && Is(args[0], "verify") && Is(args[1], "comparison-readiness"))
+            {
+                return VerifyComparisonReadiness(args[2..]);
+            }
+
+            if (args.Length >= 2 && Is(args[0], "verify") && Is(args[1], "capability-status"))
+            {
+                return VerifyCapabilityStatus(args[2..]);
             }
 
             return PrintMachineReadableError("unknown_command", $"Unknown command: {string.Join(' ', args)}");
@@ -197,7 +237,7 @@ public static class Program
             throw new ArgumentException("Compare requires two session paths.");
         }
 
-        var (top, outputPath, reportPath, nextPlanPath) = ParseCompareOptions(args[2..]);
+        var (top, outputPath, reportPath, nextPlanPath, truthReadinessPath) = ParseCompareOptions(args[2..]);
         var result = new SessionComparisonService().Compare(args[0], args[1], top);
         if (!string.IsNullOrWhiteSpace(reportPath))
         {
@@ -214,6 +254,11 @@ public static class Program
             result = result with { ComparisonPath = Path.GetFullPath(outputPath) };
         }
 
+        if (!string.IsNullOrWhiteSpace(truthReadinessPath))
+        {
+            result = result with { ComparisonTruthReadinessPath = Path.GetFullPath(truthReadinessPath) };
+        }
+
         if (!string.IsNullOrWhiteSpace(result.ComparisonReportPath))
         {
             _ = new SessionComparisonReportGenerator().Generate(result, result.ComparisonReportPath, top);
@@ -224,11 +269,155 @@ public static class Program
             _ = new SessionComparisonNextCapturePlanGenerator().Generate(result, result.ComparisonNextCapturePlanPath, top);
         }
 
+        if (!string.IsNullOrWhiteSpace(result.ComparisonTruthReadinessPath))
+        {
+            _ = new ComparisonTruthReadinessService().Write(result, result.ComparisonTruthReadinessPath, top);
+        }
+
         if (!string.IsNullOrWhiteSpace(outputPath))
         {
             var fullOutputPath = result.ComparisonPath!;
             Directory.CreateDirectory(Path.GetDirectoryName(fullOutputPath)!);
             File.WriteAllText(fullOutputPath, JsonSerializer.Serialize(result, SessionJson.Options));
+        }
+
+        Console.WriteLine(JsonSerializer.Serialize(result, SessionJson.Options));
+        return result.Success ? 0 : 1;
+    }
+
+    private static int ReportCapability(string[] args)
+    {
+        if (args.Length == 1 && IsHelp(args[0]))
+        {
+            PrintReportCapabilityUsage();
+            return 0;
+        }
+
+        var (truthReadinessPaths, scalarEvidenceSetPaths, scalarTruthRecoveryPaths, jsonOutputPath) = ParseReportCapabilityOptions(args);
+        var result = new CapabilityStatusService().Build(truthReadinessPaths, scalarEvidenceSetPaths, scalarTruthRecoveryPaths);
+        WriteOptionalJson(jsonOutputPath, result);
+        Console.WriteLine(JsonSerializer.Serialize(result, SessionJson.Options));
+        return result.Success ? 0 : 1;
+    }
+
+    private static int CompareScalarSet(string[] args)
+    {
+        if (args.Length == 1 && IsHelp(args[0]))
+        {
+            PrintCompareScalarSetUsage();
+            return 0;
+        }
+
+        var sessionPaths = new List<string>();
+        var top = 100;
+        string? outputPath = null;
+        string? reportPath = null;
+        string? truthCandidatePath = null;
+        string? corroborationPath = null;
+        for (var index = 0; index < args.Length; index++)
+        {
+            var arg = args[index];
+            switch (arg)
+            {
+                case "--all":
+                    top = int.MaxValue;
+                    break;
+                case "--top":
+                    top = int.Parse(RequireValue(args, ref index, arg));
+                    break;
+                case "--out":
+                    outputPath = RequireValue(args, ref index, arg);
+                    break;
+                case "--report-md":
+                    reportPath = RequireValue(args, ref index, arg);
+                    break;
+                case "--truth-out":
+                    truthCandidatePath = RequireValue(args, ref index, arg);
+                    break;
+                case "--corroboration":
+                    corroborationPath = RequireValue(args, ref index, arg);
+                    break;
+                default:
+                    sessionPaths.Add(arg);
+                    break;
+            }
+        }
+
+        if (sessionPaths.Count < 2)
+        {
+            throw new ArgumentException("Scalar-set compare requires at least two session paths.");
+        }
+
+        var result = new ScalarEvidenceSetService().Aggregate(sessionPaths, top);
+        if (!string.IsNullOrWhiteSpace(outputPath))
+        {
+            result = result with { OutputPath = Path.GetFullPath(outputPath) };
+        }
+
+        if (!string.IsNullOrWhiteSpace(reportPath))
+        {
+            result = result with { ReportPath = Path.GetFullPath(reportPath) };
+            _ = new ScalarEvidenceSetReportGenerator().Generate(result, result.ReportPath, top);
+        }
+
+        if (!string.IsNullOrWhiteSpace(truthCandidatePath))
+        {
+            result = result with { TruthCandidatePath = Path.GetFullPath(truthCandidatePath) };
+            _ = new ScalarTruthCandidateExporter().Export(result, result.TruthCandidatePath, top, corroborationPath);
+        }
+
+        if (!string.IsNullOrWhiteSpace(result.OutputPath))
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(result.OutputPath)!);
+            File.WriteAllText(result.OutputPath, JsonSerializer.Serialize(result, SessionJson.Options));
+        }
+
+        Console.WriteLine(JsonSerializer.Serialize(result, SessionJson.Options));
+        return result.Success ? 0 : 1;
+    }
+
+    private static int CompareScalarTruth(string[] args)
+    {
+        if (args.Length == 1 && IsHelp(args[0]))
+        {
+            PrintCompareScalarTruthUsage();
+            return 0;
+        }
+
+        var paths = new List<string>();
+        var top = 100;
+        string? outputPath = null;
+        for (var index = 0; index < args.Length; index++)
+        {
+            var arg = args[index];
+            switch (arg)
+            {
+                case "--all":
+                    top = int.MaxValue;
+                    break;
+                case "--top":
+                    top = int.Parse(RequireValue(args, ref index, arg));
+                    break;
+                case "--out":
+                    outputPath = RequireValue(args, ref index, arg);
+                    break;
+                default:
+                    paths.Add(arg);
+                    break;
+            }
+        }
+
+        if (paths.Count < 2)
+        {
+            throw new ArgumentException("Scalar-truth compare requires at least two scalar truth candidate JSONL files.");
+        }
+
+        var result = new ScalarTruthRecoveryService().Recover(paths, top);
+        if (!string.IsNullOrWhiteSpace(outputPath))
+        {
+            result = result with { OutputPath = Path.GetFullPath(outputPath) };
+            Directory.CreateDirectory(Path.GetDirectoryName(result.OutputPath)!);
+            File.WriteAllText(result.OutputPath, JsonSerializer.Serialize(result, SessionJson.Options));
         }
 
         Console.WriteLine(JsonSerializer.Serialize(result, SessionJson.Options));
@@ -512,6 +701,8 @@ public static class Program
         var maxBytesPerRegion = 64 * 1024;
         long maxTotalBytes = 1024 * 1024;
         var includeImageRegions = false;
+        var windowsPerRegion = 1;
+        IReadOnlyList<ulong> windowOffsets = [];
         string? stimulusLabel = null;
         string? stimulusNotes = null;
         var interventionWaitMilliseconds = 20 * 60 * 1000;
@@ -549,6 +740,12 @@ public static class Program
                 case "--include-image-regions":
                     includeImageRegions = true;
                     break;
+                case "--windows-per-region":
+                    windowsPerRegion = int.Parse(RequireValue(args, ref index, arg));
+                    break;
+                case "--window-offsets":
+                    windowOffsets = ParseOffsetList(RequireValue(args, ref index, arg));
+                    break;
                 case "--stimulus":
                     stimulusLabel = RequireValue(args, ref index, arg);
                     break;
@@ -578,6 +775,8 @@ public static class Program
             MaxBytesPerRegion = maxBytesPerRegion,
             MaxTotalBytes = maxTotalBytes,
             IncludeImageRegions = includeImageRegions,
+            WindowsPerRegion = windowsPerRegion,
+            WindowOffsets = windowOffsets,
             StimulusLabel = stimulusLabel,
             StimulusNotes = stimulusNotes,
             InterventionWaitMilliseconds = interventionWaitMilliseconds,
@@ -593,6 +792,13 @@ public static class Program
         value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .Select(ParseUnsignedHexOrDecimal)
             .ToHashSet();
+
+    private static IReadOnlyList<ulong> ParseOffsetList(string value) =>
+        value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(ParseUnsignedHexOrDecimal)
+            .Distinct()
+            .Order()
+            .ToArray();
 
     private static ulong ParseUnsignedHexOrDecimal(string value)
     {
@@ -624,12 +830,13 @@ public static class Program
         return top;
     }
 
-    private static (int Top, string? OutputPath, string? ReportPath, string? NextPlanPath) ParseCompareOptions(string[] args)
+    private static (int Top, string? OutputPath, string? ReportPath, string? NextPlanPath, string? TruthReadinessPath) ParseCompareOptions(string[] args)
     {
         var top = 100;
         string? outputPath = null;
         string? reportPath = null;
         string? nextPlanPath = null;
+        string? truthReadinessPath = null;
         for (var index = 0; index < args.Length; index++)
         {
             var arg = args[index];
@@ -650,12 +857,15 @@ public static class Program
                 case "--next-plan":
                     nextPlanPath = RequireValue(args, ref index, arg);
                     break;
+                case "--truth-readiness":
+                    truthReadinessPath = RequireValue(args, ref index, arg);
+                    break;
                 default:
                     throw new ArgumentException($"Unknown compare option: {arg}");
             }
         }
 
-        return (top, outputPath, reportPath, nextPlanPath);
+        return (top, outputPath, reportPath, nextPlanPath, truthReadinessPath);
     }
 
     private static string? ParseSummaryOptions(string[] args)
@@ -694,6 +904,37 @@ public static class Program
         }
 
         return inventoryOutputPath;
+    }
+
+    private static (IReadOnlyList<string> TruthReadinessPaths, IReadOnlyList<string> ScalarEvidenceSetPaths, IReadOnlyList<string> ScalarTruthRecoveryPaths, string? JsonOutputPath) ParseReportCapabilityOptions(string[] args)
+    {
+        var truthReadinessPaths = new List<string>();
+        var scalarEvidenceSetPaths = new List<string>();
+        var scalarTruthRecoveryPaths = new List<string>();
+        string? jsonOutputPath = null;
+        for (var index = 0; index < args.Length; index++)
+        {
+            var arg = args[index];
+            switch (arg)
+            {
+                case "--truth-readiness":
+                    truthReadinessPaths.Add(RequireValue(args, ref index, arg));
+                    break;
+                case "--scalar-evidence-set":
+                    scalarEvidenceSetPaths.Add(RequireValue(args, ref index, arg));
+                    break;
+                case "--scalar-truth-recovery":
+                    scalarTruthRecoveryPaths.Add(RequireValue(args, ref index, arg));
+                    break;
+                case "--json-out":
+                    jsonOutputPath = RequireValue(args, ref index, arg);
+                    break;
+                default:
+                    throw new ArgumentException($"Unknown report capability option: {arg}");
+            }
+        }
+
+        return (truthReadinessPaths, scalarEvidenceSetPaths, scalarTruthRecoveryPaths, jsonOutputPath);
     }
 
     private static (bool DryRun, string? InventoryOutputPath) ParsePruneOptions(string[] args)
@@ -812,6 +1053,121 @@ public static class Program
         return VerifySessionPath(args[0]);
     }
 
+    private static int VerifyScalarCorroboration(string[] args)
+    {
+        if (args.Length == 1 && IsHelp(args[0]))
+        {
+            PrintVerifyScalarCorroborationUsage();
+            return 0;
+        }
+
+        if (args.Length == 0)
+        {
+            throw new ArgumentException("Verify scalar-corroboration requires a JSONL path.");
+        }
+
+        if (args.Length > 1)
+        {
+            throw new ArgumentException($"Unknown verify scalar-corroboration option: {args[1]}");
+        }
+
+        var result = new ScalarTruthCorroborationVerifier().Verify(args[0]);
+        Console.WriteLine(JsonSerializer.Serialize(result, SessionJson.Options));
+        return result.Success ? 0 : 1;
+    }
+
+    private static int VerifyScalarEvidenceSet(string[] args)
+    {
+        if (args.Length == 1 && IsHelp(args[0]))
+        {
+            PrintVerifyScalarEvidenceSetUsage();
+            return 0;
+        }
+
+        if (args.Length == 0)
+        {
+            throw new ArgumentException("Verify scalar-evidence-set requires a JSON path.");
+        }
+
+        if (args.Length > 1)
+        {
+            throw new ArgumentException($"Unknown verify scalar-evidence-set option: {args[1]}");
+        }
+
+        var result = new ScalarEvidenceSetVerifier().Verify(args[0]);
+        Console.WriteLine(JsonSerializer.Serialize(result, SessionJson.Options));
+        return result.Success ? 0 : 1;
+    }
+
+    private static int VerifyScalarTruthRecovery(string[] args)
+    {
+        if (args.Length == 1 && IsHelp(args[0]))
+        {
+            PrintVerifyScalarTruthRecoveryUsage();
+            return 0;
+        }
+
+        if (args.Length == 0)
+        {
+            throw new ArgumentException("Verify scalar-truth-recovery requires a JSON path.");
+        }
+
+        if (args.Length > 1)
+        {
+            throw new ArgumentException($"Unknown verify scalar-truth-recovery option: {args[1]}");
+        }
+
+        var result = new ScalarTruthRecoveryVerifier().Verify(args[0]);
+        Console.WriteLine(JsonSerializer.Serialize(result, SessionJson.Options));
+        return result.Success ? 0 : 1;
+    }
+
+    private static int VerifyComparisonReadiness(string[] args)
+    {
+        if (args.Length == 1 && IsHelp(args[0]))
+        {
+            PrintVerifyComparisonReadinessUsage();
+            return 0;
+        }
+
+        if (args.Length == 0)
+        {
+            throw new ArgumentException("Verify comparison-readiness requires a JSON path.");
+        }
+
+        if (args.Length > 1)
+        {
+            throw new ArgumentException($"Unknown verify comparison-readiness option: {args[1]}");
+        }
+
+        var result = new ComparisonTruthReadinessVerifier().Verify(args[0]);
+        Console.WriteLine(JsonSerializer.Serialize(result, SessionJson.Options));
+        return result.Success ? 0 : 1;
+    }
+
+    private static int VerifyCapabilityStatus(string[] args)
+    {
+        if (args.Length == 1 && IsHelp(args[0]))
+        {
+            PrintVerifyCapabilityStatusUsage();
+            return 0;
+        }
+
+        if (args.Length == 0)
+        {
+            throw new ArgumentException("Verify capability-status requires a JSON path.");
+        }
+
+        if (args.Length > 1)
+        {
+            throw new ArgumentException($"Unknown verify capability-status option: {args[1]}");
+        }
+
+        var result = new CapabilityStatusVerifier().Verify(args[0]);
+        Console.WriteLine(JsonSerializer.Serialize(result, SessionJson.Options));
+        return result.Success ? 0 : 1;
+    }
+
     private static int VerifySessionPath(string sessionPath)
     {
         var result = new SessionVerifier().Verify(sessionPath);
@@ -846,12 +1202,19 @@ public static class Program
         PrintProcessInventoryUsage();
         PrintAnalyzeSessionUsage();
         PrintReportSessionUsage();
+        PrintReportCapabilityUsage();
         PrintCompareSessionsUsage();
+        PrintCompareScalarSetUsage();
+        PrintCompareScalarTruthUsage();
         PrintMigrateUsage();
         PrintSessionPruneUsage();
         PrintSessionInventoryUsage();
         PrintSessionSummaryUsage();
         PrintVerifySessionUsage();
+        PrintVerifyScalarCorroborationUsage();
+        PrintVerifyScalarEvidenceSetUsage();
+        PrintVerifyComparisonReadinessUsage();
+        PrintVerifyCapabilityStatusUsage();
         Console.WriteLine("riftscan --version [--json]");
     }
 
@@ -899,7 +1262,7 @@ public static class Program
         Console.WriteLine("riftscan capture passive --process <name> --out sessions/<id> [--dry-run] [--samples 1] [--interval-ms 100] [--max-regions 8] [--max-bytes-per-region 65536] [--max-total-bytes 1048576] [--region-ids ids] [--base-addresses hexes] [--region-output-limit 250|--all-regions] [--stimulus passive_idle]");
 
     private static void PrintCapturePlanUsage() =>
-        Console.WriteLine("riftscan capture plan <source-session-or-plan-json> --pid <id> [--process <name>] --out sessions/<id> [--top-regions 5] [--stimulus move_forward] [--intervention-wait-ms 1200000] [--intervention-poll-ms 2000]");
+        Console.WriteLine("riftscan capture plan <source-session-or-plan-json> --pid <id> [--process <name>] --out sessions/<id> [--top-regions 5] [--windows-per-region 3|--window-offsets 0,0x10000] [--stimulus move_forward] [--intervention-wait-ms 1200000] [--intervention-poll-ms 2000]");
 
     private static void PrintProcessInventoryUsage() =>
         Console.WriteLine("riftscan process inventory --process <name>|--pid <id> [--max-regions 8] [--max-bytes-per-region 65536] [--max-total-bytes 1048576] [--region-ids ids] [--base-addresses hexes] [--region-output-limit 250|--all-regions] [--include-image-regions] [--json-out reports/generated/process-inventory.json]");
@@ -910,8 +1273,17 @@ public static class Program
     private static void PrintReportSessionUsage() =>
         Console.WriteLine("riftscan report session <session-path> [--top 100]");
 
+    private static void PrintReportCapabilityUsage() =>
+        Console.WriteLine("riftscan report capability [--truth-readiness reports/generated/truth-readiness.json ...] [--scalar-evidence-set reports/generated/scalar-evidence-set.json ...] [--json-out reports/generated/capability-status.json]");
+
     private static void PrintCompareSessionsUsage() =>
-        Console.WriteLine("riftscan compare sessions <session-a> <session-b> [--top 100] [--out reports/generated/comparison.json] [--report-md reports/generated/comparison.md] [--next-plan reports/generated/next-capture-plan.json]");
+        Console.WriteLine("riftscan compare sessions <session-a> <session-b> [--top 100] [--out reports/generated/comparison.json] [--report-md reports/generated/comparison.md] [--next-plan reports/generated/next-capture-plan.json] [--truth-readiness reports/generated/truth-readiness.json]");
+
+    private static void PrintCompareScalarSetUsage() =>
+        Console.WriteLine("riftscan compare scalar-set <session-a> <session-b> [session-c ...] [--top 100] [--out reports/generated/scalar-evidence-set.json] [--report-md reports/generated/scalar-evidence-set.md] [--truth-out reports/generated/scalar_truth_candidates.jsonl] [--corroboration reports/generated/scalar_truth_corroboration.jsonl]");
+
+    private static void PrintCompareScalarTruthUsage() =>
+        Console.WriteLine("riftscan compare scalar-truth <truth-a.jsonl> <truth-b.jsonl> [truth-c.jsonl ...] [--top 100] [--out reports/generated/scalar-truth-recovery.json]");
 
     private static void PrintMigrateUsage() =>
         Console.WriteLine("riftscan migrate session <session-path> --to-schema riftscan.session.v1 [--dry-run|--apply] [--out sessions/<migrated-id>] [--plan-out reports/generated/migration-plan.json]");
@@ -927,6 +1299,18 @@ public static class Program
 
     private static void PrintVerifySessionUsage() =>
         Console.WriteLine("riftscan verify session <session-path>");
+
+    private static void PrintVerifyScalarCorroborationUsage() =>
+        Console.WriteLine("riftscan verify scalar-corroboration <corroboration.jsonl>");
+
+    private static void PrintVerifyScalarEvidenceSetUsage() =>
+        Console.WriteLine("riftscan verify scalar-evidence-set <scalar-evidence-set.json>");
+
+    private static void PrintVerifyComparisonReadinessUsage() =>
+        Console.WriteLine("riftscan verify comparison-readiness <truth-readiness.json>");
+
+    private static void PrintVerifyCapabilityStatusUsage() =>
+        Console.WriteLine("riftscan verify capability-status <capability-status.json>");
 
     private static bool Is(string actual, string expected) =>
         string.Equals(actual, expected, StringComparison.OrdinalIgnoreCase);

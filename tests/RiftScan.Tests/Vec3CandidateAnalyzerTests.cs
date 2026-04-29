@@ -72,6 +72,32 @@ public sealed class Vec3CandidateAnalyzerTests
         Assert.Contains("move_forward_vec3_changed", candidate.Diagnostics);
     }
 
+    [Fact]
+    public void Analyze_session_does_not_emit_non_finite_delta_magnitude()
+    {
+        using var session = new TempDirectory();
+        _ = new PassiveCaptureService(new NonFiniteSecondVec3ProcessMemoryReader()).Capture(new PassiveCaptureOptions
+        {
+            ProcessName = "fixture_process",
+            OutputPath = session.Path,
+            Samples = 2,
+            IntervalMilliseconds = 0,
+            MaxRegions = 1,
+            MaxBytesPerRegion = 16,
+            MaxTotalBytes = 32,
+            StimulusLabel = "passive_idle"
+        });
+        _ = new FloatTripletStructureAnalyzer().AnalyzeSession(session.Path);
+
+        var candidates = new Vec3CandidateAnalyzer().AnalyzeSession(session.Path);
+
+        var candidate = Assert.Single(candidates, candidate => candidate.OffsetHex == "0x0");
+        Assert.True(double.IsFinite(candidate.ValueDeltaMagnitude));
+        Assert.Equal(0, candidate.ValueDeltaMagnitude);
+        Assert.True(File.Exists(Path.Combine(session.Path, "vec3_candidates.jsonl")));
+    }
+
+
     private static TempDirectory CopyFixtureToTemp()
     {
         var temp = new TempDirectory();
@@ -134,6 +160,36 @@ public sealed class Vec3CandidateAnalyzerTests
         {
             var bytes = new byte[byteCount];
             BitConverter.GetBytes(1.0f + _readCount++).CopyTo(bytes, 0);
+            BitConverter.GetBytes(2.0f).CopyTo(bytes, 4);
+            BitConverter.GetBytes(-3.0f).CopyTo(bytes, 8);
+            return bytes;
+        }
+    }
+
+    private sealed class NonFiniteSecondVec3ProcessMemoryReader : IProcessMemoryReader
+    {
+        private int _readCount;
+
+        public IReadOnlyList<ProcessDescriptor> FindProcessesByName(string processName) =>
+        [
+            new ProcessDescriptor(100, "fixture_process", DateTimeOffset.Parse("2026-04-28T17:00:00Z"), "fixture.exe")
+        ];
+
+        public ProcessDescriptor GetProcessById(int processId) =>
+            new(processId, "fixture_process", DateTimeOffset.Parse("2026-04-28T17:00:00Z"), "fixture.exe");
+
+        public IReadOnlyList<ProcessModuleInfo> GetModules(int processId) => [];
+
+        public IReadOnlyList<VirtualMemoryRegion> EnumerateRegions(int processId) =>
+        [
+            new VirtualMemoryRegion("region-000001", 0x1000, 16, MemoryRegionConstants.MemCommit, MemoryRegionConstants.PageReadWrite, MemoryRegionConstants.MemPrivate)
+        ];
+
+        public byte[] ReadMemory(int processId, ulong baseAddress, int byteCount)
+        {
+            var bytes = new byte[byteCount];
+            var firstComponent = _readCount++ == 0 ? 1.0f : float.PositiveInfinity;
+            BitConverter.GetBytes(firstComponent).CopyTo(bytes, 0);
             BitConverter.GetBytes(2.0f).CopyTo(bytes, 4);
             BitConverter.GetBytes(-3.0f).CopyTo(bytes, 8);
             return bytes;

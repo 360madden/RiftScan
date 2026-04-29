@@ -72,6 +72,7 @@ public sealed class SessionVerifierTests
         Assert.Contains("structures.jsonl", result.ArtifactsVerified);
         Assert.Contains("vec3_candidates.jsonl", result.ArtifactsVerified);
         Assert.Contains("clusters.jsonl", result.ArtifactsVerified);
+        Assert.Contains("entity_layout_candidates.jsonl", result.ArtifactsVerified);
         Assert.Contains("next_capture_plan.json", result.ArtifactsVerified);
         Assert.Contains("report.json", result.ArtifactsVerified);
     }

@@ -40,6 +40,18 @@ public sealed record ValueCandidateComparison
     [JsonPropertyName("session_b_distinct_values")]
     public int SessionBDistinctValues { get; init; }
 
+    [JsonPropertyName("session_a_changed_sample_count")]
+    public int SessionAChangedSampleCount { get; init; }
+
+    [JsonPropertyName("session_b_changed_sample_count")]
+    public int SessionBChangedSampleCount { get; init; }
+
+    [JsonPropertyName("session_a_stimulus_label")]
+    public string SessionAStimulusLabel { get; init; } = string.Empty;
+
+    [JsonPropertyName("session_b_stimulus_label")]
+    public string SessionBStimulusLabel { get; init; } = string.Empty;
+
     [JsonPropertyName("session_a_value_sequence_summary")]
     public string SessionAValueSequenceSummary { get; init; } = string.Empty;
 

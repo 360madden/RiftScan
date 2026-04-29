@@ -2,6 +2,8 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using RiftScan.Analysis.Clusters;
 using RiftScan.Analysis.Deltas;
+using RiftScan.Analysis.Entities;
+using RiftScan.Analysis.Scalars;
 using RiftScan.Analysis.Structures;
 using RiftScan.Analysis.Triage;
 using RiftScan.Analysis.Values;
@@ -111,11 +113,17 @@ internal sealed record SessionReportArtifactCounts
     [JsonPropertyName("typed_value_candidates")]
     public int TypedValueCandidates { get; init; }
 
+    [JsonPropertyName("scalar_candidates")]
+    public int ScalarCandidates { get; init; }
+
     [JsonPropertyName("vec3_candidates")]
     public int Vec3Candidates { get; init; }
 
     [JsonPropertyName("structure_clusters")]
     public int StructureClusters { get; init; }
+
+    [JsonPropertyName("entity_layout_candidates")]
+    public int EntityLayoutCandidates { get; init; }
 
     [JsonPropertyName("structure_candidates")]
     public int StructureCandidates { get; init; }
@@ -191,6 +199,12 @@ public sealed class SessionReportGenerator
             .ThenBy(candidate => candidate.OffsetHex, StringComparer.OrdinalIgnoreCase)
             .Take(top)
             .ToArray();
+        var scalarCandidates = ReadScalarCandidates(fullSessionPath)
+            .OrderByDescending(candidate => candidate.RankScore)
+            .ThenBy(candidate => candidate.RegionId, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(candidate => candidate.OffsetHex, StringComparer.OrdinalIgnoreCase)
+            .Take(top)
+            .ToArray();
         var structureCandidates = ReadStructureCandidates(fullSessionPath)
             .OrderByDescending(candidate => candidate.Score)
             .ThenBy(candidate => candidate.RegionId, StringComparer.OrdinalIgnoreCase)
@@ -209,17 +223,23 @@ public sealed class SessionReportGenerator
             .ThenBy(cluster => cluster.StartOffsetHex, StringComparer.OrdinalIgnoreCase)
             .Take(top)
             .ToArray();
+        var entityLayouts = ReadEntityLayouts(fullSessionPath)
+            .OrderByDescending(candidate => candidate.ScoreTotal)
+            .ThenBy(candidate => candidate.RegionId, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(candidate => candidate.StartOffsetHex, StringComparer.OrdinalIgnoreCase)
+            .Take(top)
+            .ToArray();
 
         var interventionHandoff = ReadOptionalJson<CaptureInterventionHandoffReport>(fullSessionPath, "intervention_handoff.json");
-        var analyzers = BuildAnalyzerInfos(triageEntries, deltaEntries, valueCandidates, vec3Candidates, clusters, structureCandidates);
-        var limitations = BuildLimitations(interventionHandoff, clusters);
-        var nextRecommendedCapture = BuildNextRecommendedCapture(interventionHandoff, clusters);
-        var nextSmallestAction = BuildNextSmallestAction(clusters);
+        var analyzers = BuildAnalyzerInfos(triageEntries, deltaEntries, valueCandidates, scalarCandidates, vec3Candidates, clusters, entityLayouts, structureCandidates);
+        var limitations = BuildLimitations(interventionHandoff, clusters, entityLayouts);
+        var nextRecommendedCapture = BuildNextRecommendedCapture(interventionHandoff, clusters, entityLayouts);
+        var nextSmallestAction = BuildNextSmallestAction(clusters, entityLayouts);
 
         var reportPath = ResolveSessionPath(fullSessionPath, "report.md");
-        File.WriteAllLines(reportPath, BuildReport(manifest, interventionHandoff, analyzers, limitations, nextRecommendedCapture, nextSmallestAction, triageEntries, deltaEntries, valueCandidates, vec3Candidates, clusters, structureCandidates));
+        File.WriteAllLines(reportPath, BuildReport(manifest, interventionHandoff, analyzers, limitations, nextRecommendedCapture, nextSmallestAction, triageEntries, deltaEntries, valueCandidates, scalarCandidates, vec3Candidates, clusters, entityLayouts, structureCandidates));
         var reportJsonPath = ResolveSessionPath(fullSessionPath, "report.json");
-        var machineReport = BuildMachineReport(fullSessionPath, reportPath, top, manifest, interventionHandoff, analyzers, limitations, nextRecommendedCapture, nextSmallestAction, triageEntries, deltaEntries, valueCandidates, vec3Candidates, clusters, structureCandidates);
+        var machineReport = BuildMachineReport(fullSessionPath, reportPath, top, manifest, interventionHandoff, analyzers, limitations, nextRecommendedCapture, nextSmallestAction, triageEntries, deltaEntries, valueCandidates, scalarCandidates, vec3Candidates, clusters, entityLayouts, structureCandidates);
         File.WriteAllText(reportJsonPath, JsonSerializer.Serialize(machineReport, SessionJson.Options));
 
         return new SessionReportResult { Success = true, SessionPath = fullSessionPath, ReportPath = reportPath, ReportJsonPath = reportJsonPath };
@@ -229,8 +249,10 @@ public sealed class SessionReportGenerator
         IReadOnlyList<RegionTriageEntry> triageEntries,
         IReadOnlyList<RegionDeltaEntry> deltaEntries,
         IReadOnlyList<TypedValueCandidate> valueCandidates,
+        IReadOnlyList<ScalarCandidate> scalarCandidates,
         IReadOnlyList<Vec3Candidate> vec3Candidates,
         IReadOnlyList<StructureCluster> clusters,
+        IReadOnlyList<EntityLayoutCandidate> entityLayouts,
         IReadOnlyList<StructureCandidate> structureCandidates) =>
         [
             new()
@@ -256,6 +278,13 @@ public sealed class SessionReportGenerator
             },
             new()
             {
+                AnalyzerId = FirstNonEmpty(scalarCandidates.Select(candidate => candidate.AnalyzerId), "scalar_lane"),
+                AnalyzerVersion = FirstNonEmpty(scalarCandidates.Select(candidate => candidate.AnalyzerVersion), "0.1.0"),
+                ArtifactPath = "scalar_candidates.jsonl",
+                EntryCount = scalarCandidates.Count
+            },
+            new()
+            {
                 AnalyzerId = FirstNonEmpty(vec3Candidates.Select(candidate => candidate.AnalyzerId), "vec3_candidate"),
                 AnalyzerVersion = FirstNonEmpty(vec3Candidates.Select(candidate => candidate.AnalyzerVersion), "0.1.0"),
                 ArtifactPath = "vec3_candidates.jsonl",
@@ -267,6 +296,13 @@ public sealed class SessionReportGenerator
                 AnalyzerVersion = FirstNonEmpty(clusters.Select(cluster => cluster.AnalyzerVersion), "0.1.0"),
                 ArtifactPath = "clusters.jsonl",
                 EntryCount = clusters.Count
+            },
+            new()
+            {
+                AnalyzerId = FirstNonEmpty(entityLayouts.Select(candidate => candidate.AnalyzerId), "entity_layout"),
+                AnalyzerVersion = FirstNonEmpty(entityLayouts.Select(candidate => candidate.AnalyzerVersion), "0.1.0"),
+                ArtifactPath = "entity_layout_candidates.jsonl",
+                EntryCount = entityLayouts.Count
             },
             new()
             {
@@ -282,7 +318,8 @@ public sealed class SessionReportGenerator
 
     private static IReadOnlyList<string> BuildLimitations(
         CaptureInterventionHandoffReport? interventionHandoff,
-        IReadOnlyList<StructureCluster> clusters)
+        IReadOnlyList<StructureCluster> clusters,
+        IReadOnlyList<EntityLayoutCandidate> entityLayouts)
     {
         var limitations = new List<string> { "candidate_evidence_not_truth_claim" };
         if (interventionHandoff is not null)
@@ -295,26 +332,38 @@ public sealed class SessionReportGenerator
             limitations.Add("no_structure_clusters_available_for_player_matching");
         }
 
+        if (entityLayouts.Count == 0)
+        {
+            limitations.Add("no_entity_layout_candidates_available_for_player_matching");
+        }
+
         return limitations;
     }
 
     private static string BuildNextRecommendedCapture(
         CaptureInterventionHandoffReport? interventionHandoff,
-        IReadOnlyList<StructureCluster> clusters)
+        IReadOnlyList<StructureCluster> clusters,
+        IReadOnlyList<EntityLayoutCandidate> entityLayouts)
     {
         if (interventionHandoff is not null)
         {
             return interventionHandoff.RecommendedNextAction;
         }
 
-        return clusters.Count > 0
-            ? "larger_passive_capture_for_cross_session_structure_validation"
+        return entityLayouts.Count > 0
+            ? "labeled_turn_and_camera_capture_against_top_entity_layout_regions"
+            : clusters.Count > 0
+            ? "larger_passive_capture_for_entity_layout_validation"
             : "capture_more_samples_or_wider_regions";
     }
 
-    private static string BuildNextSmallestAction(IReadOnlyList<StructureCluster> clusters) =>
-        clusters.Count > 0
-            ? "Review top structure clusters across a larger passive capture before player-specific matching."
+    private static string BuildNextSmallestAction(
+        IReadOnlyList<StructureCluster> clusters,
+        IReadOnlyList<EntityLayoutCandidate> entityLayouts) =>
+        entityLayouts.Count > 0
+            ? "Use top entity layout candidates as the region budget for labeled turn/camera captures before player-specific matching."
+            : clusters.Count > 0
+            ? "Promote top structure clusters into entity-layout follow-up before player-specific matching."
             : "Capture more samples or wider regions before making layout claims.";
 
     private static SessionMachineReport BuildMachineReport(
@@ -330,8 +379,10 @@ public sealed class SessionReportGenerator
         IReadOnlyList<RegionTriageEntry> triageEntries,
         IReadOnlyList<RegionDeltaEntry> deltaEntries,
         IReadOnlyList<TypedValueCandidate> valueCandidates,
+        IReadOnlyList<ScalarCandidate> scalarCandidates,
         IReadOnlyList<Vec3Candidate> vec3Candidates,
         IReadOnlyList<StructureCluster> clusters,
+        IReadOnlyList<EntityLayoutCandidate> entityLayouts,
         IReadOnlyList<StructureCandidate> structureCandidates) =>
         new()
         {
@@ -351,8 +402,10 @@ public sealed class SessionReportGenerator
                 TriageEntries = triageEntries.Count,
                 DeltaEntries = deltaEntries.Count,
                 TypedValueCandidates = valueCandidates.Count,
+                ScalarCandidates = scalarCandidates.Count,
                 Vec3Candidates = vec3Candidates.Count,
                 StructureClusters = clusters.Count,
+                EntityLayoutCandidates = entityLayouts.Count,
                 StructureCandidates = structureCandidates.Count
             },
             Analyzers = analyzers,
@@ -372,8 +425,10 @@ public sealed class SessionReportGenerator
         IReadOnlyList<RegionTriageEntry> triageEntries,
         IReadOnlyList<RegionDeltaEntry> deltaEntries,
         IReadOnlyList<TypedValueCandidate> valueCandidates,
+        IReadOnlyList<ScalarCandidate> scalarCandidates,
         IReadOnlyList<Vec3Candidate> vec3Candidates,
         IReadOnlyList<StructureCluster> clusters,
+        IReadOnlyList<EntityLayoutCandidate> entityLayouts,
         IReadOnlyList<StructureCandidate> structureCandidates)
     {
         yield return $"# RiftScan Session Report - {manifest.SessionId}";
@@ -478,6 +533,25 @@ public sealed class SessionReportGenerator
         }
 
         yield return string.Empty;
+        yield return "## Scalar lanes";
+        yield return string.Empty;
+        yield return "| Rank | Candidate | Region | Offset | Type | Family | Bucket | Score | Changed pairs | Delta | Circular delta | Signed circular delta | Direction | Stimulus | Preview | Recommendation |";
+        yield return "|---:|---|---|---:|---|---|---|---:|---:|---:|---:|---:|---|---|---|---|";
+
+        var scalarRank = 1;
+        foreach (var candidate in scalarCandidates)
+        {
+            var stimulus = string.IsNullOrWhiteSpace(candidate.StimulusLabel) ? "-" : candidate.StimulusLabel;
+            yield return $"| {scalarRank} | `{candidate.CandidateId}` | `{candidate.RegionId}` | `{candidate.OffsetHex}` | `{candidate.DataType}` | `{candidate.ValueFamily}` | `{candidate.RetentionBucket}` | {candidate.RankScore:F3} | {candidate.ChangedSampleCount} | {candidate.ValueDeltaMagnitude:F6} | {candidate.CircularDeltaMagnitude:F6} | {candidate.SignedCircularDelta:F6} | `{candidate.DominantDirection}` | `{stimulus}` | `{string.Join(", ", candidate.ValuePreview.Take(4))}` | `{candidate.Recommendation}` |";
+            scalarRank++;
+        }
+
+        if (scalarCandidates.Count == 0)
+        {
+            yield return "| 0 | none | - | - | - | - | - | 0 | 0 | 0 | 0 | 0 | - | - | - | - |";
+        }
+
+        yield return string.Empty;
         yield return "## Vec3 candidates";
         yield return string.Empty;
         yield return "| Rank | Candidate | Region | Offset | Score | Behavior | Stimulus | Support | Preview | Recommendation |";
@@ -512,6 +586,24 @@ public sealed class SessionReportGenerator
         if (clusters.Count == 0)
         {
             yield return "| 0 | none | - | - | 0 | 0 | - |";
+        }
+
+        yield return string.Empty;
+        yield return "## Entity layout candidates";
+        yield return string.Empty;
+        yield return "| Rank | Candidate | Region | Span | Kind | Stride | Clusters | Vec3 | Scalars | Score | Recommendation |";
+        yield return "|---:|---|---|---:|---|---:|---:|---:|---:|---:|---|";
+
+        var entityLayoutRank = 1;
+        foreach (var candidate in entityLayouts)
+        {
+            yield return $"| {entityLayoutRank} | `{candidate.CandidateId}` | `{candidate.RegionId}` | `{candidate.StartOffsetHex}-{candidate.EndOffsetHex}` | `{candidate.LayoutKind}` | {candidate.StrideBytes} | {candidate.ClusterCount} | {candidate.Vec3CandidateCount} | {candidate.ScalarCandidateCount} | {candidate.ScoreTotal:F3} | `{candidate.Recommendation}` |";
+            entityLayoutRank++;
+        }
+
+        if (entityLayouts.Count == 0)
+        {
+            yield return "| 0 | none | - | - | - | 0 | 0 | 0 | 0 | 0 | - |";
         }
 
         yield return string.Empty;
@@ -602,6 +694,20 @@ public sealed class SessionReportGenerator
             .ToArray();
     }
 
+    private static IReadOnlyList<ScalarCandidate> ReadScalarCandidates(string sessionPath)
+    {
+        var path = ResolveSessionPath(sessionPath, "scalar_candidates.jsonl");
+        if (!File.Exists(path))
+        {
+            _ = new ScalarLaneAnalyzer().AnalyzeSession(sessionPath);
+        }
+
+        return File.ReadLines(path)
+            .Where(line => !string.IsNullOrWhiteSpace(line))
+            .Select(line => JsonSerializer.Deserialize<ScalarCandidate>(line, SessionJson.Options) ?? throw new InvalidOperationException("Invalid scalar candidate."))
+            .ToArray();
+    }
+
     private static IReadOnlyList<StructureCandidate> ReadStructureCandidates(string sessionPath)
     {
         var path = ResolveSessionPath(sessionPath, "structures.jsonl");
@@ -641,6 +747,20 @@ public sealed class SessionReportGenerator
         return File.ReadLines(path)
             .Where(line => !string.IsNullOrWhiteSpace(line))
             .Select(line => JsonSerializer.Deserialize<StructureCluster>(line, SessionJson.Options) ?? throw new InvalidOperationException("Invalid structure cluster."))
+            .ToArray();
+    }
+
+    private static IReadOnlyList<EntityLayoutCandidate> ReadEntityLayouts(string sessionPath)
+    {
+        var path = ResolveSessionPath(sessionPath, "entity_layout_candidates.jsonl");
+        if (!File.Exists(path))
+        {
+            _ = new EntityLayoutAnalyzer().AnalyzeSession(sessionPath);
+        }
+
+        return File.ReadLines(path)
+            .Where(line => !string.IsNullOrWhiteSpace(line))
+            .Select(line => JsonSerializer.Deserialize<EntityLayoutCandidate>(line, SessionJson.Options) ?? throw new InvalidOperationException("Invalid entity layout candidate."))
             .ToArray();
     }
 

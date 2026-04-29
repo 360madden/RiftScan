@@ -32,8 +32,9 @@ public sealed class PassiveCaptureService(IProcessMemoryReader processMemoryRead
         var process = ResolveProcess(options);
         var modules = processMemoryReader.GetModules(process.ProcessId);
         var candidateRegions = ResolveCandidateRegions(process.ProcessId, options);
+        var candidateWindows = ResolveCandidateWindows(candidateRegions, options);
 
-        if (candidateRegions.Length == 0)
+        if (candidateWindows.Count == 0)
         {
             throw new InvalidOperationException("No readable committed memory regions matched the passive capture filter or requested region IDs/base addresses.");
         }
@@ -61,7 +62,7 @@ public sealed class PassiveCaptureService(IProcessMemoryReader processMemoryRead
             var capturedThisSample = false;
             var failedReadsThisSample = new List<CaptureInterventionRegionReadFailure>();
 
-            foreach (var region in candidateRegions)
+            foreach (var window in candidateWindows)
             {
                 if (totalBytes >= options.MaxTotalBytes)
                 {
@@ -71,7 +72,7 @@ public sealed class PassiveCaptureService(IProcessMemoryReader processMemoryRead
                 var remainingBudget = options.MaxTotalBytes - totalBytes;
                 var bytesToRead = (int)Math.Min(
                     (ulong)Math.Min(options.MaxBytesPerRegion, int.MaxValue),
-                    Math.Min(region.SizeBytes, (ulong)remainingBudget));
+                    Math.Min(window.SizeBytes, (ulong)remainingBudget));
                 if (bytesToRead <= 0)
                 {
                     continue;
@@ -80,24 +81,24 @@ public sealed class PassiveCaptureService(IProcessMemoryReader processMemoryRead
                 byte[] bytes;
                 try
                 {
-                    bytes = processMemoryReader.ReadMemory(restoredProcess.ProcessId, region.BaseAddress, bytesToRead);
+                    bytes = processMemoryReader.ReadMemory(restoredProcess.ProcessId, window.BaseAddress, bytesToRead);
                 }
                 catch (InvalidOperationException ex)
                 {
-                    failedReadsThisSample.Add(ToRegionReadFailure(region, bytesToRead, ex.Message));
+                    failedReadsThisSample.Add(ToRegionReadFailure(window, bytesToRead, ex.Message));
                     continue;
                 }
 
                 if (bytes.Length == 0)
                 {
-                    failedReadsThisSample.Add(ToRegionReadFailure(region, bytesToRead, "zero_bytes_read"));
+                    failedReadsThisSample.Add(ToRegionReadFailure(window, bytesToRead, "zero_bytes_read"));
                     continue;
                 }
 
-                var regionId = capturedRegions.TryGetValue(region.RegionId, out var existingRegion)
+                var regionId = capturedRegions.TryGetValue(window.RegionId, out var existingRegion)
                     ? existingRegion.RegionId
-                    : region.RegionId;
-                capturedRegions.TryAdd(regionId, ToSessionRegion(region, regionId));
+                    : window.RegionId;
+                capturedRegions.TryAdd(regionId, ToSessionRegion(window));
 
                 var snapshotId = $"snapshot-{snapshotEntries.Count + 1:000000}";
                 var snapshotRelativePath = $"snapshots/{regionId}-sample-{sample:000000}.bin";
@@ -109,7 +110,7 @@ public sealed class PassiveCaptureService(IProcessMemoryReader processMemoryRead
                     SnapshotId = snapshotId,
                     RegionId = regionId,
                     Path = snapshotRelativePath,
-                    BaseAddressHex = region.BaseAddressHex,
+                    BaseAddressHex = window.BaseAddressHex,
                     SizeBytes = bytes.Length,
                     ChecksumSha256Hex = SessionChecksum.ComputeSha256Hex(snapshotPath)
                 });
@@ -127,6 +128,7 @@ public sealed class PassiveCaptureService(IProcessMemoryReader processMemoryRead
                         resumedProcess.StartTimeUtc != restoredProcess.StartTimeUtc;
                     restoredProcess = resumedProcess;
                     candidateRegions = ResolveCandidateRegions(restoredProcess.ProcessId, options);
+                    candidateWindows = ResolveCandidateWindows(candidateRegions, options);
                     modules = processMemoryReader.GetModules(restoredProcess.ProcessId);
                     if (currentProcessChanged)
                     {
@@ -151,6 +153,7 @@ public sealed class PassiveCaptureService(IProcessMemoryReader processMemoryRead
                     resumedProcess.StartTimeUtc != restoredProcess.StartTimeUtc;
                 restoredProcess = resumedProcess;
                 candidateRegions = ResolveCandidateRegions(restoredProcess.ProcessId, options);
+                candidateWindows = ResolveCandidateWindows(candidateRegions, options);
                 modules = processMemoryReader.GetModules(restoredProcess.ProcessId);
                 if (processChanged)
                 {
@@ -369,7 +372,7 @@ public sealed class PassiveCaptureService(IProcessMemoryReader processMemoryRead
         {
             candidateRegionsQuery = candidateRegionsQuery.Where(region =>
                 options.RegionIds.Contains(region.RegionId) ||
-                options.BaseAddresses.Contains(region.BaseAddress));
+                ContainsRequestedBaseAddress(region, options.BaseAddresses));
 
             return candidateRegionsQuery
                 .OrderBy(region => region.BaseAddress)
@@ -417,6 +420,7 @@ public sealed class PassiveCaptureService(IProcessMemoryReader processMemoryRead
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(options.MaxRegions);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(options.MaxBytesPerRegion);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(options.MaxTotalBytes);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(options.WindowsPerRegion);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(options.InterventionWaitMilliseconds);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(options.InterventionPollIntervalMilliseconds);
         if (!string.IsNullOrWhiteSpace(options.StimulusLabel) && !ValidStimulusLabels.Contains(options.StimulusLabel))
@@ -435,22 +439,155 @@ public sealed class PassiveCaptureService(IProcessMemoryReader processMemoryRead
         Directory.CreateDirectory(sessionPath);
     }
 
-    private static MemoryRegion ToSessionRegion(VirtualMemoryRegion region, string regionId) =>
+    private static IReadOnlyList<CaptureReadWindow> ResolveCandidateWindows(
+        IReadOnlyList<VirtualMemoryRegion> regions,
+        PassiveCaptureOptions options) =>
+        regions
+            .SelectMany(region => ResolveWindowOffsets(region, options)
+                .Select(offset => ToCaptureReadWindow(region, offset, options)))
+            .Where(window => window.SizeBytes > 0)
+            .ToArray();
+
+    private static IEnumerable<ulong> ResolveWindowOffsets(VirtualMemoryRegion region, PassiveCaptureOptions options)
+    {
+        if (options.WindowOffsets.Count > 0)
+        {
+            return options.WindowOffsets
+                .Where(offset => offset < region.SizeBytes)
+                .Distinct()
+                .Order();
+        }
+
+        var requestedContainedOffsets = options.BaseAddresses
+            .Where(baseAddress => ContainsAddress(region, baseAddress))
+            .Select(baseAddress => baseAddress - region.BaseAddress)
+            .Distinct()
+            .Order()
+            .ToArray();
+        if (requestedContainedOffsets.Length > 0)
+        {
+            return ResolveRequestedAddressWindowOffsets(region, options, requestedContainedOffsets);
+        }
+
+        if (options.WindowsPerRegion <= 1)
+        {
+            return [0UL];
+        }
+
+        var (readCap, maxStartOffset) = CalculateReadWindowBounds(region, options);
+        if (maxStartOffset == 0)
+        {
+            return [0UL];
+        }
+
+        return Enumerable.Range(0, options.WindowsPerRegion)
+            .Select(index => (ulong)Math.Round(maxStartOffset * (decimal)index / (options.WindowsPerRegion - 1), MidpointRounding.AwayFromZero))
+            .Distinct()
+            .Order();
+    }
+
+    private static IEnumerable<ulong> ResolveRequestedAddressWindowOffsets(
+        VirtualMemoryRegion region,
+        PassiveCaptureOptions options,
+        IReadOnlyList<ulong> requestedOffsets)
+    {
+        if (options.WindowsPerRegion <= 1)
+        {
+            return requestedOffsets;
+        }
+
+        var (readCap, maxStartOffset) = CalculateReadWindowBounds(region, options);
+        return requestedOffsets
+            .SelectMany(offset => BuildRequestedAddressWindowFanout(offset, readCap, maxStartOffset, options.WindowsPerRegion))
+            .Distinct()
+            .Order();
+    }
+
+    private static IEnumerable<ulong> BuildRequestedAddressWindowFanout(
+        ulong requestedOffset,
+        ulong readCap,
+        ulong maxStartOffset,
+        int windowsPerRegion)
+    {
+        if (maxStartOffset == 0)
+        {
+            yield return 0UL;
+            yield break;
+        }
+
+        var firstOffset = Math.Min(requestedOffset, maxStartOffset);
+        var requestedSpanBytes = checked(readCap * (ulong)(windowsPerRegion - 1));
+        if (requestedSpanBytes > 0 && firstOffset + requestedSpanBytes > maxStartOffset)
+        {
+            firstOffset = requestedSpanBytes >= maxStartOffset
+                ? 0UL
+                : maxStartOffset - requestedSpanBytes;
+        }
+
+        for (var index = 0; index < windowsPerRegion; index++)
+        {
+            var offset = checked(firstOffset + readCap * (ulong)index);
+            yield return Math.Min(offset, maxStartOffset);
+        }
+    }
+
+    private static (ulong ReadCap, ulong MaxStartOffset) CalculateReadWindowBounds(
+        VirtualMemoryRegion region,
+        PassiveCaptureOptions options)
+    {
+        var readCap = Math.Min(region.SizeBytes, (ulong)options.MaxBytesPerRegion);
+        var maxStartOffset = region.SizeBytes > readCap
+            ? region.SizeBytes - readCap
+            : 0UL;
+        return (readCap, maxStartOffset);
+    }
+
+    private static bool ContainsRequestedBaseAddress(VirtualMemoryRegion region, IReadOnlySet<ulong> baseAddresses) =>
+        baseAddresses.Any(baseAddress => ContainsAddress(region, baseAddress));
+
+    private static bool ContainsAddress(VirtualMemoryRegion region, ulong address)
+    {
+        var regionEndExclusive = region.BaseAddress + region.SizeBytes;
+        if (regionEndExclusive < region.BaseAddress)
+        {
+            return address >= region.BaseAddress;
+        }
+
+        return address >= region.BaseAddress && address < regionEndExclusive;
+    }
+
+    private static CaptureReadWindow ToCaptureReadWindow(VirtualMemoryRegion region, ulong offsetBytes, PassiveCaptureOptions options)
+    {
+        var isSinglePrefixRead = offsetBytes == 0 &&
+            options.WindowOffsets.Count == 0 &&
+            options.WindowsPerRegion == 1;
+        var regionId = isSinglePrefixRead
+            ? region.RegionId
+            : $"{region.RegionId}-window-{offsetBytes:X16}";
+
+        return new CaptureReadWindow(
+            region,
+            regionId,
+            checked(region.BaseAddress + offsetBytes),
+            region.SizeBytes - offsetBytes);
+    }
+
+    private static MemoryRegion ToSessionRegion(CaptureReadWindow window) =>
         new()
         {
-            RegionId = regionId,
-            BaseAddressHex = region.BaseAddressHex,
-            SizeBytes = checked((long)Math.Min(region.SizeBytes, long.MaxValue)),
-            Protection = region.ProtectName,
-            State = region.StateName,
-            Type = region.TypeName
+            RegionId = window.RegionId,
+            BaseAddressHex = window.BaseAddressHex,
+            SizeBytes = checked((long)Math.Min(window.SizeBytes, long.MaxValue)),
+            Protection = window.SourceRegion.ProtectName,
+            State = window.SourceRegion.StateName,
+            Type = window.SourceRegion.TypeName
         };
 
-    private static CaptureInterventionRegionReadFailure ToRegionReadFailure(VirtualMemoryRegion region, int requestedBytes, string reason) =>
+    private static CaptureInterventionRegionReadFailure ToRegionReadFailure(CaptureReadWindow window, int requestedBytes, string reason) =>
         new()
         {
-            RegionId = region.RegionId,
-            BaseAddressHex = region.BaseAddressHex,
+            RegionId = window.RegionId,
+            BaseAddressHex = window.BaseAddressHex,
             RequestedBytes = requestedBytes,
             Reason = reason
         };
@@ -594,4 +731,13 @@ public sealed class PassiveCaptureService(IProcessMemoryReader processMemoryRead
 
     private static string ResolveSessionPath(string sessionPath, string relativePath) =>
         Path.GetFullPath(Path.Combine(sessionPath, relativePath.Replace('/', Path.DirectorySeparatorChar)));
+
+    private sealed record CaptureReadWindow(
+        VirtualMemoryRegion SourceRegion,
+        string RegionId,
+        ulong BaseAddress,
+        ulong SizeBytes)
+    {
+        public string BaseAddressHex => $"0x{BaseAddress:X}";
+    }
 }

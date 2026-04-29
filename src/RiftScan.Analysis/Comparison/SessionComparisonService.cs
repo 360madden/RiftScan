@@ -1,5 +1,7 @@
 using System.Text.Json;
 using RiftScan.Analysis.Clusters;
+using RiftScan.Analysis.Entities;
+using RiftScan.Analysis.Scalars;
 using RiftScan.Analysis.Structures;
 using RiftScan.Analysis.Triage;
 using RiftScan.Analysis.Values;
@@ -25,11 +27,16 @@ public sealed class SessionComparisonService
         var manifestB = ReadJson<SessionManifest>(fullBPath, "manifest.json");
         var regionMatches = CompareRegions(ReadTriage(fullAPath), ReadTriage(fullBPath), top);
         var clusterMatches = CompareClusters(ReadClusters(fullAPath), ReadClusters(fullBPath), top);
+        var entityLayoutMatches = CompareEntityLayouts(ReadEntityLayouts(fullAPath), ReadEntityLayouts(fullBPath), top);
         var structureCandidateMatches = CompareStructureCandidates(ReadStructureCandidates(fullAPath), ReadStructureCandidates(fullBPath), top);
         var vec3CandidateMatches = CompareVec3Candidates(ReadVec3Candidates(fullAPath), ReadVec3Candidates(fullBPath), top);
         var vec3BehaviorSummary = BuildVec3BehaviorSummary(vec3CandidateMatches);
-        var valueCandidateMatches = CompareValueCandidates(ReadValueCandidates(fullAPath), ReadValueCandidates(fullBPath), top);
-        var warnings = BuildWarnings(manifestA, manifestB, regionMatches, clusterMatches, structureCandidateMatches, vec3CandidateMatches, valueCandidateMatches);
+        var stimulusLabelA = ReadStimulusLabel(fullAPath);
+        var stimulusLabelB = ReadStimulusLabel(fullBPath);
+        var valueCandidateMatches = CompareValueCandidates(ReadValueCandidates(fullAPath), ReadValueCandidates(fullBPath), stimulusLabelA, stimulusLabelB, top);
+        var scalarCandidateMatches = CompareScalarCandidates(ReadScalarCandidates(fullAPath), ReadScalarCandidates(fullBPath), stimulusLabelA, stimulusLabelB, top);
+        var scalarBehaviorSummary = BuildScalarBehaviorSummary(valueCandidateMatches, scalarCandidateMatches);
+        var warnings = BuildWarnings(manifestA, manifestB, regionMatches, clusterMatches, entityLayoutMatches, structureCandidateMatches, vec3CandidateMatches, valueCandidateMatches);
 
         return new SessionComparisonResult
         {
@@ -41,15 +48,18 @@ public sealed class SessionComparisonService
             SameProcessName = string.Equals(manifestA.ProcessName, manifestB.ProcessName, StringComparison.OrdinalIgnoreCase),
             MatchingRegionCount = regionMatches.Count,
             MatchingClusterCount = clusterMatches.Count,
+            MatchingEntityLayoutCount = entityLayoutMatches.Count,
             MatchingStructureCandidateCount = structureCandidateMatches.Count,
             MatchingVec3CandidateCount = vec3CandidateMatches.Count,
             MatchingValueCandidateCount = valueCandidateMatches.Count,
             RegionMatches = regionMatches,
             ClusterMatches = clusterMatches,
+            EntityLayoutMatches = entityLayoutMatches,
             StructureCandidateMatches = structureCandidateMatches,
             Vec3CandidateMatches = vec3CandidateMatches,
             Vec3BehaviorSummary = vec3BehaviorSummary,
             ValueCandidateMatches = valueCandidateMatches,
+            ScalarBehaviorSummary = scalarBehaviorSummary,
             Warnings = warnings
         };
     }
@@ -65,9 +75,11 @@ public sealed class SessionComparisonService
 
         if (!File.Exists(ResolveSessionPath(sessionPath, "triage.jsonl")) ||
             !File.Exists(ResolveSessionPath(sessionPath, "clusters.jsonl")) ||
+            !File.Exists(ResolveSessionPath(sessionPath, "entity_layout_candidates.jsonl")) ||
             !File.Exists(ResolveSessionPath(sessionPath, "structures.jsonl")) ||
             !File.Exists(ResolveSessionPath(sessionPath, "vec3_candidates.jsonl")) ||
-            !File.Exists(ResolveSessionPath(sessionPath, "typed_value_candidates.jsonl")))
+            !File.Exists(ResolveSessionPath(sessionPath, "typed_value_candidates.jsonl")) ||
+            !File.Exists(ResolveSessionPath(sessionPath, "scalar_candidates.jsonl")))
         {
             _ = new DynamicRegionTriageAnalyzer().AnalyzeSession(sessionPath, top);
         }
@@ -154,6 +166,82 @@ public sealed class SessionComparisonService
                 ? "stable_overlapping_layout_cluster_candidate"
                 : "overlapping_cluster_needs_more_evidence"
         };
+    }
+
+    private static IReadOnlyList<EntityLayoutComparison> CompareEntityLayouts(
+        IReadOnlyList<EntityLayoutCandidate> a,
+        IReadOnlyList<EntityLayoutCandidate> b,
+        int top)
+    {
+        var bByBase = b
+            .GroupBy(candidate => candidate.BaseAddressHex, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(group => group.Key, group => group.ToArray(), StringComparer.OrdinalIgnoreCase);
+
+        return a
+            .Where(candidate => bByBase.ContainsKey(candidate.BaseAddressHex))
+            .SelectMany(candidate => bByBase[candidate.BaseAddressHex]
+                .Where(other => string.Equals(candidate.LayoutKind, other.LayoutKind, StringComparison.OrdinalIgnoreCase))
+                .Where(other => candidate.StrideBytes == other.StrideBytes || candidate.StrideBytes == 0 || other.StrideBytes == 0)
+                .Select(other => BuildEntityLayoutComparison(candidate, other))
+                .Where(match => match.OverlapBytes > 0))
+            .OrderByDescending(match => Math.Min(match.SessionAScore, match.SessionBScore))
+            .ThenByDescending(match => match.OverlapBytes)
+            .ThenByDescending(match => Math.Min(match.SessionAVec3CandidateCount, match.SessionBVec3CandidateCount))
+            .ThenBy(match => match.BaseAddressHex, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(match => match.StartOffsetHex, StringComparer.OrdinalIgnoreCase)
+            .Take(top)
+            .ToArray();
+    }
+
+    private static EntityLayoutComparison BuildEntityLayoutComparison(EntityLayoutCandidate a, EntityLayoutCandidate b)
+    {
+        var start = Math.Max(ParseHex(a.StartOffsetHex), ParseHex(b.StartOffsetHex));
+        var end = Math.Min(ParseHex(a.EndOffsetHex), ParseHex(b.EndOffsetHex));
+        var overlapBytes = Math.Max(0, end - start);
+        var strideBytes = a.StrideBytes == b.StrideBytes ? a.StrideBytes : Math.Max(a.StrideBytes, b.StrideBytes);
+
+        return new EntityLayoutComparison
+        {
+            BaseAddressHex = a.BaseAddressHex,
+            StartOffsetHex = $"0x{start:X}",
+            EndOffsetHex = $"0x{end:X}",
+            LayoutKind = a.LayoutKind,
+            StrideBytes = strideBytes,
+            SessionACandidateId = a.CandidateId,
+            SessionBCandidateId = b.CandidateId,
+            SessionARegionId = a.RegionId,
+            SessionBRegionId = b.RegionId,
+            SessionAScore = a.ScoreTotal,
+            SessionBScore = b.ScoreTotal,
+            ScoreDelta = Math.Round(b.ScoreTotal - a.ScoreTotal, 3),
+            SessionAClusterCount = a.ClusterCount,
+            SessionBClusterCount = b.ClusterCount,
+            SessionAVec3CandidateCount = a.Vec3CandidateCount,
+            SessionBVec3CandidateCount = b.Vec3CandidateCount,
+            OverlapBytes = overlapBytes,
+            Recommendation = RecommendEntityLayout(a, b, overlapBytes)
+        };
+    }
+
+    private static string RecommendEntityLayout(EntityLayoutCandidate a, EntityLayoutCandidate b, int overlapBytes)
+    {
+        if (overlapBytes >= 64 &&
+            a.ScoreTotal >= 75 &&
+            b.ScoreTotal >= 75 &&
+            a.Vec3CandidateCount > 0 &&
+            b.Vec3CandidateCount > 0)
+        {
+            return "stable_entity_layout_candidate_across_sessions";
+        }
+
+        if (overlapBytes > 0 &&
+            a.ClusterCount > 0 &&
+            b.ClusterCount > 0)
+        {
+            return "overlapping_entity_layout_needs_cross_session_support";
+        }
+
+        return "entity_layout_match_needs_more_evidence";
     }
 
     private static IReadOnlyList<StructureCandidateComparison> CompareStructureCandidates(
@@ -308,6 +396,13 @@ public sealed class SessionComparisonService
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .Order(StringComparer.OrdinalIgnoreCase)
             .ToArray();
+        var contrastCandidates = matches
+            .Where(match => match.Recommendation.Contains("behavior_contrast", StringComparison.OrdinalIgnoreCase))
+            .OrderByDescending(match => Math.Max(match.SessionAValueDeltaMagnitude, match.SessionBValueDeltaMagnitude))
+            .ThenBy(match => match.BaseAddressHex, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(match => match.OffsetHex, StringComparer.OrdinalIgnoreCase)
+            .Select(ToBehaviorContrastCandidate)
+            .ToArray();
 
         return new Vec3BehaviorSummary
         {
@@ -316,9 +411,38 @@ public sealed class SessionComparisonService
             BehaviorConsistentMatchCount = behaviorConsistentMatchCount,
             UnlabeledMatchCount = unlabeledMatchCount,
             StimulusLabels = labels,
+            BehaviorContrastCandidates = contrastCandidates,
             NextRecommendedAction = RecommendNextBehaviorAction(matches.Count, behaviorContrastCount, behaviorConsistentMatchCount, unlabeledMatchCount)
         };
     }
+
+    private static Vec3BehaviorContrastCandidate ToBehaviorContrastCandidate(Vec3CandidateComparison match)
+    {
+        var heuristic = Vec3BehaviorHeuristicEngine.Score(match);
+        return new Vec3BehaviorContrastCandidate
+        {
+            Classification = heuristic.Classification,
+            BaseAddressHex = match.BaseAddressHex,
+            OffsetHex = match.OffsetHex,
+            DataType = match.DataType,
+            SessionACandidateId = match.SessionACandidateId,
+            SessionBCandidateId = match.SessionBCandidateId,
+            SessionAStimulusLabel = match.SessionAStimulusLabel,
+            SessionBStimulusLabel = match.SessionBStimulusLabel,
+            SessionAValueDeltaMagnitude = match.SessionAValueDeltaMagnitude,
+            SessionBValueDeltaMagnitude = match.SessionBValueDeltaMagnitude,
+            ScoreTotal = heuristic.ScoreTotal,
+            ScoreBreakdown = heuristic.ScoreBreakdown,
+            ConfidenceLevel = heuristic.ConfidenceLevel,
+            SupportingReasons = heuristic.SupportingReasons,
+            RejectionReasons = heuristic.RejectionReasons,
+            EvidenceSummary = $"{FormatLabel(match.SessionAStimulusLabel)}_delta={match.SessionAValueDeltaMagnitude:F6};{FormatLabel(match.SessionBStimulusLabel)}_delta={match.SessionBValueDeltaMagnitude:F6}",
+            NextValidationStep = heuristic.NextValidationStep
+        };
+    }
+
+    private static string FormatLabel(string label) =>
+        string.IsNullOrWhiteSpace(label) ? "unlabeled" : label;
 
     private static string RecommendNextBehaviorAction(
         int matchCount,
@@ -352,6 +476,8 @@ public sealed class SessionComparisonService
     private static IReadOnlyList<ValueCandidateComparison> CompareValueCandidates(
         IReadOnlyList<TypedValueCandidate> a,
         IReadOnlyList<TypedValueCandidate> b,
+        string stimulusLabelA,
+        string stimulusLabelB,
         int top)
     {
         var bByKey = b
@@ -360,7 +486,7 @@ public sealed class SessionComparisonService
 
         return a
             .Where(candidate => bByKey.ContainsKey(ValueCandidateKey(candidate)))
-            .Select(candidate => BuildValueCandidateComparison(candidate, bByKey[ValueCandidateKey(candidate)]))
+            .Select(candidate => BuildValueCandidateComparison(candidate, bByKey[ValueCandidateKey(candidate)], stimulusLabelA, stimulusLabelB))
             .OrderByDescending(match => Math.Min(match.SessionARankScore, match.SessionBRankScore))
             .ThenBy(match => match.BaseAddressHex, StringComparer.OrdinalIgnoreCase)
             .ThenBy(match => match.OffsetHex, StringComparer.OrdinalIgnoreCase)
@@ -369,7 +495,7 @@ public sealed class SessionComparisonService
             .ToArray();
     }
 
-    private static ValueCandidateComparison BuildValueCandidateComparison(TypedValueCandidate a, TypedValueCandidate b) =>
+    private static ValueCandidateComparison BuildValueCandidateComparison(TypedValueCandidate a, TypedValueCandidate b, string stimulusLabelA, string stimulusLabelB) =>
         new()
         {
             BaseAddressHex = a.BaseAddressHex,
@@ -384,6 +510,10 @@ public sealed class SessionComparisonService
             ScoreDelta = Math.Round(b.RankScore - a.RankScore, 3),
             SessionADistinctValues = a.DistinctValueCount,
             SessionBDistinctValues = b.DistinctValueCount,
+            SessionAChangedSampleCount = a.ChangedSampleCount,
+            SessionBChangedSampleCount = b.ChangedSampleCount,
+            SessionAStimulusLabel = stimulusLabelA,
+            SessionBStimulusLabel = stimulusLabelB,
             SessionAValueSequenceSummary = a.ValueSequenceSummary,
             SessionBValueSequenceSummary = b.ValueSequenceSummary,
             SessionAAnalyzerSources = a.AnalyzerSources,
@@ -391,8 +521,271 @@ public sealed class SessionComparisonService
             Recommendation = RecommendValueCandidate(a, b)
         };
 
+    private static IReadOnlyList<ScalarCandidateComparison> CompareScalarCandidates(
+        IReadOnlyList<ScalarCandidate> a,
+        IReadOnlyList<ScalarCandidate> b,
+        string stimulusLabelA,
+        string stimulusLabelB,
+        int top)
+    {
+        var bByKey = b
+            .GroupBy(ScalarCandidateKey, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(group => group.Key, group => group.OrderByDescending(candidate => candidate.RankScore).First(), StringComparer.OrdinalIgnoreCase);
+
+        return a
+            .Where(candidate => bByKey.ContainsKey(ScalarCandidateKey(candidate)))
+            .Select(candidate => BuildScalarCandidateComparison(candidate, bByKey[ScalarCandidateKey(candidate)], stimulusLabelA, stimulusLabelB))
+            .OrderByDescending(match => Math.Min(match.SessionARankScore, match.SessionBRankScore))
+            .ThenBy(match => match.BaseAddressHex, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(match => match.OffsetHex, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(match => match.DataType, StringComparer.OrdinalIgnoreCase)
+            .Take(top)
+            .ToArray();
+    }
+
+    private static ScalarCandidateComparison BuildScalarCandidateComparison(ScalarCandidate a, ScalarCandidate b, string stimulusLabelA, string stimulusLabelB) =>
+        new()
+        {
+            BaseAddressHex = a.BaseAddressHex,
+            OffsetHex = a.OffsetHex,
+            DataType = a.DataType,
+            SessionACandidateId = a.CandidateId,
+            SessionBCandidateId = b.CandidateId,
+            SessionARegionId = a.RegionId,
+            SessionBRegionId = b.RegionId,
+            SessionARankScore = a.RankScore,
+            SessionBRankScore = b.RankScore,
+            SessionAChangedSampleCount = a.ChangedSampleCount,
+            SessionBChangedSampleCount = b.ChangedSampleCount,
+            SessionAValueDeltaMagnitude = a.ValueDeltaMagnitude,
+            SessionBValueDeltaMagnitude = b.ValueDeltaMagnitude,
+            SessionACircularDeltaMagnitude = a.CircularDeltaMagnitude,
+            SessionBCircularDeltaMagnitude = b.CircularDeltaMagnitude,
+            SessionASignedCircularDelta = a.SignedCircularDelta,
+            SessionBSignedCircularDelta = b.SignedCircularDelta,
+            SessionADominantDirection = a.DominantDirection,
+            SessionBDominantDirection = b.DominantDirection,
+            TurnPolarityRelationship = TurnPolarityRelationship(a, b, stimulusLabelA, stimulusLabelB),
+            CameraTurnSeparationRelationship = CameraTurnSeparationRelationship(a, b, stimulusLabelA, stimulusLabelB),
+            ValueFamily = FirstNonEmpty(a.ValueFamily, b.ValueFamily),
+            SessionADirectionConsistencyRatio = a.DirectionConsistencyRatio,
+            SessionBDirectionConsistencyRatio = b.DirectionConsistencyRatio,
+            SessionAStimulusLabel = FirstNonEmpty(a.StimulusLabel, stimulusLabelA),
+            SessionBStimulusLabel = FirstNonEmpty(b.StimulusLabel, stimulusLabelB),
+            SessionAValueSequenceSummary = a.ValueSequenceSummary,
+            SessionBValueSequenceSummary = b.ValueSequenceSummary,
+            SessionAAnalyzerSources = a.AnalyzerSources,
+            SessionBAnalyzerSources = b.AnalyzerSources
+        };
+
+    private static ScalarBehaviorSummary BuildScalarBehaviorSummary(
+        IReadOnlyList<ValueCandidateComparison> valueMatches,
+        IReadOnlyList<ScalarCandidateComparison> scalarMatches)
+    {
+        var labels = valueMatches
+            .SelectMany(match => new[] { match.SessionAStimulusLabel, match.SessionBStimulusLabel })
+            .Concat(scalarMatches.SelectMany(match => new[] { match.SessionAStimulusLabel, match.SessionBStimulusLabel }))
+            .Where(label => !string.IsNullOrWhiteSpace(label))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Order(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+        var typedScalarMatches = valueMatches
+            .Where(match => string.Equals(match.DataType, "float32", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(match.DataType, "int32", StringComparison.OrdinalIgnoreCase))
+            .ToArray();
+        var scalarKeys = scalarMatches
+            .Select(ScalarMatchKey)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var fallbackTypedScalarMatches = typedScalarMatches
+            .Where(match => !scalarKeys.Contains(ValueMatchKey(match)))
+            .ToArray();
+        var evidenceMatches = scalarMatches
+            .Select(ToScalarBehaviorCandidate)
+            .Concat(fallbackTypedScalarMatches.Select(ToScalarBehaviorCandidate))
+            .Where(candidate => !candidate.Classification.StartsWith("unclassified_", StringComparison.OrdinalIgnoreCase))
+            .GroupBy(candidate => string.Join("|", candidate.BaseAddressHex, candidate.OffsetHex, candidate.DataType), StringComparer.OrdinalIgnoreCase)
+            .Select(group => group.OrderByDescending(candidate => candidate.ScoreTotal).First())
+            .OrderByDescending(candidate => candidate.ScoreTotal)
+            .ThenBy(candidate => candidate.BaseAddressHex, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(candidate => candidate.OffsetHex, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
+        return new ScalarBehaviorSummary
+        {
+            MatchingScalarCandidateCount = scalarMatches.Count + fallbackTypedScalarMatches.Length,
+            HeuristicCandidateCount = evidenceMatches.Length,
+            StrongCandidateCount = evidenceMatches.Count(candidate => string.Equals(candidate.ConfidenceLevel, "strong_candidate", StringComparison.OrdinalIgnoreCase)),
+            StimulusLabels = labels,
+            ScalarBehaviorCandidates = evidenceMatches,
+            NextRecommendedAction = RecommendNextScalarAction(evidenceMatches, labels)
+        };
+    }
+
+    private static ScalarBehaviorCandidate ToScalarBehaviorCandidate(ValueCandidateComparison match)
+    {
+        var heuristic = ScalarBehaviorHeuristicEngine.Score(match);
+        return new ScalarBehaviorCandidate
+        {
+            Classification = heuristic.Classification,
+            BaseAddressHex = match.BaseAddressHex,
+            OffsetHex = match.OffsetHex,
+            DataType = match.DataType,
+            SessionACandidateId = match.SessionACandidateId,
+            SessionBCandidateId = match.SessionBCandidateId,
+            SessionAStimulusLabel = match.SessionAStimulusLabel,
+            SessionBStimulusLabel = match.SessionBStimulusLabel,
+            SessionAChangedSampleCount = match.SessionAChangedSampleCount,
+            SessionBChangedSampleCount = match.SessionBChangedSampleCount,
+            SessionAValueDeltaMagnitude = 0,
+            SessionBValueDeltaMagnitude = 0,
+            SessionACircularDeltaMagnitude = 0,
+            SessionBCircularDeltaMagnitude = 0,
+            SessionASignedCircularDelta = 0,
+            SessionBSignedCircularDelta = 0,
+            SessionADominantDirection = string.Empty,
+            SessionBDominantDirection = string.Empty,
+            TurnPolarityRelationship = string.Empty,
+            CameraTurnSeparationRelationship = string.Empty,
+            ValueFamily = string.Empty,
+            ScoreTotal = heuristic.ScoreTotal,
+            ScoreBreakdown = heuristic.ScoreBreakdown,
+            ConfidenceLevel = heuristic.ConfidenceLevel,
+            SupportingReasons = heuristic.SupportingReasons,
+            RejectionReasons = heuristic.RejectionReasons,
+            EvidenceSummary = $"{FormatLabel(match.SessionAStimulusLabel)}_changed={match.SessionAChangedSampleCount};{FormatLabel(match.SessionBStimulusLabel)}_changed={match.SessionBChangedSampleCount}",
+            NextValidationStep = heuristic.NextValidationStep
+        };
+    }
+
+    private static ScalarBehaviorCandidate ToScalarBehaviorCandidate(ScalarCandidateComparison match)
+    {
+        var evidence = ScalarBehaviorEvidence.FromScalarMatch(match);
+        var heuristic = ScalarBehaviorHeuristicEngine.Score(evidence);
+        return new ScalarBehaviorCandidate
+        {
+            Classification = heuristic.Classification,
+            BaseAddressHex = match.BaseAddressHex,
+            OffsetHex = match.OffsetHex,
+            DataType = match.DataType,
+            SessionACandidateId = match.SessionACandidateId,
+            SessionBCandidateId = match.SessionBCandidateId,
+            SessionAStimulusLabel = match.SessionAStimulusLabel,
+            SessionBStimulusLabel = match.SessionBStimulusLabel,
+            SessionAChangedSampleCount = match.SessionAChangedSampleCount,
+            SessionBChangedSampleCount = match.SessionBChangedSampleCount,
+            SessionAValueDeltaMagnitude = match.SessionAValueDeltaMagnitude,
+            SessionBValueDeltaMagnitude = match.SessionBValueDeltaMagnitude,
+            SessionACircularDeltaMagnitude = match.SessionACircularDeltaMagnitude,
+            SessionBCircularDeltaMagnitude = match.SessionBCircularDeltaMagnitude,
+            SessionASignedCircularDelta = match.SessionASignedCircularDelta,
+            SessionBSignedCircularDelta = match.SessionBSignedCircularDelta,
+            SessionADominantDirection = match.SessionADominantDirection,
+            SessionBDominantDirection = match.SessionBDominantDirection,
+            TurnPolarityRelationship = match.TurnPolarityRelationship,
+            CameraTurnSeparationRelationship = match.CameraTurnSeparationRelationship,
+            ValueFamily = match.ValueFamily,
+            ScoreTotal = heuristic.ScoreTotal,
+            ScoreBreakdown = heuristic.ScoreBreakdown,
+            ConfidenceLevel = heuristic.ConfidenceLevel,
+            SupportingReasons = heuristic.SupportingReasons,
+            RejectionReasons = heuristic.RejectionReasons,
+            EvidenceSummary = $"{FormatLabel(match.SessionAStimulusLabel)}_changed={match.SessionAChangedSampleCount};{FormatLabel(match.SessionBStimulusLabel)}_changed={match.SessionBChangedSampleCount};family={match.ValueFamily};signed_circular_delta_a={match.SessionASignedCircularDelta:F6};signed_circular_delta_b={match.SessionBSignedCircularDelta:F6};polarity={match.TurnPolarityRelationship};camera_turn={match.CameraTurnSeparationRelationship}",
+            NextValidationStep = heuristic.NextValidationStep
+        };
+    }
+
+    private static string RecommendNextScalarAction(IReadOnlyList<ScalarBehaviorCandidate> candidates, IReadOnlyList<string> labels)
+    {
+        if (candidates.Any(candidate => candidate.Classification.Contains("camera_orientation", StringComparison.OrdinalIgnoreCase)))
+        {
+            return "compare_camera_only_candidates_against_turn_sessions";
+        }
+
+        if (candidates.Any(candidate => candidate.Classification.Contains("turn_responsive", StringComparison.OrdinalIgnoreCase)))
+        {
+            return "compare_turn_candidates_against_camera_only_session";
+        }
+
+        if (!labels.Any(label => string.Equals(label, "turn_left", StringComparison.OrdinalIgnoreCase) || string.Equals(label, "turn_right", StringComparison.OrdinalIgnoreCase)))
+        {
+            return "capture_labeled_turn_session";
+        }
+
+        return "capture_labeled_camera_only_session";
+    }
+
     private static string ValueCandidateKey(TypedValueCandidate candidate) =>
         string.Join("|", candidate.BaseAddressHex, candidate.OffsetHex, candidate.DataType);
+
+    private static string ScalarCandidateKey(ScalarCandidate candidate) =>
+        string.Join("|", candidate.BaseAddressHex, candidate.OffsetHex, candidate.DataType);
+
+    private static string ScalarMatchKey(ScalarCandidateComparison match) =>
+        string.Join("|", match.BaseAddressHex, match.OffsetHex, match.DataType);
+
+    private static string ValueMatchKey(ValueCandidateComparison match) =>
+        string.Join("|", match.BaseAddressHex, match.OffsetHex, match.DataType);
+
+    private static string FirstNonEmpty(string first, string second) =>
+        !string.IsNullOrWhiteSpace(first) ? first : second;
+
+    private static string TurnPolarityRelationship(ScalarCandidate a, ScalarCandidate b, string stimulusLabelA, string stimulusLabelB)
+    {
+        var labelA = FirstNonEmpty(a.StimulusLabel, stimulusLabelA);
+        var labelB = FirstNonEmpty(b.StimulusLabel, stimulusLabelB);
+        if (!IsOppositeTurnLabels(labelA, labelB))
+        {
+            return string.Empty;
+        }
+
+        var signA = Math.Sign(a.SignedCircularDelta);
+        var signB = Math.Sign(b.SignedCircularDelta);
+        if (signA == 0 || signB == 0)
+        {
+            return "insufficient_turn_direction";
+        }
+
+        return signA == -signB
+            ? "opposite_signed_turn_directions"
+            : "same_signed_turn_directions";
+    }
+
+    private static bool IsOppositeTurnLabels(string labelA, string labelB) =>
+        (string.Equals(labelA, "turn_left", StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(labelB, "turn_right", StringComparison.OrdinalIgnoreCase)) ||
+        (string.Equals(labelA, "turn_right", StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(labelB, "turn_left", StringComparison.OrdinalIgnoreCase));
+
+    private static string CameraTurnSeparationRelationship(ScalarCandidate a, ScalarCandidate b, string stimulusLabelA, string stimulusLabelB)
+    {
+        var labelA = FirstNonEmpty(a.StimulusLabel, stimulusLabelA);
+        var labelB = FirstNonEmpty(b.StimulusLabel, stimulusLabelB);
+        if (!HasCameraAndTurnLabels(labelA, labelB))
+        {
+            return string.Empty;
+        }
+
+        var cameraChanged = IsCameraOnlyLabel(labelA) ? a.ChangedSampleCount > 0 : b.ChangedSampleCount > 0;
+        var turnChanged = IsTurnLabel(labelA) ? a.ChangedSampleCount > 0 : b.ChangedSampleCount > 0;
+        return (cameraChanged, turnChanged) switch
+        {
+            (true, false) => "camera_only_changes_turn_stable",
+            (false, true) => "turn_changes_camera_only_stable",
+            (true, true) => "camera_and_turn_both_change",
+            _ => "camera_and_turn_both_stable"
+        };
+    }
+
+    private static bool HasCameraAndTurnLabels(string labelA, string labelB) =>
+        (IsCameraOnlyLabel(labelA) && IsTurnLabel(labelB)) ||
+        (IsTurnLabel(labelA) && IsCameraOnlyLabel(labelB));
+
+    private static bool IsTurnLabel(string label) =>
+        string.Equals(label, "turn_left", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(label, "turn_right", StringComparison.OrdinalIgnoreCase);
+
+    private static bool IsCameraOnlyLabel(string label) =>
+        string.Equals(label, "camera_only", StringComparison.OrdinalIgnoreCase);
 
     private static string RecommendValueCandidate(TypedValueCandidate a, TypedValueCandidate b)
     {
@@ -415,6 +808,7 @@ public sealed class SessionComparisonService
         SessionManifest manifestB,
         IReadOnlyList<RegionComparison> regionMatches,
         IReadOnlyList<ClusterComparison> clusterMatches,
+        IReadOnlyList<EntityLayoutComparison> entityLayoutMatches,
         IReadOnlyList<StructureCandidateComparison> structureCandidateMatches,
         IReadOnlyList<Vec3CandidateComparison> vec3CandidateMatches,
         IReadOnlyList<ValueCandidateComparison> valueCandidateMatches)
@@ -433,6 +827,11 @@ public sealed class SessionComparisonService
         if (clusterMatches.Count == 0)
         {
             warnings.Add("no_overlapping_cluster_matches_by_base_address_and_span");
+        }
+
+        if (entityLayoutMatches.Count == 0)
+        {
+            warnings.Add("no_overlapping_entity_layout_matches_by_base_address_and_span");
         }
 
         if (structureCandidateMatches.Count == 0)
@@ -467,6 +866,9 @@ public sealed class SessionComparisonService
     private static IReadOnlyList<StructureCluster> ReadClusters(string sessionPath) =>
         ReadJsonLines<StructureCluster>(sessionPath, "clusters.jsonl");
 
+    private static IReadOnlyList<EntityLayoutCandidate> ReadEntityLayouts(string sessionPath) =>
+        ReadJsonLines<EntityLayoutCandidate>(sessionPath, "entity_layout_candidates.jsonl");
+
     private static IReadOnlyList<StructureCandidate> ReadStructureCandidates(string sessionPath) =>
         ReadJsonLines<StructureCandidate>(sessionPath, "structures.jsonl");
 
@@ -475,6 +877,24 @@ public sealed class SessionComparisonService
 
     private static IReadOnlyList<TypedValueCandidate> ReadValueCandidates(string sessionPath) =>
         ReadJsonLines<TypedValueCandidate>(sessionPath, "typed_value_candidates.jsonl");
+
+    private static IReadOnlyList<ScalarCandidate> ReadScalarCandidates(string sessionPath) =>
+        ReadJsonLines<ScalarCandidate>(sessionPath, "scalar_candidates.jsonl");
+
+    private static string ReadStimulusLabel(string sessionPath)
+    {
+        var path = ResolveSessionPath(sessionPath, "stimuli.jsonl");
+        if (!File.Exists(path))
+        {
+            return string.Empty;
+        }
+
+        var stimulus = File.ReadLines(path)
+            .Where(line => !string.IsNullOrWhiteSpace(line))
+            .Select(line => JsonSerializer.Deserialize<StimulusEvent>(line, SessionJson.Options) ?? throw new InvalidOperationException("Invalid stimulus entry."))
+            .FirstOrDefault();
+        return stimulus?.Label ?? string.Empty;
+    }
 
     private static IReadOnlyList<T> ReadJsonLines<T>(string sessionPath, string relativePath)
     {

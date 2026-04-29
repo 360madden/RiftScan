@@ -263,6 +263,237 @@ public sealed class PassiveCaptureServiceTests
     }
 
     [Fact]
+    public void Capture_plan_can_follow_multiple_windows_inside_large_planned_region()
+    {
+        using var source = new TempDirectory();
+        using var output = new TempDirectory();
+        Directory.CreateDirectory(source.Path);
+        File.WriteAllText(Path.Combine(source.Path, "next_capture_plan.json"), """
+            {
+              "session_id": "source-session",
+              "analyzer_id": "dynamic_region_triage",
+              "recommendation": "test",
+              "regions": [
+                { "region_id": "region-000002", "rank_score": 20, "reason": "test" }
+              ]
+            }
+            """);
+        var readAddresses = new List<ulong>();
+        var reader = new FakeProcessMemoryReader
+        {
+            Regions =
+            [
+                new VirtualMemoryRegion("region-000002", 0x2000, 0x1000, MemoryRegionConstants.MemCommit, MemoryRegionConstants.PageReadWrite, MemoryRegionConstants.MemPrivate)
+            ],
+            ReadMemoryFunc = (_, baseAddress, byteCount) =>
+            {
+                readAddresses.Add(baseAddress);
+                return Enumerable.Range(0, byteCount).Select(value => (byte)value).ToArray();
+            }
+        };
+
+        var result = new PassiveCapturePlanService(reader).CaptureFromPlan(new PassiveCapturePlanOptions
+        {
+            SourceSessionPath = source.Path,
+            ProcessName = "fixture_process",
+            OutputPath = output.Path,
+            TopRegions = 1,
+            Samples = 1,
+            IntervalMilliseconds = 0,
+            MaxBytesPerRegion = 0x100,
+            MaxTotalBytes = 0x300,
+            WindowsPerRegion = 3
+        });
+
+        Assert.True(result.Success);
+        Assert.Equal(3, result.RegionsCaptured);
+        Assert.Equal(3, result.SnapshotsCaptured);
+        Assert.Equal(new ulong[] { 0x2000UL, 0x2780UL, 0x2F00UL }, readAddresses);
+        Assert.Contains("snapshots/region-000002-window-0000000000000000-sample-000001.bin", result.ArtifactsWritten);
+        Assert.Contains("snapshots/region-000002-window-0000000000000780-sample-000001.bin", result.ArtifactsWritten);
+        Assert.Contains("snapshots/region-000002-window-0000000000000F00-sample-000001.bin", result.ArtifactsWritten);
+
+        var snapshotEntries = File.ReadLines(Path.Combine(output.Path, "snapshots", "index.jsonl"))
+            .Select(line => JsonSerializer.Deserialize<SnapshotIndexEntry>(line, SessionJson.Options)!)
+            .ToArray();
+        Assert.Equal(new[] { "0x2000", "0x2780", "0x2F00" }, snapshotEntries.Select(entry => entry.BaseAddressHex).ToArray());
+
+        var verification = new SessionVerifier().Verify(output.Path);
+        Assert.True(verification.Success, string.Join(Environment.NewLine, verification.Issues.Select(issue => $"{issue.Code}: {issue.Message}")));
+    }
+
+    [Fact]
+    public void Capture_plan_honors_explicit_window_offsets_and_total_byte_budget()
+    {
+        using var source = new TempDirectory();
+        using var output = new TempDirectory();
+        Directory.CreateDirectory(source.Path);
+        File.WriteAllText(Path.Combine(source.Path, "next_capture_plan.json"), """
+            {
+              "session_id": "source-session",
+              "analyzer_id": "dynamic_region_triage",
+              "recommendation": "test",
+              "regions": [
+                { "region_id": "region-000002", "rank_score": 20, "reason": "test" }
+              ]
+            }
+            """);
+        var readAddresses = new List<ulong>();
+        var reader = new FakeProcessMemoryReader
+        {
+            Regions =
+            [
+                new VirtualMemoryRegion("region-000002", 0x2000, 0x1000, MemoryRegionConstants.MemCommit, MemoryRegionConstants.PageReadWrite, MemoryRegionConstants.MemPrivate)
+            ],
+            ReadMemoryFunc = (_, baseAddress, byteCount) =>
+            {
+                readAddresses.Add(baseAddress);
+                return Enumerable.Range(0, byteCount).Select(value => (byte)value).ToArray();
+            }
+        };
+
+        var result = new PassiveCapturePlanService(reader).CaptureFromPlan(new PassiveCapturePlanOptions
+        {
+            SourceSessionPath = source.Path,
+            ProcessName = "fixture_process",
+            OutputPath = output.Path,
+            TopRegions = 1,
+            Samples = 1,
+            IntervalMilliseconds = 0,
+            MaxBytesPerRegion = 0x100,
+            MaxTotalBytes = 0x200,
+            WindowsPerRegion = 99,
+            WindowOffsets = [0x40, 0x300, 0x800]
+        });
+
+        Assert.True(result.Success);
+        Assert.Equal(2, result.RegionsCaptured);
+        Assert.Equal(2, result.SnapshotsCaptured);
+        Assert.Equal(0x200, result.BytesCaptured);
+        Assert.Equal(new ulong[] { 0x2040UL, 0x2300UL }, readAddresses);
+        Assert.Contains("snapshots/region-000002-window-0000000000000040-sample-000001.bin", result.ArtifactsWritten);
+        Assert.Contains("snapshots/region-000002-window-0000000000000300-sample-000001.bin", result.ArtifactsWritten);
+        Assert.DoesNotContain("snapshots/region-000002-window-0000000000000800-sample-000001.bin", result.ArtifactsWritten);
+    }
+
+    [Fact]
+    public void Capture_plan_can_follow_window_base_address_inside_live_region()
+    {
+        using var source = new TempDirectory();
+        using var output = new TempDirectory();
+        Directory.CreateDirectory(source.Path);
+        File.WriteAllText(Path.Combine(source.Path, "next_capture_plan.json"), """
+            {
+              "schema_version": "riftscan.next_capture_plan.v1",
+              "session_id": "windowed-source-session",
+              "analyzer_id": "dynamic_region_triage",
+              "recommendation": "test",
+              "regions": [
+                {
+                  "region_id": "region-000002-window-0000000000000800",
+                  "rank_score": 99,
+                  "base_address_hex": "0x2800",
+                  "size_bytes": 256,
+                  "reason": "prioritize_for_delta_followup"
+                }
+              ]
+            }
+            """);
+        var readAddresses = new List<ulong>();
+        var reader = new FakeProcessMemoryReader
+        {
+            Regions =
+            [
+                new VirtualMemoryRegion("region-000099", 0x2000, 0x1000, MemoryRegionConstants.MemCommit, MemoryRegionConstants.PageReadWrite, MemoryRegionConstants.MemPrivate)
+            ],
+            ReadMemoryFunc = (_, baseAddress, byteCount) =>
+            {
+                readAddresses.Add(baseAddress);
+                return Enumerable.Range(0, byteCount).Select(value => (byte)value).ToArray();
+            }
+        };
+
+        var result = new PassiveCapturePlanService(reader).CaptureFromPlan(new PassiveCapturePlanOptions
+        {
+            SourceSessionPath = source.Path,
+            ProcessName = "fixture_process",
+            OutputPath = output.Path,
+            TopRegions = 1,
+            Samples = 1,
+            IntervalMilliseconds = 0,
+            MaxBytesPerRegion = 0x100,
+            MaxTotalBytes = 0x100
+        });
+
+        Assert.True(result.Success);
+        Assert.Equal(new ulong[] { 0x2800UL }, readAddresses);
+        Assert.Contains("snapshots/region-000099-window-0000000000000800-sample-000001.bin", result.ArtifactsWritten);
+
+        var snapshotEntry = JsonSerializer.Deserialize<SnapshotIndexEntry>(
+            File.ReadLines(Path.Combine(output.Path, "snapshots", "index.jsonl")).Single(),
+            SessionJson.Options)!;
+        Assert.Equal("0x2800", snapshotEntry.BaseAddressHex);
+    }
+
+    [Fact]
+    public void Capture_plan_can_fan_out_from_window_base_address_inside_live_region()
+    {
+        using var source = new TempDirectory();
+        using var output = new TempDirectory();
+        Directory.CreateDirectory(source.Path);
+        File.WriteAllText(Path.Combine(source.Path, "next_capture_plan.json"), """
+            {
+              "schema_version": "riftscan.next_capture_plan.v1",
+              "session_id": "windowed-source-session",
+              "analyzer_id": "dynamic_region_triage",
+              "recommendation": "test",
+              "regions": [
+                {
+                  "region_id": "region-000002-window-0000000000000800",
+                  "rank_score": 99,
+                  "base_address_hex": "0x2800",
+                  "size_bytes": 256,
+                  "reason": "prioritize_for_delta_followup"
+                }
+              ]
+            }
+            """);
+        var readAddresses = new List<ulong>();
+        var reader = new FakeProcessMemoryReader
+        {
+            Regions =
+            [
+                new VirtualMemoryRegion("region-000099", 0x2000, 0x1000, MemoryRegionConstants.MemCommit, MemoryRegionConstants.PageReadWrite, MemoryRegionConstants.MemPrivate)
+            ],
+            ReadMemoryFunc = (_, baseAddress, byteCount) =>
+            {
+                readAddresses.Add(baseAddress);
+                return Enumerable.Range(0, byteCount).Select(value => (byte)value).ToArray();
+            }
+        };
+
+        var result = new PassiveCapturePlanService(reader).CaptureFromPlan(new PassiveCapturePlanOptions
+        {
+            SourceSessionPath = source.Path,
+            ProcessName = "fixture_process",
+            OutputPath = output.Path,
+            TopRegions = 1,
+            Samples = 1,
+            IntervalMilliseconds = 0,
+            MaxBytesPerRegion = 0x100,
+            MaxTotalBytes = 0x300,
+            WindowsPerRegion = 3
+        });
+
+        Assert.True(result.Success);
+        Assert.Equal(3, result.RegionsCaptured);
+        Assert.Equal(new ulong[] { 0x2800UL, 0x2900UL, 0x2A00UL }, readAddresses);
+        Assert.Contains("snapshots/region-000099-window-0000000000000800-sample-000001.bin", result.ArtifactsWritten);
+        Assert.Contains("snapshots/region-000099-window-0000000000000900-sample-000001.bin", result.ArtifactsWritten);
+        Assert.Contains("snapshots/region-000099-window-0000000000000A00-sample-000001.bin", result.ArtifactsWritten);
+    }
+
+    [Fact]
     public void Capture_plan_can_read_comparison_next_capture_plan_file()
     {
         using var output = new TempDirectory();
@@ -418,6 +649,45 @@ public sealed class PassiveCaptureServiceTests
             "250",
             "--intervention-poll-ms",
             "50"
+        ]));
+
+        Assert.Equal(2, exitCode);
+        Assert.Contains("No process found with name", error, StringComparison.Ordinal);
+        Assert.Contains(processName, error, StringComparison.Ordinal);
+        Assert.DoesNotContain("Unknown capture plan option", error, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Cli_capture_plan_accepts_window_followup_flags()
+    {
+        using var source = new TempDirectory();
+        using var output = new TempDirectory();
+        Directory.CreateDirectory(source.Path);
+        File.WriteAllText(Path.Combine(source.Path, "next_capture_plan.json"), """
+            {
+              "session_id": "source-session",
+              "analyzer_id": "dynamic_region_triage",
+              "recommendation": "test",
+              "regions": [
+                { "region_id": "region-000001", "rank_score": 10, "reason": "test" }
+              ]
+            }
+            """);
+        var processName = $"riftscan_missing_process_{Guid.NewGuid():N}";
+
+        var (exitCode, error) = RunWithCapturedError(() => RiftScan.Cli.Program.Main(
+        [
+            "capture",
+            "plan",
+            source.Path,
+            "--process",
+            processName,
+            "--out",
+            output.Path,
+            "--windows-per-region",
+            "3",
+            "--window-offsets",
+            "0,0x1000"
         ]));
 
         Assert.Equal(2, exitCode);

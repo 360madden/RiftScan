@@ -26,6 +26,7 @@ public sealed class SessionAnalysisAndReportTests
         Assert.True(File.Exists(Path.Combine(session.Path, "structures.jsonl")));
         Assert.True(File.Exists(Path.Combine(session.Path, "vec3_candidates.jsonl")));
         Assert.True(File.Exists(Path.Combine(session.Path, "clusters.jsonl")));
+        Assert.True(File.Exists(Path.Combine(session.Path, "entity_layout_candidates.jsonl")));
 
         var triageLine = File.ReadLines(Path.Combine(session.Path, "triage.jsonl")).Single();
         var triage = JsonSerializer.Deserialize<RegionTriageEntry>(triageLine, SessionJson.Options)!;
@@ -61,6 +62,7 @@ public sealed class SessionAnalysisAndReportTests
         Assert.Contains("Limitations", report, StringComparison.Ordinal);
         Assert.Contains("Next recommended capture", report, StringComparison.Ordinal);
         Assert.Contains("Structure clusters", report, StringComparison.Ordinal);
+        Assert.Contains("Entity layout candidates", report, StringComparison.Ordinal);
         Assert.Contains("Structure candidates", report, StringComparison.Ordinal);
         Assert.Contains("region-0001", report, StringComparison.Ordinal);
 
@@ -73,7 +75,7 @@ public sealed class SessionAnalysisAndReportTests
         Assert.Equal(1, root.GetProperty("artifact_counts").GetProperty("triage_entries").GetInt32());
         Assert.Equal("dynamic_region_triage", root.GetProperty("analyzers")[0].GetProperty("analyzer_id").GetString());
         Assert.Contains(root.GetProperty("limitations").EnumerateArray(), limitation => limitation.GetString() == "candidate_evidence_not_truth_claim");
-        Assert.Equal("larger_passive_capture_for_cross_session_structure_validation", root.GetProperty("next_recommended_capture").GetString());
+        Assert.Equal("labeled_turn_and_camera_capture_against_top_entity_layout_regions", root.GetProperty("next_recommended_capture").GetString());
     }
 
     [Fact]
@@ -145,6 +147,7 @@ public sealed class SessionAnalysisAndReportTests
             "typed_value_candidates",
             "vec3_candidates",
             "structure_clusters",
+            "entity_layout_candidates",
             "structure_candidates");
 
         var interruption = root.GetProperty("capture_interruption");
@@ -186,6 +189,7 @@ public sealed class SessionAnalysisAndReportTests
             Assert.Contains("structures.jsonl", output.ToString(), StringComparison.Ordinal);
             Assert.Contains("vec3_candidates.jsonl", output.ToString(), StringComparison.Ordinal);
             Assert.Contains("clusters.jsonl", output.ToString(), StringComparison.Ordinal);
+            Assert.Contains("entity_layout_candidates.jsonl", output.ToString(), StringComparison.Ordinal);
             Assert.Contains("report.md", output.ToString(), StringComparison.Ordinal);
             Assert.Contains("report.json", output.ToString(), StringComparison.Ordinal);
         }

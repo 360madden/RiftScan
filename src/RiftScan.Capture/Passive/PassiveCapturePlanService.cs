@@ -45,6 +45,8 @@ public sealed class PassiveCapturePlanService(IProcessMemoryReader processMemory
             IncludeImageRegions = options.IncludeImageRegions,
             RegionIds = regionIds,
             BaseAddresses = baseAddresses,
+            WindowsPerRegion = options.WindowsPerRegion,
+            WindowOffsets = options.WindowOffsets,
             StimulusLabel = options.StimulusLabel,
             StimulusNotes = options.StimulusNotes,
             InterventionWaitMilliseconds = options.InterventionWaitMilliseconds,
@@ -168,6 +170,7 @@ public sealed class PassiveCapturePlanService(IProcessMemoryReader processMemory
         ArgumentOutOfRangeException.ThrowIfNegative(options.IntervalMilliseconds);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(options.MaxBytesPerRegion);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(options.MaxTotalBytes);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(options.WindowsPerRegion);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(options.InterventionWaitMilliseconds);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(options.InterventionPollIntervalMilliseconds);
         ValidateStimulusLabel(options.StimulusLabel);
