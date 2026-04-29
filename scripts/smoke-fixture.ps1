@@ -29,6 +29,19 @@ function Invoke-RiftScan {
     Invoke-DotNet -Arguments ($script:cliPrefix + $Arguments)
 }
 
+function Invoke-RiftScanJson {
+    param([string[]]$Arguments)
+
+    $command = $script:cliPrefix + $Arguments
+    Write-Host "+ dotnet $($command -join ' ')"
+    $output = & dotnet @command
+    if ($LASTEXITCODE -ne 0) {
+        throw "riftscan command failed with exit code $LASTEXITCODE. Output: $output"
+    }
+
+    return ($output | ConvertFrom-Json)
+}
+
 function Assert-FileExists {
     param([string]$Path)
 
@@ -73,6 +86,15 @@ try {
     Assert-FileExists -Path $comparisonJson
     Assert-FileExists -Path $comparisonMarkdown
     Assert-FileExists -Path $nextPlan
+
+    $pruneResult = Invoke-RiftScanJson -Arguments @("session", "prune", $sessionA, "--dry-run")
+    if (-not $pruneResult.success -or -not $pruneResult.dry_run) {
+        throw "Expected successful session prune dry-run result."
+    }
+    if ($pruneResult.candidate_count -lt 1) {
+        throw "Expected session prune dry-run to find generated artifact candidates."
+    }
+    Assert-FileExists -Path (Join-Path $sessionA "report.md")
 
     Write-Host "Fixture smoke passed."
     if ($KeepOutput) {
