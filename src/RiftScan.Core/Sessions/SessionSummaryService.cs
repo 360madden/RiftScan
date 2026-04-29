@@ -80,9 +80,19 @@ public sealed class SessionSummaryService
     private static SessionManifest? ReadManifestIfPresent(string sessionPath)
     {
         var manifestPath = Path.Combine(sessionPath, "manifest.json");
-        return File.Exists(manifestPath)
-            ? JsonSerializer.Deserialize<SessionManifest>(File.ReadAllText(manifestPath), SessionJson.Options)
-            : null;
+        if (!File.Exists(manifestPath))
+        {
+            return null;
+        }
+
+        try
+        {
+            return JsonSerializer.Deserialize<SessionManifest>(File.ReadAllText(manifestPath), SessionJson.Options);
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
     }
 
     private static SessionSummaryArtifact? CreateArtifact(string sessionPath, string relativePath, string kind)

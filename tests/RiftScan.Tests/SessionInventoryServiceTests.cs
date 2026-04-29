@@ -96,6 +96,80 @@ public sealed class SessionInventoryServiceTests
         }
     }
 
+    [Fact]
+    public void Inventory_missing_session_root_returns_machine_readable_error()
+    {
+        var tempDirectory = CreateTempDirectory();
+        var sessionPath = Path.Combine(tempDirectory, "missing-session");
+        var inventoryPath = Path.Combine(tempDirectory, "reports", "missing-session-inventory.json");
+
+        try
+        {
+            var result = new SessionInventoryService().Inventory(sessionPath, inventoryPath);
+
+            Assert.False(result.Success);
+            Assert.Equal(Path.GetFullPath(sessionPath), result.SessionPath);
+            Assert.Contains(result.Issues, issue => issue.Code == "session_root_missing");
+            Assert.Contains(result.Summary.Issues, issue => issue.Code == "session_root_missing");
+            Assert.Contains(result.PruneInventory.Issues, issue => issue.Code == "session_root_missing");
+            Assert.True(File.Exists(Path.GetFullPath(inventoryPath)));
+        }
+        finally
+        {
+            Directory.Delete(tempDirectory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void Inventory_malformed_manifest_returns_error_without_throwing()
+    {
+        var tempDirectory = CreateTempDirectory();
+        var sessionPath = Path.Combine(tempDirectory, "session-with-bad-manifest");
+
+        try
+        {
+            CopyDirectory(ValidFixturePath, sessionPath);
+            File.WriteAllText(Path.Combine(sessionPath, "manifest.json"), "{ definitely-not-json");
+            File.WriteAllText(Path.Combine(sessionPath, "report.md"), "# report\n");
+
+            var result = new SessionInventoryService().Inventory(sessionPath);
+
+            Assert.False(result.Success);
+            Assert.Null(result.Summary.SessionId);
+            Assert.Equal(1, result.Summary.ArtifactCount);
+            Assert.Equal(1, result.PruneInventory.CandidateCount);
+            Assert.Contains(result.Issues, issue => issue.Code == "json_invalid" && issue.Path == "manifest.json");
+        }
+        finally
+        {
+            Directory.Delete(tempDirectory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void Cli_session_inventory_missing_root_returns_nonzero_json_result()
+    {
+        var tempDirectory = CreateTempDirectory();
+        var sessionPath = Path.Combine(tempDirectory, "missing-session");
+
+        try
+        {
+            var result = RunCli("session", "inventory", sessionPath);
+
+            Assert.Equal(1, result.ExitCode);
+            Assert.Equal(string.Empty, result.Stderr);
+            using var document = JsonDocument.Parse(result.Stdout);
+            Assert.False(document.RootElement.GetProperty("success").GetBoolean());
+            Assert.Contains(
+                document.RootElement.GetProperty("issues").EnumerateArray(),
+                issue => issue.GetProperty("code").GetString() == "session_root_missing");
+        }
+        finally
+        {
+            Directory.Delete(tempDirectory, recursive: true);
+        }
+    }
+
     private static string ValidFixturePath => Path.Combine(AppContext.BaseDirectory, "Fixtures", "valid-session");
 
     private static string CreateTempDirectory()
