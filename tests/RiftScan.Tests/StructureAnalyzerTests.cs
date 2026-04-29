@@ -18,6 +18,7 @@ public sealed class StructureAnalyzerTests
 
         var firstLine = File.ReadLines(Path.Combine(session.Path, "structures.jsonl")).First();
         var first = JsonSerializer.Deserialize<StructureCandidate>(firstLine, SessionJson.Options)!;
+        Assert.Equal("structure-000001", first.CandidateId);
         Assert.Equal("float32_triplet", first.StructureKind);
         Assert.True(first.Score > 0);
     }

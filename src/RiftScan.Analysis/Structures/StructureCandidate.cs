@@ -13,6 +13,9 @@ public sealed record StructureCandidate
     [JsonPropertyName("session_id")]
     public string SessionId { get; init; } = string.Empty;
 
+    [JsonPropertyName("candidate_id")]
+    public string CandidateId { get; init; } = string.Empty;
+
     [JsonPropertyName("region_id")]
     public string RegionId { get; init; } = string.Empty;
 

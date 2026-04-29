@@ -31,6 +31,7 @@ public sealed class FloatTripletStructureAnalyzer
             .ThenBy(candidate => candidate.RegionId, StringComparer.OrdinalIgnoreCase)
             .ThenBy(candidate => candidate.OffsetHex, StringComparer.OrdinalIgnoreCase)
             .Take(maxCandidates)
+            .Select((candidate, index) => candidate with { CandidateId = $"structure-{index + 1:000000}" })
             .ToArray();
 
         WriteJsonLines(fullSessionPath, "structures.jsonl", candidates);

@@ -514,19 +514,19 @@ public sealed class SessionReportGenerator
         yield return string.Empty;
         yield return "## Structure candidates";
         yield return string.Empty;
-        yield return "| Rank | Region | Offset | Score | Support | Kind | Preview |";
-        yield return "|---:|---|---:|---:|---:|---|---|";
+        yield return "| Rank | Candidate | Region | Offset | Score | Support | Kind | Preview |";
+        yield return "|---:|---|---|---:|---:|---:|---|---|";
 
         var structureRank = 1;
         foreach (var candidate in structureCandidates)
         {
-            yield return $"| {structureRank} | `{candidate.RegionId}` | `{candidate.OffsetHex}` | {candidate.Score:F3} | {candidate.SnapshotSupport} | `{candidate.StructureKind}` | `{string.Join(", ", candidate.ValuePreview.Select(value => value.ToString("G6")))}` |";
+            yield return $"| {structureRank} | `{candidate.CandidateId}` | `{candidate.RegionId}` | `{candidate.OffsetHex}` | {candidate.Score:F3} | {candidate.SnapshotSupport} | `{candidate.StructureKind}` | `{string.Join(", ", candidate.ValuePreview.Select(value => value.ToString("G6")))}` |";
             structureRank++;
         }
 
         if (structureCandidates.Count == 0)
         {
-            yield return "| 0 | none | - | 0 | 0 | - | - |";
+            yield return "| 0 | none | - | - | 0 | 0 | - | - |";
         }
 
         yield return string.Empty;
