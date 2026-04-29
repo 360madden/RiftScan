@@ -67,7 +67,9 @@ Use summary to inspect a session's manifest fields and generated artifacts witho
 dotnet run --project src/RiftScan.Cli/RiftScan.Cli.csproj --configuration Release --no-build -- `
   session summary sessions/<session_id> `
   --json-out reports/generated/<session_id>-summary.json
-session inventory sessions/<session_id> `
+
+dotnet run --project src/RiftScan.Cli/RiftScan.Cli.csproj --configuration Release --no-build -- `
+  session inventory sessions/<session_id> `
   --json-out reports/generated/<session_id>-inventory.json
 ```
 
