@@ -32,6 +32,7 @@ public sealed class SessionComparisonServiceTests
             match.SessionACandidateId == "structure-000001" &&
             match.SessionBCandidateId == "structure-000001" &&
             match.SessionAValueSequenceSummary.StartsWith("support=", StringComparison.Ordinal) &&
+            match.SessionAAnalyzerSources.Contains("snapshots/*.bin") &&
             match.StructureKind == "float32_triplet" &&
             match.Recommendation == "stable_structure_candidate");
         Assert.True(result.MatchingVec3CandidateCount >= 1);
@@ -41,6 +42,7 @@ public sealed class SessionComparisonServiceTests
             match.SessionACandidateId == "vec3-000001" &&
             match.SessionBCandidateId == "vec3-000001" &&
             match.SessionAValueSequenceSummary.StartsWith("samples=", StringComparison.Ordinal) &&
+            match.SessionAAnalyzerSources.Contains("structures.jsonl") &&
             match.DataType == "vec3_float32" &&
             match.Recommendation == "stable_vec3_candidate_across_sessions");
         Assert.Contains("comparison_is_candidate_evidence_not_truth_claim", result.Warnings);
@@ -65,6 +67,7 @@ public sealed class SessionComparisonServiceTests
             match.SessionACandidateId == "value-000001" &&
             match.SessionBCandidateId == "value-000001" &&
             match.SessionAValueSequenceSummary.StartsWith("samples=3", StringComparison.Ordinal) &&
+            match.SessionAAnalyzerSources.Contains("deltas.jsonl") &&
             match.Recommendation == "stable_typed_value_lane_candidate");
     }
 
@@ -88,6 +91,7 @@ public sealed class SessionComparisonServiceTests
         Assert.True(match.SessionBValueDeltaMagnitude > 0);
         Assert.StartsWith("samples=", match.SessionAValueSequenceSummary, StringComparison.Ordinal);
         Assert.Contains("delta=", match.SessionBValueSequenceSummary, StringComparison.Ordinal);
+        Assert.Contains("stimuli.jsonl", match.SessionBAnalyzerSources);
         Assert.Equal("behavior_consistent_candidate", match.SessionAValidationStatus);
         Assert.Equal("behavior_consistent_candidate", match.SessionBValidationStatus);
         Assert.Equal("passive_to_move_vec3_behavior_contrast_candidate", match.Recommendation);

@@ -193,6 +193,8 @@ public sealed class SessionComparisonService
             SessionBSnapshotSupport = b.SnapshotSupport,
             SessionAValueSequenceSummary = a.ValueSequenceSummary,
             SessionBValueSequenceSummary = b.ValueSequenceSummary,
+            SessionAAnalyzerSources = a.AnalyzerSources,
+            SessionBAnalyzerSources = b.AnalyzerSources,
             Recommendation = a.Score >= 75 && b.Score >= 75
                 ? "stable_structure_candidate"
                 : "matching_structure_candidate_needs_more_evidence"
@@ -247,6 +249,8 @@ public sealed class SessionComparisonService
             SessionBValidationStatus = b.ValidationStatus,
             SessionAValueSequenceSummary = a.ValueSequenceSummary,
             SessionBValueSequenceSummary = b.ValueSequenceSummary,
+            SessionAAnalyzerSources = a.AnalyzerSources,
+            SessionBAnalyzerSources = b.AnalyzerSources,
             Recommendation = RecommendVec3Candidate(a, b)
         };
 
@@ -382,6 +386,8 @@ public sealed class SessionComparisonService
             SessionBDistinctValues = b.DistinctValueCount,
             SessionAValueSequenceSummary = a.ValueSequenceSummary,
             SessionBValueSequenceSummary = b.ValueSequenceSummary,
+            SessionAAnalyzerSources = a.AnalyzerSources,
+            SessionBAnalyzerSources = b.AnalyzerSources,
             Recommendation = RecommendValueCandidate(a, b)
         };
 

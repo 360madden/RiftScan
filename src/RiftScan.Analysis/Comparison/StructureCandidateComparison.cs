@@ -46,6 +46,12 @@ public sealed record StructureCandidateComparison
     [JsonPropertyName("session_b_value_sequence_summary")]
     public string SessionBValueSequenceSummary { get; init; } = string.Empty;
 
+    [JsonPropertyName("session_a_analyzer_sources")]
+    public IReadOnlyList<string> SessionAAnalyzerSources { get; init; } = [];
+
+    [JsonPropertyName("session_b_analyzer_sources")]
+    public IReadOnlyList<string> SessionBAnalyzerSources { get; init; } = [];
+
     [JsonPropertyName("recommendation")]
     public string Recommendation { get; init; } = string.Empty;
 }

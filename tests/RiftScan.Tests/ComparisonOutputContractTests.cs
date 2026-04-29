@@ -81,6 +81,8 @@ public sealed class ComparisonOutputContractTests
             "session_b_snapshot_support",
             "session_a_value_sequence_summary",
             "session_b_value_sequence_summary",
+            "session_a_analyzer_sources",
+            "session_b_analyzer_sources",
             "recommendation");
 
     [Fact]
@@ -110,6 +112,8 @@ public sealed class ComparisonOutputContractTests
             "session_b_validation_status",
             "session_a_value_sequence_summary",
             "session_b_value_sequence_summary",
+            "session_a_analyzer_sources",
+            "session_b_analyzer_sources",
             "recommendation");
 
     [Fact]
@@ -130,6 +134,8 @@ public sealed class ComparisonOutputContractTests
             "session_b_distinct_values",
             "session_a_value_sequence_summary",
             "session_b_value_sequence_summary",
+            "session_a_analyzer_sources",
+            "session_b_analyzer_sources",
             "recommendation");
 
     [Fact]
