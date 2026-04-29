@@ -621,6 +621,7 @@ public static class Program
         string? outputPath = null;
         string? reportPath = null;
         var minDeltaDistance = 1d;
+        var mirrorEpsilon = 0.001d;
         var top = 100;
         for (var index = 0; index < args.Length; index++)
         {
@@ -629,6 +630,9 @@ public static class Program
             {
                 case "--min-delta-distance":
                     minDeltaDistance = double.Parse(RequireValue(args, ref index, arg), CultureInfo.InvariantCulture);
+                    break;
+                case "--mirror-epsilon":
+                    mirrorEpsilon = double.Parse(RequireValue(args, ref index, arg), CultureInfo.InvariantCulture);
                     break;
                 case "--top":
                     top = int.Parse(RequireValue(args, ref index, arg), CultureInfo.InvariantCulture);
@@ -662,6 +666,7 @@ public static class Program
             PreMatchPath = inputPaths[0],
             PostMatchPath = inputPaths[1],
             MinDeltaDistance = minDeltaDistance,
+            MirrorEpsilon = mirrorEpsilon,
             Top = top
         });
         if (!string.IsNullOrWhiteSpace(outputPath))
@@ -2407,7 +2412,7 @@ public static class Program
         Console.WriteLine("riftscan rift match-addon-coords <session-path> --observations reports/generated/addon-coordinate-observations.jsonl [--region-base 0xADDR] [--tolerance 5] [--top 100] [--out reports/generated/session-addon-coordinate-matches.json] [--report-md reports/generated/session-addon-coordinate-matches.md] [--latest-only]");
 
     private static void PrintRiftCompareAddonCoordinateMotionUsage() =>
-        Console.WriteLine("riftscan rift compare-addon-coordinate-motion <pre-match-json> <post-match-json> [--min-delta-distance 1] [--top 100] [--out reports/generated/addon-coordinate-motion.json] [--report-md reports/generated/addon-coordinate-motion.md]");
+        Console.WriteLine("riftscan rift compare-addon-coordinate-motion <pre-match-json> <post-match-json> [--min-delta-distance 1] [--mirror-epsilon 0.001] [--top 100] [--out reports/generated/addon-coordinate-motion.json] [--report-md reports/generated/addon-coordinate-motion.md]");
 
     private static void PrintRiftAddonCorroborationUsage() =>
         Console.WriteLine("riftscan rift addon-corroboration --candidates reports/generated/vec3-truth-candidates.jsonl --observations reports/generated/addon-coordinate-observations.jsonl --out reports/generated/vec3-truth-corroboration.jsonl [--json-out reports/generated/addon-coordinate-corroboration.json] [--tolerance 5]");

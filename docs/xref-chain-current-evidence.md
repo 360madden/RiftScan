@@ -1,6 +1,6 @@
 # RiftScan xref-chain current evidence
 
-Timestamp: 2026-04-29 18:52 America/New_York
+Timestamp: 2026-04-29 19:04 America/New_York
 
 Status: **validated pointer-chain evidence plus addon-coordinate-matched vec3 candidates and movement-response evidence, not final semantic truth**.
 
@@ -158,9 +158,13 @@ Result summary:
 - post candidates: `15`
 - common candidates: `15`
 - moved candidates: `15`
+- motion clusters: `3`
+- synchronized mirror clusters: `3`
+- canonical promotion status: `blocked_by_synchronized_mirror_clusters`
 - shared movement delta: `+1.830078, +0.000305, +0.754395`
 - delta distance: `1.979469`
 - warning: `addon_observations_may_be_stale_or_identical_between_pre_and_post`
+- warning: `synchronized_coordinate_mirror_clusters_detected`
 
 Representative moved offsets:
 
@@ -169,6 +173,14 @@ Representative moved offsets:
 | `0x47EC` | `0x975E1DC7EC` | `xyz` | `7222.555664, 873.196777, 3026.510986` | `7224.385742, 873.197083, 3027.265381` | `+1.830078, +0.000305, +0.754395` | `1.979469` |
 | `0x482C` | `0x975E1DC82C` | `xyz` | `7222.555664, 873.196777, 3026.510986` | `7224.385742, 873.197083, 3027.265381` | `+1.830078, +0.000305, +0.754395` | `1.979469` |
 | `0x3A50` | `0x975E1DBA50` | `xyz` | `7222.455566, 873.096802, 3026.410889` | `7224.285645, 873.097107, 3027.165283` | `+1.830078, +0.000305, +0.754395` | `1.979469` |
+
+Mirror clusters:
+
+| Representative | Count | Offsets | Promotion status |
+|---:|---:|---|---|
+| `0x47EC` | 11 | `0x47EC`, `0x482C`, `0x485C`, `0x4884`, `0x48D0`, `0x5094`, `0x50BC`, `0x50E4`, `0x510C`, `0x5134`, `0x515C` | `blocked_by_synchronized_mirror_cluster` |
+| `0x3A50` | 2 | `0x3A50`, `0x3B40` | `blocked_by_synchronized_mirror_cluster` |
+| `0x3A60` | 2 | `0x3A60`, `0x3B50` | `blocked_by_synchronized_mirror_cluster` |
 
 Interpretation: `0x975E1D8000` is now behavior-backed as a live coordinate-vector family for this process instance. Multiple offsets are synchronized mirrors/copies, so this still does not identify the single canonical owner field.
 
@@ -183,4 +195,4 @@ Interpretation: `0x975E1D8000` is now behavior-backed as a live coordinate-vecto
 
 ## Next smallest proof step
 
-Add a mirror-clustering/promotion gate that groups synchronized offsets, then require a fresh post-movement addon coordinate export before promoting any one offset as canonical.
+Force a fresh post-movement addon coordinate export, then run a second before/after comparison across a longer movement or zone-change boundary to find a cluster that diverges from mirrors before promoting any one offset as canonical.

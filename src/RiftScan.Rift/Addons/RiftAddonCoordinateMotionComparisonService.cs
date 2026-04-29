@@ -14,6 +14,8 @@ public sealed record RiftAddonCoordinateMotionComparisonOptions
 
     public double MinDeltaDistance { get; init; } = 1;
 
+    public double MirrorEpsilon { get; init; } = 0.001;
+
     public int Top { get; init; } = 100;
 }
 
@@ -27,6 +29,11 @@ public sealed class RiftAddonCoordinateMotionComparisonService
         if (double.IsNaN(options.MinDeltaDistance) || double.IsInfinity(options.MinDeltaDistance) || options.MinDeltaDistance < 0)
         {
             throw new ArgumentOutOfRangeException(nameof(options.MinDeltaDistance), "Minimum delta distance must be finite and non-negative.");
+        }
+
+        if (double.IsNaN(options.MirrorEpsilon) || double.IsInfinity(options.MirrorEpsilon) || options.MirrorEpsilon <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(options.MirrorEpsilon), "Mirror epsilon must be finite and positive.");
         }
 
         if (options.Top <= 0)
@@ -47,7 +54,8 @@ public sealed class RiftAddonCoordinateMotionComparisonService
 
         ValidateInput(pre, prePath, warnings);
         ValidateInput(post, postPath, warnings);
-        if (pre.ObservationPath.Equals(post.ObservationPath, StringComparison.OrdinalIgnoreCase) || pre.LatestObservationUtc == post.LatestObservationUtc)
+        var staleAddonObservations = pre.ObservationPath.Equals(post.ObservationPath, StringComparison.OrdinalIgnoreCase) || pre.LatestObservationUtc == post.LatestObservationUtc;
+        if (staleAddonObservations)
         {
             warnings.Add("addon_observations_may_be_stale_or_identical_between_pre_and_post");
         }
@@ -55,18 +63,35 @@ public sealed class RiftAddonCoordinateMotionComparisonService
         var preByKey = pre.Candidates.ToDictionary(BuildKey, StringComparer.Ordinal);
         var postByKey = post.Candidates.ToDictionary(BuildKey, StringComparer.Ordinal);
         var commonKeys = preByKey.Keys.Intersect(postByKey.Keys, StringComparer.Ordinal).ToArray();
-        var candidateDeltas = commonKeys
+        var allDeltas = commonKeys
             .Select(key => BuildDelta(preByKey[key], postByKey[key], options.MinDeltaDistance))
             .OrderByDescending(delta => string.Equals(delta.Classification, "moved_with_player_candidate", StringComparison.OrdinalIgnoreCase))
             .ThenByDescending(delta => delta.DeltaDistance)
             .ThenBy(delta => ParseUnsignedHexOrDecimal(delta.SourceBaseAddressHex))
             .ThenBy(delta => ParseUnsignedHexOrDecimal(delta.SourceOffsetHex))
             .ThenBy(delta => delta.AxisOrder, StringComparer.Ordinal)
-            .Take(options.Top)
             .Select((delta, index) => delta with { DeltaId = $"rift-addon-coordinate-motion-delta-{index + 1:000000}" })
             .ToArray();
+        var candidateDeltas = allDeltas
+            .Take(options.Top)
+            .ToArray();
 
-        var movedCount = candidateDeltas.Count(delta => string.Equals(delta.Classification, "moved_with_player_candidate", StringComparison.OrdinalIgnoreCase));
+        var movedCount = allDeltas.Count(delta => string.Equals(delta.Classification, "moved_with_player_candidate", StringComparison.OrdinalIgnoreCase));
+        var clusters = BuildClusters(allDeltas, options.MirrorEpsilon)
+            .OrderByDescending(cluster => string.Equals(cluster.Classification, "synchronized_coordinate_mirror_cluster", StringComparison.OrdinalIgnoreCase))
+            .ThenByDescending(cluster => cluster.CandidateCount)
+            .ThenByDescending(cluster => cluster.DeltaDistance)
+            .ThenBy(cluster => ParseUnsignedHexOrDecimal(cluster.RepresentativeSourceBaseAddressHex))
+            .ThenBy(cluster => ParseUnsignedHexOrDecimal(cluster.RepresentativeSourceOffsetHex))
+            .ThenBy(cluster => cluster.AxisOrder, StringComparer.Ordinal)
+            .Select((cluster, index) => cluster with { ClusterId = $"rift-addon-coordinate-motion-cluster-{index + 1:000000}" })
+            .ToArray();
+        var synchronizedMirrorClusterCount = clusters.Count(cluster => string.Equals(cluster.Classification, "synchronized_coordinate_mirror_cluster", StringComparison.OrdinalIgnoreCase));
+        if (synchronizedMirrorClusterCount > 0)
+        {
+            warnings.Add("synchronized_coordinate_mirror_clusters_detected");
+        }
+
         if (commonKeys.Length > candidateDeltas.Length)
         {
             warnings.Add("motion_delta_output_truncated_by_top_limit");
@@ -90,12 +115,17 @@ public sealed class RiftAddonCoordinateMotionComparisonService
             PreSessionId = pre.SessionId,
             PostSessionId = post.SessionId,
             MinDeltaDistance = options.MinDeltaDistance,
+            MirrorEpsilon = options.MirrorEpsilon,
             TopLimit = options.Top,
             PreCandidateCount = pre.CandidateCount,
             PostCandidateCount = post.CandidateCount,
             CommonCandidateCount = commonKeys.Length,
             MovedCandidateCount = movedCount,
             CandidateDeltas = candidateDeltas,
+            MotionClusterCount = clusters.Length,
+            SynchronizedMirrorClusterCount = synchronizedMirrorClusterCount,
+            CanonicalPromotionStatus = BuildCanonicalPromotionStatus(movedCount, synchronizedMirrorClusterCount, staleAddonObservations),
+            MotionClusters = clusters.Take(options.Top).ToArray(),
             Warnings = warnings.Distinct(StringComparer.OrdinalIgnoreCase).Order(StringComparer.OrdinalIgnoreCase).ToArray(),
             Diagnostics = diagnostics
         };
@@ -174,7 +204,11 @@ public sealed class RiftAddonCoordinateMotionComparisonService
         builder.AppendLine($"- Post match: `{result.PostMatchPath}`");
         builder.AppendLine($"- Common candidates: {result.CommonCandidateCount}");
         builder.AppendLine($"- Moved candidates: {result.MovedCandidateCount}");
+        builder.AppendLine($"- Motion clusters: {result.MotionClusterCount}");
+        builder.AppendLine($"- Synchronized mirror clusters: {result.SynchronizedMirrorClusterCount}");
+        builder.AppendLine($"- Canonical promotion status: `{Escape(result.CanonicalPromotionStatus)}`");
         builder.AppendLine($"- Minimum delta distance: {result.MinDeltaDistance.ToString(CultureInfo.InvariantCulture)}");
+        builder.AppendLine($"- Mirror epsilon: {result.MirrorEpsilon.ToString(CultureInfo.InvariantCulture)}");
         builder.AppendLine();
         builder.AppendLine("## Candidate deltas");
         builder.AppendLine();
@@ -183,6 +217,16 @@ public sealed class RiftAddonCoordinateMotionComparisonService
         foreach (var delta in result.CandidateDeltas)
         {
             builder.AppendLine($"| `{Escape(delta.SourceOffsetHex)}` | `{Escape(delta.AxisOrder)}` | {delta.DeltaX:F6} | {delta.DeltaY:F6} | {delta.DeltaZ:F6} | {delta.DeltaDistance:F6} | {Escape(delta.Classification)} |");
+        }
+
+        builder.AppendLine();
+        builder.AppendLine("## Motion clusters");
+        builder.AppendLine();
+        builder.AppendLine("| Cluster | Representative | Count | Delta X | Delta Y | Delta Z | Distance | Classification | Promotion status | Offsets |");
+        builder.AppendLine("|---|---:|---:|---:|---:|---:|---:|---|---|---|");
+        foreach (var cluster in result.MotionClusters)
+        {
+            builder.AppendLine($"| `{Escape(cluster.ClusterId)}` | `{Escape(cluster.RepresentativeSourceBaseAddressHex)}+{Escape(cluster.RepresentativeSourceOffsetHex)}` | {cluster.CandidateCount} | {cluster.DeltaX:F6} | {cluster.DeltaY:F6} | {cluster.DeltaZ:F6} | {cluster.DeltaDistance:F6} | {Escape(cluster.Classification)} | {Escape(cluster.PromotionStatus)} | {Escape(string.Join(", ", cluster.SourceOffsets))} |");
         }
 
         builder.AppendLine();
@@ -195,6 +239,101 @@ public sealed class RiftAddonCoordinateMotionComparisonService
 
         return builder.ToString();
     }
+
+    private static IReadOnlyList<RiftAddonCoordinateMotionCluster> BuildClusters(
+        IReadOnlyList<RiftAddonCoordinateMotionDelta> deltas,
+        double mirrorEpsilon)
+    {
+        var groups = deltas.GroupBy(delta => BuildMirrorKey(delta, mirrorEpsilon), StringComparer.Ordinal);
+        var clusters = new List<RiftAddonCoordinateMotionCluster>();
+        foreach (var group in groups)
+        {
+            var ordered = group
+                .OrderBy(delta => ParseUnsignedHexOrDecimal(delta.SourceBaseAddressHex))
+                .ThenBy(delta => ParseUnsignedHexOrDecimal(delta.SourceOffsetHex))
+                .ThenBy(delta => delta.AxisOrder, StringComparer.Ordinal)
+                .ToArray();
+            var representative = ordered[0];
+            var moved = string.Equals(representative.Classification, "moved_with_player_candidate", StringComparison.OrdinalIgnoreCase);
+            var classification = moved && ordered.Length > 1
+                ? "synchronized_coordinate_mirror_cluster"
+                : moved
+                    ? "single_moved_coordinate_candidate"
+                    : "stable_or_below_threshold_cluster";
+            var promotionStatus = classification switch
+            {
+                "synchronized_coordinate_mirror_cluster" => "blocked_by_synchronized_mirror_cluster",
+                "single_moved_coordinate_candidate" => "requires_fresh_addon_observation_and_cross_session_validation",
+                _ => "not_promotable_below_motion_threshold"
+            };
+
+            clusters.Add(new RiftAddonCoordinateMotionCluster
+            {
+                RepresentativeSourceRegionId = representative.SourceRegionId,
+                RepresentativeSourceBaseAddressHex = representative.SourceBaseAddressHex,
+                RepresentativeSourceOffsetHex = representative.SourceOffsetHex,
+                RepresentativeSourceAbsoluteAddressHex = representative.SourceAbsoluteAddressHex,
+                AxisOrder = representative.AxisOrder,
+                CandidateCount = ordered.Length,
+                SourceOffsets = ordered.Select(delta => delta.SourceOffsetHex).ToArray(),
+                SourceAbsoluteAddresses = ordered.Select(delta => delta.SourceAbsoluteAddressHex).ToArray(),
+                PreMemoryX = representative.PreMemoryX,
+                PreMemoryY = representative.PreMemoryY,
+                PreMemoryZ = representative.PreMemoryZ,
+                PostMemoryX = representative.PostMemoryX,
+                PostMemoryY = representative.PostMemoryY,
+                PostMemoryZ = representative.PostMemoryZ,
+                DeltaX = representative.DeltaX,
+                DeltaY = representative.DeltaY,
+                DeltaZ = representative.DeltaZ,
+                DeltaDistance = representative.DeltaDistance,
+                Classification = classification,
+                PromotionStatus = promotionStatus,
+                EvidenceSummary = $"representative={representative.SourceBaseAddressHex}+{representative.SourceOffsetHex};candidate_count={ordered.Length};delta={representative.DeltaX:F6}|{representative.DeltaY:F6}|{representative.DeltaZ:F6};classification={classification};promotion_status={promotionStatus}"
+            });
+        }
+
+        return clusters;
+    }
+
+    private static string BuildCanonicalPromotionStatus(int movedCount, int synchronizedMirrorClusterCount, bool staleAddonObservations)
+    {
+        if (movedCount == 0)
+        {
+            return "blocked_no_moved_candidates";
+        }
+
+        if (synchronizedMirrorClusterCount > 0)
+        {
+            return "blocked_by_synchronized_mirror_clusters";
+        }
+
+        if (staleAddonObservations)
+        {
+            return "blocked_by_stale_addon_observations";
+        }
+
+        return "requires_cross_session_validation_not_final_truth";
+    }
+
+    private static string BuildMirrorKey(RiftAddonCoordinateMotionDelta delta, double mirrorEpsilon) =>
+        string.Join(
+            '|',
+            delta.SourceRegionId,
+            delta.SourceBaseAddressHex,
+            delta.AxisOrder,
+            Quantize(delta.PreMemoryX, mirrorEpsilon),
+            Quantize(delta.PreMemoryY, mirrorEpsilon),
+            Quantize(delta.PreMemoryZ, mirrorEpsilon),
+            Quantize(delta.PostMemoryX, mirrorEpsilon),
+            Quantize(delta.PostMemoryY, mirrorEpsilon),
+            Quantize(delta.PostMemoryZ, mirrorEpsilon),
+            Quantize(delta.DeltaX, mirrorEpsilon),
+            Quantize(delta.DeltaY, mirrorEpsilon),
+            Quantize(delta.DeltaZ, mirrorEpsilon));
+
+    private static long Quantize(double value, double epsilon) =>
+        checked((long)Math.Round(value / epsilon, MidpointRounding.AwayFromZero));
 
     private static string BuildKey(RiftSessionAddonCoordinateCandidate candidate) =>
         string.Join('|', candidate.SourceRegionId, candidate.SourceBaseAddressHex, candidate.SourceOffsetHex, candidate.AxisOrder);
@@ -245,6 +384,9 @@ public sealed record RiftAddonCoordinateMotionComparisonResult
     [JsonPropertyName("min_delta_distance")]
     public double MinDeltaDistance { get; init; }
 
+    [JsonPropertyName("mirror_epsilon")]
+    public double MirrorEpsilon { get; init; }
+
     [JsonPropertyName("top_limit")]
     public int TopLimit { get; init; }
 
@@ -262,6 +404,18 @@ public sealed record RiftAddonCoordinateMotionComparisonResult
 
     [JsonPropertyName("candidate_deltas")]
     public IReadOnlyList<RiftAddonCoordinateMotionDelta> CandidateDeltas { get; init; } = [];
+
+    [JsonPropertyName("motion_cluster_count")]
+    public int MotionClusterCount { get; init; }
+
+    [JsonPropertyName("synchronized_mirror_cluster_count")]
+    public int SynchronizedMirrorClusterCount { get; init; }
+
+    [JsonPropertyName("canonical_promotion_status")]
+    public string CanonicalPromotionStatus { get; init; } = string.Empty;
+
+    [JsonPropertyName("motion_clusters")]
+    public IReadOnlyList<RiftAddonCoordinateMotionCluster> MotionClusters { get; init; } = [];
 
     [JsonPropertyName("output_path")]
     public string? OutputPath { get; init; }
@@ -340,6 +494,75 @@ public sealed record RiftAddonCoordinateMotionDelta
 
     [JsonPropertyName("classification")]
     public string Classification { get; init; } = string.Empty;
+
+    [JsonPropertyName("evidence_summary")]
+    public string EvidenceSummary { get; init; } = string.Empty;
+}
+
+public sealed record RiftAddonCoordinateMotionCluster
+{
+    [JsonPropertyName("cluster_id")]
+    public string ClusterId { get; init; } = string.Empty;
+
+    [JsonPropertyName("representative_source_region_id")]
+    public string RepresentativeSourceRegionId { get; init; } = string.Empty;
+
+    [JsonPropertyName("representative_source_base_address_hex")]
+    public string RepresentativeSourceBaseAddressHex { get; init; } = string.Empty;
+
+    [JsonPropertyName("representative_source_offset_hex")]
+    public string RepresentativeSourceOffsetHex { get; init; } = string.Empty;
+
+    [JsonPropertyName("representative_source_absolute_address_hex")]
+    public string RepresentativeSourceAbsoluteAddressHex { get; init; } = string.Empty;
+
+    [JsonPropertyName("axis_order")]
+    public string AxisOrder { get; init; } = string.Empty;
+
+    [JsonPropertyName("candidate_count")]
+    public int CandidateCount { get; init; }
+
+    [JsonPropertyName("source_offsets")]
+    public IReadOnlyList<string> SourceOffsets { get; init; } = [];
+
+    [JsonPropertyName("source_absolute_addresses")]
+    public IReadOnlyList<string> SourceAbsoluteAddresses { get; init; } = [];
+
+    [JsonPropertyName("pre_memory_x")]
+    public double PreMemoryX { get; init; }
+
+    [JsonPropertyName("pre_memory_y")]
+    public double PreMemoryY { get; init; }
+
+    [JsonPropertyName("pre_memory_z")]
+    public double PreMemoryZ { get; init; }
+
+    [JsonPropertyName("post_memory_x")]
+    public double PostMemoryX { get; init; }
+
+    [JsonPropertyName("post_memory_y")]
+    public double PostMemoryY { get; init; }
+
+    [JsonPropertyName("post_memory_z")]
+    public double PostMemoryZ { get; init; }
+
+    [JsonPropertyName("delta_x")]
+    public double DeltaX { get; init; }
+
+    [JsonPropertyName("delta_y")]
+    public double DeltaY { get; init; }
+
+    [JsonPropertyName("delta_z")]
+    public double DeltaZ { get; init; }
+
+    [JsonPropertyName("delta_distance")]
+    public double DeltaDistance { get; init; }
+
+    [JsonPropertyName("classification")]
+    public string Classification { get; init; } = string.Empty;
+
+    [JsonPropertyName("promotion_status")]
+    public string PromotionStatus { get; init; } = string.Empty;
 
     [JsonPropertyName("evidence_summary")]
     public string EvidenceSummary { get; init; } = string.Empty;

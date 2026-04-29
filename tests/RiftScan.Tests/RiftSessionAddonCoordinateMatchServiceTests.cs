@@ -104,6 +104,7 @@ public sealed class RiftSessionAddonCoordinateMatchServiceTests
             Success = true,
             SessionId = "pre-session",
             ObservationPath = "addon-before.jsonl",
+            LatestObservationUtc = DateTimeOffset.Parse("2026-04-29T20:00:00Z"),
             CandidateCount = 1,
             Candidates =
             [
@@ -128,6 +129,7 @@ public sealed class RiftSessionAddonCoordinateMatchServiceTests
             Success = true,
             SessionId = "post-session",
             ObservationPath = "addon-after.jsonl",
+            LatestObservationUtc = DateTimeOffset.Parse("2026-04-29T20:01:00Z"),
             CandidateCount = 1,
             Candidates =
             [
@@ -161,6 +163,9 @@ public sealed class RiftSessionAddonCoordinateMatchServiceTests
         Assert.Equal("post-session", result.PostSessionId);
         Assert.Equal(1, result.CommonCandidateCount);
         Assert.Equal(1, result.MovedCandidateCount);
+        Assert.Equal(1, result.MotionClusterCount);
+        Assert.Equal(0, result.SynchronizedMirrorClusterCount);
+        Assert.Equal("requires_cross_session_validation_not_final_truth", result.CanonicalPromotionStatus);
         var delta = Assert.Single(result.CandidateDeltas);
         Assert.Equal("0x20", delta.SourceOffsetHex);
         Assert.Equal("moved_with_player_candidate", delta.Classification);
@@ -168,6 +173,64 @@ public sealed class RiftSessionAddonCoordinateMatchServiceTests
         Assert.Equal(0, delta.DeltaY);
         Assert.Equal(1, delta.DeltaZ);
         Assert.Equal(Math.Sqrt(5), delta.DeltaDistance, precision: 6);
+        var cluster = Assert.Single(result.MotionClusters);
+        Assert.Equal("single_moved_coordinate_candidate", cluster.Classification);
+        Assert.Equal("requires_fresh_addon_observation_and_cross_session_validation", cluster.PromotionStatus);
+    }
+
+    [Fact]
+    public void Motion_comparison_groups_synchronized_mirror_candidates()
+    {
+        using var temp = new TempDirectory();
+        Directory.CreateDirectory(temp.Path);
+        var prePath = Path.Combine(temp.Path, "pre-match.json");
+        var postPath = Path.Combine(temp.Path, "post-match.json");
+        WriteJson(prePath, new RiftSessionAddonCoordinateMatchResult
+        {
+            Success = true,
+            SessionId = "pre-session",
+            ObservationPath = "addon-before.jsonl",
+            LatestObservationUtc = DateTimeOffset.Parse("2026-04-29T20:00:00Z"),
+            CandidateCount = 2,
+            Candidates =
+            [
+                BuildCoordinateCandidate("0x20", 100, 200, 300),
+                BuildCoordinateCandidate("0x40", 100, 200, 300)
+            ]
+        });
+        WriteJson(postPath, new RiftSessionAddonCoordinateMatchResult
+        {
+            Success = true,
+            SessionId = "post-session",
+            ObservationPath = "addon-after.jsonl",
+            LatestObservationUtc = DateTimeOffset.Parse("2026-04-29T20:01:00Z"),
+            CandidateCount = 2,
+            Candidates =
+            [
+                BuildCoordinateCandidate("0x20", 102, 200, 301),
+                BuildCoordinateCandidate("0x40", 102, 200, 301)
+            ]
+        });
+
+        var result = new RiftAddonCoordinateMotionComparisonService().Compare(new RiftAddonCoordinateMotionComparisonOptions
+        {
+            PreMatchPath = prePath,
+            PostMatchPath = postPath,
+            MinDeltaDistance = 1,
+            Top = 10
+        });
+
+        Assert.True(result.Success);
+        Assert.Equal(2, result.MovedCandidateCount);
+        Assert.Equal(1, result.MotionClusterCount);
+        Assert.Equal(1, result.SynchronizedMirrorClusterCount);
+        Assert.Equal("blocked_by_synchronized_mirror_clusters", result.CanonicalPromotionStatus);
+        Assert.Contains("synchronized_coordinate_mirror_clusters_detected", result.Warnings);
+        var cluster = Assert.Single(result.MotionClusters);
+        Assert.Equal("synchronized_coordinate_mirror_cluster", cluster.Classification);
+        Assert.Equal("blocked_by_synchronized_mirror_cluster", cluster.PromotionStatus);
+        Assert.Equal(2, cluster.CandidateCount);
+        Assert.Equal(new[] { "0x20", "0x40" }, cluster.SourceOffsets);
     }
 
     [Fact]
@@ -252,9 +315,11 @@ public sealed class RiftSessionAddonCoordinateMatchServiceTests
             using var stdoutJson = JsonDocument.Parse(output.ToString());
             Assert.Equal("riftscan.rift_addon_coordinate_motion_comparison_result.v1", stdoutJson.RootElement.GetProperty("result_schema_version").GetString());
             Assert.Equal(1, stdoutJson.RootElement.GetProperty("moved_candidate_count").GetInt32());
+            Assert.Equal(1, stdoutJson.RootElement.GetProperty("motion_cluster_count").GetInt32());
             using var fileJson = JsonDocument.Parse(File.ReadAllText(jsonPath));
             Assert.Equal(Path.GetFullPath(markdownPath), fileJson.RootElement.GetProperty("markdown_report_path").GetString());
             Assert.Contains("RiftScan Addon Coordinate Motion Comparison", File.ReadAllText(markdownPath), StringComparison.Ordinal);
+            Assert.Contains("Motion clusters", File.ReadAllText(markdownPath), StringComparison.Ordinal);
         }
         finally
         {
@@ -297,6 +362,25 @@ public sealed class RiftSessionAddonCoordinateMatchServiceTests
         ]);
         return observationsPath;
     }
+
+    private static RiftSessionAddonCoordinateCandidate BuildCoordinateCandidate(
+        string offsetHex,
+        double x,
+        double y,
+        double z) =>
+        new()
+        {
+            SourceRegionId = "region-000001",
+            SourceBaseAddressHex = "0x50000000",
+            SourceOffsetHex = offsetHex,
+            SourceAbsoluteAddressHex = $"0x{(0x50000000UL + Convert.ToUInt64(offsetHex[2..], 16)):X}",
+            AxisOrder = "xyz",
+            SupportCount = 6,
+            BestMemoryX = x,
+            BestMemoryY = y,
+            BestMemoryZ = z,
+            BestMaxAbsDistance = 0.1
+        };
 
     private static TempDirectory CreateCoordinateFixtureSession()
     {

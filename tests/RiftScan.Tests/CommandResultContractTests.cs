@@ -366,12 +366,17 @@ public sealed class CommandResultContractTests
             "pre_session_id",
             "post_session_id",
             "min_delta_distance",
+            "mirror_epsilon",
             "top_limit",
             "pre_candidate_count",
             "post_candidate_count",
             "common_candidate_count",
             "moved_candidate_count",
             "candidate_deltas",
+            "motion_cluster_count",
+            "synchronized_mirror_cluster_count",
+            "canonical_promotion_status",
+            "motion_clusters",
             "output_path",
             "markdown_report_path",
             "warnings",
@@ -402,6 +407,33 @@ public sealed class CommandResultContractTests
             "pre_support_count",
             "post_support_count",
             "classification",
+            "evidence_summary");
+
+    [Fact]
+    public void Rift_addon_coordinate_motion_cluster_pins_json_contract_fields() =>
+        AssertJsonPropertySet(
+            new RiftAddonCoordinateMotionCluster(),
+            "cluster_id",
+            "representative_source_region_id",
+            "representative_source_base_address_hex",
+            "representative_source_offset_hex",
+            "representative_source_absolute_address_hex",
+            "axis_order",
+            "candidate_count",
+            "source_offsets",
+            "source_absolute_addresses",
+            "pre_memory_x",
+            "pre_memory_y",
+            "pre_memory_z",
+            "post_memory_x",
+            "post_memory_y",
+            "post_memory_z",
+            "delta_x",
+            "delta_y",
+            "delta_z",
+            "delta_distance",
+            "classification",
+            "promotion_status",
             "evidence_summary");
 
     [Fact]
