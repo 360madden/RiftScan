@@ -29,6 +29,7 @@ public sealed class Vec3CandidateAnalyzerTests
         Assert.Equal(0, candidate.FeatureVector["behavior_score"]);
         Assert.Contains("structures.jsonl", candidate.AnalyzerSources);
         Assert.Contains("snapshots/*.bin", candidate.AnalyzerSources);
+        Assert.StartsWith("samples=", candidate.ValueSequenceSummary, StringComparison.Ordinal);
         Assert.Equal("vec3_candidate_followup", candidate.Recommendation);
         Assert.Contains("candidate_not_truth_claim", candidate.Diagnostics);
         Assert.True(File.Exists(Path.Combine(session.Path, "vec3_candidates.jsonl")));
@@ -65,6 +66,7 @@ public sealed class Vec3CandidateAnalyzerTests
         Assert.Equal(25, candidate.FeatureVector["behavior_score"]);
         Assert.Contains("structures.jsonl", candidate.AnalyzerSources);
         Assert.Contains("stimuli.jsonl", candidate.AnalyzerSources);
+        Assert.Contains("delta=", candidate.ValueSequenceSummary, StringComparison.Ordinal);
         Assert.Equal("move_forward_vec3_candidate_followup", candidate.Recommendation);
         Assert.True(candidate.ValueDeltaMagnitude > 0);
         Assert.Contains("move_forward_vec3_changed", candidate.Diagnostics);

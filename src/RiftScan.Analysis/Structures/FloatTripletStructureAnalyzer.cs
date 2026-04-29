@@ -92,6 +92,7 @@ public sealed class FloatTripletStructureAnalyzer
                 ScoreBreakdown = BuildScoreBreakdown(supportRatio, score),
                 FeatureVector = BuildFeatureVector(accumulator.Support, snapshots.Count, supportRatio, accumulator.FirstValues),
                 AnalyzerSources = ["snapshots/index.jsonl", "snapshots/*.bin"],
+                ValueSequenceSummary = $"support={accumulator.Support}/{snapshots.Count};preview={FormatFloatPreview(accumulator.FirstValues)}",
                 ConfidenceLevel = ToConfidenceLevel(score),
                 ExplanationShort = $"finite_float32_triplet_supported_in_{accumulator.Support}_of_{snapshots.Count}_snapshots",
                 ValuePreview = accumulator.FirstValues,
@@ -121,6 +122,9 @@ public sealed class FloatTripletStructureAnalyzer
             ["component_count"] = values.Count,
             ["nonzero_component_count"] = values.Count(value => value != 0)
         };
+
+    private static string FormatFloatPreview(IEnumerable<float> values) =>
+        string.Join("|", values.Select(value => value.ToString("G6")));
 
     private static string ToConfidenceLevel(double score)
     {

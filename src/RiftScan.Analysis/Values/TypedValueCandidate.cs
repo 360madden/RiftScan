@@ -52,6 +52,9 @@ public sealed record TypedValueCandidate
     [JsonPropertyName("analyzer_sources")]
     public IReadOnlyList<string> AnalyzerSources { get; init; } = [];
 
+    [JsonPropertyName("value_sequence_summary")]
+    public string ValueSequenceSummary { get; init; } = string.Empty;
+
     [JsonPropertyName("validation_status")]
     public string ValidationStatus { get; init; } = "unvalidated_candidate";
 

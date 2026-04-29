@@ -86,6 +86,7 @@ public sealed class Vec3CandidateAnalyzer
             AnalyzerSources = string.IsNullOrWhiteSpace(stimulusLabel)
                 ? ["structures.jsonl", "snapshots/index.jsonl", "snapshots/*.bin"]
                 : ["structures.jsonl", "snapshots/index.jsonl", "snapshots/*.bin", "stimuli.jsonl"],
+            ValueSequenceSummary = $"samples={values.Count};delta={Math.Round(deltaMagnitude, 6)};preview={FormatFloatPreview(source.ValuePreview)}",
             ValidationStatus = behavior.ValidationStatus,
             ConfidenceLevel = ToConfidenceLevel(rankScore),
             ExplanationShort = behavior.Recommendation,
@@ -121,6 +122,9 @@ public sealed class Vec3CandidateAnalyzer
             ["value_delta_magnitude"] = Math.Round(valueDeltaMagnitude, 6),
             ["behavior_score"] = Math.Round(behaviorScore, 3)
         };
+
+    private static string FormatFloatPreview(IEnumerable<float> values) =>
+        string.Join("|", values.Select(value => value.ToString("G6")));
 
     private static string ToConfidenceLevel(double rankScore)
     {

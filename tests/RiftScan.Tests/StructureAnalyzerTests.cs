@@ -29,6 +29,7 @@ public sealed class StructureAnalyzerTests
         Assert.Equal(1, first.FeatureVector["snapshot_support_ratio"]);
         Assert.Contains("snapshots/index.jsonl", first.AnalyzerSources);
         Assert.Contains("snapshots/*.bin", first.AnalyzerSources);
+        Assert.StartsWith("support=1/1;preview=", first.ValueSequenceSummary, StringComparison.Ordinal);
         Assert.True(first.Score > 0);
     }
 
