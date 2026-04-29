@@ -3,14 +3,20 @@
 [CmdletBinding()]
 param(
     [string]$Configuration = "Release",
-    [switch]$KeepOutput
+    [switch]$KeepOutput,
+    [string]$OutputRoot
 )
 
 $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
 
 $repoRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
-$tempRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("riftscan-smoke-" + [Guid]::NewGuid().ToString("N"))
+if ([string]::IsNullOrWhiteSpace($OutputRoot)) {
+    $tempRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("riftscan-smoke-" + [Guid]::NewGuid().ToString("N"))
+}
+else {
+    $tempRoot = [System.IO.Path]::GetFullPath($OutputRoot)
+}
 $cliPrefix = @("run", "--project", "src/RiftScan.Cli/RiftScan.Cli.csproj", "--configuration", $Configuration, "--no-build", "--")
 
 function Invoke-DotNet {
@@ -57,6 +63,17 @@ try {
         throw "Fixture session not found: $fixtureSource"
     }
 
+    if (Test-Path -LiteralPath $tempRoot) {
+        $repoArtifactRoot = [System.IO.Path]::GetFullPath((Join-Path $repoRoot "artifacts"))
+        $systemTempRoot = [System.IO.Path]::GetFullPath([System.IO.Path]::GetTempPath())
+        $isSafeOutputRoot = $tempRoot.StartsWith($repoArtifactRoot, [StringComparison]::OrdinalIgnoreCase) -or
+            $tempRoot.StartsWith($systemTempRoot, [StringComparison]::OrdinalIgnoreCase)
+        if (-not $isSafeOutputRoot) {
+            throw "Refusing to clean existing smoke output outside repo artifacts or system temp: $tempRoot"
+        }
+
+        Remove-Item -LiteralPath $tempRoot -Recurse -Force
+    }
     New-Item -ItemType Directory -Path $tempRoot | Out-Null
     $sessionA = Join-Path $tempRoot "session-a"
     $sessionB = Join-Path $tempRoot "session-b"

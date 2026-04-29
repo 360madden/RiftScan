@@ -37,8 +37,16 @@ jobs:
 
       - name: Fixture smoke
         shell: pwsh
-        run: pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/smoke-fixture.ps1
+        run: pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/smoke-fixture.ps1 -KeepOutput -OutputRoot artifacts/smoke-fixture
 
       - name: Migration smoke
         shell: pwsh
-        run: pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/smoke-migration.ps1
+        run: pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/smoke-migration.ps1 -KeepOutput -OutputRoot artifacts/smoke-migration
+
+      - name: Upload smoke artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: riftscan-smoke-artifacts
+          path: artifacts
+          if-no-files-found: error
