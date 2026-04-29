@@ -356,6 +356,55 @@ public sealed class CommandResultContractTests
             "evidence_summary");
 
     [Fact]
+    public void Rift_addon_coordinate_motion_comparison_result_pins_json_contract_fields() =>
+        AssertJsonPropertySet(
+            new RiftAddonCoordinateMotionComparisonResult(),
+            "result_schema_version",
+            "success",
+            "pre_match_path",
+            "post_match_path",
+            "pre_session_id",
+            "post_session_id",
+            "min_delta_distance",
+            "top_limit",
+            "pre_candidate_count",
+            "post_candidate_count",
+            "common_candidate_count",
+            "moved_candidate_count",
+            "candidate_deltas",
+            "output_path",
+            "markdown_report_path",
+            "warnings",
+            "diagnostics");
+
+    [Fact]
+    public void Rift_addon_coordinate_motion_delta_pins_json_contract_fields() =>
+        AssertJsonPropertySet(
+            new RiftAddonCoordinateMotionDelta(),
+            "delta_id",
+            "source_region_id",
+            "source_base_address_hex",
+            "source_offset_hex",
+            "source_absolute_address_hex",
+            "axis_order",
+            "pre_memory_x",
+            "pre_memory_y",
+            "pre_memory_z",
+            "post_memory_x",
+            "post_memory_y",
+            "post_memory_z",
+            "delta_x",
+            "delta_y",
+            "delta_z",
+            "delta_distance",
+            "pre_best_max_abs_distance_to_addon",
+            "post_best_max_abs_distance_to_addon",
+            "pre_support_count",
+            "post_support_count",
+            "classification",
+            "evidence_summary");
+
+    [Fact]
     public void Session_prune_candidate_pins_json_contract_fields() =>
         AssertJsonPropertySet(
             new SessionPruneCandidate(),
@@ -402,6 +451,7 @@ public sealed class CommandResultContractTests
         Assert.Equal("riftscan.session_xref_chain_summary_result.v1", ReadSchema(new SessionXrefChainSummaryResult()));
         Assert.Equal("riftscan.session_xref_chain_summary_verification_result.v1", ReadSchema(new SessionXrefChainSummaryVerificationResult()));
         Assert.Equal("riftscan.rift_session_addon_coordinate_match_result.v1", ReadSchema(new RiftSessionAddonCoordinateMatchResult()));
+        Assert.Equal("riftscan.rift_addon_coordinate_motion_comparison_result.v1", ReadSchema(new RiftAddonCoordinateMotionComparisonResult()));
     }
 
     private static string? ReadSchema<T>(T value)

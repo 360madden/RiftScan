@@ -1,8 +1,8 @@
 # RiftScan xref-chain current evidence
 
-Timestamp: 2026-04-29 18:36 America/New_York
+Timestamp: 2026-04-29 18:52 America/New_York
 
-Status: **validated pointer-chain evidence plus addon-coordinate-matched vec3 candidates, not final semantic truth**.
+Status: **validated pointer-chain evidence plus addon-coordinate-matched vec3 candidates and movement-response evidence, not final semantic truth**.
 
 ## Current verified chain
 
@@ -43,6 +43,16 @@ These artifacts are intentionally under ignored capture/report directories and a
 - `reports/generated/live-chain-focus-20260429-xref-chain-summary.md`
 - `reports/generated/live-chain-focus-20260429-addon-coordinate-matches.json`
 - `reports/generated/live-chain-focus-20260429-addon-coordinate-matches.md`
+- `sessions/live-coordinate-motion-20260429-before`
+- `sessions/live-coordinate-motion-20260429-after-w`
+- `reports/generated/addon-coordinate-observations-20260429-after-w.jsonl`
+- `reports/generated/addon-coordinate-scan-20260429-after-w.json`
+- `reports/generated/live-coordinate-motion-20260429-before-addon-coordinate-matches.json`
+- `reports/generated/live-coordinate-motion-20260429-before-addon-coordinate-matches.md`
+- `reports/generated/live-coordinate-motion-20260429-after-w-addon-coordinate-matches.json`
+- `reports/generated/live-coordinate-motion-20260429-after-w-addon-coordinate-matches.md`
+- `reports/generated/live-coordinate-motion-20260429-before-after-coordinate-motion.json`
+- `reports/generated/live-coordinate-motion-20260429-before-after-coordinate-motion.md`
 
 Capture result:
 
@@ -107,14 +117,70 @@ zone       = z487C9102D2EA79BE
 
 Important limitation: this proves addon-coordinate corroboration for repeated vec3 copies in the `0x975E1D8000` target region. It does **not** yet prove which copy is canonical live player position, nor that the address is durable across sessions.
 
+## Movement-response result
+
+Live control note: the RIFT window was switched by exact window title and `W` was held for `1400ms` via Windows keyboard events against PID `41220`. This is external test control only; no input/window-control code was added to RiftScan core.
+
+Before/after focused captures:
+
+```powershell
+riftscan capture passive --pid 41220 `
+  --out sessions/live-coordinate-motion-20260429-before `
+  --samples 6 --interval-ms 100 `
+  --max-regions 1 --max-bytes-per-region 65536 --max-total-bytes 1048576 `
+  --base-addresses 0x975E1D8000 `
+  --stimulus passive_idle
+
+riftscan capture passive --pid 41220 `
+  --out sessions/live-coordinate-motion-20260429-after-w `
+  --samples 6 --interval-ms 100 `
+  --max-regions 1 --max-bytes-per-region 65536 --max-total-bytes 1048576 `
+  --base-addresses 0x975E1D8000 `
+  --stimulus move_forward
+```
+
+Comparison command:
+
+```powershell
+riftscan rift compare-addon-coordinate-motion `
+  reports/generated/live-coordinate-motion-20260429-before-addon-coordinate-matches.json `
+  reports/generated/live-coordinate-motion-20260429-after-w-addon-coordinate-matches.json `
+  --min-delta-distance 1 `
+  --top 100 `
+  --out reports/generated/live-coordinate-motion-20260429-before-after-coordinate-motion.json `
+  --report-md reports/generated/live-coordinate-motion-20260429-before-after-coordinate-motion.md
+```
+
+Result summary:
+
+- `success=true`
+- pre candidates: `15`
+- post candidates: `15`
+- common candidates: `15`
+- moved candidates: `15`
+- shared movement delta: `+1.830078, +0.000305, +0.754395`
+- delta distance: `1.979469`
+- warning: `addon_observations_may_be_stale_or_identical_between_pre_and_post`
+
+Representative moved offsets:
+
+| Offset | Absolute | Axis | Pre xyz | Post xyz | Delta xyz | Distance |
+|---:|---:|---|---|---|---|---:|
+| `0x47EC` | `0x975E1DC7EC` | `xyz` | `7222.555664, 873.196777, 3026.510986` | `7224.385742, 873.197083, 3027.265381` | `+1.830078, +0.000305, +0.754395` | `1.979469` |
+| `0x482C` | `0x975E1DC82C` | `xyz` | `7222.555664, 873.196777, 3026.510986` | `7224.385742, 873.197083, 3027.265381` | `+1.830078, +0.000305, +0.754395` | `1.979469` |
+| `0x3A50` | `0x975E1DBA50` | `xyz` | `7222.455566, 873.096802, 3026.410889` | `7224.285645, 873.097107, 3027.165283` | `+1.830078, +0.000305, +0.754395` | `1.979469` |
+
+Interpretation: `0x975E1D8000` is now behavior-backed as a live coordinate-vector family for this process instance. Multiple offsets are synchronized mirrors/copies, so this still does not identify the single canonical owner field.
+
 ## Interpretation
 
 - This is stable owner/provenance evidence for the current process instance.
 - Addon observations now corroborate coordinate-like vec3 copies inside the `0x975E1D8000` vector family.
-- It does **not** prove that `0x975E1D8000+0x47EC` is final player position, actor yaw, or camera truth.
-- The next semantic validation must prove behavior response after controlled movement and separate canonical live position from mirrored/cache copies.
+- Controlled movement now proves the matched vec3 copies respond to player translation.
+- It does **not** prove that `0x975E1D8000+0x47EC` is the canonical owner field, actor yaw, or camera truth.
+- The next semantic validation must separate canonical live position from synchronized mirrors/cache copies and refresh addon coordinates after movement.
 - RiftScan core remains read-only. Do not add input/window control or launcher automation to scanner core.
 
 ## Next smallest proof step
 
-Capture the same focused region after a small player translation and re-run `riftscan rift match-addon-coords` to determine which candidate offsets update with the player and which are static/mirrored copies.
+Add a mirror-clustering/promotion gate that groups synchronized offsets, then require a fresh post-movement addon coordinate export before promoting any one offset as canonical.

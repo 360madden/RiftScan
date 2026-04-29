@@ -83,6 +83,11 @@ public static class Program
                 return RiftMatchAddonCoords(args[2..]);
             }
 
+            if (args.Length >= 2 && Is(args[0], "rift") && Is(args[1], "compare-addon-coordinate-motion"))
+            {
+                return RiftCompareAddonCoordinateMotion(args[2..]);
+            }
+
             if (args.Length >= 2 && Is(args[0], "rift") && Is(args[1], "addon-corroboration"))
             {
                 return RiftAddonCorroboration(args[2..]);
@@ -583,6 +588,81 @@ public static class Program
             Tolerance = tolerance,
             Top = top,
             LatestOnly = latestOnly
+        });
+        if (!string.IsNullOrWhiteSpace(outputPath))
+        {
+            result = result with { OutputPath = Path.GetFullPath(outputPath) };
+        }
+
+        if (!string.IsNullOrWhiteSpace(reportPath))
+        {
+            result = result with { MarkdownReportPath = Path.GetFullPath(reportPath) };
+        }
+
+        if (!string.IsNullOrWhiteSpace(result.MarkdownReportPath))
+        {
+            service.WriteMarkdown(result, result.MarkdownReportPath);
+        }
+
+        WriteOptionalJson(result.OutputPath, result);
+        Console.WriteLine(JsonSerializer.Serialize(result, SessionJson.Options));
+        return result.Success ? 0 : 1;
+    }
+
+    private static int RiftCompareAddonCoordinateMotion(string[] args)
+    {
+        if (args.Length == 1 && IsHelp(args[0]))
+        {
+            PrintRiftCompareAddonCoordinateMotionUsage();
+            return 0;
+        }
+
+        var inputPaths = new List<string>();
+        string? outputPath = null;
+        string? reportPath = null;
+        var minDeltaDistance = 1d;
+        var top = 100;
+        for (var index = 0; index < args.Length; index++)
+        {
+            var arg = args[index];
+            switch (arg)
+            {
+                case "--min-delta-distance":
+                    minDeltaDistance = double.Parse(RequireValue(args, ref index, arg), CultureInfo.InvariantCulture);
+                    break;
+                case "--top":
+                    top = int.Parse(RequireValue(args, ref index, arg), CultureInfo.InvariantCulture);
+                    break;
+                case "--out":
+                case "--json-out":
+                    outputPath = RequireValue(args, ref index, arg);
+                    break;
+                case "--report-md":
+                    reportPath = RequireValue(args, ref index, arg);
+                    break;
+                default:
+                    if (arg.StartsWith("--", StringComparison.Ordinal))
+                    {
+                        throw new ArgumentException($"Unknown rift compare-addon-coordinate-motion option: {arg}");
+                    }
+
+                    inputPaths.Add(arg);
+                    break;
+            }
+        }
+
+        if (inputPaths.Count != 2)
+        {
+            throw new ArgumentException("rift compare-addon-coordinate-motion requires <pre-match-json> and <post-match-json>.");
+        }
+
+        var service = new RiftAddonCoordinateMotionComparisonService();
+        var result = service.Compare(new RiftAddonCoordinateMotionComparisonOptions
+        {
+            PreMatchPath = inputPaths[0],
+            PostMatchPath = inputPaths[1],
+            MinDeltaDistance = minDeltaDistance,
+            Top = top
         });
         if (!string.IsNullOrWhiteSpace(outputPath))
         {
@@ -2226,6 +2306,7 @@ public static class Program
         PrintReportCapabilityUsage();
         PrintRiftAddonCoordsUsage();
         PrintRiftMatchAddonCoordsUsage();
+        PrintRiftCompareAddonCoordinateMotionUsage();
         PrintRiftAddonCorroborationUsage();
         PrintRiftVerifyPromotedCoordinateUsage();
         PrintCompareSessionsUsage();
@@ -2324,6 +2405,9 @@ public static class Program
 
     private static void PrintRiftMatchAddonCoordsUsage() =>
         Console.WriteLine("riftscan rift match-addon-coords <session-path> --observations reports/generated/addon-coordinate-observations.jsonl [--region-base 0xADDR] [--tolerance 5] [--top 100] [--out reports/generated/session-addon-coordinate-matches.json] [--report-md reports/generated/session-addon-coordinate-matches.md] [--latest-only]");
+
+    private static void PrintRiftCompareAddonCoordinateMotionUsage() =>
+        Console.WriteLine("riftscan rift compare-addon-coordinate-motion <pre-match-json> <post-match-json> [--min-delta-distance 1] [--top 100] [--out reports/generated/addon-coordinate-motion.json] [--report-md reports/generated/addon-coordinate-motion.md]");
 
     private static void PrintRiftAddonCorroborationUsage() =>
         Console.WriteLine("riftscan rift addon-corroboration --candidates reports/generated/vec3-truth-candidates.jsonl --observations reports/generated/addon-coordinate-observations.jsonl --out reports/generated/vec3-truth-corroboration.jsonl [--json-out reports/generated/addon-coordinate-corroboration.json] [--tolerance 5]");

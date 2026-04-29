@@ -92,6 +92,177 @@ public sealed class RiftSessionAddonCoordinateMatchServiceTests
         }
     }
 
+    [Fact]
+    public void Motion_comparison_classifies_common_candidates_that_moved()
+    {
+        using var temp = new TempDirectory();
+        Directory.CreateDirectory(temp.Path);
+        var prePath = Path.Combine(temp.Path, "pre-match.json");
+        var postPath = Path.Combine(temp.Path, "post-match.json");
+        WriteJson(prePath, new RiftSessionAddonCoordinateMatchResult
+        {
+            Success = true,
+            SessionId = "pre-session",
+            ObservationPath = "addon-before.jsonl",
+            CandidateCount = 1,
+            Candidates =
+            [
+                new RiftSessionAddonCoordinateCandidate
+                {
+                    CandidateId = "pre-candidate",
+                    SourceRegionId = "region-000001",
+                    SourceBaseAddressHex = "0x50000000",
+                    SourceOffsetHex = "0x20",
+                    SourceAbsoluteAddressHex = "0x50000020",
+                    AxisOrder = "xyz",
+                    SupportCount = 6,
+                    BestMemoryX = 100,
+                    BestMemoryY = 200,
+                    BestMemoryZ = 300,
+                    BestMaxAbsDistance = 0.1
+                }
+            ]
+        });
+        WriteJson(postPath, new RiftSessionAddonCoordinateMatchResult
+        {
+            Success = true,
+            SessionId = "post-session",
+            ObservationPath = "addon-after.jsonl",
+            CandidateCount = 1,
+            Candidates =
+            [
+                new RiftSessionAddonCoordinateCandidate
+                {
+                    CandidateId = "post-candidate",
+                    SourceRegionId = "region-000001",
+                    SourceBaseAddressHex = "0x50000000",
+                    SourceOffsetHex = "0x20",
+                    SourceAbsoluteAddressHex = "0x50000020",
+                    AxisOrder = "xyz",
+                    SupportCount = 6,
+                    BestMemoryX = 102,
+                    BestMemoryY = 200,
+                    BestMemoryZ = 301,
+                    BestMaxAbsDistance = 2
+                }
+            ]
+        });
+
+        var result = new RiftAddonCoordinateMotionComparisonService().Compare(new RiftAddonCoordinateMotionComparisonOptions
+        {
+            PreMatchPath = prePath,
+            PostMatchPath = postPath,
+            MinDeltaDistance = 1,
+            Top = 10
+        });
+
+        Assert.True(result.Success);
+        Assert.Equal("pre-session", result.PreSessionId);
+        Assert.Equal("post-session", result.PostSessionId);
+        Assert.Equal(1, result.CommonCandidateCount);
+        Assert.Equal(1, result.MovedCandidateCount);
+        var delta = Assert.Single(result.CandidateDeltas);
+        Assert.Equal("0x20", delta.SourceOffsetHex);
+        Assert.Equal("moved_with_player_candidate", delta.Classification);
+        Assert.Equal(2, delta.DeltaX);
+        Assert.Equal(0, delta.DeltaY);
+        Assert.Equal(1, delta.DeltaZ);
+        Assert.Equal(Math.Sqrt(5), delta.DeltaDistance, precision: 6);
+    }
+
+    [Fact]
+    public void Cli_compare_addon_coordinate_motion_writes_json_and_markdown_report()
+    {
+        using var temp = new TempDirectory();
+        Directory.CreateDirectory(temp.Path);
+        var prePath = Path.Combine(temp.Path, "pre-match.json");
+        var postPath = Path.Combine(temp.Path, "post-match.json");
+        var jsonPath = Path.Combine(temp.Path, "motion.json");
+        var markdownPath = Path.Combine(temp.Path, "motion.md");
+        WriteJson(prePath, new RiftSessionAddonCoordinateMatchResult
+        {
+            Success = true,
+            SessionId = "pre-session",
+            ObservationPath = "addon-before.jsonl",
+            CandidateCount = 1,
+            Candidates =
+            [
+                new RiftSessionAddonCoordinateCandidate
+                {
+                    SourceRegionId = "region-000001",
+                    SourceBaseAddressHex = "0x50000000",
+                    SourceOffsetHex = "0x20",
+                    SourceAbsoluteAddressHex = "0x50000020",
+                    AxisOrder = "xyz",
+                    SupportCount = 6,
+                    BestMemoryX = 100,
+                    BestMemoryY = 200,
+                    BestMemoryZ = 300
+                }
+            ]
+        });
+        WriteJson(postPath, new RiftSessionAddonCoordinateMatchResult
+        {
+            Success = true,
+            SessionId = "post-session",
+            ObservationPath = "addon-after.jsonl",
+            CandidateCount = 1,
+            Candidates =
+            [
+                new RiftSessionAddonCoordinateCandidate
+                {
+                    SourceRegionId = "region-000001",
+                    SourceBaseAddressHex = "0x50000000",
+                    SourceOffsetHex = "0x20",
+                    SourceAbsoluteAddressHex = "0x50000020",
+                    AxisOrder = "xyz",
+                    SupportCount = 6,
+                    BestMemoryX = 102,
+                    BestMemoryY = 200,
+                    BestMemoryZ = 301
+                }
+            ]
+        });
+        var originalOut = Console.Out;
+        var originalError = Console.Error;
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+
+        try
+        {
+            Console.SetOut(output);
+            Console.SetError(error);
+            var exitCode = RiftScan.Cli.Program.Main([
+                "rift",
+                "compare-addon-coordinate-motion",
+                prePath,
+                postPath,
+                "--min-delta-distance",
+                "1",
+                "--out",
+                jsonPath,
+                "--report-md",
+                markdownPath
+            ]);
+
+            Assert.Equal(0, exitCode);
+            Assert.Equal(string.Empty, error.ToString());
+            Assert.True(File.Exists(jsonPath));
+            Assert.True(File.Exists(markdownPath));
+            using var stdoutJson = JsonDocument.Parse(output.ToString());
+            Assert.Equal("riftscan.rift_addon_coordinate_motion_comparison_result.v1", stdoutJson.RootElement.GetProperty("result_schema_version").GetString());
+            Assert.Equal(1, stdoutJson.RootElement.GetProperty("moved_candidate_count").GetInt32());
+            using var fileJson = JsonDocument.Parse(File.ReadAllText(jsonPath));
+            Assert.Equal(Path.GetFullPath(markdownPath), fileJson.RootElement.GetProperty("markdown_report_path").GetString());
+            Assert.Contains("RiftScan Addon Coordinate Motion Comparison", File.ReadAllText(markdownPath), StringComparison.Ordinal);
+        }
+        finally
+        {
+            Console.SetOut(originalOut);
+            Console.SetError(originalError);
+        }
+    }
+
     private static string WriteObservationFixture(string directory)
     {
         var observationsPath = Path.Combine(directory, "addon-coordinate-observations.jsonl");

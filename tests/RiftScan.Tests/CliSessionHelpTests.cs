@@ -13,6 +13,7 @@ public sealed class CliSessionHelpTests
     [InlineData("analyze xref-chain --help", "riftscan analyze xref-chain <xref-json>")]
     [InlineData("report session --help", "riftscan report session <session-path>")]
     [InlineData("rift match-addon-coords --help", "riftscan rift match-addon-coords <session-path>")]
+    [InlineData("rift compare-addon-coordinate-motion --help", "riftscan rift compare-addon-coordinate-motion <pre-match-json>")]
     [InlineData("compare sessions --help", "riftscan compare sessions <session-a> <session-b>")]
     [InlineData("migrate session --help", "riftscan migrate session <session-path>")]
     [InlineData("session prune --help", "riftscan session prune <session-path>")]
