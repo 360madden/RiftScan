@@ -20,11 +20,20 @@ $manifests = Get-ChildItem -LiteralPath $fullRoot -Filter "smoke-manifest.json" 
     Sort-Object FullName |
     ForEach-Object {
         $manifest = Get-Content -LiteralPath $_.FullName -Raw | ConvertFrom-Json
+        if ($manifest.schema_version -ne "riftscan.smoke_manifest.v1") {
+            throw "Unsupported smoke manifest schema in $($_.FullName): $($manifest.schema_version)"
+        }
+
+        $files = @($manifest.files)
+        if ([int]$manifest.file_count -ne $files.Count) {
+            throw "Smoke manifest file_count mismatch in $($_.FullName): expected $($manifest.file_count), found $($files.Count)."
+        }
+
         [ordered]@{
             path = [System.IO.Path]::GetRelativePath($fullRoot, $_.FullName).Replace('\', '/')
             smoke_name = $manifest.smoke_name
             file_count = [int]$manifest.file_count
-            bytes = (@($manifest.files) | ForEach-Object { [int64]$_.bytes } | Measure-Object -Sum).Sum
+            bytes = ($files | ForEach-Object { [int64]$_.bytes } | Measure-Object -Sum).Sum
         }
     }
 

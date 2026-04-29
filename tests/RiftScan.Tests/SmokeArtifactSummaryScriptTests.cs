@@ -138,6 +138,60 @@ public sealed class SmokeArtifactSummaryScriptTests
         }
     }
 
+    [Fact]
+    public void Write_smoke_artifact_summary_rejects_unsupported_manifest_schema()
+    {
+        var tempDirectory = CreateTempDirectory();
+        try
+        {
+            var artifactRoot = Path.Combine(tempDirectory, "artifacts");
+            var smokeRoot = Path.Combine(artifactRoot, "smoke-fixture");
+            Directory.CreateDirectory(smokeRoot);
+            WriteManifest(
+                smokeRoot,
+                "fixture",
+                "riftscan.smoke_manifest.v999",
+                null,
+                ("proof.json", 12));
+
+            var result = RunSummaryScript("-Root", artifactRoot, "-SummaryPath", Path.Combine(tempDirectory, "summary.md"));
+
+            Assert.NotEqual(0, result.ExitCode);
+            Assert.Contains("Unsupported smoke manifest schema", result.Stderr, StringComparison.OrdinalIgnoreCase);
+        }
+        finally
+        {
+            Directory.Delete(tempDirectory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void Write_smoke_artifact_summary_rejects_file_count_mismatch()
+    {
+        var tempDirectory = CreateTempDirectory();
+        try
+        {
+            var artifactRoot = Path.Combine(tempDirectory, "artifacts");
+            var smokeRoot = Path.Combine(artifactRoot, "smoke-fixture");
+            Directory.CreateDirectory(smokeRoot);
+            WriteManifest(
+                smokeRoot,
+                "fixture",
+                "riftscan.smoke_manifest.v1",
+                2,
+                ("proof.json", 12));
+
+            var result = RunSummaryScript("-Root", artifactRoot, "-SummaryPath", Path.Combine(tempDirectory, "summary.md"));
+
+            Assert.NotEqual(0, result.ExitCode);
+            Assert.Contains("file_count mismatch", result.Stderr, StringComparison.OrdinalIgnoreCase);
+        }
+        finally
+        {
+            Directory.Delete(tempDirectory, recursive: true);
+        }
+    }
+
     private static void WriteManifest(string outputRoot, string smokeName, string relativePath, long bytes)
     {
         WriteManifest(outputRoot, smokeName, (relativePath, bytes));
@@ -145,13 +199,23 @@ public sealed class SmokeArtifactSummaryScriptTests
 
     private static void WriteManifest(string outputRoot, string smokeName, params (string RelativePath, long Bytes)[] entries)
     {
+        WriteManifest(outputRoot, smokeName, "riftscan.smoke_manifest.v1", fileCountOverride: null, entries);
+    }
+
+    private static void WriteManifest(
+        string outputRoot,
+        string smokeName,
+        string schemaVersion,
+        int? fileCountOverride,
+        params (string RelativePath, long Bytes)[] entries)
+    {
         var manifest = new
         {
-            schema_version = "riftscan.smoke_manifest.v1",
+            schema_version = schemaVersion,
             smoke_name = smokeName,
             output_root = Path.GetFullPath(outputRoot),
             created_utc = DateTimeOffset.UtcNow.ToString("O"),
-            file_count = entries.Length,
+            file_count = fileCountOverride ?? entries.Length,
             files = entries.Select(entry => new
             {
                 path = entry.RelativePath,
