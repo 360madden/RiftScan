@@ -1,5 +1,7 @@
 # RiftScan
 
+[![ci](https://github.com/360madden/RiftScan/actions/workflows/ci.yml/badge.svg)](https://github.com/360madden/RiftScan/actions/workflows/ci.yml)
+
 Read-only RIFT memory discovery pipeline: capture once, analyze offline, compare sessions, then generate focused follow-up capture plans.
 
 ## Current working loop
