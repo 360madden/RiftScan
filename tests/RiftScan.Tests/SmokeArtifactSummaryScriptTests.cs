@@ -40,6 +40,64 @@ public sealed class SmokeArtifactSummaryScriptTests
     }
 
     [Fact]
+    public void Write_smoke_artifact_summary_sorts_manifests_and_sums_file_bytes()
+    {
+        var tempDirectory = CreateTempDirectory();
+        try
+        {
+            var artifactRoot = Path.Combine(tempDirectory, "artifacts");
+            var migrationRoot = Path.Combine(artifactRoot, "smoke-migration");
+            var fixtureRoot = Path.Combine(artifactRoot, "smoke-fixture");
+            Directory.CreateDirectory(migrationRoot);
+            Directory.CreateDirectory(fixtureRoot);
+            WriteManifest(migrationRoot, "migration", ("migration-plan.json", 20), ("migrated/manifest.json", 30));
+            WriteManifest(fixtureRoot, "fixture", ("report.md", 7), ("reports/fixture-comparison.json", 11));
+            var summaryPath = Path.Combine(tempDirectory, "summary.md");
+
+            var result = RunSummaryScript("-Root", artifactRoot, "-SummaryPath", summaryPath);
+
+            Assert.Equal(0, result.ExitCode);
+            Assert.Equal(string.Empty, result.Stderr);
+            var summary = File.ReadAllText(summaryPath);
+            Assert.Contains("- Manifest count: 2", summary, StringComparison.Ordinal);
+            Assert.Contains("| fixture | 2 | 18 | `smoke-fixture/smoke-manifest.json` |", summary, StringComparison.Ordinal);
+            Assert.Contains("| migration | 2 | 50 | `smoke-migration/smoke-manifest.json` |", summary, StringComparison.Ordinal);
+            Assert.True(
+                summary.IndexOf("`smoke-fixture/smoke-manifest.json`", StringComparison.Ordinal) <
+                summary.IndexOf("`smoke-migration/smoke-manifest.json`", StringComparison.Ordinal),
+                summary);
+        }
+        finally
+        {
+            Directory.Delete(tempDirectory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void Write_smoke_artifact_summary_writes_stdout_when_summary_path_is_blank()
+    {
+        var tempDirectory = CreateTempDirectory();
+        try
+        {
+            var artifactRoot = Path.Combine(tempDirectory, "artifacts");
+            var smokeRoot = Path.Combine(artifactRoot, "smoke-fixture");
+            Directory.CreateDirectory(smokeRoot);
+            WriteManifest(smokeRoot, "fixture", "proof.json", bytes: 12);
+
+            var result = RunSummaryScript("-Root", artifactRoot, "-SummaryPath", string.Empty);
+
+            Assert.Equal(0, result.ExitCode);
+            Assert.Equal(string.Empty, result.Stderr);
+            Assert.Contains("## RiftScan smoke artifacts", result.Stdout, StringComparison.Ordinal);
+            Assert.Contains("| fixture | 1 | 12 | `smoke-fixture/smoke-manifest.json` |", result.Stdout, StringComparison.Ordinal);
+        }
+        finally
+        {
+            Directory.Delete(tempDirectory, recursive: true);
+        }
+    }
+
+    [Fact]
     public void Write_smoke_artifact_summary_rejects_missing_root()
     {
         var tempDirectory = CreateTempDirectory();
@@ -82,22 +140,24 @@ public sealed class SmokeArtifactSummaryScriptTests
 
     private static void WriteManifest(string outputRoot, string smokeName, string relativePath, long bytes)
     {
+        WriteManifest(outputRoot, smokeName, (relativePath, bytes));
+    }
+
+    private static void WriteManifest(string outputRoot, string smokeName, params (string RelativePath, long Bytes)[] entries)
+    {
         var manifest = new
         {
             schema_version = "riftscan.smoke_manifest.v1",
             smoke_name = smokeName,
             output_root = Path.GetFullPath(outputRoot),
             created_utc = DateTimeOffset.UtcNow.ToString("O"),
-            file_count = 1,
-            files = new[]
+            file_count = entries.Length,
+            files = entries.Select(entry => new
             {
-                new
-                {
-                    path = relativePath,
-                    bytes,
-                    sha256 = new string('0', 64)
-                }
-            }
+                path = entry.RelativePath,
+                bytes = entry.Bytes,
+                sha256 = new string('0', 64)
+            }).ToArray()
         };
 
         File.WriteAllText(Path.Combine(outputRoot, "smoke-manifest.json"), JsonSerializer.Serialize(manifest));
