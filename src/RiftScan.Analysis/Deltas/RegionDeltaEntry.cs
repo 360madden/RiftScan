@@ -4,6 +4,9 @@ namespace RiftScan.Analysis.Deltas;
 
 public sealed record RegionDeltaEntry
 {
+    [JsonPropertyName("schema_version")]
+    public string SchemaVersion { get; init; } = "riftscan.region_delta_entry.v1";
+
     [JsonPropertyName("analyzer_id")]
     public string AnalyzerId { get; init; } = "byte_delta";
 

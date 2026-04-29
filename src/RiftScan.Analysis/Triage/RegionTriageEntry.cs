@@ -4,6 +4,9 @@ namespace RiftScan.Analysis.Triage;
 
 public sealed record RegionTriageEntry
 {
+    [JsonPropertyName("schema_version")]
+    public string SchemaVersion { get; init; } = "riftscan.region_triage_entry.v1";
+
     [JsonPropertyName("analyzer_id")]
     public string AnalyzerId { get; init; } = "dynamic_region_triage";
 

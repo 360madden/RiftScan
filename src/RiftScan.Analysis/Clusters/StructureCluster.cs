@@ -4,6 +4,9 @@ namespace RiftScan.Analysis.Clusters;
 
 public sealed record StructureCluster
 {
+    [JsonPropertyName("schema_version")]
+    public string SchemaVersion { get; init; } = "riftscan.structure_cluster.v1";
+
     [JsonPropertyName("analyzer_id")]
     public string AnalyzerId { get; init; } = "structure_cluster";
 

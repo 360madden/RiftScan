@@ -15,6 +15,7 @@ public sealed class AnalyzerOutputContractTests
     public void Region_triage_entry_pins_json_contract_fields() =>
         AssertJsonPropertySet(
             new RegionTriageEntry(),
+            "schema_version",
             "analyzer_id",
             "analyzer_version",
             "session_id",
@@ -30,9 +31,21 @@ public sealed class AnalyzerOutputContractTests
             "diagnostics");
 
     [Fact]
+    public void Next_capture_plan_pins_json_contract_fields() =>
+        AssertJsonPropertySet(
+            new NextCapturePlan(),
+            "schema_version",
+            "session_id",
+            "analyzer_id",
+            "analyzer_version",
+            "recommendation",
+            "regions");
+
+    [Fact]
     public void Region_delta_entry_pins_json_contract_fields() =>
         AssertJsonPropertySet(
             new RegionDeltaEntry(),
+            "schema_version",
             "analyzer_id",
             "analyzer_version",
             "session_id",
@@ -52,6 +65,7 @@ public sealed class AnalyzerOutputContractTests
     public void Typed_value_candidate_pins_json_contract_fields() =>
         AssertJsonPropertySet(
             new TypedValueCandidate(),
+            "schema_version",
             "analyzer_id",
             "analyzer_version",
             "candidate_id",
@@ -80,6 +94,7 @@ public sealed class AnalyzerOutputContractTests
     public void Structure_candidate_pins_json_contract_fields() =>
         AssertJsonPropertySet(
             new StructureCandidate(),
+            "schema_version",
             "analyzer_id",
             "analyzer_version",
             "session_id",
@@ -105,6 +120,7 @@ public sealed class AnalyzerOutputContractTests
     public void Vec3_candidate_pins_json_contract_fields() =>
         AssertJsonPropertySet(
             new Vec3Candidate(),
+            "schema_version",
             "analyzer_id",
             "analyzer_version",
             "candidate_id",
@@ -136,6 +152,7 @@ public sealed class AnalyzerOutputContractTests
     public void Structure_cluster_pins_json_contract_fields() =>
         AssertJsonPropertySet(
             new StructureCluster(),
+            "schema_version",
             "analyzer_id",
             "analyzer_version",
             "session_id",

@@ -4,6 +4,9 @@ namespace RiftScan.Analysis.Structures;
 
 public sealed record StructureCandidate
 {
+    [JsonPropertyName("schema_version")]
+    public string SchemaVersion { get; init; } = "riftscan.structure_candidate.v1";
+
     [JsonPropertyName("analyzer_id")]
     public string AnalyzerId { get; init; } = "finite_float_triplet_structure";
 
