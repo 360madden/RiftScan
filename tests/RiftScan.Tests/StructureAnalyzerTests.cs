@@ -25,6 +25,8 @@ public sealed class StructureAnalyzerTests
         Assert.Equal("finite_float32_triplet_supported_in_1_of_1_snapshots", first.ExplanationShort);
         Assert.Equal(first.Score, first.ScoreBreakdown["score_total"]);
         Assert.Equal(1, first.ScoreBreakdown["snapshot_support_ratio"]);
+        Assert.Equal(3, first.FeatureVector["component_count"]);
+        Assert.Equal(1, first.FeatureVector["snapshot_support_ratio"]);
         Assert.True(first.Score > 0);
     }
 

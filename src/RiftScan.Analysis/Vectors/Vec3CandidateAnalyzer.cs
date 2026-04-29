@@ -82,6 +82,7 @@ public sealed class Vec3CandidateAnalyzer
             BehaviorScore = behavior.Score,
             RankScore = rankScore,
             ScoreBreakdown = BuildScoreBreakdown(sourceStructureScore, behavior.Score, preCapScore, rankScore),
+            FeatureVector = BuildFeatureVector(source.SnapshotSupport, values.Count, deltaMagnitude, behavior.Score),
             ValidationStatus = behavior.ValidationStatus,
             ConfidenceLevel = ToConfidenceLevel(rankScore),
             ExplanationShort = behavior.Recommendation,
@@ -103,6 +104,19 @@ public sealed class Vec3CandidateAnalyzer
             ["pre_cap_score"] = Math.Round(preCapScore, 3),
             ["score_cap"] = 100.0,
             ["score_total"] = Math.Round(scoreTotal, 3)
+        };
+
+    private static IReadOnlyDictionary<string, double> BuildFeatureVector(
+        int snapshotSupport,
+        int sampleValueCount,
+        double valueDeltaMagnitude,
+        double behaviorScore) =>
+        new Dictionary<string, double>
+        {
+            ["snapshot_support"] = snapshotSupport,
+            ["sample_value_count"] = sampleValueCount,
+            ["value_delta_magnitude"] = Math.Round(valueDeltaMagnitude, 6),
+            ["behavior_score"] = Math.Round(behaviorScore, 3)
         };
 
     private static string ToConfidenceLevel(double rankScore)

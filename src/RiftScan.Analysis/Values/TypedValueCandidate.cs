@@ -46,6 +46,9 @@ public sealed record TypedValueCandidate
     [JsonPropertyName("score_breakdown")]
     public IReadOnlyDictionary<string, double> ScoreBreakdown { get; init; } = new Dictionary<string, double>();
 
+    [JsonPropertyName("feature_vector")]
+    public IReadOnlyDictionary<string, double> FeatureVector { get; init; } = new Dictionary<string, double>();
+
     [JsonPropertyName("validation_status")]
     public string ValidationStatus { get; init; } = "unvalidated_candidate";
 

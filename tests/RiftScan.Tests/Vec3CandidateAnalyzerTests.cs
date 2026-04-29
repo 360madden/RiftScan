@@ -25,6 +25,8 @@ public sealed class Vec3CandidateAnalyzerTests
         Assert.Equal("vec3_candidate_followup", candidate.ExplanationShort);
         Assert.Equal(candidate.RankScore, candidate.ScoreBreakdown["score_total"]);
         Assert.Equal(0, candidate.ScoreBreakdown["behavior_score"]);
+        Assert.Equal(candidate.ValueDeltaMagnitude, candidate.FeatureVector["value_delta_magnitude"]);
+        Assert.Equal(0, candidate.FeatureVector["behavior_score"]);
         Assert.Equal("vec3_candidate_followup", candidate.Recommendation);
         Assert.Contains("candidate_not_truth_claim", candidate.Diagnostics);
         Assert.True(File.Exists(Path.Combine(session.Path, "vec3_candidates.jsonl")));
@@ -57,6 +59,8 @@ public sealed class Vec3CandidateAnalyzerTests
         Assert.Equal("move_forward_vec3_candidate_followup", candidate.ExplanationShort);
         Assert.Equal(candidate.RankScore, candidate.ScoreBreakdown["score_total"]);
         Assert.Equal(25, candidate.ScoreBreakdown["behavior_score"]);
+        Assert.Equal(candidate.ValueDeltaMagnitude, candidate.FeatureVector["value_delta_magnitude"]);
+        Assert.Equal(25, candidate.FeatureVector["behavior_score"]);
         Assert.Equal("move_forward_vec3_candidate_followup", candidate.Recommendation);
         Assert.True(candidate.ValueDeltaMagnitude > 0);
         Assert.Contains("move_forward_vec3_changed", candidate.Diagnostics);

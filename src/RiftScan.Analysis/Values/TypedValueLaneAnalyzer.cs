@@ -159,6 +159,7 @@ public sealed class TypedValueLaneAnalyzer
             ChangedSampleCount = changedSampleCount,
             RankScore = rankScore,
             ScoreBreakdown = BuildScoreBreakdown(changeRatioScore, distinctRatioScore, typeBonus, preCapScore, scoreCap, rankScore),
+            FeatureVector = BuildFeatureVector(valuePreview.Count, distinctValueCount, changedSampleCount, changeRatio, distinctRatio, typeBonus),
             ConfidenceLevel = ToConfidenceLevel(rankScore),
             ExplanationShort = $"{dataType}_lane_changed_{changedSampleCount}_of_{comparedPairCount}_pairs",
             Recommendation = recommendation,
@@ -182,6 +183,23 @@ public sealed class TypedValueLaneAnalyzer
             ["pre_cap_score"] = Math.Round(preCapScore, 3),
             ["score_cap"] = Math.Round(scoreCap, 3),
             ["score_total"] = Math.Round(scoreTotal, 3)
+        };
+
+    private static IReadOnlyDictionary<string, double> BuildFeatureVector(
+        int sampleCount,
+        int distinctValueCount,
+        int changedSampleCount,
+        double changeRatio,
+        double distinctRatio,
+        double typeBonus) =>
+        new Dictionary<string, double>
+        {
+            ["sample_count"] = sampleCount,
+            ["distinct_value_count"] = distinctValueCount,
+            ["changed_sample_count"] = changedSampleCount,
+            ["change_ratio"] = Math.Round(changeRatio, 6),
+            ["distinct_ratio"] = Math.Round(distinctRatio, 6),
+            ["type_bonus"] = Math.Round(typeBonus, 3)
         };
 
     private static string ToConfidenceLevel(double rankScore)

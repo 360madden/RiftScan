@@ -90,6 +90,7 @@ public sealed class FloatTripletStructureAnalyzer
                 SnapshotSupport = accumulator.Support,
                 Score = score,
                 ScoreBreakdown = BuildScoreBreakdown(supportRatio, score),
+                FeatureVector = BuildFeatureVector(accumulator.Support, snapshots.Count, supportRatio, accumulator.FirstValues),
                 ConfidenceLevel = ToConfidenceLevel(score),
                 ExplanationShort = $"finite_float32_triplet_supported_in_{accumulator.Support}_of_{snapshots.Count}_snapshots",
                 ValuePreview = accumulator.FirstValues,
@@ -104,6 +105,20 @@ public sealed class FloatTripletStructureAnalyzer
             ["snapshot_support_ratio"] = Math.Round(supportRatio, 6),
             ["support_score"] = Math.Round(scoreTotal, 3),
             ["score_total"] = Math.Round(scoreTotal, 3)
+        };
+
+    private static IReadOnlyDictionary<string, double> BuildFeatureVector(
+        int snapshotSupport,
+        int snapshotCount,
+        double supportRatio,
+        IReadOnlyList<float> values) =>
+        new Dictionary<string, double>
+        {
+            ["snapshot_support"] = snapshotSupport,
+            ["snapshot_count"] = snapshotCount,
+            ["snapshot_support_ratio"] = Math.Round(supportRatio, 6),
+            ["component_count"] = values.Count,
+            ["nonzero_component_count"] = values.Count(value => value != 0)
         };
 
     private static string ToConfidenceLevel(double score)
