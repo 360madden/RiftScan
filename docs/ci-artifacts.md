@@ -14,10 +14,15 @@ Retention is currently 14 days.
 
 The artifact contains:
 
+- `ci-diagnostics/run-info.json` - workflow/run metadata written before restore/build/test.
+- `ci-diagnostics/dotnet-test.log` - captured `dotnet test` output.
+- `ci-diagnostics/dotnet-test-status.json` - machine-readable test step status with exit code and log path.
 - `smoke-fixture/` - fixture verify/analyze/report/compare/summary/inventory/prune outputs.
 - `smoke-migration/` - v0-to-v1 migration plan/apply/verify outputs.
 - `smoke-fixture/smoke-manifest.json` - file list, byte sizes, and SHA256 hashes for fixture smoke artifacts.
 - `smoke-migration/smoke-manifest.json` - file list, byte sizes, and SHA256 hashes for migration smoke artifacts.
+
+The `ci-diagnostics/` files are written early so failed runs still upload useful machine-readable context when the smoke artifacts were not reached.
 
 ## Download from GitHub Actions
 
@@ -65,3 +70,17 @@ pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/verify-smoke-manifest.ps1 
 ```
 
 These commands are fixture-only. They do not attach to RIFT and do not use live process access.
+
+## Trace the CLI build
+
+The CLI exposes its package version and source metadata:
+
+```powershell
+dotnet run --project src/RiftScan.Cli/RiftScan.Cli.csproj --configuration Release --no-build -- --version
+```
+
+Expected output starts with:
+
+```text
+riftscan 0.1.0
+```
