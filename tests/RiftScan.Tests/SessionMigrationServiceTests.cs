@@ -105,7 +105,7 @@ public sealed class SessionMigrationServiceTests
         try
         {
             CopyDirectory(ValidFixturePath, legacySessionPath);
-            RewriteManifestSchemaVersion(legacySessionPath, "riftscan.session.v0");
+            RewriteManifestSchemaVersion(legacySessionPath, "riftscan.session.v9");
 
             var result = new SessionMigrationService().Migrate(
                 legacySessionPath,
@@ -118,10 +118,51 @@ public sealed class SessionMigrationServiceTests
             Assert.Equal([fullPlanPath], result.ArtifactsWritten);
 
             using var document = JsonDocument.Parse(File.ReadAllText(fullPlanPath));
-            Assert.Equal("riftscan.session.v0", document.RootElement.GetProperty("from_schema_version").GetString());
+            Assert.Equal("riftscan.session.v9", document.RootElement.GetProperty("from_schema_version").GetString());
             Assert.Equal("unsupported_source_schema", document.RootElement.GetProperty("status").GetString());
             Assert.False(document.RootElement.GetProperty("can_apply").GetBoolean());
             Assert.Equal("define-source-schema-migrator", document.RootElement.GetProperty("actions")[0].GetProperty("action_id").GetString());
+            Assert.False(document.RootElement.GetProperty("actions")[0].GetProperty("writes_raw_artifacts").GetBoolean());
+        }
+        finally
+        {
+            Directory.Delete(tempDirectory, recursive: true);
+        }
+    }
+
+
+    [Fact]
+    public void Migrate_v0_source_with_plan_out_writes_dry_run_upgrade_plan()
+    {
+        var tempDirectory = CreateTempDirectory();
+        var legacySessionPath = Path.Combine(tempDirectory, "legacy-v0-session");
+        var planPath = Path.Combine(tempDirectory, "v0-to-v1-plan.json");
+
+        try
+        {
+            CopyDirectory(ValidFixturePath, legacySessionPath);
+            RewriteManifestSchemaVersion(legacySessionPath, SessionMigrationService.LegacySessionSchemaVersionV0);
+
+            var result = new SessionMigrationService().Migrate(
+                legacySessionPath,
+                SessionMigrationService.SupportedSessionSchemaVersion,
+                planOutputPath: planPath);
+
+            Assert.True(result.Success, string.Join(Environment.NewLine, result.Issues.Select(issue => $"{issue.Code}: {issue.Message}")));
+            Assert.Equal("planned_source_schema_upgrade", result.Status);
+            Assert.Equal(SessionMigrationService.LegacySessionSchemaVersionV0, result.FromSchemaVersion);
+            Assert.Equal(SessionMigrationService.SupportedSessionSchemaVersion, result.ToSchemaVersion);
+            var fullPlanPath = Path.GetFullPath(planPath);
+            Assert.Equal([fullPlanPath], result.ArtifactsWritten);
+
+            using var document = JsonDocument.Parse(File.ReadAllText(fullPlanPath));
+            Assert.Equal("planned_source_schema_upgrade", document.RootElement.GetProperty("status").GetString());
+            Assert.Equal(SessionMigrationService.LegacySessionSchemaVersionV0, document.RootElement.GetProperty("from_schema_version").GetString());
+            Assert.False(document.RootElement.GetProperty("can_apply").GetBoolean());
+            Assert.Equal(3, document.RootElement.GetProperty("actions").GetArrayLength());
+            Assert.Equal("copy-session-artifacts-to-migrated-output", document.RootElement.GetProperty("actions")[0].GetProperty("action_id").GetString());
+            Assert.Equal("rewrite-generated-manifest-schema-version", document.RootElement.GetProperty("actions")[1].GetProperty("action_id").GetString());
+            Assert.Equal("recompute-generated-checksums", document.RootElement.GetProperty("actions")[2].GetProperty("action_id").GetString());
             Assert.False(document.RootElement.GetProperty("actions")[0].GetProperty("writes_raw_artifacts").GetBoolean());
         }
         finally

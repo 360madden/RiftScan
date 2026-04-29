@@ -4,6 +4,7 @@ namespace RiftScan.Core.Sessions;
 
 public sealed class SessionMigrationService
 {
+    public const string LegacySessionSchemaVersionV0 = "riftscan.session.v0";
     public const string SupportedSessionSchemaVersion = "riftscan.session.v1";
 
     public SessionMigrationResult Migrate(string sessionPath, string toSchemaVersion, bool dryRun = true, string? planOutputPath = null)
@@ -48,26 +49,6 @@ public sealed class SessionMigrationService
             return WritePlanIfRequested(applyResult, planOutputPath);
         }
 
-        if (!string.Equals(manifest.SchemaVersion, SupportedSessionSchemaVersion, StringComparison.OrdinalIgnoreCase))
-        {
-            var unsupportedSourceResult = CreateResult(
-                fullSessionPath,
-                manifest.SessionId,
-                manifest.SchemaVersion,
-                toSchemaVersion,
-                dryRun,
-                status: "unsupported_source_schema",
-                issues:
-                [
-                    Error(
-                        "unsupported_source_schema",
-                        $"Unsupported source session schema_version '{manifest.SchemaVersion}'. Expected '{SupportedSessionSchemaVersion}'.",
-                        "manifest.json")
-                ]);
-
-            return WritePlanIfRequested(unsupportedSourceResult, planOutputPath);
-        }
-
         if (!string.Equals(toSchemaVersion, SupportedSessionSchemaVersion, StringComparison.OrdinalIgnoreCase))
         {
             var unsupportedTargetResult = CreateResult(
@@ -86,6 +67,40 @@ public sealed class SessionMigrationService
                 ]);
 
             return WritePlanIfRequested(unsupportedTargetResult, planOutputPath);
+        }
+
+        if (string.Equals(manifest.SchemaVersion, LegacySessionSchemaVersionV0, StringComparison.OrdinalIgnoreCase))
+        {
+            var plannedUpgradeResult = CreateResult(
+                fullSessionPath,
+                manifest.SessionId,
+                manifest.SchemaVersion,
+                toSchemaVersion,
+                dryRun,
+                status: "planned_source_schema_upgrade",
+                issues: []);
+
+            return WritePlanIfRequested(plannedUpgradeResult, planOutputPath);
+        }
+
+        if (!string.Equals(manifest.SchemaVersion, SupportedSessionSchemaVersion, StringComparison.OrdinalIgnoreCase))
+        {
+            var unsupportedSourceResult = CreateResult(
+                fullSessionPath,
+                manifest.SessionId,
+                manifest.SchemaVersion,
+                toSchemaVersion,
+                dryRun,
+                status: "unsupported_source_schema",
+                issues:
+                [
+                    Error(
+                        "unsupported_source_schema",
+                        $"Unsupported source session schema_version '{manifest.SchemaVersion}'. Expected '{SupportedSessionSchemaVersion}' or '{LegacySessionSchemaVersionV0}'.",
+                        "manifest.json")
+                ]);
+
+            return WritePlanIfRequested(unsupportedSourceResult, planOutputPath);
         }
 
         var result = CreateResult(
@@ -184,6 +199,33 @@ public sealed class SessionMigrationService
                     Description = "No source-schema migrator is registered for this session schema. Add an explicit fixture-backed migrator before applying changes.",
                     WritesRawArtifacts = false,
                     TargetPath = null
+                }
+            ],
+            "planned_source_schema_upgrade" =>
+            [
+                new SessionMigrationPlanAction
+                {
+                    ActionId = "copy-session-artifacts-to-migrated-output",
+                    ActionType = "planned",
+                    Description = "Copy session artifacts to a future migrated output directory; never mutate the source session in place.",
+                    WritesRawArtifacts = false,
+                    TargetPath = null
+                },
+                new SessionMigrationPlanAction
+                {
+                    ActionId = "rewrite-generated-manifest-schema-version",
+                    ActionType = "planned",
+                    Description = "Rewrite the generated manifest copy from riftscan.session.v0 to riftscan.session.v1.",
+                    WritesRawArtifacts = false,
+                    TargetPath = "manifest.json"
+                },
+                new SessionMigrationPlanAction
+                {
+                    ActionId = "recompute-generated-checksums",
+                    ActionType = "planned",
+                    Description = "Recompute checksums for generated migrated artifacts after manifest rewrite.",
+                    WritesRawArtifacts = false,
+                    TargetPath = "checksums.json"
                 }
             ],
             "unsupported_target_schema" =>
