@@ -130,6 +130,53 @@ public sealed class SmokeManifestVerifierScriptTests
         }
     }
 
+    [Fact]
+    public void Verify_smoke_manifest_root_mode_discovers_all_manifests()
+    {
+        var tempDirectory = CreateTempDirectory();
+        try
+        {
+            var fixtureRoot = Path.Combine(tempDirectory, "smoke-fixture");
+            var migrationRoot = Path.Combine(tempDirectory, "smoke-migration");
+            Directory.CreateDirectory(fixtureRoot);
+            Directory.CreateDirectory(migrationRoot);
+            var fixtureArtifact = Path.Combine(fixtureRoot, "fixture-proof.json");
+            var migrationArtifact = Path.Combine(migrationRoot, "migration-proof.json");
+            File.WriteAllText(fixtureArtifact, "{\"fixture\":true}\n");
+            File.WriteAllText(migrationArtifact, "{\"migration\":true}\n");
+            WriteManifest(fixtureRoot, fixtureArtifact, sha256Override: null, fileCountOverride: null);
+            WriteManifest(migrationRoot, migrationArtifact, sha256Override: null, fileCountOverride: null);
+
+            var result = RunVerifier("-Root", tempDirectory);
+
+            Assert.Equal(0, result.ExitCode);
+            Assert.Equal(string.Empty, result.Stderr);
+            using var document = JsonDocument.Parse(result.Stdout);
+            Assert.Equal(2, document.RootElement.GetArrayLength());
+        }
+        finally
+        {
+            Directory.Delete(tempDirectory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void Verify_smoke_manifest_root_mode_rejects_empty_root()
+    {
+        var tempDirectory = CreateTempDirectory();
+        try
+        {
+            var result = RunVerifier("-Root", tempDirectory);
+
+            Assert.NotEqual(0, result.ExitCode);
+            Assert.Contains("No smoke manifests were found", result.Stderr, StringComparison.OrdinalIgnoreCase);
+        }
+        finally
+        {
+            Directory.Delete(tempDirectory, recursive: true);
+        }
+    }
+
     private static string WriteManifest(string outputRoot, string artifactPath, string? sha256Override, int? fileCountOverride)
     {
         var artifactBytes = File.ReadAllBytes(artifactPath);
@@ -169,6 +216,11 @@ public sealed class SmokeManifestVerifierScriptTests
 
     private static (int ExitCode, string Stdout, string Stderr) RunVerifier(string manifestPath)
     {
+        return RunVerifier("-ManifestPath", manifestPath);
+    }
+
+    private static (int ExitCode, string Stdout, string Stderr) RunVerifier(params string[] arguments)
+    {
         var scriptPath = Path.Combine(FindRepoRoot(), "scripts", "verify-smoke-manifest.ps1");
         var startInfo = new ProcessStartInfo
         {
@@ -182,8 +234,10 @@ public sealed class SmokeManifestVerifierScriptTests
         startInfo.ArgumentList.Add("Bypass");
         startInfo.ArgumentList.Add("-File");
         startInfo.ArgumentList.Add(scriptPath);
-        startInfo.ArgumentList.Add("-ManifestPath");
-        startInfo.ArgumentList.Add(manifestPath);
+        foreach (var argument in arguments)
+        {
+            startInfo.ArgumentList.Add(argument);
+        }
 
         using var process = Process.Start(startInfo) ?? throw new InvalidOperationException("Failed to start pwsh.");
         var stdout = process.StandardOutput.ReadToEnd();

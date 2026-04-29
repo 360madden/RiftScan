@@ -2,8 +2,8 @@
 # purpose: Validate RiftScan smoke-manifest.json file lists and SHA256 hashes before artifact upload or handoff.
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory = $true)]
-    [string[]]$ManifestPath
+    [string[]]$ManifestPath,
+    [string]$Root
 )
 
 $ErrorActionPreference = "Stop"
@@ -65,8 +65,31 @@ function Assert-Manifest {
     }
 }
 
-$expandedManifestPaths = foreach ($path in $ManifestPath) {
-    $path.Split(',', [StringSplitOptions]::RemoveEmptyEntries) | ForEach-Object { $_.Trim() }
+if ([string]::IsNullOrWhiteSpace($Root) -and ($null -eq $ManifestPath -or $ManifestPath.Count -eq 0)) {
+    throw "Provide -ManifestPath <path>[,<path>...] or -Root <artifact-root>."
+}
+
+$expandedManifestPaths = @(
+    foreach ($path in @($ManifestPath)) {
+        if (-not [string]::IsNullOrWhiteSpace($path)) {
+            $path.Split(',', [StringSplitOptions]::RemoveEmptyEntries) | ForEach-Object { $_.Trim() }
+        }
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace($Root)) {
+        $fullRoot = [System.IO.Path]::GetFullPath($Root)
+        if (-not (Test-Path -LiteralPath $fullRoot -PathType Container)) {
+            throw "Smoke manifest root does not exist: $fullRoot"
+        }
+
+        Get-ChildItem -LiteralPath $fullRoot -Filter "smoke-manifest.json" -File -Recurse |
+            Sort-Object FullName |
+            ForEach-Object { $_.FullName }
+    }
+)
+
+if ($expandedManifestPaths.Count -eq 0) {
+    throw "No smoke manifests were found."
 }
 
 $results = foreach ($path in $expandedManifestPaths) {
