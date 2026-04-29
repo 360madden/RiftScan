@@ -147,6 +147,86 @@ public sealed class SessionInventoryServiceTests
     }
 
     [Fact]
+    public void Inventory_malformed_regions_returns_error_without_throwing()
+    {
+        var tempDirectory = CreateTempDirectory();
+        var sessionPath = Path.Combine(tempDirectory, "session-with-bad-regions");
+
+        try
+        {
+            CopyDirectory(ValidFixturePath, sessionPath);
+            File.WriteAllText(Path.Combine(sessionPath, "regions.json"), "{ definitely-not-json");
+            File.WriteAllText(Path.Combine(sessionPath, "clusters.jsonl"), "{}\n");
+
+            var result = new SessionInventoryService().Inventory(sessionPath);
+
+            Assert.False(result.Success);
+            Assert.Equal("fixture-valid-session", result.Summary.SessionId);
+            Assert.Equal(1, result.Summary.ArtifactCount);
+            Assert.Equal(1, result.PruneInventory.CandidateCount);
+            Assert.Contains(result.Issues, issue => issue.Code == "json_invalid" && issue.Path == "regions.json");
+        }
+        finally
+        {
+            Directory.Delete(tempDirectory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void Inventory_malformed_snapshot_index_returns_error_without_throwing()
+    {
+        var tempDirectory = CreateTempDirectory();
+        var sessionPath = Path.Combine(tempDirectory, "session-with-bad-snapshot-index");
+
+        try
+        {
+            CopyDirectory(ValidFixturePath, sessionPath);
+            File.WriteAllText(Path.Combine(sessionPath, "snapshots", "index.jsonl"), "{ definitely-not-json\n");
+            File.WriteAllText(Path.Combine(sessionPath, "report.json"), "{}\n");
+
+            var result = new SessionInventoryService().Inventory(sessionPath);
+
+            Assert.False(result.Success);
+            Assert.Equal("fixture-valid-session", result.Summary.SessionId);
+            Assert.Equal(1, result.Summary.ArtifactCount);
+            Assert.Equal(1, result.PruneInventory.CandidateCount);
+            Assert.Contains(result.Issues, issue => issue.Code == "snapshot_index_json_invalid" && issue.Path == "snapshots/index.jsonl");
+        }
+        finally
+        {
+            Directory.Delete(tempDirectory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void Cli_session_inventory_malformed_snapshot_index_returns_nonzero_json_result()
+    {
+        var tempDirectory = CreateTempDirectory();
+        var sessionPath = Path.Combine(tempDirectory, "session-with-bad-snapshot-index");
+
+        try
+        {
+            CopyDirectory(ValidFixturePath, sessionPath);
+            File.WriteAllText(Path.Combine(sessionPath, "snapshots", "index.jsonl"), "{ definitely-not-json\n");
+
+            var result = RunCli("session", "inventory", sessionPath);
+
+            Assert.Equal(1, result.ExitCode);
+            Assert.Equal(string.Empty, result.Stderr);
+            using var document = JsonDocument.Parse(result.Stdout);
+            Assert.False(document.RootElement.GetProperty("success").GetBoolean());
+            Assert.Equal("fixture-valid-session", document.RootElement.GetProperty("summary").GetProperty("session_id").GetString());
+            Assert.Contains(
+                document.RootElement.GetProperty("issues").EnumerateArray(),
+                issue => issue.GetProperty("code").GetString() == "snapshot_index_json_invalid");
+        }
+        finally
+        {
+            Directory.Delete(tempDirectory, recursive: true);
+        }
+    }
+
+    [Fact]
     public void Cli_session_inventory_missing_root_returns_nonzero_json_result()
     {
         var tempDirectory = CreateTempDirectory();
