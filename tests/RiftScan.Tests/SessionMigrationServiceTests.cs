@@ -479,6 +479,49 @@ public sealed class SessionMigrationServiceTests
         }
     }
 
+    [Fact]
+    public void Cli_migrate_session_v0_apply_with_plan_out_reports_output_and_plan_artifacts()
+    {
+        var tempDirectory = CreateTempDirectory();
+        var migratedSessionPath = Path.Combine(tempDirectory, "migrated-v1-session");
+        var planPath = Path.Combine(tempDirectory, "apply-plan.json");
+
+        try
+        {
+            var result = RunCli(
+                "migrate",
+                "session",
+                ValidV0FixturePath,
+                "--to-schema",
+                SessionMigrationService.SupportedSessionSchemaVersion,
+                "--apply",
+                "--out",
+                migratedSessionPath,
+                "--plan-out",
+                planPath);
+
+            Assert.Equal(0, result.ExitCode);
+            Assert.Equal(string.Empty, result.Stderr);
+            using var document = JsonDocument.Parse(result.Stdout);
+            var fullMigratedSessionPath = Path.GetFullPath(migratedSessionPath);
+            var fullPlanPath = Path.GetFullPath(planPath);
+            Assert.Equal(fullMigratedSessionPath, document.RootElement.GetProperty("migration_output_path").GetString());
+            Assert.Contains(
+                document.RootElement.GetProperty("artifacts_written").EnumerateArray(),
+                artifact => artifact.GetString() == fullPlanPath);
+            Assert.True(File.Exists(fullPlanPath));
+
+            using var planDocument = JsonDocument.Parse(File.ReadAllText(fullPlanPath));
+            Assert.Equal("applied_source_schema_upgrade", planDocument.RootElement.GetProperty("status").GetString());
+            Assert.Equal("wrote-migrated-session-output", planDocument.RootElement.GetProperty("actions")[0].GetProperty("action_id").GetString());
+            Assert.True(new SessionVerifier().Verify(fullMigratedSessionPath).Success);
+        }
+        finally
+        {
+            Directory.Delete(tempDirectory, recursive: true);
+        }
+    }
+
     private static string ValidFixturePath => Path.Combine(AppContext.BaseDirectory, "Fixtures", "valid-session");
 
     private static string ValidV0FixturePath => Path.Combine(AppContext.BaseDirectory, "Fixtures", "valid-session-v0");
