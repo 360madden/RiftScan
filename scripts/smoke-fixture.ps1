@@ -112,6 +112,13 @@ try {
 
     Assert-FileExists -Path $summaryJson
 
+    $sessionInventory = Join-Path $reportRoot "fixture-session-inventory.json"
+    $inventoryResult = Invoke-RiftScanJson -Arguments @("session", "inventory", $sessionA, "--json-out", $sessionInventory)
+    if (-not $inventoryResult.success -or $inventoryResult.summary.artifact_count -lt 1 -or $inventoryResult.prune_inventory.candidate_count -lt 1) {
+        throw "Expected successful session inventory with generated artifacts and prune candidates."
+    }
+    Assert-FileExists -Path $sessionInventory
+
     $pruneInventory = Join-Path $reportRoot "fixture-prune-inventory.json"
     $pruneResult = Invoke-RiftScanJson -Arguments @("session", "prune", $sessionA, "--dry-run", "--json-out", $pruneInventory)
     if (-not $pruneResult.success -or -not $pruneResult.dry_run) {

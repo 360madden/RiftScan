@@ -55,6 +55,11 @@ public static class Program
                 return PruneSession(args[2..]);
             }
 
+            if (args.Length >= 2 && Is(args[0], "session") && Is(args[1], "inventory"))
+            {
+                return InventorySession(args[2..]);
+            }
+
             if (args.Length >= 2 && Is(args[0], "session") && Is(args[1], "summary"))
             {
                 return SummarizeSession(args[2..]);
@@ -207,6 +212,19 @@ public static class Program
         var sessionPath = args[0];
         var (dryRun, inventoryOutputPath) = ParsePruneOptions(args[1..]);
         var result = new SessionPruneService().Prune(sessionPath, dryRun, inventoryOutputPath);
+        Console.WriteLine(JsonSerializer.Serialize(result, SessionJson.Options));
+        return result.Success ? 0 : 1;
+    }
+
+    private static int InventorySession(string[] args)
+    {
+        if (args.Length == 0)
+        {
+            throw new ArgumentException("Inventory requires a session path.");
+        }
+
+        var inventoryOutputPath = ParseInventoryOptions(args[1..]);
+        var result = new SessionInventoryService().Inventory(args[0], inventoryOutputPath);
         Console.WriteLine(JsonSerializer.Serialize(result, SessionJson.Options));
         return result.Success ? 0 : 1;
     }
@@ -468,6 +486,25 @@ public static class Program
         return summaryOutputPath;
     }
 
+    private static string? ParseInventoryOptions(string[] args)
+    {
+        string? inventoryOutputPath = null;
+        for (var index = 0; index < args.Length; index++)
+        {
+            var arg = args[index];
+            switch (arg)
+            {
+                case "--json-out":
+                    inventoryOutputPath = RequireValue(args, ref index, arg);
+                    break;
+                default:
+                    throw new ArgumentException($"Unknown session inventory option: {arg}");
+            }
+        }
+
+        return inventoryOutputPath;
+    }
+
     private static (bool DryRun, string? InventoryOutputPath) ParsePruneOptions(string[] args)
     {
         var dryRun = true;
@@ -587,6 +624,7 @@ public static class Program
         Console.WriteLine("riftscan compare sessions <session-a> <session-b> [--top 100] [--out reports/generated/comparison.json] [--report-md reports/generated/comparison.md] [--next-plan reports/generated/next-capture-plan.json]");
         Console.WriteLine("riftscan migrate session <session-path> --to-schema riftscan.session.v1 [--dry-run|--apply] [--out sessions/<migrated-id>] [--plan-out reports/generated/migration-plan.json]");
         Console.WriteLine("riftscan session prune <session-path> [--dry-run] [--json-out reports/generated/prune-inventory.json]");
+        Console.WriteLine("riftscan session inventory <session-path> [--json-out reports/generated/session-inventory.json]");
         Console.WriteLine("riftscan session summary <session-path> [--json-out reports/generated/session-summary.json]");
         Console.WriteLine("riftscan verify session <session-path>");
     }

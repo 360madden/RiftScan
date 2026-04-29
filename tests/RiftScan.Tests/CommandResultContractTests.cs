@@ -71,6 +71,19 @@ public sealed class CommandResultContractTests
             "issues");
 
     [Fact]
+    public void Session_inventory_result_pins_json_contract_fields() =>
+        AssertJsonPropertySet(
+            new SessionInventoryResult(),
+            "result_schema_version",
+            "success",
+            "session_path",
+            "inventory_path",
+            "raw_data_policy",
+            "summary",
+            "prune_inventory",
+            "issues");
+
+    [Fact]
     public void Session_summary_result_pins_json_contract_fields() =>
         AssertJsonPropertySet(
             new SessionSummaryResult(),
@@ -141,6 +154,7 @@ public sealed class CommandResultContractTests
         Assert.Equal("riftscan.session_verification_result.v1", ReadSchema(new SessionVerificationResult()));
         Assert.Equal("riftscan.session_migration_result.v1", ReadSchema(new SessionMigrationResult()));
         Assert.Equal("riftscan.session_prune_result.v1", ReadSchema(new SessionPruneResult()));
+        Assert.Equal("riftscan.session_inventory_result.v1", ReadSchema(new SessionInventoryResult()));
         Assert.Equal("riftscan.session_summary_result.v1", ReadSchema(new SessionSummaryResult()));
     }
 
