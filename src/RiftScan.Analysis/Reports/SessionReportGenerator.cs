@@ -12,6 +12,9 @@ namespace RiftScan.Analysis.Reports;
 
 public sealed record SessionReportResult
 {
+    [JsonPropertyName("result_schema_version")]
+    public string ResultSchemaVersion { get; init; } = "riftscan.session_report_result.v1";
+
     [JsonPropertyName("success")]
     public bool Success { get; init; }
 

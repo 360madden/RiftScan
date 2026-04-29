@@ -4,6 +4,9 @@ namespace RiftScan.Analysis.Triage;
 
 public sealed record SessionAnalysisResult
 {
+    [JsonPropertyName("result_schema_version")]
+    public string ResultSchemaVersion { get; init; } = "riftscan.session_analysis_result.v1";
+
     [JsonPropertyName("success")]
     public bool Success { get; init; }
 

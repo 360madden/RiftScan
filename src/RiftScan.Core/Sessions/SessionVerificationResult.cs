@@ -4,6 +4,9 @@ namespace RiftScan.Core.Sessions;
 
 public sealed record SessionVerificationResult
 {
+    [JsonPropertyName("result_schema_version")]
+    public string ResultSchemaVersion { get; init; } = "riftscan.session_verification_result.v1";
+
     [JsonPropertyName("success")]
     public bool Success => Issues.All(issue => !StringComparer.OrdinalIgnoreCase.Equals(issue.Severity, "error"));
 
