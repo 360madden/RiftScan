@@ -91,6 +91,7 @@ public sealed class FloatTripletStructureAnalyzer
                 Score = score,
                 ScoreBreakdown = BuildScoreBreakdown(supportRatio, score),
                 FeatureVector = BuildFeatureVector(accumulator.Support, snapshots.Count, supportRatio, accumulator.FirstValues),
+                AnalyzerSources = ["snapshots/index.jsonl", "snapshots/*.bin"],
                 ConfidenceLevel = ToConfidenceLevel(score),
                 ExplanationShort = $"finite_float32_triplet_supported_in_{accumulator.Support}_of_{snapshots.Count}_snapshots",
                 ValuePreview = accumulator.FirstValues,

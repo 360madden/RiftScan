@@ -38,6 +38,8 @@ public sealed class TypedValueLaneAnalyzerTests
         Assert.Equal(100, candidate.ScoreBreakdown["score_cap"]);
         Assert.Equal(3, candidate.FeatureVector["sample_count"]);
         Assert.Equal(1, candidate.FeatureVector["change_ratio"]);
+        Assert.Contains("deltas.jsonl", candidate.AnalyzerSources);
+        Assert.Contains("snapshots/*.bin", candidate.AnalyzerSources);
         Assert.Equal("float_lane_followup", candidate.Recommendation);
         Assert.Equal(3, candidate.DistinctValueCount);
         Assert.Contains("1.5", candidate.ValuePreview);

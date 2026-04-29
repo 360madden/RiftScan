@@ -160,6 +160,7 @@ public sealed class TypedValueLaneAnalyzer
             RankScore = rankScore,
             ScoreBreakdown = BuildScoreBreakdown(changeRatioScore, distinctRatioScore, typeBonus, preCapScore, scoreCap, rankScore),
             FeatureVector = BuildFeatureVector(valuePreview.Count, distinctValueCount, changedSampleCount, changeRatio, distinctRatio, typeBonus),
+            AnalyzerSources = ["deltas.jsonl", "snapshots/index.jsonl", "snapshots/*.bin"],
             ConfidenceLevel = ToConfidenceLevel(rankScore),
             ExplanationShort = $"{dataType}_lane_changed_{changedSampleCount}_of_{comparedPairCount}_pairs",
             Recommendation = recommendation,

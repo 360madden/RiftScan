@@ -83,6 +83,9 @@ public sealed class Vec3CandidateAnalyzer
             RankScore = rankScore,
             ScoreBreakdown = BuildScoreBreakdown(sourceStructureScore, behavior.Score, preCapScore, rankScore),
             FeatureVector = BuildFeatureVector(source.SnapshotSupport, values.Count, deltaMagnitude, behavior.Score),
+            AnalyzerSources = string.IsNullOrWhiteSpace(stimulusLabel)
+                ? ["structures.jsonl", "snapshots/index.jsonl", "snapshots/*.bin"]
+                : ["structures.jsonl", "snapshots/index.jsonl", "snapshots/*.bin", "stimuli.jsonl"],
             ValidationStatus = behavior.ValidationStatus,
             ConfidenceLevel = ToConfidenceLevel(rankScore),
             ExplanationShort = behavior.Recommendation,
