@@ -191,6 +191,12 @@ public static class Program
 
     private static int SummarizeSession(string[] args)
     {
+        if (args.Length == 1 && IsHelp(args[0]))
+        {
+            PrintSessionSummaryUsage();
+            return 0;
+        }
+
         if (args.Length == 0)
         {
             throw new ArgumentException("Summary requires a session path.");
@@ -204,6 +210,12 @@ public static class Program
 
     private static int PruneSession(string[] args)
     {
+        if (args.Length == 1 && IsHelp(args[0]))
+        {
+            PrintSessionPruneUsage();
+            return 0;
+        }
+
         if (args.Length == 0)
         {
             throw new ArgumentException("Prune requires a session path.");
@@ -218,6 +230,12 @@ public static class Program
 
     private static int InventorySession(string[] args)
     {
+        if (args.Length == 1 && IsHelp(args[0]))
+        {
+            PrintSessionInventoryUsage();
+            return 0;
+        }
+
         if (args.Length == 0)
         {
             throw new ArgumentException("Inventory requires a session path.");
@@ -631,6 +649,15 @@ public static class Program
 
     private static void PrintMigrateUsage() =>
         Console.WriteLine("riftscan migrate session <session-path> --to-schema riftscan.session.v1 [--dry-run|--apply] [--out sessions/<migrated-id>] [--plan-out reports/generated/migration-plan.json]");
+
+    private static void PrintSessionPruneUsage() =>
+        Console.WriteLine("riftscan session prune <session-path> [--dry-run] [--json-out reports/generated/prune-inventory.json]");
+
+    private static void PrintSessionInventoryUsage() =>
+        Console.WriteLine("riftscan session inventory <session-path> [--json-out reports/generated/session-inventory.json]");
+
+    private static void PrintSessionSummaryUsage() =>
+        Console.WriteLine("riftscan session summary <session-path> [--json-out reports/generated/session-summary.json]");
 
     private static bool Is(string actual, string expected) =>
         string.Equals(actual, expected, StringComparison.OrdinalIgnoreCase);
