@@ -28,7 +28,7 @@ public sealed class SessionMigrationService
         var manifest = ReadManifest(fullSessionPath);
         if (!string.Equals(manifest.SchemaVersion, SupportedSessionSchemaVersion, StringComparison.OrdinalIgnoreCase))
         {
-            return CreateResult(
+            var unsupportedSourceResult = CreateResult(
                 fullSessionPath,
                 manifest.SessionId,
                 manifest.SchemaVersion,
@@ -42,11 +42,13 @@ public sealed class SessionMigrationService
                         $"Unsupported source session schema_version '{manifest.SchemaVersion}'. Expected '{SupportedSessionSchemaVersion}'.",
                         "manifest.json")
                 ]);
+
+            return WritePlanIfRequested(unsupportedSourceResult, planOutputPath);
         }
 
         if (!string.Equals(toSchemaVersion, SupportedSessionSchemaVersion, StringComparison.OrdinalIgnoreCase))
         {
-            return CreateResult(
+            var unsupportedTargetResult = CreateResult(
                 fullSessionPath,
                 manifest.SessionId,
                 manifest.SchemaVersion,
@@ -60,6 +62,8 @@ public sealed class SessionMigrationService
                         $"Unsupported target session schema_version '{toSchemaVersion}'. Expected '{SupportedSessionSchemaVersion}'.",
                         null)
                 ]);
+
+            return WritePlanIfRequested(unsupportedTargetResult, planOutputPath);
         }
 
         var result = CreateResult(
@@ -128,7 +132,17 @@ public sealed class SessionMigrationService
             DryRun = result.DryRun,
             Status = result.Status,
             CanApply = false,
-            Actions =
+            Actions = CreatePlanActions(result)
+        };
+
+        File.WriteAllText(fullPlanPath, JsonSerializer.Serialize(plan, SessionJson.Options));
+        return result with { ArtifactsWritten = [.. result.ArtifactsWritten, fullPlanPath] };
+    }
+
+    private static IReadOnlyList<SessionMigrationPlanAction> CreatePlanActions(SessionMigrationResult result) =>
+        result.Status switch
+        {
+            "noop_current_schema" =>
             [
                 new SessionMigrationPlanAction
                 {
@@ -138,10 +152,29 @@ public sealed class SessionMigrationService
                     WritesRawArtifacts = false,
                     TargetPath = null
                 }
-            ]
+            ],
+            "unsupported_source_schema" =>
+            [
+                new SessionMigrationPlanAction
+                {
+                    ActionId = "define-source-schema-migrator",
+                    ActionType = "blocked",
+                    Description = "No source-schema migrator is registered for this session schema. Add an explicit fixture-backed migrator before applying changes.",
+                    WritesRawArtifacts = false,
+                    TargetPath = null
+                }
+            ],
+            "unsupported_target_schema" =>
+            [
+                new SessionMigrationPlanAction
+                {
+                    ActionId = "define-target-schema-contract",
+                    ActionType = "blocked",
+                    Description = "No target-schema contract is registered for the requested schema. Define and test the target schema before applying changes.",
+                    WritesRawArtifacts = false,
+                    TargetPath = null
+                }
+            ],
+            _ => []
         };
-
-        File.WriteAllText(fullPlanPath, JsonSerializer.Serialize(plan, SessionJson.Options));
-        return result with { ArtifactsWritten = [.. result.ArtifactsWritten, fullPlanPath] };
-    }
 }

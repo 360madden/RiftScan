@@ -65,6 +65,37 @@ public sealed class SessionMigrationServiceTests
     }
 
     [Fact]
+    public void Migrate_unsupported_target_with_plan_out_writes_blocked_plan()
+    {
+        var tempDirectory = CreateTempDirectory();
+        var planPath = Path.Combine(tempDirectory, "blocked-migration-plan.json");
+
+        try
+        {
+            var result = new SessionMigrationService().Migrate(
+                ValidFixturePath,
+                "riftscan.session.v2",
+                planOutputPath: planPath);
+
+            Assert.False(result.Success);
+            Assert.Equal("unsupported_target_schema", result.Status);
+            var fullPlanPath = Path.GetFullPath(planPath);
+            Assert.Equal([fullPlanPath], result.ArtifactsWritten);
+
+            using var document = JsonDocument.Parse(File.ReadAllText(fullPlanPath));
+            Assert.Equal("unsupported_target_schema", document.RootElement.GetProperty("status").GetString());
+            Assert.False(document.RootElement.GetProperty("can_apply").GetBoolean());
+            Assert.Equal("blocked", document.RootElement.GetProperty("actions")[0].GetProperty("action_type").GetString());
+            Assert.Equal("define-target-schema-contract", document.RootElement.GetProperty("actions")[0].GetProperty("action_id").GetString());
+            Assert.False(document.RootElement.GetProperty("actions")[0].GetProperty("writes_raw_artifacts").GetBoolean());
+        }
+        finally
+        {
+            Directory.Delete(tempDirectory, recursive: true);
+        }
+    }
+
+    [Fact]
     public void Cli_migrate_session_emits_machine_readable_noop_result()
     {
         var result = RunCli(
