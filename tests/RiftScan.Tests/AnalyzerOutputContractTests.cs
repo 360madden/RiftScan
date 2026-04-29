@@ -65,6 +65,8 @@ public sealed class AnalyzerOutputContractTests
             "distinct_value_count",
             "changed_sample_count",
             "rank_score",
+            "validation_status",
+            "confidence_level",
             "recommendation",
             "value_preview",
             "diagnostics");
@@ -84,6 +86,8 @@ public sealed class AnalyzerOutputContractTests
             "structure_kind",
             "snapshot_support",
             "score",
+            "validation_status",
+            "confidence_level",
             "value_preview",
             "diagnostics");
 
@@ -108,6 +112,7 @@ public sealed class AnalyzerOutputContractTests
             "behavior_score",
             "rank_score",
             "validation_status",
+            "confidence_level",
             "recommendation",
             "value_preview",
             "diagnostics");

@@ -57,6 +57,7 @@ public sealed class Vec3CandidateAnalyzer
         var values = ReadVec3Values(sessionPath, source, snapshotEntries);
         var deltaMagnitude = CalculateDeltaMagnitude(values);
         var behavior = ScoreBehavior(stimulusLabel, deltaMagnitude);
+        var rankScore = Math.Round(Math.Min(100.0, source.Score * 0.75 + behavior.Score), 3);
         var diagnostics = source.Diagnostics
             .Concat(behavior.Diagnostics)
             .Append("promoted_from_float32_triplet_structure")
@@ -77,12 +78,23 @@ public sealed class Vec3CandidateAnalyzer
             SampleValueCount = values.Count,
             ValueDeltaMagnitude = Math.Round(deltaMagnitude, 6),
             BehaviorScore = behavior.Score,
-            RankScore = Math.Round(Math.Min(100.0, source.Score * 0.75 + behavior.Score), 3),
+            RankScore = rankScore,
             ValidationStatus = behavior.ValidationStatus,
+            ConfidenceLevel = ToConfidenceLevel(rankScore),
             Recommendation = behavior.Recommendation,
             ValuePreview = source.ValuePreview,
             Diagnostics = diagnostics
         };
+    }
+
+    private static string ToConfidenceLevel(double rankScore)
+    {
+        if (rankScore >= 75.0)
+        {
+            return "high";
+        }
+
+        return rankScore >= 50.0 ? "medium" : "low";
     }
 
     private static IReadOnlyList<IReadOnlyList<float>> ReadVec3Values(

@@ -152,10 +152,21 @@ public sealed class TypedValueLaneAnalyzer
             DistinctValueCount = distinctValueCount,
             ChangedSampleCount = changedSampleCount,
             RankScore = rankScore,
+            ConfidenceLevel = ToConfidenceLevel(rankScore),
             Recommendation = recommendation,
             ValuePreview = valuePreview.Take(8).ToArray(),
             Diagnostics = diagnostics
         };
+    }
+
+    private static string ToConfidenceLevel(double rankScore)
+    {
+        if (rankScore >= 75.0)
+        {
+            return "high";
+        }
+
+        return rankScore >= 50.0 ? "medium" : "low";
     }
 
     private static bool LooksLikeFloatLane(IReadOnlyList<float> values) =>

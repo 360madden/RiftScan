@@ -31,6 +31,8 @@ public sealed class TypedValueLaneAnalyzerTests
         Assert.Equal("typed_value_lane", candidate.AnalyzerId);
         Assert.Equal("0.1.0", candidate.AnalyzerVersion);
         Assert.Equal("float32", candidate.DataType);
+        Assert.Equal("unvalidated_candidate", candidate.ValidationStatus);
+        Assert.Equal("high", candidate.ConfidenceLevel);
         Assert.Equal("float_lane_followup", candidate.Recommendation);
         Assert.Equal(3, candidate.DistinctValueCount);
         Assert.Contains("1.5", candidate.ValuePreview);

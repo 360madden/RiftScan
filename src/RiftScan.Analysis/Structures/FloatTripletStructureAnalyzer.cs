@@ -73,6 +73,7 @@ public sealed class FloatTripletStructureAnalyzer
 
             var baseAddress = ParseHex(accumulator.BaseAddressHex);
             var absoluteAddress = baseAddress + (ulong)accumulator.Offset;
+            var score = Math.Round(supportRatio * 100.0, 3);
             var diagnostics = new List<string> { "finite_float32_triplet" };
             if (accumulator.Support < snapshots.Count)
             {
@@ -87,11 +88,22 @@ public sealed class FloatTripletStructureAnalyzer
                 OffsetHex = $"0x{accumulator.Offset:X}",
                 AbsoluteAddressHex = $"0x{absoluteAddress:X}",
                 SnapshotSupport = accumulator.Support,
-                Score = Math.Round(supportRatio * 100.0, 3),
+                Score = score,
+                ConfidenceLevel = ToConfidenceLevel(score),
                 ValuePreview = accumulator.FirstValues,
                 Diagnostics = diagnostics
             };
         }
+    }
+
+    private static string ToConfidenceLevel(double score)
+    {
+        if (score >= 75.0)
+        {
+            return "high";
+        }
+
+        return score >= 50.0 ? "medium" : "low";
     }
 
     private static float[] ReadTriplet(ReadOnlySpan<byte> bytes) =>

@@ -37,6 +37,12 @@ public sealed record StructureCandidate
     [JsonPropertyName("score")]
     public double Score { get; init; }
 
+    [JsonPropertyName("validation_status")]
+    public string ValidationStatus { get; init; } = "unvalidated_candidate";
+
+    [JsonPropertyName("confidence_level")]
+    public string ConfidenceLevel { get; init; } = "low";
+
     [JsonPropertyName("value_preview")]
     public IReadOnlyList<float> ValuePreview { get; init; } = [];
 

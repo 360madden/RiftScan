@@ -43,6 +43,12 @@ public sealed record TypedValueCandidate
     [JsonPropertyName("rank_score")]
     public double RankScore { get; init; }
 
+    [JsonPropertyName("validation_status")]
+    public string ValidationStatus { get; init; } = "unvalidated_candidate";
+
+    [JsonPropertyName("confidence_level")]
+    public string ConfidenceLevel { get; init; } = "low";
+
     [JsonPropertyName("recommendation")]
     public string Recommendation { get; init; } = string.Empty;
 

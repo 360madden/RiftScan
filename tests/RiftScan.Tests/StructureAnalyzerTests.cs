@@ -20,6 +20,8 @@ public sealed class StructureAnalyzerTests
         var first = JsonSerializer.Deserialize<StructureCandidate>(firstLine, SessionJson.Options)!;
         Assert.Equal("structure-000001", first.CandidateId);
         Assert.Equal("float32_triplet", first.StructureKind);
+        Assert.Equal("unvalidated_candidate", first.ValidationStatus);
+        Assert.Equal("high", first.ConfidenceLevel);
         Assert.True(first.Score > 0);
     }
 
