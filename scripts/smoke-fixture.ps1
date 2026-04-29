@@ -98,6 +98,14 @@ try {
     if (-not (Test-Path -LiteralPath (Join-Path $changingFixtureSource "manifest.json") -PathType Leaf)) {
         throw "Changing fixture session not found: $changingFixtureSource"
     }
+    $vec3PassiveFixtureSource = Join-Path $repoRoot "tests/RiftScan.Tests/Fixtures/vec3-passive-session"
+    if (-not (Test-Path -LiteralPath (Join-Path $vec3PassiveFixtureSource "manifest.json") -PathType Leaf)) {
+        throw "Vec3 passive fixture session not found: $vec3PassiveFixtureSource"
+    }
+    $vec3MoveFixtureSource = Join-Path $repoRoot "tests/RiftScan.Tests/Fixtures/vec3-move-forward-session"
+    if (-not (Test-Path -LiteralPath (Join-Path $vec3MoveFixtureSource "manifest.json") -PathType Leaf)) {
+        throw "Vec3 move-forward fixture session not found: $vec3MoveFixtureSource"
+    }
 
     if (Test-Path -LiteralPath $tempRoot) {
         $repoArtifactRoot = [System.IO.Path]::GetFullPath((Join-Path $repoRoot "artifacts"))
@@ -115,12 +123,16 @@ try {
     $sessionB = Join-Path $tempRoot "session-b"
     $sessionChangingFloat = Join-Path $tempRoot "session-changing-float"
     $sessionChangingFloatB = Join-Path $tempRoot "session-changing-float-b"
+    $sessionVec3Passive = Join-Path $tempRoot "session-vec3-passive"
+    $sessionVec3Move = Join-Path $tempRoot "session-vec3-move-forward"
     $reportRoot = Join-Path $tempRoot "reports"
     New-Item -ItemType Directory -Path $reportRoot | Out-Null
     Copy-Item -Path $fixtureSource -Destination $sessionA -Recurse
     Copy-Item -Path $fixtureSource -Destination $sessionB -Recurse
     Copy-Item -Path $changingFixtureSource -Destination $sessionChangingFloat -Recurse
     Copy-Item -Path $changingFixtureSource -Destination $sessionChangingFloatB -Recurse
+    Copy-Item -Path $vec3PassiveFixtureSource -Destination $sessionVec3Passive -Recurse
+    Copy-Item -Path $vec3MoveFixtureSource -Destination $sessionVec3Move -Recurse
 
     Invoke-DotNet -Arguments @("build", "RiftScan.slnx", "--configuration", $Configuration)
     Invoke-RiftScan -Arguments @("verify", "session", $sessionA)
@@ -135,6 +147,12 @@ try {
     Invoke-RiftScan -Arguments @("verify", "session", $sessionChangingFloat)
     Invoke-RiftScan -Arguments @("analyze", "session", $sessionChangingFloatB, "--top", "10")
     Invoke-RiftScan -Arguments @("verify", "session", $sessionChangingFloatB)
+    Invoke-RiftScan -Arguments @("verify", "session", $sessionVec3Passive)
+    Invoke-RiftScan -Arguments @("analyze", "session", $sessionVec3Passive, "--top", "10")
+    Invoke-RiftScan -Arguments @("verify", "session", $sessionVec3Passive)
+    Invoke-RiftScan -Arguments @("verify", "session", $sessionVec3Move)
+    Invoke-RiftScan -Arguments @("analyze", "session", $sessionVec3Move, "--top", "10")
+    Invoke-RiftScan -Arguments @("verify", "session", $sessionVec3Move)
 
     $comparisonJson = Join-Path $reportRoot "fixture-comparison.json"
     $comparisonMarkdown = Join-Path $reportRoot "fixture-comparison.md"
@@ -181,6 +199,43 @@ try {
         Select-Object -First 1
     if ($null -eq $changingFloatMatch) {
         throw "Expected changing-float comparison to preserve the float32 lane match at 0x20000000+0x4."
+    }
+
+    $vec3BehaviorComparisonJson = Join-Path $reportRoot "vec3-behavior-comparison.json"
+    $vec3BehaviorComparisonMarkdown = Join-Path $reportRoot "vec3-behavior-comparison.md"
+    $vec3BehaviorNextPlan = Join-Path $reportRoot "vec3-behavior-next-capture-plan.json"
+    Invoke-RiftScan -Arguments @(
+        "compare", "sessions", $sessionVec3Passive, $sessionVec3Move,
+        "--top", "10",
+        "--out", $vec3BehaviorComparisonJson,
+        "--report-md", $vec3BehaviorComparisonMarkdown,
+        "--next-plan", $vec3BehaviorNextPlan
+    )
+
+    Assert-FileExists -Path $vec3BehaviorComparisonJson
+    Assert-FileExists -Path $vec3BehaviorComparisonMarkdown
+    Assert-FileExists -Path $vec3BehaviorNextPlan
+    $vec3BehaviorComparison = Get-Content $vec3BehaviorComparisonJson -Raw | ConvertFrom-Json
+    if ($vec3BehaviorComparison.vec3_behavior_summary.behavior_contrast_count -lt 1) {
+        throw "Expected vec3 behavior comparison to emit at least one behavior contrast candidate."
+    }
+
+    $vec3BehaviorMatch = @($vec3BehaviorComparison.vec3_candidate_matches) |
+        Where-Object {
+            $_.base_address_hex -eq "0x30000000" -and
+            $_.offset_hex -eq "0x0" -and
+            $_.session_a_stimulus_label -eq "passive_idle" -and
+            $_.session_b_stimulus_label -eq "move_forward" -and
+            $_.recommendation -eq "passive_to_move_vec3_behavior_contrast_candidate"
+        } |
+        Select-Object -First 1
+    if ($null -eq $vec3BehaviorMatch) {
+        throw "Expected vec3 behavior comparison to preserve passive-to-move contrast at 0x30000000+0x0."
+    }
+
+    $vec3BehaviorPlan = Get-Content $vec3BehaviorNextPlan -Raw | ConvertFrom-Json
+    if ($vec3BehaviorPlan.recommended_mode -ne "review_existing_behavior_contrast") {
+        throw "Expected vec3 behavior next plan to recommend reviewing the existing behavior contrast."
     }
 
     $summaryJson = Join-Path $reportRoot "fixture-session-summary.json"

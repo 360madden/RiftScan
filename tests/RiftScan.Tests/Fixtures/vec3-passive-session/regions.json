@@ -1,0 +1,12 @@
+{
+  "regions": [
+    {
+      "region_id": "region-0001",
+      "base_address_hex": "0x30000000",
+      "size_bytes": 16,
+      "protection": "PAGE_READWRITE",
+      "state": "MEM_COMMIT",
+      "type": "MEM_PRIVATE"
+    }
+  ]
+}

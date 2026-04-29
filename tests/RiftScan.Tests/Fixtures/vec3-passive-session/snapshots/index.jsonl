@@ -1,0 +1,3 @@
+{"snapshot_id":"snapshot-000001","region_id":"region-0001","path":"snapshots/region-0001-snapshot-000001.bin","base_address_hex":"0x30000000","size_bytes":16,"checksum_sha256_hex":"936798eab8e006fa00a56d0176ca85aa8a16505095386c78f9705fd24e0d8a41"}
+{"snapshot_id":"snapshot-000002","region_id":"region-0001","path":"snapshots/region-0001-snapshot-000002.bin","base_address_hex":"0x30000000","size_bytes":16,"checksum_sha256_hex":"936798eab8e006fa00a56d0176ca85aa8a16505095386c78f9705fd24e0d8a41"}
+{"snapshot_id":"snapshot-000003","region_id":"region-0001","path":"snapshots/region-0001-snapshot-000003.bin","base_address_hex":"0x30000000","size_bytes":16,"checksum_sha256_hex":"936798eab8e006fa00a56d0176ca85aa8a16505095386c78f9705fd24e0d8a41"}

@@ -1,0 +1,1 @@
+{"schema_version":"riftscan.stimulus.v1","session_id":"fixture-vec3-passive-session","stimulus_id":"stimulus-000001","label":"passive_idle","start_snapshot_id":"snapshot-000001","end_snapshot_id":"snapshot-000003","created_utc":"2026-04-28T19:00:01Z","source":"fixture","notes":"deterministic fixture vec3 remains stable during passive idle"}

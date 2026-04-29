@@ -1,0 +1,45 @@
+{
+  "algorithm": "SHA256",
+  "entries": [
+    {
+      "path": "manifest.json",
+      "sha256_hex": "87ab3dcc2af5c5761f1105c998bedf5987319353f9873d328bb9fd6910600499",
+      "bytes": 576
+    },
+    {
+      "path": "regions.json",
+      "sha256_hex": "2cd71d9454b8b05e9c30ef0b1aefe7e8fb7969bfb02834812b34c04f0a91d5a9",
+      "bytes": 239
+    },
+    {
+      "path": "modules.json",
+      "sha256_hex": "e31f0e7e8d18f99d0b19fdf7c49003c7f7c4e4112f174a958bf75d52afc6310e",
+      "bytes": 22
+    },
+    {
+      "path": "snapshots/index.jsonl",
+      "sha256_hex": "0d676138304899d6b0744b5109ad1e58030751ec5ae06ae8a31cce75a679b226",
+      "bytes": 744
+    },
+    {
+      "path": "stimuli.jsonl",
+      "sha256_hex": "9fe1794ce002dee31ae9d17d7a58ca59b4b469a2e91c091752316a728b661b9b",
+      "bytes": 343
+    },
+    {
+      "path": "snapshots/region-0001-snapshot-000001.bin",
+      "sha256_hex": "936798eab8e006fa00a56d0176ca85aa8a16505095386c78f9705fd24e0d8a41",
+      "bytes": 16
+    },
+    {
+      "path": "snapshots/region-0001-snapshot-000002.bin",
+      "sha256_hex": "936798eab8e006fa00a56d0176ca85aa8a16505095386c78f9705fd24e0d8a41",
+      "bytes": 16
+    },
+    {
+      "path": "snapshots/region-0001-snapshot-000003.bin",
+      "sha256_hex": "936798eab8e006fa00a56d0176ca85aa8a16505095386c78f9705fd24e0d8a41",
+      "bytes": 16
+    }
+  ]
+}
