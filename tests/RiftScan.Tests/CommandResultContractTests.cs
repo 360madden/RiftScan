@@ -56,6 +56,28 @@ public sealed class CommandResultContractTests
             "issues");
 
     [Fact]
+    public void Session_prune_result_pins_json_contract_fields() =>
+        AssertJsonPropertySet(
+            new SessionPruneResult(),
+            "result_schema_version",
+            "success",
+            "session_path",
+            "dry_run",
+            "raw_data_policy",
+            "candidate_count",
+            "bytes_reclaimable",
+            "candidates",
+            "issues");
+
+    [Fact]
+    public void Session_prune_candidate_pins_json_contract_fields() =>
+        AssertJsonPropertySet(
+            new SessionPruneCandidate(),
+            "path",
+            "bytes",
+            "reason");
+
+    [Fact]
     public void Session_migration_plan_pins_json_contract_fields() =>
         AssertJsonPropertySet(
             new SessionMigrationPlan(),
@@ -87,6 +109,7 @@ public sealed class CommandResultContractTests
         Assert.Equal("riftscan.session_report_result.v1", ReadSchema(new SessionReportResult()));
         Assert.Equal("riftscan.session_verification_result.v1", ReadSchema(new SessionVerificationResult()));
         Assert.Equal("riftscan.session_migration_result.v1", ReadSchema(new SessionMigrationResult()));
+        Assert.Equal("riftscan.session_prune_result.v1", ReadSchema(new SessionPruneResult()));
     }
 
     private static string? ReadSchema<T>(T value)

@@ -50,6 +50,11 @@ public static class Program
                 return MigrateSession(args[2..]);
             }
 
+            if (args.Length >= 2 && Is(args[0], "session") && Is(args[1], "prune"))
+            {
+                return PruneSession(args[2..]);
+            }
+
             if (args.Length == 3 && Is(args[0], "verify") && Is(args[1], "session"))
             {
                 return VerifySession(args[2]);
@@ -168,6 +173,21 @@ public static class Program
         var sessionPath = args[0];
         var (toSchemaVersion, dryRun, planOutputPath, migrationOutputPath) = ParseMigrateOptions(args[1..]);
         var result = new SessionMigrationService().Migrate(sessionPath, toSchemaVersion, dryRun, planOutputPath, migrationOutputPath);
+        Console.WriteLine(JsonSerializer.Serialize(result, SessionJson.Options));
+        return result.Success ? 0 : 1;
+    }
+
+
+    private static int PruneSession(string[] args)
+    {
+        if (args.Length == 0)
+        {
+            throw new ArgumentException("Prune requires a session path.");
+        }
+
+        var sessionPath = args[0];
+        var dryRun = ParsePruneOptions(args[1..]);
+        var result = new SessionPruneService().Prune(sessionPath, dryRun);
         Console.WriteLine(JsonSerializer.Serialize(result, SessionJson.Options));
         return result.Success ? 0 : 1;
     }
@@ -410,6 +430,29 @@ public static class Program
         return (top, outputPath, reportPath, nextPlanPath);
     }
 
+
+    private static bool ParsePruneOptions(string[] args)
+    {
+        var dryRun = true;
+        for (var index = 0; index < args.Length; index++)
+        {
+            var arg = args[index];
+            switch (arg)
+            {
+                case "--dry-run":
+                    dryRun = true;
+                    break;
+                case "--apply":
+                    dryRun = false;
+                    break;
+                default:
+                    throw new ArgumentException($"Unknown session prune option: {arg}");
+            }
+        }
+
+        return dryRun;
+    }
+
     private static (string ToSchemaVersion, bool DryRun, string? PlanOutputPath, string? MigrationOutputPath) ParseMigrateOptions(string[] args)
     {
         string? toSchemaVersion = null;
@@ -502,6 +545,7 @@ public static class Program
         Console.WriteLine("riftscan report session <session-path> [--top 100]");
         Console.WriteLine("riftscan compare sessions <session-a> <session-b> [--top 100] [--out reports/generated/comparison.json] [--report-md reports/generated/comparison.md] [--next-plan reports/generated/next-capture-plan.json]");
         Console.WriteLine("riftscan migrate session <session-path> --to-schema riftscan.session.v1 [--dry-run|--apply] [--out sessions/<migrated-id>] [--plan-out reports/generated/migration-plan.json]");
+        Console.WriteLine("riftscan session prune <session-path> [--dry-run]");
         Console.WriteLine("riftscan verify session <session-path>");
     }
 

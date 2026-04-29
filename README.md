@@ -59,6 +59,15 @@ dotnet run --project src/RiftScan.Cli/RiftScan.Cli.csproj --configuration Releas
 
 Migration apply refuses missing `--out`, non-empty output directories, unsupported source schemas, and unsupported target schemas.
 
+## Session cleanup inventory
+
+Use prune dry-run to list generated artifacts that could be cleaned later. It does not delete files.
+
+```powershell
+dotnet run --project src/RiftScan.Cli/RiftScan.Cli.csproj --configuration Release --no-build -- `
+  session prune sessions/<session_id> --dry-run
+```
+
 ## Validation
 
 `scripts/smoke-fixture.ps1` is fixture-only and does not attach to RIFT. Live capture and plan-follow-up need an explicit process ID; fake-process plan coverage runs in unit tests.
