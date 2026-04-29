@@ -8,6 +8,8 @@ namespace RiftScan.Analysis.Comparison;
 public sealed class ScalarEvidenceSetService
 {
     private const double MinMeaningfulBehaviorDelta = 0.0001;
+    private const double MinCameraYawPitchDelta = 0.01;
+    private const int MinCameraYawPitchChangedSamples = 2;
 
     public ScalarEvidenceSetResult Aggregate(IReadOnlyList<string> sessionPaths, int top = 100)
     {
@@ -107,9 +109,10 @@ public sealed class ScalarEvidenceSetService
         var passiveChanged = passiveEntries.Any(entry => entry.Candidate.ChangedSampleCount > 0);
         var leftChanged = leftEntries.Any(entry => HasDirectedBehaviorChange(entry.Candidate));
         var rightChanged = rightEntries.Any(entry => HasDirectedBehaviorChange(entry.Candidate));
-        var cameraChanged = cameraEntries.Any(entry => HasDirectedBehaviorChange(entry.Candidate));
         var cameraOnlyIsZoom = cameraEntries.Any(entry => IsCameraZoomNote(entry.Session.Summary.StimulusNotes));
         var cameraOnlyIsYawOrPitch = !cameraOnlyIsZoom && cameraEntries.Any(entry => IsCameraYawOrPitchNote(entry.Session.Summary.StimulusNotes));
+        var cameraRawChanged = cameraEntries.Any(entry => HasDirectedBehaviorChange(entry.Candidate));
+        var cameraChanged = cameraEntries.Any(entry => HasCameraDirectedBehaviorChange(entry.Candidate, entry.Session.Summary.StimulusNotes));
         var leftSignedDelta = SumSignedDelta(leftEntries);
         var rightSignedDelta = SumSignedDelta(rightEntries);
         var cameraSignedDelta = SumSignedDelta(cameraEntries);
@@ -131,6 +134,7 @@ public sealed class ScalarEvidenceSetService
         var cameraScore = ScoreCameraSeparation(cameraTurnSeparation, supportingReasons, rejectionReasons);
         scoreBreakdown["camera_turn_separation_score"] = cameraScore;
         AddCameraStimulusReasons(cameraOnlyIsZoom, cameraOnlyIsYawOrPitch, cameraEntries.Length > 0, supportingReasons);
+        AddCameraQualityReasons(cameraOnlyIsYawOrPitch, cameraRawChanged, cameraChanged, cameraEntries, supportingReasons, rejectionReasons);
         var rawScore = labelScore + angleScore + passiveScore + turnScore + cameraScore;
         var scoreTotal = Math.Round(Math.Clamp(rawScore, 0, 100), 3);
         scoreBreakdown["score_total"] = scoreTotal;
@@ -302,6 +306,43 @@ public sealed class ScalarEvidenceSetService
             : cameraOnlyIsYawOrPitch
                 ? "camera_yaw_or_pitch_stimulus_note_present"
                 : "camera_yaw_or_pitch_stimulus_not_proven_by_note");
+    }
+
+    private static void AddCameraQualityReasons(
+        bool cameraOnlyIsYawOrPitch,
+        bool cameraRawChanged,
+        bool cameraChanged,
+        IReadOnlyCollection<SessionScalarCandidate> cameraEntries,
+        ICollection<string> supportingReasons,
+        ICollection<string> rejectionReasons)
+    {
+        if (!cameraOnlyIsYawOrPitch || cameraEntries.Count == 0)
+        {
+            return;
+        }
+
+        if (cameraChanged)
+        {
+            supportingReasons.Add("camera_yaw_or_pitch_change_passed_temporal_quality_gate");
+            return;
+        }
+
+        if (!cameraRawChanged)
+        {
+            return;
+        }
+
+        if (cameraEntries.Any(entry => HasDirectedBehaviorChange(entry.Candidate) &&
+                                       entry.Candidate.ChangedSampleCount < MinCameraYawPitchChangedSamples))
+        {
+            rejectionReasons.Add("camera_yaw_or_pitch_change_not_temporally_smooth");
+        }
+
+        if (cameraEntries.Any(entry => HasDirectedBehaviorChange(entry.Candidate) &&
+                                       MaxSignedOrLinearDelta(entry.Candidate) < MinCameraYawPitchDelta))
+        {
+            rejectionReasons.Add("camera_yaw_or_pitch_delta_below_threshold");
+        }
     }
 
     private static string Classify(double scoreTotal, bool oppositePolarity, string cameraTurnSeparation, string valueFamily, bool cameraOnlyIsZoom)
@@ -540,6 +581,25 @@ public sealed class ScalarEvidenceSetService
         candidate.ChangedSampleCount > 0 &&
         (Math.Abs(candidate.SignedCircularDelta) >= MinMeaningfulBehaviorDelta ||
          candidate.ValueDeltaMagnitude >= MinMeaningfulBehaviorDelta);
+
+    private static bool HasCameraDirectedBehaviorChange(ScalarCandidate candidate, string stimulusNotes)
+    {
+        if (!HasDirectedBehaviorChange(candidate))
+        {
+            return false;
+        }
+
+        if (!IsCameraZoomNote(stimulusNotes) && IsCameraYawOrPitchNote(stimulusNotes))
+        {
+            return candidate.ChangedSampleCount >= MinCameraYawPitchChangedSamples &&
+                   MaxSignedOrLinearDelta(candidate) >= MinCameraYawPitchDelta;
+        }
+
+        return true;
+    }
+
+    private static double MaxSignedOrLinearDelta(ScalarCandidate candidate) =>
+        Math.Max(Math.Abs(candidate.SignedCircularDelta), candidate.ValueDeltaMagnitude);
 
     private static bool IsCameraZoomNote(string notes) =>
         !string.IsNullOrWhiteSpace(notes) &&
