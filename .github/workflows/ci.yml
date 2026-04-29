@@ -1,0 +1,39 @@
+name: ci
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-test-smoke:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore
+        run: dotnet restore RiftScan.slnx
+
+      - name: Build
+        run: dotnet build RiftScan.slnx --configuration Release --no-restore
+
+      - name: Test
+        run: dotnet test RiftScan.slnx --configuration Release --no-build
+
+      - name: Format check
+        run: dotnet format RiftScan.slnx --verify-no-changes --no-restore
+
+      - name: Fixture smoke
+        shell: pwsh
+        run: pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/smoke-fixture.ps1
+
+      - name: Migration smoke
+        shell: pwsh
+        run: pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/smoke-migration.ps1
