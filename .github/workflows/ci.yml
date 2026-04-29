@@ -48,7 +48,7 @@ jobs:
 
       - name: Verify smoke manifests
         shell: pwsh
-        run: pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/verify-smoke-manifest.ps1 -ManifestPath artifacts/smoke-fixture/smoke-manifest.json,artifacts/smoke-migration/smoke-manifest.json
+        run: pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/verify-smoke-manifest.ps1 -Root artifacts
 
       - name: Upload smoke artifacts
         if: always()
