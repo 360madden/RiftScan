@@ -114,11 +114,13 @@ try {
     $sessionA = Join-Path $tempRoot "session-a"
     $sessionB = Join-Path $tempRoot "session-b"
     $sessionChangingFloat = Join-Path $tempRoot "session-changing-float"
+    $sessionChangingFloatB = Join-Path $tempRoot "session-changing-float-b"
     $reportRoot = Join-Path $tempRoot "reports"
     New-Item -ItemType Directory -Path $reportRoot | Out-Null
     Copy-Item -Path $fixtureSource -Destination $sessionA -Recurse
     Copy-Item -Path $fixtureSource -Destination $sessionB -Recurse
     Copy-Item -Path $changingFixtureSource -Destination $sessionChangingFloat -Recurse
+    Copy-Item -Path $changingFixtureSource -Destination $sessionChangingFloatB -Recurse
 
     Invoke-DotNet -Arguments @("build", "RiftScan.slnx", "--configuration", $Configuration)
     Invoke-RiftScan -Arguments @("verify", "session", $sessionA)
@@ -131,6 +133,8 @@ try {
     Invoke-RiftScan -Arguments @("analyze", "session", $sessionChangingFloat, "--top", "10")
     Invoke-RiftScan -Arguments @("report", "session", $sessionChangingFloat, "--top", "10")
     Invoke-RiftScan -Arguments @("verify", "session", $sessionChangingFloat)
+    Invoke-RiftScan -Arguments @("analyze", "session", $sessionChangingFloatB, "--top", "10")
+    Invoke-RiftScan -Arguments @("verify", "session", $sessionChangingFloatB)
 
     $comparisonJson = Join-Path $reportRoot "fixture-comparison.json"
     $comparisonMarkdown = Join-Path $reportRoot "fixture-comparison.md"
@@ -147,6 +151,37 @@ try {
     Assert-FileExists -Path $comparisonJson
     Assert-FileExists -Path $comparisonMarkdown
     Assert-FileExists -Path $nextPlan
+
+    $changingComparisonJson = Join-Path $reportRoot "changing-float-comparison.json"
+    $changingComparisonMarkdown = Join-Path $reportRoot "changing-float-comparison.md"
+    $changingNextPlan = Join-Path $reportRoot "changing-float-next-capture-plan.json"
+    Invoke-RiftScan -Arguments @(
+        "compare", "sessions", $sessionChangingFloat, $sessionChangingFloatB,
+        "--top", "10",
+        "--out", $changingComparisonJson,
+        "--report-md", $changingComparisonMarkdown,
+        "--next-plan", $changingNextPlan
+    )
+
+    Assert-FileExists -Path $changingComparisonJson
+    Assert-FileExists -Path $changingComparisonMarkdown
+    Assert-FileExists -Path $changingNextPlan
+    $changingComparison = Get-Content $changingComparisonJson -Raw | ConvertFrom-Json
+    if ($changingComparison.matching_value_candidate_count -lt 1) {
+        throw "Expected changing-float comparison to match at least one typed value candidate."
+    }
+
+    $changingFloatMatch = @($changingComparison.value_candidate_matches) |
+        Where-Object {
+            $_.base_address_hex -eq "0x20000000" -and
+            $_.offset_hex -eq "0x4" -and
+            $_.data_type -eq "float32" -and
+            $_.recommendation -eq "stable_typed_value_lane_candidate"
+        } |
+        Select-Object -First 1
+    if ($null -eq $changingFloatMatch) {
+        throw "Expected changing-float comparison to preserve the float32 lane match at 0x20000000+0x4."
+    }
 
     $summaryJson = Join-Path $reportRoot "fixture-session-summary.json"
     $summaryResult = Invoke-RiftScanJson -Arguments @("session", "summary", $sessionA, "--json-out", $summaryJson)
