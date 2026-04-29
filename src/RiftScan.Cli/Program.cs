@@ -1,3 +1,4 @@
+using System.Reflection;
 using System.Text.Json;
 using RiftScan.Analysis.Comparison;
 using RiftScan.Analysis.Reports;
@@ -10,8 +11,16 @@ namespace RiftScan.Cli;
 
 public static class Program
 {
+    private const string FallbackVersion = "0.1.0";
+
     public static int Main(string[] args)
     {
+        if (args.Length == 1 && IsVersion(args[0]))
+        {
+            PrintVersion();
+            return 0;
+        }
+
         if (args.Length == 0 || IsHelp(args[0]))
         {
             PrintUsage();
@@ -696,6 +705,15 @@ public static class Program
         PrintSessionInventoryUsage();
         PrintSessionSummaryUsage();
         PrintVerifySessionUsage();
+        Console.WriteLine("riftscan --version");
+    }
+
+    private static void PrintVersion()
+    {
+        var version = typeof(Program).Assembly
+            .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?
+            .InformationalVersion;
+        Console.WriteLine($"riftscan {FirstNonEmpty(version, FallbackVersion)}");
     }
 
     private static void PrintCapturePassiveUsage() =>
@@ -733,4 +751,10 @@ public static class Program
 
     private static bool IsHelp(string value) =>
         Is(value, "--help") || Is(value, "-h") || Is(value, "help");
+
+    private static bool IsVersion(string value) =>
+        Is(value, "--version") || Is(value, "-v") || Is(value, "version");
+
+    private static string FirstNonEmpty(string? value, string fallback) =>
+        string.IsNullOrWhiteSpace(value) ? fallback : value;
 }

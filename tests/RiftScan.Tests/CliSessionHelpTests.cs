@@ -23,6 +23,19 @@ public sealed class CliSessionHelpTests
         Assert.Equal(string.Empty, result.Stderr);
     }
 
+    [Theory]
+    [InlineData("--version")]
+    [InlineData("-v")]
+    [InlineData("version")]
+    public void Cli_version_prints_version_without_error(string argument)
+    {
+        var result = RunCli(argument);
+
+        Assert.Equal(0, result.ExitCode);
+        Assert.Matches(@"^riftscan 0\.1\.0(?:\+[0-9a-f]+)?\r?\n$", result.Stdout);
+        Assert.Equal(string.Empty, result.Stderr);
+    }
+
     private static (int ExitCode, string Stdout, string Stderr) RunCli(params string[] args)
     {
         var originalOut = Console.Out;
