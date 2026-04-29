@@ -6,6 +6,7 @@ namespace RiftScan.Capture.Passive;
 
 public sealed class PassiveCapturePlanService(IProcessMemoryReader processMemoryReader)
 {
+    private const string SupportedCapturePlanSchemaVersion = "riftscan.next_capture_plan.v1";
     private const string SupportedComparisonPlanSchemaVersion = "comparison_next_capture_plan.v1";
 
     public PassiveCaptureResult CaptureFromPlan(PassiveCapturePlanOptions options)
@@ -132,6 +133,12 @@ public sealed class PassiveCapturePlanService(IProcessMemoryReader processMemory
         {
             var plan = JsonSerializer.Deserialize<PassiveCapturePlanDocument>(json, SessionJson.Options)
                 ?? throw new InvalidOperationException($"Could not deserialize capture plan: {planPath}.");
+            if (!string.IsNullOrWhiteSpace(plan.SchemaVersion) &&
+                !string.Equals(plan.SchemaVersion, SupportedCapturePlanSchemaVersion, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException($"Unsupported capture plan schema_version '{plan.SchemaVersion}'. Expected '{SupportedCapturePlanSchemaVersion}'.");
+            }
+
             return plan.Regions;
         }
 

@@ -119,4 +119,35 @@ public sealed class PassiveCaptureSerializationContractTests
         Assert.Equal(16, failure.GetProperty("requested_bytes").GetInt32());
         Assert.Equal("selected region unreadable", failure.GetProperty("reason").GetString());
     }
+
+    [Fact]
+    public void Passive_capture_plan_document_serializes_schema_contract()
+    {
+        var plan = new PassiveCapturePlanDocument
+        {
+            SessionId = "source-session",
+            AnalyzerId = "dynamic_region_triage",
+            AnalyzerVersion = "0.1.0",
+            Recommendation = "test",
+            Regions =
+            [
+                new PassiveCapturePlanRegion
+                {
+                    RegionId = "region-000001",
+                    RankScore = 10,
+                    BaseAddressHex = "0x1000",
+                    SizeBytes = 16,
+                    Reason = "test"
+                }
+            ]
+        };
+
+        using var document = JsonDocument.Parse(JsonSerializer.Serialize(plan, SessionJson.Options));
+        var root = document.RootElement;
+
+        Assert.Equal("riftscan.next_capture_plan.v1", root.GetProperty("schema_version").GetString());
+        Assert.Equal("dynamic_region_triage", root.GetProperty("analyzer_id").GetString());
+        Assert.Equal("0.1.0", root.GetProperty("analyzer_version").GetString());
+        Assert.Equal("region-000001", root.GetProperty("regions")[0].GetProperty("region_id").GetString());
+    }
 }

@@ -4,11 +4,17 @@ namespace RiftScan.Capture.Passive;
 
 public sealed record PassiveCapturePlanDocument
 {
+    [JsonPropertyName("schema_version")]
+    public string SchemaVersion { get; init; } = "riftscan.next_capture_plan.v1";
+
     [JsonPropertyName("session_id")]
     public string SessionId { get; init; } = string.Empty;
 
     [JsonPropertyName("analyzer_id")]
     public string AnalyzerId { get; init; } = string.Empty;
+
+    [JsonPropertyName("analyzer_version")]
+    public string AnalyzerVersion { get; init; } = string.Empty;
 
     [JsonPropertyName("recommendation")]
     public string Recommendation { get; init; } = string.Empty;

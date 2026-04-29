@@ -302,6 +302,36 @@ public sealed class PassiveCaptureServiceTests
     }
 
     [Fact]
+    public void Capture_plan_rejects_unsupported_next_capture_plan_schema()
+    {
+        using var source = new TempDirectory();
+        using var output = new TempDirectory();
+        Directory.CreateDirectory(source.Path);
+        var planPath = Path.Combine(source.Path, "bad-next-capture-plan.json");
+        File.WriteAllText(planPath, """
+            {
+              "schema_version": "riftscan.next_capture_plan.v999",
+              "session_id": "source-session",
+              "analyzer_id": "dynamic_region_triage",
+              "regions": [
+                { "region_id": "region-000001", "rank_score": 10, "reason": "bad_schema_fixture" }
+              ]
+            }
+            """);
+        var reader = new FakeProcessMemoryReader();
+
+        var ex = Assert.Throws<InvalidOperationException>(() => new PassiveCapturePlanService(reader).CaptureFromPlan(new PassiveCapturePlanOptions
+        {
+            SourceSessionPath = planPath,
+            ProcessName = "fixture_process",
+            OutputPath = output.Path
+        }));
+
+        Assert.Contains("Unsupported capture plan schema_version", ex.Message, StringComparison.Ordinal);
+        Assert.Contains("riftscan.next_capture_plan.v1", ex.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Cli_capture_passive_accepts_intervention_flags()
     {
         using var output = new TempDirectory();
