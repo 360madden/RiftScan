@@ -16,13 +16,13 @@ public sealed class SessionPruneService
         ["report.json"] = "generated_report"
     };
 
-    public SessionPruneResult Prune(string sessionPath, bool dryRun = true)
+    public SessionPruneResult Prune(string sessionPath, bool dryRun = true, string? inventoryOutputPath = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(sessionPath);
         var fullSessionPath = Path.GetFullPath(sessionPath);
         if (!dryRun)
         {
-            return CreateResult(
+            return WriteInventoryIfRequested(CreateResult(
                 fullSessionPath,
                 dryRun,
                 candidates: [],
@@ -32,19 +32,19 @@ public sealed class SessionPruneService
                         "prune_apply_not_supported",
                         "Session prune currently supports --dry-run only; deletion is intentionally disabled until an explicit apply contract exists.",
                         null)
-                ]);
+                ]), inventoryOutputPath);
         }
 
         if (!Directory.Exists(fullSessionPath))
         {
-            return CreateResult(
+            return WriteInventoryIfRequested(CreateResult(
                 fullSessionPath,
                 dryRun,
                 candidates: [],
                 issues:
                 [
                     Error("session_root_missing", "Session directory does not exist.", fullSessionPath)
-                ]);
+                ]), inventoryOutputPath);
         }
 
         var candidates = GeneratedArtifactReasons
@@ -54,7 +54,7 @@ public sealed class SessionPruneService
             .OrderBy(candidate => candidate.Path, StringComparer.Ordinal)
             .ToArray();
 
-        return CreateResult(fullSessionPath, dryRun, candidates, issues: []);
+        return WriteInventoryIfRequested(CreateResult(fullSessionPath, dryRun, candidates, issues: []), inventoryOutputPath);
     }
 
     private static SessionPruneCandidate? CreateCandidate(string sessionPath, string relativePath, string reason)
@@ -71,6 +71,21 @@ public sealed class SessionPruneService
             Bytes = new FileInfo(absolutePath).Length,
             Reason = reason
         };
+    }
+
+
+    private static SessionPruneResult WriteInventoryIfRequested(SessionPruneResult result, string? inventoryOutputPath)
+    {
+        if (string.IsNullOrWhiteSpace(inventoryOutputPath))
+        {
+            return result;
+        }
+
+        var fullInventoryPath = Path.GetFullPath(inventoryOutputPath);
+        Directory.CreateDirectory(Path.GetDirectoryName(fullInventoryPath) ?? ".");
+        var resultWithInventoryPath = result with { InventoryPath = fullInventoryPath };
+        File.WriteAllText(fullInventoryPath, System.Text.Json.JsonSerializer.Serialize(resultWithInventoryPath, SessionJson.Options));
+        return resultWithInventoryPath;
     }
 
     private static SessionPruneResult CreateResult(

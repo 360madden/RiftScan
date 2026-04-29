@@ -92,6 +92,64 @@ public sealed class SessionPruneServiceTests
         }
     }
 
+    [Fact]
+    public void Prune_json_out_writes_inventory_file_and_reports_path()
+    {
+        var tempDirectory = CreateTempDirectory();
+        var sessionPath = Path.Combine(tempDirectory, "session-with-generated-artifacts");
+        var inventoryPath = Path.Combine(tempDirectory, "reports", "prune-inventory.json");
+
+        try
+        {
+            CopyDirectory(ValidFixturePath, sessionPath);
+            File.WriteAllText(Path.Combine(sessionPath, "report.json"), "{}\n");
+
+            var result = new SessionPruneService().Prune(sessionPath, inventoryOutputPath: inventoryPath);
+
+            var fullInventoryPath = Path.GetFullPath(inventoryPath);
+            Assert.True(result.Success, string.Join(Environment.NewLine, result.Issues.Select(issue => $"{issue.Code}: {issue.Message}")));
+            Assert.Equal(fullInventoryPath, result.InventoryPath);
+            Assert.True(File.Exists(fullInventoryPath));
+
+            using var document = JsonDocument.Parse(File.ReadAllText(fullInventoryPath));
+            Assert.Equal(fullInventoryPath, document.RootElement.GetProperty("inventory_path").GetString());
+            Assert.Equal(1, document.RootElement.GetProperty("candidate_count").GetInt32());
+            Assert.Equal("report.json", document.RootElement.GetProperty("candidates")[0].GetProperty("path").GetString());
+        }
+        finally
+        {
+            Directory.Delete(tempDirectory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void Cli_session_prune_json_out_writes_inventory_file()
+    {
+        var tempDirectory = CreateTempDirectory();
+        var sessionPath = Path.Combine(tempDirectory, "session-with-generated-artifacts");
+        var inventoryPath = Path.Combine(tempDirectory, "reports", "cli-prune-inventory.json");
+
+        try
+        {
+            CopyDirectory(ValidFixturePath, sessionPath);
+            File.WriteAllText(Path.Combine(sessionPath, "report.md"), "# report\n");
+
+            var result = RunCli("session", "prune", sessionPath, "--dry-run", "--json-out", inventoryPath);
+
+            Assert.Equal(0, result.ExitCode);
+            using var document = JsonDocument.Parse(result.Stdout);
+            var fullInventoryPath = Path.GetFullPath(inventoryPath);
+            Assert.Equal(fullInventoryPath, document.RootElement.GetProperty("inventory_path").GetString());
+            Assert.True(File.Exists(fullInventoryPath));
+            using var inventoryDocument = JsonDocument.Parse(File.ReadAllText(fullInventoryPath));
+            Assert.Equal(fullInventoryPath, inventoryDocument.RootElement.GetProperty("inventory_path").GetString());
+        }
+        finally
+        {
+            Directory.Delete(tempDirectory, recursive: true);
+        }
+    }
+
     private static string ValidFixturePath => Path.Combine(AppContext.BaseDirectory, "Fixtures", "valid-session");
 
     private static string CreateTempDirectory()

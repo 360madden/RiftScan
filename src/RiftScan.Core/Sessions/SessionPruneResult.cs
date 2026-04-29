@@ -19,6 +19,9 @@ public sealed record SessionPruneResult
     [JsonPropertyName("raw_data_policy")]
     public string RawDataPolicy { get; init; } = "preserve_raw_artifacts_no_mutation";
 
+    [JsonPropertyName("inventory_path")]
+    public string? InventoryPath { get; init; }
+
     [JsonPropertyName("candidate_count")]
     public int CandidateCount { get; init; }
 

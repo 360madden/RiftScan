@@ -65,7 +65,8 @@ Use prune dry-run to list generated artifacts that could be cleaned later. It do
 
 ```powershell
 dotnet run --project src/RiftScan.Cli/RiftScan.Cli.csproj --configuration Release --no-build -- `
-  session prune sessions/<session_id> --dry-run
+  session prune sessions/<session_id> --dry-run `
+  --json-out reports/generated/<session_id>-prune-inventory.json
 ```
 
 ## Validation

@@ -64,6 +64,7 @@ public sealed class CommandResultContractTests
             "session_path",
             "dry_run",
             "raw_data_policy",
+            "inventory_path",
             "candidate_count",
             "bytes_reclaimable",
             "candidates",
