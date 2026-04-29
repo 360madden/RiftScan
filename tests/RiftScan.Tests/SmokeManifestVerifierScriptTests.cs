@@ -74,10 +74,76 @@ public sealed class SmokeManifestVerifierScriptTests
         }
     }
 
+    [Fact]
+    public void Verify_smoke_manifest_rejects_missing_listed_file()
+    {
+        var tempDirectory = CreateTempDirectory();
+        try
+        {
+            var manifestPath = WriteManifestEntry(
+                outputRoot: tempDirectory,
+                relativePath: "missing-proof.bin",
+                bytes: 4,
+                sha256: new string('0', 64),
+                fileCount: 1);
+
+            var result = RunVerifier(manifestPath);
+
+            Assert.NotEqual(0, result.ExitCode);
+            Assert.Contains("file is missing", result.Stderr, StringComparison.OrdinalIgnoreCase);
+        }
+        finally
+        {
+            Directory.Delete(tempDirectory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void Verify_smoke_manifest_rejects_path_escape()
+    {
+        var tempDirectory = CreateTempDirectory();
+        var outsideFile = Path.Combine(Path.GetTempPath(), "riftscan-tests", $"outside-{Guid.NewGuid():N}.bin");
+        try
+        {
+            File.WriteAllText(outsideFile, "escape\n");
+            var outsideBytes = File.ReadAllBytes(outsideFile);
+            var manifestPath = WriteManifestEntry(
+                outputRoot: tempDirectory,
+                relativePath: Path.GetRelativePath(tempDirectory, outsideFile).Replace('\\', '/'),
+                bytes: outsideBytes.LongLength,
+                sha256: Convert.ToHexString(SHA256.HashData(outsideBytes)).ToLowerInvariant(),
+                fileCount: 1);
+
+            var result = RunVerifier(manifestPath);
+
+            Assert.NotEqual(0, result.ExitCode);
+            Assert.Contains("escapes output_root", result.Stderr, StringComparison.OrdinalIgnoreCase);
+        }
+        finally
+        {
+            if (File.Exists(outsideFile))
+            {
+                File.Delete(outsideFile);
+            }
+
+            Directory.Delete(tempDirectory, recursive: true);
+        }
+    }
+
     private static string WriteManifest(string outputRoot, string artifactPath, string? sha256Override, int? fileCountOverride)
     {
         var artifactBytes = File.ReadAllBytes(artifactPath);
         var hash = Convert.ToHexString(SHA256.HashData(artifactBytes)).ToLowerInvariant();
+        return WriteManifestEntry(
+            outputRoot,
+            Path.GetRelativePath(outputRoot, artifactPath).Replace('\\', '/'),
+            artifactBytes.LongLength,
+            sha256Override ?? hash,
+            fileCountOverride ?? 1);
+    }
+
+    private static string WriteManifestEntry(string outputRoot, string relativePath, long bytes, string sha256, int fileCount)
+    {
         var manifestPath = Path.Combine(outputRoot, "smoke-manifest.json");
         var manifest = new
         {
@@ -85,14 +151,14 @@ public sealed class SmokeManifestVerifierScriptTests
             smoke_name = "fixture",
             output_root = Path.GetFullPath(outputRoot),
             created_utc = DateTimeOffset.UtcNow.ToString("O"),
-            file_count = fileCountOverride ?? 1,
+            file_count = fileCount,
             files = new[]
             {
                 new
                 {
-                    path = Path.GetRelativePath(outputRoot, artifactPath).Replace('\\', '/'),
-                    bytes = artifactBytes.LongLength,
-                    sha256 = sha256Override ?? hash
+                    path = relativePath,
+                    bytes,
+                    sha256
                 }
             }
         };
