@@ -99,6 +99,11 @@ jobs:
         shell: pwsh
         run: pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/write-ci-diagnostics-index.ps1 -Root artifacts/ci-diagnostics
 
+      - name: Verify CI diagnostics index
+        if: always()
+        shell: pwsh
+        run: pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/verify-ci-diagnostics-index.ps1 -Root artifacts/ci-diagnostics
+
       - name: Upload smoke artifacts
         if: always()
         uses: actions/upload-artifact@v4

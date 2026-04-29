@@ -45,6 +45,7 @@ From the repository root:
 
 ```powershell
 pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/verify-smoke-manifest.ps1 -Root artifacts
+pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/verify-ci-diagnostics-index.ps1 -Root artifacts/ci-diagnostics
 ```
 
 Expected output is JSON similar to:
@@ -66,7 +67,9 @@ Expected output is JSON similar to:
 ]
 ```
 
-The verifier fails nonzero if a manifest is missing required fields, `created_utc` is malformed, a listed file is missing, a file size differs, a SHA256 hash is malformed or differs, a manifest has a bad file count, or a manifest path attempts to escape its output root.
+The smoke manifest verifier fails nonzero if a manifest is missing required fields, `created_utc` is malformed, a listed file is missing, a file size differs, a SHA256 hash is malformed or differs, a manifest has a bad file count, or a manifest path attempts to escape its output root.
+
+The CI diagnostics index verifier fails nonzero if `ci-diagnostics/index.json` is missing, malformed, lists itself, points outside the extracted diagnostics directory, or has a byte/hash/total mismatch. It validates files relative to the extracted artifact path, so indexes downloaded from GitHub Actions remain verifiable even though their recorded CI root path was on the runner.
 
 ## Regenerate proof artifacts locally
 
