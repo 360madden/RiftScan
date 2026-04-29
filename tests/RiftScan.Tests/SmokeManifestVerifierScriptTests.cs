@@ -75,6 +75,34 @@ public sealed class SmokeManifestVerifierScriptTests
     }
 
     [Fact]
+    public void Verify_smoke_manifest_rejects_unsupported_schema()
+    {
+        var tempDirectory = CreateTempDirectory();
+        try
+        {
+            var artifactPath = Path.Combine(tempDirectory, "proof.bin");
+            File.WriteAllText(artifactPath, "proof\n");
+            var artifactBytes = File.ReadAllBytes(artifactPath);
+            var manifestPath = WriteManifestEntry(
+                outputRoot: tempDirectory,
+                relativePath: "proof.bin",
+                bytes: artifactBytes.LongLength,
+                sha256: Convert.ToHexString(SHA256.HashData(artifactBytes)).ToLowerInvariant(),
+                fileCount: 1,
+                schemaVersion: "riftscan.smoke_manifest.v999");
+
+            var result = RunVerifier(manifestPath);
+
+            Assert.NotEqual(0, result.ExitCode);
+            Assert.Contains("Unsupported smoke manifest schema", result.Stderr, StringComparison.OrdinalIgnoreCase);
+        }
+        finally
+        {
+            Directory.Delete(tempDirectory, recursive: true);
+        }
+    }
+
+    [Fact]
     public void Verify_smoke_manifest_rejects_missing_listed_file()
     {
         var tempDirectory = CreateTempDirectory();
@@ -189,12 +217,18 @@ public sealed class SmokeManifestVerifierScriptTests
             fileCountOverride ?? 1);
     }
 
-    private static string WriteManifestEntry(string outputRoot, string relativePath, long bytes, string sha256, int fileCount)
+    private static string WriteManifestEntry(
+        string outputRoot,
+        string relativePath,
+        long bytes,
+        string sha256,
+        int fileCount,
+        string schemaVersion = "riftscan.smoke_manifest.v1")
     {
         var manifestPath = Path.Combine(outputRoot, "smoke-manifest.json");
         var manifest = new
         {
-            schema_version = "riftscan.smoke_manifest.v1",
+            schema_version = schemaVersion,
             smoke_name = "fixture",
             output_root = Path.GetFullPath(outputRoot),
             created_utc = DateTimeOffset.UtcNow.ToString("O"),
