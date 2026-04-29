@@ -87,6 +87,11 @@ try {
     Assert-FileExists -Path $comparisonMarkdown
     Assert-FileExists -Path $nextPlan
 
+    $summaryResult = Invoke-RiftScanJson -Arguments @("session", "summary", $sessionA)
+    if (-not $summaryResult.success -or $summaryResult.artifact_count -lt 1) {
+        throw "Expected successful session summary with generated artifacts."
+    }
+
     $pruneInventory = Join-Path $reportRoot "fixture-prune-inventory.json"
     $pruneResult = Invoke-RiftScanJson -Arguments @("session", "prune", $sessionA, "--dry-run", "--json-out", $pruneInventory)
     if (-not $pruneResult.success -or -not $pruneResult.dry_run) {

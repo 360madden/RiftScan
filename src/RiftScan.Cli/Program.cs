@@ -55,6 +55,11 @@ public static class Program
                 return PruneSession(args[2..]);
             }
 
+            if (args.Length >= 2 && Is(args[0], "session") && Is(args[1], "summary"))
+            {
+                return SummarizeSession(args[2..]);
+            }
+
             if (args.Length == 3 && Is(args[0], "verify") && Is(args[1], "session"))
             {
                 return VerifySession(args[2]);
@@ -177,6 +182,24 @@ public static class Program
         return result.Success ? 0 : 1;
     }
 
+
+
+    private static int SummarizeSession(string[] args)
+    {
+        if (args.Length == 0)
+        {
+            throw new ArgumentException("Summary requires a session path.");
+        }
+
+        if (args.Length > 1)
+        {
+            throw new ArgumentException($"Unknown session summary option: {args[1]}");
+        }
+
+        var result = new SessionSummaryService().Summarize(args[0]);
+        Console.WriteLine(JsonSerializer.Serialize(result, SessionJson.Options));
+        return result.Success ? 0 : 1;
+    }
 
     private static int PruneSession(string[] args)
     {
@@ -550,6 +573,7 @@ public static class Program
         Console.WriteLine("riftscan compare sessions <session-a> <session-b> [--top 100] [--out reports/generated/comparison.json] [--report-md reports/generated/comparison.md] [--next-plan reports/generated/next-capture-plan.json]");
         Console.WriteLine("riftscan migrate session <session-path> --to-schema riftscan.session.v1 [--dry-run|--apply] [--out sessions/<migrated-id>] [--plan-out reports/generated/migration-plan.json]");
         Console.WriteLine("riftscan session prune <session-path> [--dry-run] [--json-out reports/generated/prune-inventory.json]");
+        Console.WriteLine("riftscan session summary <session-path>");
         Console.WriteLine("riftscan verify session <session-path>");
     }
 
