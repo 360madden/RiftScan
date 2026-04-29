@@ -118,13 +118,12 @@ public sealed class PassiveCaptureProcessIntegrationTests
 
         var process = Process.Start(startInfo) ?? throw new InvalidOperationException($"Could not start fixture process: {fixturePath}");
 
-        if (!WaitForFile(readyFile, TimeSpan.FromSeconds(5)))
+        if (!TryReadReadyProcessId(readyFile, TimeSpan.FromSeconds(5), out var fixtureProcessId))
         {
             StopProcess(process);
             throw new InvalidOperationException($"Fixture process did not write readiness file: {readyFile}");
         }
 
-        var fixtureProcessId = int.Parse(File.ReadAllText(readyFile), System.Globalization.CultureInfo.InvariantCulture);
         if (fixtureProcessId == process.Id)
         {
             return process;
@@ -176,14 +175,29 @@ public sealed class PassiveCaptureProcessIntegrationTests
         return false;
     }
 
-    private static bool WaitForFile(string path, TimeSpan timeout)
+    private static bool TryReadReadyProcessId(string path, TimeSpan timeout, out int processId)
     {
+        processId = 0;
         var deadline = DateTimeOffset.UtcNow + timeout;
         while (DateTimeOffset.UtcNow < deadline)
         {
-            if (File.Exists(path))
+            try
             {
-                return true;
+                if (File.Exists(path) &&
+                    int.TryParse(
+                        File.ReadAllText(path),
+                        System.Globalization.NumberStyles.Integer,
+                        System.Globalization.CultureInfo.InvariantCulture,
+                        out processId))
+                {
+                    return true;
+                }
+            }
+            catch (IOException)
+            {
+            }
+            catch (UnauthorizedAccessException)
+            {
             }
 
             Thread.Sleep(50);
