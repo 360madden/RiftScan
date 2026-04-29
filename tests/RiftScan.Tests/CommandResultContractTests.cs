@@ -51,6 +51,7 @@ public sealed class CommandResultContractTests
             "to_schema_version",
             "dry_run",
             "status",
+            "migration_output_path",
             "artifacts_written",
             "issues");
 

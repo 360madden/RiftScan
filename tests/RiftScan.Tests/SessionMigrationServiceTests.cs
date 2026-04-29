@@ -230,6 +230,7 @@ public sealed class SessionMigrationServiceTests
             Assert.True(result.Success, string.Join(Environment.NewLine, result.Issues.Select(issue => $"{issue.Code}: {issue.Message}")));
             Assert.False(result.DryRun);
             Assert.Equal("applied_source_schema_upgrade", result.Status);
+            Assert.Equal(Path.GetFullPath(migratedSessionPath), result.MigrationOutputPath);
             Assert.Contains(Path.GetFullPath(migratedSessionPath), result.ArtifactsWritten);
 
             var sourceManifest = JsonSerializer.Deserialize<SessionManifest>(
@@ -469,6 +470,7 @@ public sealed class SessionMigrationServiceTests
             using var document = JsonDocument.Parse(result.Stdout);
             Assert.True(document.RootElement.GetProperty("success").GetBoolean());
             Assert.Equal("applied_source_schema_upgrade", document.RootElement.GetProperty("status").GetString());
+            Assert.Equal(Path.GetFullPath(migratedSessionPath), document.RootElement.GetProperty("migration_output_path").GetString());
             Assert.True(new SessionVerifier().Verify(migratedSessionPath).Success);
         }
         finally

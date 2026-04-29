@@ -28,6 +28,9 @@ public sealed record SessionMigrationResult
     [JsonPropertyName("status")]
     public string Status { get; init; } = string.Empty;
 
+    [JsonPropertyName("migration_output_path")]
+    public string? MigrationOutputPath { get; init; }
+
     [JsonPropertyName("artifacts_written")]
     public IReadOnlyList<string> ArtifactsWritten { get; init; } = [];
 

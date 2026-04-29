@@ -206,7 +206,7 @@ public sealed class SessionMigrationService
                         fullOutputPath)
                 ]);
 
-            return WritePlanIfRequested(outputExistsResult, planOutputPath);
+            return WritePlanIfRequested(outputExistsResult with { MigrationOutputPath = fullOutputPath }, planOutputPath);
         }
 
         CopyDirectory(fullSessionPath, fullOutputPath);
@@ -230,6 +230,7 @@ public sealed class SessionMigrationService
                 status: "apply_verification_failed",
                 issues: verification.Issues) with
             {
+                MigrationOutputPath = fullOutputPath,
                 ArtifactsWritten = artifactsWritten
             };
 
@@ -245,6 +246,7 @@ public sealed class SessionMigrationService
             status: "applied_source_schema_upgrade",
             issues: []) with
         {
+            MigrationOutputPath = fullOutputPath,
             ArtifactsWritten = artifactsWritten
         };
 
