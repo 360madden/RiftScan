@@ -46,6 +46,12 @@ public sealed record CapabilityStatusResult
     [JsonPropertyName("scalar_truth_promotion_paths")]
     public IReadOnlyList<string> ScalarTruthPromotionPaths { get; init; } = [];
 
+    [JsonPropertyName("scalar_promotion_review_path")]
+    public string? ScalarPromotionReviewPath { get; init; }
+
+    [JsonPropertyName("scalar_promotion_review_paths")]
+    public IReadOnlyList<string> ScalarPromotionReviewPaths { get; init; } = [];
+
     [JsonPropertyName("truth_components")]
     public IReadOnlyList<CapabilityTruthComponentStatus> TruthComponents { get; init; } = [];
 

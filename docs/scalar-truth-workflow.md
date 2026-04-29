@@ -158,7 +158,7 @@ For combined actor/camera scalar evidence, the same repeat recovery command can 
 
 ## Promotion review from recovery plus corroboration
 
-After repeat recovery, combine the recovery packet with an external/addon corroboration JSONL. This creates a promotion-review packet; it does not create final truth by itself.
+After repeat recovery, combine the recovery packet with an external/addon corroboration JSONL. This creates a scalar truth promotion packet; it does not create final truth by itself.
 
 ```powershell
 dotnet run --project src/RiftScan.Cli/RiftScan.Cli.csproj --configuration Release --no-build -- `
@@ -171,11 +171,31 @@ dotnet run --project src/RiftScan.Cli/RiftScan.Cli.csproj --configuration Releas
   verify scalar-truth-promotion reports/generated/<scalar-truth-promotion>.json
 ```
 
+Then convert the verified promotion packet into the manual review packet and its markdown companion:
+
+```powershell
+dotnet run --project src/RiftScan.Cli/RiftScan.Cli.csproj --configuration Release --no-build -- `
+  review scalar-promotion reports/generated/<scalar-truth-promotion>.json `
+  --out reports/generated/<scalar-promotion-review>.json `
+  --report-md reports/generated/<scalar-promotion-review>.md
+
+dotnet run --project src/RiftScan.Cli/RiftScan.Cli.csproj --configuration Release --no-build -- `
+  verify scalar-promotion-review reports/generated/<scalar-promotion-review>.json
+```
+
 Promotion statuses:
 
 - `corroborated_candidate`: recovered candidate matched external/addon corroboration.
 - `recovered_candidate`: repeated recovery exists, but matching corroboration was absent or uncorroborated.
 - `blocked_conflict`: external/addon corroboration conflicts with the recovered candidate.
+
+Review decision states:
+
+- `ready_for_manual_truth_review`: repeated recovery and corroboration are aligned, but a human/manual truth review is still required.
+- `blocked_conflict`: a conflict is preserved and blocks promotion.
+- `needs_more_corroboration`: recovery exists but corroboration is missing or uncorroborated.
+- `needs_repeat_capture`: repeat evidence is insufficient for review.
+- `do_not_promote`: the source state is unsafe or unsupported.
 
 You can feed verified recovery into capability status. Recovery readiness takes precedence over one-run scalar evidence readiness:
 
@@ -198,10 +218,12 @@ dotnet run --project src/RiftScan.Cli/RiftScan.Cli.csproj --configuration Releas
 - `recovered_candidate`: repeated truth-candidate export matched across independent runs.
 - `corroborated_candidate`: repeated recovery plus matching external/addon corroboration; still requires manual review before final truth.
 - `blocked_conflict`: external/addon corroboration conflicts with the recovered candidate.
+- `ready_for_manual_truth_review`: scalar promotion review is ready for human decision, but `final_truth_claim` remains false until explicitly confirmed.
 
 ## Guardrails
 
 - All artifacts are candidate evidence unless the claim level explicitly says otherwise.
+- Scalar promotion review packets must preserve conflicts and keep `manual_confirmation_required=true` / `final_truth_claim=false`.
 - Addon/external corroboration validates candidates; it does not replace memory discovery.
 - Do not use launcher/input/window control inside RiftScan core.
 - Preserve raw sessions and generated reports so claims remain replayable.

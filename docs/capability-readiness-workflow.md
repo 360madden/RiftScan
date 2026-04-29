@@ -107,6 +107,20 @@ It performs:
 
 `report capability` accepts repeated `--truth-readiness`, `--scalar-evidence-set`, `--scalar-truth-recovery`, and `--scalar-truth-promotion` inputs when entity-layout, position, actor-yaw, and camera-orientation evidence were produced as separate replayable packets.
 
+After `--scalar-truth-promotion` verifies, create the manual review artifact separately:
+
+```powershell
+dotnet run --project src/RiftScan.Cli/RiftScan.Cli.csproj --configuration Release --no-build -- `
+  review scalar-promotion reports/generated/<scalar-truth-promotion>.json `
+  --out reports/generated/<scalar-promotion-review>.json `
+  --report-md reports/generated/<scalar-promotion-review>.md
+
+dotnet run --project src/RiftScan.Cli/RiftScan.Cli.csproj --configuration Release --no-build -- `
+  verify scalar-promotion-review reports/generated/<scalar-promotion-review>.json
+```
+
+The review packet is the handoff point for human/manual truth review. It must keep conflicts visible and keep final truth claims disabled until explicitly confirmed.
+
 ## Current interpretation rules
 
 - `entity_layout:strong_candidate` means layout evidence exists across sessions; it still needs behavior validation before player/actor/camera truth claims.
@@ -117,6 +131,7 @@ It performs:
 - `actor_yaw:recovered_candidate` or `camera_orientation:recovered_candidate` means repeat scalar truth recovery matched the candidate across independent truth-candidate files. It is stronger than one-run validation but still requires review or external corroboration before a final truth claim.
 - `actor_yaw:corroborated_candidate` or `camera_orientation:corroborated_candidate` means repeated recovery was also matched to an external/addon corroboration entry. It is the strongest offline promotion state, but still requires manual review before a final recovered-truth claim.
 - `blocked_conflict` means external corroboration conflicts with the recovered candidate; resolve the conflict before promotion.
+- `ready_for_manual_truth_review` in a scalar promotion review packet means the candidate can be manually reviewed, not that it is final recovered truth.
 
 ## Validation after workflow changes
 

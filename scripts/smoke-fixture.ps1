@@ -915,6 +915,70 @@ try {
         throw "Expected scalar truth promotion to mark actor and camera recovered candidates as corroborated_candidate."
     }
 
+    $combinedScalarPromotionReview = Join-Path $reportRoot "fixture-combined-scalar-promotion-review.json"
+    $combinedScalarPromotionReviewMarkdown = Join-Path $reportRoot "fixture-combined-scalar-promotion-review.md"
+    Invoke-RiftScan -Arguments @(
+        "review", "scalar-promotion", $combinedScalarTruthPromotion,
+        "--out", $combinedScalarPromotionReview,
+        "--report-md", $combinedScalarPromotionReviewMarkdown
+    )
+    Assert-FileExists -Path $combinedScalarPromotionReview
+    Assert-FileExists -Path $combinedScalarPromotionReviewMarkdown
+    $combinedScalarPromotionReviewVerification = Invoke-RiftScanJson -Arguments @("verify", "scalar-promotion-review", $combinedScalarPromotionReview)
+    if (-not $combinedScalarPromotionReviewVerification.success -or
+        $combinedScalarPromotionReviewVerification.decision_state -ne "ready_for_manual_truth_review" -or
+        $combinedScalarPromotionReviewVerification.ready_for_manual_truth_review_count -lt 2) {
+        throw "Expected scalar promotion review to verify as ready_for_manual_truth_review for corroborated actor and camera candidates."
+    }
+    $combinedScalarPromotionReviewJson = Get-Content $combinedScalarPromotionReview -Raw | ConvertFrom-Json
+    if (@($combinedScalarPromotionReviewJson.candidate_reviews | Where-Object { $_.final_truth_claim -eq $true }).Count -ne 0) {
+        throw "Expected scalar promotion review to keep final_truth_claim false for all candidates."
+    }
+
+    $conflictedScalarTruthCorroboration = Join-Path $reportRoot "fixture-combined-scalar-truth-corroboration-conflict.jsonl"
+    Write-JsonLine -Path $conflictedScalarTruthCorroboration -Value ([ordered]@{
+        schema_version = "riftscan.scalar_truth_corroboration.v1"
+        base_address_hex = "0x60000000"
+        offset_hex = "0x4"
+        data_type = "float32"
+        classification = "actor_yaw_angle_scalar_candidate"
+        corroboration_status = "corroborated"
+        source = "fixture_addon_actor_truth"
+        evidence_summary = "fixture actor yaw externally corroborated"
+    })
+    Write-JsonLine -Path $conflictedScalarTruthCorroboration -Append -Value ([ordered]@{
+        schema_version = "riftscan.scalar_truth_corroboration.v1"
+        base_address_hex = "0x60000000"
+        offset_hex = "0x8"
+        data_type = "float32"
+        classification = "camera_orientation_angle_scalar_candidate"
+        corroboration_status = "conflicted"
+        source = "fixture_camera_truth"
+        evidence_summary = "fixture camera orientation externally conflicted"
+    })
+    $conflictedScalarTruthPromotion = Join-Path $reportRoot "fixture-combined-scalar-truth-promotion-conflict.json"
+    Invoke-RiftScan -Arguments @(
+        "compare", "scalar-promotion", $combinedScalarTruthRecovery,
+        "--corroboration", $conflictedScalarTruthCorroboration,
+        "--top", "10",
+        "--out", $conflictedScalarTruthPromotion
+    )
+    $conflictedScalarPromotionReview = Join-Path $reportRoot "fixture-combined-scalar-promotion-review-conflict.json"
+    $conflictedScalarPromotionReviewMarkdown = Join-Path $reportRoot "fixture-combined-scalar-promotion-review-conflict.md"
+    Invoke-RiftScan -Arguments @(
+        "review", "scalar-promotion", $conflictedScalarTruthPromotion,
+        "--out", $conflictedScalarPromotionReview,
+        "--report-md", $conflictedScalarPromotionReviewMarkdown
+    )
+    Assert-FileExists -Path $conflictedScalarPromotionReview
+    Assert-FileExists -Path $conflictedScalarPromotionReviewMarkdown
+    $conflictedScalarPromotionReviewVerification = Invoke-RiftScanJson -Arguments @("verify", "scalar-promotion-review", $conflictedScalarPromotionReview)
+    if (-not $conflictedScalarPromotionReviewVerification.success -or
+        $conflictedScalarPromotionReviewVerification.decision_state -ne "blocked_conflict" -or
+        $conflictedScalarPromotionReviewVerification.blocked_conflict_count -lt 1) {
+        throw "Expected scalar promotion review conflict path to verify as blocked_conflict."
+    }
+
     $capabilityStatus = Join-Path $reportRoot "fixture-capability-status.json"
     & pwsh -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repoRoot "scripts/verify-readiness-workflow.ps1") `
         -TruthReadinessPath $vec3BehaviorTruthReadiness `

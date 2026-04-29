@@ -67,6 +67,14 @@ dotnet run --project src/RiftScan.Cli/RiftScan.Cli.csproj --configuration Releas
   verify scalar-truth-promotion reports/generated/<scalar-truth-promotion>.json
 
 dotnet run --project src/RiftScan.Cli/RiftScan.Cli.csproj --configuration Release --no-build -- `
+  review scalar-promotion reports/generated/<scalar-truth-promotion>.json `
+  --out reports/generated/<scalar-promotion-review>.json `
+  --report-md reports/generated/<scalar-promotion-review>.md
+
+dotnet run --project src/RiftScan.Cli/RiftScan.Cli.csproj --configuration Release --no-build -- `
+  verify scalar-promotion-review reports/generated/<scalar-promotion-review>.json
+
+dotnet run --project src/RiftScan.Cli/RiftScan.Cli.csproj --configuration Release --no-build -- `
   capture plan reports/generated/<next-plan>.json --pid <rift_pid> `
   --out sessions/<followup_id> --samples 3 --interval-ms 100 `
   --windows-per-region 3 --stimulus move_forward

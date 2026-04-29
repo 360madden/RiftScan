@@ -578,6 +578,107 @@ public sealed class SessionComparisonServiceTests
     }
 
     [Fact]
+    public void Scalar_promotion_review_accepts_ready_candidates_and_writes_markdown_report()
+    {
+        using var temp = new TempDirectory();
+        Directory.CreateDirectory(temp.Path);
+        var recoveryPath = Path.Combine(temp.Path, "combined-scalar-truth-recovery.json");
+        var promotionPath = Path.Combine(temp.Path, "combined-scalar-truth-promotion.json");
+        var reviewPath = Path.Combine(temp.Path, "combined-scalar-promotion-review.json");
+        var reviewMarkdownPath = Path.Combine(temp.Path, "combined-scalar-promotion-review.md");
+        var recovery = BuildCombinedScalarTruthRecovery(temp.Path) with { OutputPath = recoveryPath };
+        File.WriteAllText(recoveryPath, JsonSerializer.Serialize(recovery, SessionJson.Options));
+        var corroborationPath = WriteCombinedCorroboration(temp.Path, actorStatus: "corroborated", cameraStatus: "corroborated");
+        var promotion = new ScalarTruthPromotionService().Promote(recoveryPath, corroborationPath) with { OutputPath = promotionPath };
+        File.WriteAllText(promotionPath, JsonSerializer.Serialize(promotion, SessionJson.Options));
+
+        var exitCode = RiftScan.Cli.Program.Main(["review", "scalar-promotion", promotionPath, "--out", reviewPath, "--report-md", reviewMarkdownPath]);
+        var verification = new ScalarPromotionReviewVerifier().Verify(reviewPath);
+        var cliVerifyExitCode = RiftScan.Cli.Program.Main(["verify", "scalar-promotion-review", reviewPath]);
+
+        Assert.Equal(0, exitCode);
+        Assert.Equal(0, cliVerifyExitCode);
+        Assert.True(File.Exists(reviewPath));
+        Assert.True(File.Exists(reviewMarkdownPath));
+        Assert.True(verification.Success);
+        Assert.Equal("ready_for_manual_truth_review", verification.DecisionState);
+        Assert.Equal(2, verification.ReadyForManualTruthReviewCount);
+        Assert.Equal(0, verification.BlockedConflictCount);
+        var review = JsonSerializer.Deserialize<ScalarPromotionReviewResult>(File.ReadAllText(reviewPath), SessionJson.Options)!;
+        Assert.Equal(Path.GetFullPath(reviewMarkdownPath), review.MarkdownReportPath);
+        Assert.All(review.CandidateReviews, candidate =>
+        {
+            Assert.Equal("ready_for_manual_truth_review", candidate.DecisionState);
+            Assert.True(candidate.ManualConfirmationRequired);
+            Assert.False(candidate.FinalTruthClaim);
+        });
+        Assert.Contains("manual confirmation", File.ReadAllText(reviewMarkdownPath), StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Scalar_promotion_review_preserves_conflict_as_blocked()
+    {
+        using var temp = new TempDirectory();
+        Directory.CreateDirectory(temp.Path);
+        var recoveryPath = Path.Combine(temp.Path, "combined-scalar-truth-recovery.json");
+        var promotionPath = Path.Combine(temp.Path, "combined-scalar-truth-promotion-conflict.json");
+        var reviewPath = Path.Combine(temp.Path, "combined-scalar-promotion-review-conflict.json");
+        var recovery = BuildCombinedScalarTruthRecovery(temp.Path) with { OutputPath = recoveryPath };
+        File.WriteAllText(recoveryPath, JsonSerializer.Serialize(recovery, SessionJson.Options));
+        var corroborationPath = WriteCombinedCorroboration(temp.Path, actorStatus: "corroborated", cameraStatus: "conflicted");
+        var promotion = new ScalarTruthPromotionService().Promote(recoveryPath, corroborationPath) with { OutputPath = promotionPath };
+        File.WriteAllText(promotionPath, JsonSerializer.Serialize(promotion, SessionJson.Options));
+
+        var review = new ScalarPromotionReviewService().Review(promotionPath) with { OutputPath = reviewPath };
+        File.WriteAllText(reviewPath, JsonSerializer.Serialize(review, SessionJson.Options));
+        var verification = new ScalarPromotionReviewVerifier().Verify(reviewPath);
+
+        Assert.True(verification.Success);
+        Assert.Equal("blocked_conflict", review.DecisionState);
+        Assert.Equal(1, review.ReadyForManualTruthReviewCount);
+        Assert.Equal(1, review.BlockedConflictCount);
+        var blockedCamera = Assert.Single(review.CandidateReviews, candidate => candidate.Classification == "camera_orientation_angle_scalar_candidate");
+        Assert.Equal("blocked_conflict", blockedCamera.DecisionState);
+        Assert.Contains("resolve_corroboration_conflict_before_any_truth_claim", blockedCamera.BlockingGaps);
+        Assert.False(blockedCamera.FinalTruthClaim);
+    }
+
+    [Fact]
+    public void Scalar_promotion_review_verifier_rejects_hidden_conflict()
+    {
+        using var temp = new TempDirectory();
+        Directory.CreateDirectory(temp.Path);
+        var recoveryPath = Path.Combine(temp.Path, "combined-scalar-truth-recovery.json");
+        var promotionPath = Path.Combine(temp.Path, "combined-scalar-truth-promotion-conflict.json");
+        var reviewPath = Path.Combine(temp.Path, "combined-scalar-promotion-review-hidden-conflict.json");
+        var recovery = BuildCombinedScalarTruthRecovery(temp.Path) with { OutputPath = recoveryPath };
+        File.WriteAllText(recoveryPath, JsonSerializer.Serialize(recovery, SessionJson.Options));
+        var corroborationPath = WriteCombinedCorroboration(temp.Path, actorStatus: "corroborated", cameraStatus: "conflicted");
+        var promotion = new ScalarTruthPromotionService().Promote(recoveryPath, corroborationPath) with { OutputPath = promotionPath };
+        File.WriteAllText(promotionPath, JsonSerializer.Serialize(promotion, SessionJson.Options));
+        var review = new ScalarPromotionReviewService().Review(promotionPath);
+        var hiddenConflictReviews = review.CandidateReviews
+            .Select(candidate => candidate.SourceCorroborationStatus == "conflicted"
+                ? candidate with { DecisionState = "ready_for_manual_truth_review", BlockingGaps = [] }
+                : candidate)
+            .ToArray();
+        var hiddenConflict = review with
+        {
+            DecisionState = "ready_for_manual_truth_review",
+            BlockedConflictCount = 0,
+            ReadyForManualTruthReviewCount = 2,
+            CandidateReviews = hiddenConflictReviews,
+            OutputPath = reviewPath
+        };
+        File.WriteAllText(reviewPath, JsonSerializer.Serialize(hiddenConflict, SessionJson.Options));
+
+        var verification = new ScalarPromotionReviewVerifier().Verify(reviewPath);
+
+        Assert.False(verification.Success);
+        Assert.Contains(verification.Issues, issue => issue.Code == "candidate_conflict_hidden");
+    }
+
+    [Fact]
     public void Capability_status_uses_scalar_truth_promotion_for_actor_yaw_and_camera_readiness()
     {
         using var temp = new TempDirectory();

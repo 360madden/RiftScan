@@ -169,7 +169,7 @@ public sealed class CapabilityStatusService
         Capability("scalar_evidence_set_verify", "riftscan verify scalar-evidence-set", "scalar evidence set invariant check", ["scalar_evidence_set_verification.v1"], ""),
         Capability("scalar_truth_export_and_recovery", "riftscan compare scalar-set --truth-out; riftscan compare scalar-truth", "truth-candidate and repeat recovery packets", ["scalar_truth_candidates.jsonl", "scalar-truth-recovery.json"], "candidate evidence until externally corroborated or repeated"),
         Capability("external_corroboration_hook", "riftscan verify scalar-corroboration", "addon/external corroboration JSONL verification", ["scalar_truth_corroboration.jsonl"], ""),
-        Capability("scalar_truth_promotion_review", "riftscan compare scalar-promotion", "recovered-plus-corroborated scalar promotion review packet", ["scalar-truth-promotion.json"], "manual review still required before final truth claim"),
+        Capability("scalar_truth_promotion_review", "riftscan compare scalar-promotion; riftscan review scalar-promotion", "recovered-plus-corroborated scalar promotion and manual review packets", ["scalar-truth-promotion.json", "scalar-promotion-review.json", "scalar-promotion-review.md"], "manual confirmation still required before final truth claim"),
         Capability("comparison_truth_readiness_export", "riftscan compare sessions --truth-readiness", "comparison readiness packet", ["truth-readiness.json"], "readiness is not recovered truth"),
         Capability("comparison_truth_readiness_verify", "riftscan verify comparison-readiness", "readiness packet invariant check", ["comparison_truth_readiness_verification.v1"], "")
     ];

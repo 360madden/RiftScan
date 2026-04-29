@@ -454,6 +454,75 @@ public sealed class ComparisonOutputContractTests
             "candidate_index");
 
     [Fact]
+    public void Scalar_promotion_review_result_pins_json_contract_fields() =>
+        AssertJsonPropertySet(
+            new ScalarPromotionReviewResult(),
+            "schema_version",
+            "success",
+            "promotion_path",
+            "output_path",
+            "markdown_report_path",
+            "decision_state",
+            "review_candidate_count",
+            "ready_for_manual_truth_review_count",
+            "blocked_conflict_count",
+            "needs_more_corroboration_count",
+            "needs_repeat_capture_count",
+            "do_not_promote_count",
+            "candidate_reviews",
+            "warnings");
+
+    [Fact]
+    public void Scalar_promotion_review_candidate_pins_json_contract_fields() =>
+        AssertJsonPropertySet(
+            new ScalarPromotionReviewCandidate(),
+            "schema_version",
+            "review_candidate_id",
+            "source_promotion_candidate_id",
+            "source_recovered_candidate_id",
+            "base_address_hex",
+            "offset_hex",
+            "data_type",
+            "classification",
+            "source_promotion_status",
+            "source_truth_readiness",
+            "source_claim_level",
+            "source_corroboration_status",
+            "best_score_total",
+            "supporting_file_count",
+            "supporting_truth_candidate_ids",
+            "corroboration_sources",
+            "decision_state",
+            "decision_reason",
+            "blocking_gaps",
+            "evidence_summary",
+            "next_action",
+            "manual_confirmation_required",
+            "final_truth_claim");
+
+    [Fact]
+    public void Scalar_promotion_review_verification_result_pins_json_contract_fields() =>
+        AssertJsonPropertySet(
+            new ScalarPromotionReviewVerificationResult(),
+            "schema_version",
+            "success",
+            "path",
+            "decision_state",
+            "review_candidate_count",
+            "ready_for_manual_truth_review_count",
+            "blocked_conflict_count",
+            "issues");
+
+    [Fact]
+    public void Scalar_promotion_review_verification_issue_pins_json_contract_fields() =>
+        AssertJsonPropertySet(
+            new ScalarPromotionReviewVerificationIssue(),
+            "severity",
+            "code",
+            "message",
+            "candidate_index");
+
+    [Fact]
     public void Capability_status_result_pins_json_contract_fields() =>
         AssertJsonPropertySet(
             new CapabilityStatusResult(),

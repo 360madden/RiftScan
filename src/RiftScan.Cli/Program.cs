@@ -79,6 +79,11 @@ public static class Program
                 return CompareScalarPromotion(args[2..]);
             }
 
+            if (args.Length >= 2 && Is(args[0], "review") && Is(args[1], "scalar-promotion"))
+            {
+                return ReviewScalarPromotion(args[2..]);
+            }
+
             if (args.Length >= 2 && Is(args[0], "migrate") && Is(args[1], "session"))
             {
                 return MigrateSession(args[2..]);
@@ -122,6 +127,11 @@ public static class Program
             if (args.Length >= 2 && Is(args[0], "verify") && Is(args[1], "scalar-truth-promotion"))
             {
                 return VerifyScalarTruthPromotion(args[2..]);
+            }
+
+            if (args.Length >= 2 && Is(args[0], "verify") && Is(args[1], "scalar-promotion-review"))
+            {
+                return VerifyScalarPromotionReview(args[2..]);
             }
 
             if (args.Length >= 2 && Is(args[0], "verify") && Is(args[1], "comparison-readiness"))
@@ -484,6 +494,60 @@ public static class Program
             result = result with { OutputPath = Path.GetFullPath(outputPath) };
             Directory.CreateDirectory(Path.GetDirectoryName(result.OutputPath)!);
             File.WriteAllText(result.OutputPath, JsonSerializer.Serialize(result, SessionJson.Options));
+        }
+
+        Console.WriteLine(JsonSerializer.Serialize(result, SessionJson.Options));
+        return result.Success ? 0 : 1;
+    }
+
+    private static int ReviewScalarPromotion(string[] args)
+    {
+        if (args.Length == 1 && IsHelp(args[0]))
+        {
+            PrintReviewScalarPromotionUsage();
+            return 0;
+        }
+
+        if (args.Length == 0)
+        {
+            throw new ArgumentException("Scalar-promotion review requires a scalar truth promotion JSON path.");
+        }
+
+        var promotionPath = args[0];
+        string? outputPath = null;
+        string? reportPath = null;
+        for (var index = 1; index < args.Length; index++)
+        {
+            var arg = args[index];
+            switch (arg)
+            {
+                case "--out":
+                    outputPath = RequireValue(args, ref index, arg);
+                    break;
+                case "--report-md":
+                    reportPath = RequireValue(args, ref index, arg);
+                    break;
+                default:
+                    throw new ArgumentException($"Unknown scalar-promotion review option: {arg}");
+            }
+        }
+
+        var result = new ScalarPromotionReviewService().Review(promotionPath);
+        if (!string.IsNullOrWhiteSpace(outputPath))
+        {
+            result = result with { OutputPath = Path.GetFullPath(outputPath) };
+            Directory.CreateDirectory(Path.GetDirectoryName(result.OutputPath)!);
+            File.WriteAllText(result.OutputPath, JsonSerializer.Serialize(result, SessionJson.Options));
+        }
+
+        if (!string.IsNullOrWhiteSpace(reportPath))
+        {
+            result = result with { MarkdownReportPath = Path.GetFullPath(reportPath) };
+            _ = new ScalarPromotionReviewReportGenerator().Generate(result, result.MarkdownReportPath);
+            if (!string.IsNullOrWhiteSpace(result.OutputPath))
+            {
+                File.WriteAllText(result.OutputPath, JsonSerializer.Serialize(result, SessionJson.Options));
+            }
         }
 
         Console.WriteLine(JsonSerializer.Serialize(result, SessionJson.Options));
@@ -1215,6 +1279,29 @@ public static class Program
         return result.Success ? 0 : 1;
     }
 
+    private static int VerifyScalarPromotionReview(string[] args)
+    {
+        if (args.Length == 1 && IsHelp(args[0]))
+        {
+            PrintVerifyScalarPromotionReviewUsage();
+            return 0;
+        }
+
+        if (args.Length == 0)
+        {
+            throw new ArgumentException("Verify scalar-promotion-review requires a JSON path.");
+        }
+
+        if (args.Length > 1)
+        {
+            throw new ArgumentException($"Unknown verify scalar-promotion-review option: {args[1]}");
+        }
+
+        var result = new ScalarPromotionReviewVerifier().Verify(args[0]);
+        Console.WriteLine(JsonSerializer.Serialize(result, SessionJson.Options));
+        return result.Success ? 0 : 1;
+    }
+
     private static int VerifyComparisonReadiness(string[] args)
     {
         if (args.Length == 1 && IsHelp(args[0]))
@@ -1300,6 +1387,7 @@ public static class Program
         PrintCompareScalarSetUsage();
         PrintCompareScalarTruthUsage();
         PrintCompareScalarPromotionUsage();
+        PrintReviewScalarPromotionUsage();
         PrintMigrateUsage();
         PrintSessionPruneUsage();
         PrintSessionInventoryUsage();
@@ -1309,6 +1397,7 @@ public static class Program
         PrintVerifyScalarEvidenceSetUsage();
         PrintVerifyScalarTruthRecoveryUsage();
         PrintVerifyScalarTruthPromotionUsage();
+        PrintVerifyScalarPromotionReviewUsage();
         PrintVerifyComparisonReadinessUsage();
         PrintVerifyCapabilityStatusUsage();
         Console.WriteLine("riftscan --version [--json]");
@@ -1384,6 +1473,9 @@ public static class Program
     private static void PrintCompareScalarPromotionUsage() =>
         Console.WriteLine("riftscan compare scalar-promotion <scalar-truth-recovery.json> --corroboration reports/generated/scalar_truth_corroboration.jsonl [--top 100] [--out reports/generated/scalar-truth-promotion.json]");
 
+    private static void PrintReviewScalarPromotionUsage() =>
+        Console.WriteLine("riftscan review scalar-promotion <scalar-truth-promotion.json> [--out reports/generated/scalar-promotion-review.json] [--report-md reports/generated/scalar-promotion-review.md]");
+
     private static void PrintMigrateUsage() =>
         Console.WriteLine("riftscan migrate session <session-path> --to-schema riftscan.session.v1 [--dry-run|--apply] [--out sessions/<migrated-id>] [--plan-out reports/generated/migration-plan.json]");
 
@@ -1410,6 +1502,9 @@ public static class Program
 
     private static void PrintVerifyScalarTruthPromotionUsage() =>
         Console.WriteLine("riftscan verify scalar-truth-promotion <scalar-truth-promotion.json>");
+
+    private static void PrintVerifyScalarPromotionReviewUsage() =>
+        Console.WriteLine("riftscan verify scalar-promotion-review <scalar-promotion-review.json>");
 
     private static void PrintVerifyComparisonReadinessUsage() =>
         Console.WriteLine("riftscan verify comparison-readiness <truth-readiness.json>");
