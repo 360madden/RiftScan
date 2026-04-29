@@ -147,11 +147,47 @@ dotnet run --project src/RiftScan.Cli/RiftScan.Cli.csproj --configuration Releas
   reports/generated/<scalar-truth-candidates-run-1>.jsonl `
   reports/generated/<scalar-truth-candidates-run-2>.jsonl `
   --out reports/generated/<scalar-truth-recovery>.json
+
+dotnet run --project src/RiftScan.Cli/RiftScan.Cli.csproj --configuration Release --no-build -- `
+  verify scalar-truth-recovery reports/generated/<scalar-truth-recovery>.json
 ```
 
 Recovered scalar candidates require matching address, offset, data type, and classification across at least two truth-candidate files. They are still marked as reviewed recovery evidence, not unconditional final truth.
 
 For combined actor/camera scalar evidence, the same repeat recovery command can recover both candidates together when both truth-candidate JSONL files contain the dual-lane packet. Expect one recovered `actor_yaw_angle_scalar_candidate` and one recovered `camera_orientation_angle_scalar_candidate` when the repeated capture set preserves the same base/offset lanes.
+
+## Promotion review from recovery plus corroboration
+
+After repeat recovery, combine the recovery packet with an external/addon corroboration JSONL. This creates a promotion-review packet; it does not create final truth by itself.
+
+```powershell
+dotnet run --project src/RiftScan.Cli/RiftScan.Cli.csproj --configuration Release --no-build -- `
+  compare scalar-promotion `
+  reports/generated/<scalar-truth-recovery>.json `
+  --corroboration reports/generated/<scalar-truth-corroboration>.jsonl `
+  --out reports/generated/<scalar-truth-promotion>.json
+
+dotnet run --project src/RiftScan.Cli/RiftScan.Cli.csproj --configuration Release --no-build -- `
+  verify scalar-truth-promotion reports/generated/<scalar-truth-promotion>.json
+```
+
+Promotion statuses:
+
+- `corroborated_candidate`: recovered candidate matched external/addon corroboration.
+- `recovered_candidate`: repeated recovery exists, but matching corroboration was absent or uncorroborated.
+- `blocked_conflict`: external/addon corroboration conflicts with the recovered candidate.
+
+You can feed verified recovery into capability status. Recovery readiness takes precedence over one-run scalar evidence readiness:
+
+```powershell
+dotnet run --project src/RiftScan.Cli/RiftScan.Cli.csproj --configuration Release --no-build -- `
+  report capability `
+  --truth-readiness reports/generated/<truth-readiness>.json `
+  --scalar-evidence-set reports/generated/<scalar-evidence-set>.json `
+  --scalar-truth-recovery reports/generated/<scalar-truth-recovery>.json `
+  --scalar-truth-promotion reports/generated/<scalar-truth-promotion>.json `
+  --json-out reports/generated/<capability-status>.json
+```
 
 ## Readiness levels
 
@@ -160,6 +196,8 @@ For combined actor/camera scalar evidence, the same repeat recovery command can 
 - `strong_candidate`: high score without rejection reasons.
 - `validated_candidate`: behavior-validated candidate with passive stability, opposite-turn polarity, and camera/turn separation.
 - `recovered_candidate`: repeated truth-candidate export matched across independent runs.
+- `corroborated_candidate`: repeated recovery plus matching external/addon corroboration; still requires manual review before final truth.
+- `blocked_conflict`: external/addon corroboration conflicts with the recovered candidate.
 
 ## Guardrails
 

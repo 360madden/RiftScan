@@ -74,6 +74,11 @@ public static class Program
                 return CompareScalarTruth(args[2..]);
             }
 
+            if (args.Length >= 2 && Is(args[0], "compare") && Is(args[1], "scalar-promotion"))
+            {
+                return CompareScalarPromotion(args[2..]);
+            }
+
             if (args.Length >= 2 && Is(args[0], "migrate") && Is(args[1], "session"))
             {
                 return MigrateSession(args[2..]);
@@ -112,6 +117,11 @@ public static class Program
             if (args.Length >= 2 && Is(args[0], "verify") && Is(args[1], "scalar-truth-recovery"))
             {
                 return VerifyScalarTruthRecovery(args[2..]);
+            }
+
+            if (args.Length >= 2 && Is(args[0], "verify") && Is(args[1], "scalar-truth-promotion"))
+            {
+                return VerifyScalarTruthPromotion(args[2..]);
             }
 
             if (args.Length >= 2 && Is(args[0], "verify") && Is(args[1], "comparison-readiness"))
@@ -293,8 +303,8 @@ public static class Program
             return 0;
         }
 
-        var (truthReadinessPaths, scalarEvidenceSetPaths, scalarTruthRecoveryPaths, jsonOutputPath) = ParseReportCapabilityOptions(args);
-        var result = new CapabilityStatusService().Build(truthReadinessPaths, scalarEvidenceSetPaths, scalarTruthRecoveryPaths);
+        var (truthReadinessPaths, scalarEvidenceSetPaths, scalarTruthRecoveryPaths, scalarTruthPromotionPaths, jsonOutputPath) = ParseReportCapabilityOptions(args);
+        var result = new CapabilityStatusService().Build(truthReadinessPaths, scalarEvidenceSetPaths, scalarTruthRecoveryPaths, scalarTruthPromotionPaths);
         WriteOptionalJson(jsonOutputPath, result);
         Console.WriteLine(JsonSerializer.Serialize(result, SessionJson.Options));
         return result.Success ? 0 : 1;
@@ -413,6 +423,62 @@ public static class Program
         }
 
         var result = new ScalarTruthRecoveryService().Recover(paths, top);
+        if (!string.IsNullOrWhiteSpace(outputPath))
+        {
+            result = result with { OutputPath = Path.GetFullPath(outputPath) };
+            Directory.CreateDirectory(Path.GetDirectoryName(result.OutputPath)!);
+            File.WriteAllText(result.OutputPath, JsonSerializer.Serialize(result, SessionJson.Options));
+        }
+
+        Console.WriteLine(JsonSerializer.Serialize(result, SessionJson.Options));
+        return result.Success ? 0 : 1;
+    }
+
+    private static int CompareScalarPromotion(string[] args)
+    {
+        if (args.Length == 1 && IsHelp(args[0]))
+        {
+            PrintCompareScalarPromotionUsage();
+            return 0;
+        }
+
+        if (args.Length == 0)
+        {
+            throw new ArgumentException("Scalar-promotion compare requires a scalar truth recovery JSON path.");
+        }
+
+        var recoveryPath = args[0];
+        string? corroborationPath = null;
+        string? outputPath = null;
+        var top = 100;
+        for (var index = 1; index < args.Length; index++)
+        {
+            var arg = args[index];
+            switch (arg)
+            {
+                case "--corroboration":
+                    corroborationPath = RequireValue(args, ref index, arg);
+                    break;
+                case "--out":
+                    outputPath = RequireValue(args, ref index, arg);
+                    break;
+                case "--all":
+                    top = int.MaxValue;
+                    break;
+                case "--top":
+                    top = int.Parse(RequireValue(args, ref index, arg));
+                    break;
+                default:
+                    throw new ArgumentException($"Unknown scalar-promotion option: {arg}");
+            }
+        }
+
+        if (string.IsNullOrWhiteSpace(corroborationPath))
+        {
+            throw new ArgumentException("Scalar-promotion compare requires --corroboration <scalar_truth_corroboration.jsonl>.");
+        }
+
+        var result = new ScalarTruthPromotionService().Promote(recoveryPath, corroborationPath, top);
         if (!string.IsNullOrWhiteSpace(outputPath))
         {
             result = result with { OutputPath = Path.GetFullPath(outputPath) };
@@ -906,11 +972,12 @@ public static class Program
         return inventoryOutputPath;
     }
 
-    private static (IReadOnlyList<string> TruthReadinessPaths, IReadOnlyList<string> ScalarEvidenceSetPaths, IReadOnlyList<string> ScalarTruthRecoveryPaths, string? JsonOutputPath) ParseReportCapabilityOptions(string[] args)
+    private static (IReadOnlyList<string> TruthReadinessPaths, IReadOnlyList<string> ScalarEvidenceSetPaths, IReadOnlyList<string> ScalarTruthRecoveryPaths, IReadOnlyList<string> ScalarTruthPromotionPaths, string? JsonOutputPath) ParseReportCapabilityOptions(string[] args)
     {
         var truthReadinessPaths = new List<string>();
         var scalarEvidenceSetPaths = new List<string>();
         var scalarTruthRecoveryPaths = new List<string>();
+        var scalarTruthPromotionPaths = new List<string>();
         string? jsonOutputPath = null;
         for (var index = 0; index < args.Length; index++)
         {
@@ -926,6 +993,9 @@ public static class Program
                 case "--scalar-truth-recovery":
                     scalarTruthRecoveryPaths.Add(RequireValue(args, ref index, arg));
                     break;
+                case "--scalar-truth-promotion":
+                    scalarTruthPromotionPaths.Add(RequireValue(args, ref index, arg));
+                    break;
                 case "--json-out":
                     jsonOutputPath = RequireValue(args, ref index, arg);
                     break;
@@ -934,7 +1004,7 @@ public static class Program
             }
         }
 
-        return (truthReadinessPaths, scalarEvidenceSetPaths, scalarTruthRecoveryPaths, jsonOutputPath);
+        return (truthReadinessPaths, scalarEvidenceSetPaths, scalarTruthRecoveryPaths, scalarTruthPromotionPaths, jsonOutputPath);
     }
 
     private static (bool DryRun, string? InventoryOutputPath) ParsePruneOptions(string[] args)
@@ -1122,6 +1192,29 @@ public static class Program
         return result.Success ? 0 : 1;
     }
 
+    private static int VerifyScalarTruthPromotion(string[] args)
+    {
+        if (args.Length == 1 && IsHelp(args[0]))
+        {
+            PrintVerifyScalarTruthPromotionUsage();
+            return 0;
+        }
+
+        if (args.Length == 0)
+        {
+            throw new ArgumentException("Verify scalar-truth-promotion requires a JSON path.");
+        }
+
+        if (args.Length > 1)
+        {
+            throw new ArgumentException($"Unknown verify scalar-truth-promotion option: {args[1]}");
+        }
+
+        var result = new ScalarTruthPromotionVerifier().Verify(args[0]);
+        Console.WriteLine(JsonSerializer.Serialize(result, SessionJson.Options));
+        return result.Success ? 0 : 1;
+    }
+
     private static int VerifyComparisonReadiness(string[] args)
     {
         if (args.Length == 1 && IsHelp(args[0]))
@@ -1206,6 +1299,7 @@ public static class Program
         PrintCompareSessionsUsage();
         PrintCompareScalarSetUsage();
         PrintCompareScalarTruthUsage();
+        PrintCompareScalarPromotionUsage();
         PrintMigrateUsage();
         PrintSessionPruneUsage();
         PrintSessionInventoryUsage();
@@ -1213,6 +1307,8 @@ public static class Program
         PrintVerifySessionUsage();
         PrintVerifyScalarCorroborationUsage();
         PrintVerifyScalarEvidenceSetUsage();
+        PrintVerifyScalarTruthRecoveryUsage();
+        PrintVerifyScalarTruthPromotionUsage();
         PrintVerifyComparisonReadinessUsage();
         PrintVerifyCapabilityStatusUsage();
         Console.WriteLine("riftscan --version [--json]");
@@ -1274,7 +1370,7 @@ public static class Program
         Console.WriteLine("riftscan report session <session-path> [--top 100]");
 
     private static void PrintReportCapabilityUsage() =>
-        Console.WriteLine("riftscan report capability [--truth-readiness reports/generated/truth-readiness.json ...] [--scalar-evidence-set reports/generated/scalar-evidence-set.json ...] [--json-out reports/generated/capability-status.json]");
+        Console.WriteLine("riftscan report capability [--truth-readiness reports/generated/truth-readiness.json ...] [--scalar-evidence-set reports/generated/scalar-evidence-set.json ...] [--scalar-truth-recovery reports/generated/scalar-truth-recovery.json ...] [--scalar-truth-promotion reports/generated/scalar-truth-promotion.json ...] [--json-out reports/generated/capability-status.json]");
 
     private static void PrintCompareSessionsUsage() =>
         Console.WriteLine("riftscan compare sessions <session-a> <session-b> [--top 100] [--out reports/generated/comparison.json] [--report-md reports/generated/comparison.md] [--next-plan reports/generated/next-capture-plan.json] [--truth-readiness reports/generated/truth-readiness.json]");
@@ -1284,6 +1380,9 @@ public static class Program
 
     private static void PrintCompareScalarTruthUsage() =>
         Console.WriteLine("riftscan compare scalar-truth <truth-a.jsonl> <truth-b.jsonl> [truth-c.jsonl ...] [--top 100] [--out reports/generated/scalar-truth-recovery.json]");
+
+    private static void PrintCompareScalarPromotionUsage() =>
+        Console.WriteLine("riftscan compare scalar-promotion <scalar-truth-recovery.json> --corroboration reports/generated/scalar_truth_corroboration.jsonl [--top 100] [--out reports/generated/scalar-truth-promotion.json]");
 
     private static void PrintMigrateUsage() =>
         Console.WriteLine("riftscan migrate session <session-path> --to-schema riftscan.session.v1 [--dry-run|--apply] [--out sessions/<migrated-id>] [--plan-out reports/generated/migration-plan.json]");
@@ -1305,6 +1404,12 @@ public static class Program
 
     private static void PrintVerifyScalarEvidenceSetUsage() =>
         Console.WriteLine("riftscan verify scalar-evidence-set <scalar-evidence-set.json>");
+
+    private static void PrintVerifyScalarTruthRecoveryUsage() =>
+        Console.WriteLine("riftscan verify scalar-truth-recovery <scalar-truth-recovery.json>");
+
+    private static void PrintVerifyScalarTruthPromotionUsage() =>
+        Console.WriteLine("riftscan verify scalar-truth-promotion <scalar-truth-promotion.json>");
 
     private static void PrintVerifyComparisonReadinessUsage() =>
         Console.WriteLine("riftscan verify comparison-readiness <truth-readiness.json>");

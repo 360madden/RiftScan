@@ -65,6 +65,8 @@ dotnet run --project src/RiftScan.Cli/RiftScan.Cli.csproj --configuration Releas
   --truth-readiness reports/generated/<additional-compare>.truth-readiness.json `
   --scalar-evidence-set reports/generated/<scalar-evidence-set>.json `
   --scalar-evidence-set reports/generated/<additional-scalar-evidence-set>.json `
+  --scalar-truth-recovery reports/generated/<scalar-truth-recovery>.json `
+  --scalar-truth-promotion reports/generated/<scalar-truth-promotion>.json `
   --json-out reports/generated/<capability-status>.json
 ```
 
@@ -103,7 +105,7 @@ It performs:
 3. `report capability --truth-readiness ... --scalar-evidence-set ... --json-out ...`
 4. `verify capability-status`
 
-`report capability` accepts repeated `--truth-readiness` and `--scalar-evidence-set` inputs when entity-layout, position, actor-yaw, and camera-orientation evidence were produced as separate replayable packets.
+`report capability` accepts repeated `--truth-readiness`, `--scalar-evidence-set`, `--scalar-truth-recovery`, and `--scalar-truth-promotion` inputs when entity-layout, position, actor-yaw, and camera-orientation evidence were produced as separate replayable packets.
 
 ## Current interpretation rules
 
@@ -112,6 +114,9 @@ It performs:
 - `actor_yaw:missing` means run labeled turn evidence, ideally both `turn_left` and `turn_right`.
 - `actor_yaw:candidate_needs_camera_only_separation` means turn-responsive scalar evidence exists, but it cannot be promoted until camera-only separation is shown.
 - `camera_orientation:missing` means run a labeled `camera_only` capture.
+- `actor_yaw:recovered_candidate` or `camera_orientation:recovered_candidate` means repeat scalar truth recovery matched the candidate across independent truth-candidate files. It is stronger than one-run validation but still requires review or external corroboration before a final truth claim.
+- `actor_yaw:corroborated_candidate` or `camera_orientation:corroborated_candidate` means repeated recovery was also matched to an external/addon corroboration entry. It is the strongest offline promotion state, but still requires manual review before a final recovered-truth claim.
+- `blocked_conflict` means external corroboration conflicts with the recovered candidate; resolve the conflict before promotion.
 
 ## Validation after workflow changes
 

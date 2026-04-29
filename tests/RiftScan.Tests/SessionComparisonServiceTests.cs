@@ -385,6 +385,26 @@ public sealed class SessionComparisonServiceTests
     }
 
     [Fact]
+    public void Scalar_truth_recovery_verifier_accepts_recovered_combined_packet_and_cli()
+    {
+        using var temp = new TempDirectory();
+        Directory.CreateDirectory(temp.Path);
+        var recoveryPath = Path.Combine(temp.Path, "combined-scalar-truth-recovery.json");
+        var recovery = BuildCombinedScalarTruthRecovery(temp.Path) with { OutputPath = recoveryPath };
+        File.WriteAllText(recoveryPath, JsonSerializer.Serialize(recovery, SessionJson.Options));
+
+        var result = new ScalarTruthRecoveryVerifier().Verify(recoveryPath);
+        var cliExitCode = RiftScan.Cli.Program.Main(["verify", "scalar-truth-recovery", recoveryPath]);
+
+        Assert.True(result.Success);
+        Assert.Equal(2, result.TruthCandidatePathCount);
+        Assert.Equal(4, result.InputCandidateCount);
+        Assert.Equal(2, result.RecoveredCandidateCount);
+        Assert.Empty(result.Issues);
+        Assert.Equal(0, cliExitCode);
+    }
+
+    [Fact]
     public void Scalar_evidence_set_verifier_rejects_missing_truth_claim_warning()
     {
         using var passive = CaptureStableFloatSession("passive_idle");
@@ -397,6 +417,21 @@ public sealed class SessionComparisonServiceTests
         File.WriteAllText(scalarEvidenceSetPath, JsonSerializer.Serialize(scalarEvidenceSet with { OutputPath = scalarEvidenceSetPath }, SessionJson.Options));
 
         var result = new ScalarEvidenceSetVerifier().Verify(scalarEvidenceSetPath);
+
+        Assert.False(result.Success);
+        Assert.Contains(result.Issues, issue => issue.Code == "truth_claim_warning_missing");
+    }
+
+    [Fact]
+    public void Scalar_truth_recovery_verifier_rejects_missing_truth_claim_warning()
+    {
+        using var temp = new TempDirectory();
+        Directory.CreateDirectory(temp.Path);
+        var recovery = BuildCombinedScalarTruthRecovery(temp.Path) with { Warnings = [] };
+        var recoveryPath = Path.Combine(temp.Path, "combined-scalar-truth-recovery-missing-warning.json");
+        File.WriteAllText(recoveryPath, JsonSerializer.Serialize(recovery with { OutputPath = recoveryPath }, SessionJson.Options));
+
+        var result = new ScalarTruthRecoveryVerifier().Verify(recoveryPath);
 
         Assert.False(result.Success);
         Assert.Contains(result.Issues, issue => issue.Code == "truth_claim_warning_missing");
@@ -421,6 +456,177 @@ public sealed class SessionComparisonServiceTests
         Assert.Equal(1, actorYaw.EvidenceCount);
         Assert.DoesNotContain(result.EvidenceMissing, missing => missing.StartsWith("actor_yaw:", StringComparison.OrdinalIgnoreCase));
         Assert.Contains("scalar_evidence_is_candidate_evidence_not_truth_claim", result.Warnings);
+    }
+
+    [Fact]
+    public void Capability_status_uses_scalar_truth_recovery_for_actor_yaw_and_camera_readiness()
+    {
+        using var temp = new TempDirectory();
+        Directory.CreateDirectory(temp.Path);
+        var recoveryPath = Path.Combine(temp.Path, "combined-scalar-truth-recovery.json");
+        var recovery = BuildCombinedScalarTruthRecovery(temp.Path) with { OutputPath = recoveryPath };
+        File.WriteAllText(recoveryPath, JsonSerializer.Serialize(recovery, SessionJson.Options));
+
+        var result = new CapabilityStatusService().Build([], [], [recoveryPath]);
+
+        Assert.Equal(Path.GetFullPath(recoveryPath), result.ScalarTruthRecoveryPath);
+        Assert.Equal([Path.GetFullPath(recoveryPath)], result.ScalarTruthRecoveryPaths);
+        var actorYaw = Assert.Single(result.TruthComponents, component => component.Component == "actor_yaw");
+        var cameraOrientation = Assert.Single(result.TruthComponents, component => component.Component == "camera_orientation");
+        Assert.Equal("recovered_candidate", actorYaw.EvidenceReadiness);
+        Assert.Equal("recovered_candidate", cameraOrientation.EvidenceReadiness);
+        Assert.Equal(1, actorYaw.EvidenceCount);
+        Assert.Equal(1, cameraOrientation.EvidenceCount);
+        Assert.DoesNotContain(result.EvidenceMissing, missing => missing.StartsWith("actor_yaw:", StringComparison.OrdinalIgnoreCase));
+        Assert.DoesNotContain(result.EvidenceMissing, missing => missing.StartsWith("camera_orientation:", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains("scalar_recovery_is_repeated_candidate_evidence_not_unconditional_truth", result.Warnings);
+        Assert.Equal("review_recovered_candidate_then_external_corroborate_before_final_truth_claim", actorYaw.NextAction);
+        Assert.Equal("review_recovered_candidate_then_external_corroborate_before_final_truth_claim", cameraOrientation.NextAction);
+    }
+
+    [Fact]
+    public void Report_capability_cli_accepts_scalar_truth_recovery_packet()
+    {
+        using var temp = new TempDirectory();
+        Directory.CreateDirectory(temp.Path);
+        var recoveryPath = Path.Combine(temp.Path, "combined-scalar-truth-recovery.json");
+        var recovery = BuildCombinedScalarTruthRecovery(temp.Path) with { OutputPath = recoveryPath };
+        File.WriteAllText(recoveryPath, JsonSerializer.Serialize(recovery, SessionJson.Options));
+        var capabilityPath = Path.Combine(temp.Path, "capability-status.json");
+
+        var exitCode = RiftScan.Cli.Program.Main(["report", "capability", "--scalar-truth-recovery", recoveryPath, "--json-out", capabilityPath]);
+
+        Assert.Equal(0, exitCode);
+        Assert.True(File.Exists(capabilityPath));
+        var result = JsonSerializer.Deserialize<CapabilityStatusResult>(File.ReadAllText(capabilityPath), SessionJson.Options)!;
+        Assert.Equal([Path.GetFullPath(recoveryPath)], result.ScalarTruthRecoveryPaths);
+        Assert.Equal("recovered_candidate", Assert.Single(result.TruthComponents, component => component.Component == "actor_yaw").EvidenceReadiness);
+        Assert.Equal("recovered_candidate", Assert.Single(result.TruthComponents, component => component.Component == "camera_orientation").EvidenceReadiness);
+    }
+
+    [Fact]
+    public void Scalar_truth_promotion_promotes_corroborated_recovered_candidates_and_blocks_conflicts()
+    {
+        using var temp = new TempDirectory();
+        Directory.CreateDirectory(temp.Path);
+        var recoveryPath = Path.Combine(temp.Path, "combined-scalar-truth-recovery.json");
+        var recovery = BuildCombinedScalarTruthRecovery(temp.Path) with { OutputPath = recoveryPath };
+        File.WriteAllText(recoveryPath, JsonSerializer.Serialize(recovery, SessionJson.Options));
+        var corroborationPath = WriteCombinedCorroboration(temp.Path, actorStatus: "corroborated", cameraStatus: "conflicted");
+
+        var promotion = new ScalarTruthPromotionService().Promote(recoveryPath, corroborationPath);
+
+        Assert.True(promotion.Success);
+        Assert.Equal(Path.GetFullPath(recoveryPath), promotion.RecoveryPath);
+        Assert.Equal(Path.GetFullPath(corroborationPath), promotion.CorroborationPath);
+        Assert.Equal(2, promotion.RecoveredCandidateCount);
+        Assert.Equal(1, promotion.PromotedCandidateCount);
+        Assert.Equal(1, promotion.BlockedCandidateCount);
+        var promotedActor = Assert.Single(promotion.PromotedCandidates);
+        var blockedCamera = Assert.Single(promotion.BlockedCandidates);
+        Assert.Equal("actor_yaw_angle_scalar_candidate", promotedActor.Classification);
+        Assert.Equal("corroborated_candidate", promotedActor.PromotionStatus);
+        Assert.Equal("corroborated_candidate", promotedActor.TruthReadiness);
+        Assert.Equal("manual_review_promoted_candidate_before_final_truth_claim", promotedActor.NextValidationStep);
+        Assert.Equal("camera_orientation_angle_scalar_candidate", blockedCamera.Classification);
+        Assert.Equal("blocked_conflict", blockedCamera.PromotionStatus);
+        Assert.Equal("blocked_conflict", blockedCamera.TruthReadiness);
+        Assert.Contains("scalar_truth_promotion_contains_external_conflicts", promotion.Warnings);
+    }
+
+    [Fact]
+    public void Scalar_truth_promotion_verifier_accepts_promoted_packet_and_cli()
+    {
+        using var temp = new TempDirectory();
+        Directory.CreateDirectory(temp.Path);
+        var recoveryPath = Path.Combine(temp.Path, "combined-scalar-truth-recovery.json");
+        var promotionPath = Path.Combine(temp.Path, "combined-scalar-truth-promotion.json");
+        var recovery = BuildCombinedScalarTruthRecovery(temp.Path) with { OutputPath = recoveryPath };
+        File.WriteAllText(recoveryPath, JsonSerializer.Serialize(recovery, SessionJson.Options));
+        var corroborationPath = WriteCombinedCorroboration(temp.Path, actorStatus: "corroborated", cameraStatus: "corroborated");
+        var promotion = new ScalarTruthPromotionService().Promote(recoveryPath, corroborationPath) with { OutputPath = promotionPath };
+        File.WriteAllText(promotionPath, JsonSerializer.Serialize(promotion, SessionJson.Options));
+
+        var result = new ScalarTruthPromotionVerifier().Verify(promotionPath);
+        var cliExitCode = RiftScan.Cli.Program.Main(["verify", "scalar-truth-promotion", promotionPath]);
+
+        Assert.True(result.Success);
+        Assert.Equal(2, result.PromotedCandidateCount);
+        Assert.Equal(0, result.BlockedCandidateCount);
+        Assert.Empty(result.Issues);
+        Assert.Equal(0, cliExitCode);
+    }
+
+    [Fact]
+    public void Compare_scalar_promotion_cli_writes_promotion_packet()
+    {
+        using var temp = new TempDirectory();
+        Directory.CreateDirectory(temp.Path);
+        var recoveryPath = Path.Combine(temp.Path, "combined-scalar-truth-recovery.json");
+        var promotionPath = Path.Combine(temp.Path, "combined-scalar-truth-promotion.json");
+        var recovery = BuildCombinedScalarTruthRecovery(temp.Path) with { OutputPath = recoveryPath };
+        File.WriteAllText(recoveryPath, JsonSerializer.Serialize(recovery, SessionJson.Options));
+        var corroborationPath = WriteCombinedCorroboration(temp.Path, actorStatus: "corroborated", cameraStatus: "corroborated");
+
+        var exitCode = RiftScan.Cli.Program.Main(["compare", "scalar-promotion", recoveryPath, "--corroboration", corroborationPath, "--out", promotionPath]);
+
+        Assert.Equal(0, exitCode);
+        Assert.True(File.Exists(promotionPath));
+        var promotion = JsonSerializer.Deserialize<ScalarTruthPromotionResult>(File.ReadAllText(promotionPath), SessionJson.Options)!;
+        Assert.Equal(2, promotion.PromotedCandidateCount);
+        Assert.All(promotion.PromotedCandidates, candidate => Assert.Equal("corroborated_candidate", candidate.TruthReadiness));
+    }
+
+    [Fact]
+    public void Capability_status_uses_scalar_truth_promotion_for_actor_yaw_and_camera_readiness()
+    {
+        using var temp = new TempDirectory();
+        Directory.CreateDirectory(temp.Path);
+        var recoveryPath = Path.Combine(temp.Path, "combined-scalar-truth-recovery.json");
+        var promotionPath = Path.Combine(temp.Path, "combined-scalar-truth-promotion.json");
+        var recovery = BuildCombinedScalarTruthRecovery(temp.Path) with { OutputPath = recoveryPath };
+        File.WriteAllText(recoveryPath, JsonSerializer.Serialize(recovery, SessionJson.Options));
+        var corroborationPath = WriteCombinedCorroboration(temp.Path, actorStatus: "corroborated", cameraStatus: "corroborated");
+        var promotion = new ScalarTruthPromotionService().Promote(recoveryPath, corroborationPath) with { OutputPath = promotionPath };
+        File.WriteAllText(promotionPath, JsonSerializer.Serialize(promotion, SessionJson.Options));
+
+        var result = new CapabilityStatusService().Build([], [], [], [promotionPath]);
+
+        Assert.Equal(Path.GetFullPath(promotionPath), result.ScalarTruthPromotionPath);
+        Assert.Equal([Path.GetFullPath(promotionPath)], result.ScalarTruthPromotionPaths);
+        var actorYaw = Assert.Single(result.TruthComponents, component => component.Component == "actor_yaw");
+        var cameraOrientation = Assert.Single(result.TruthComponents, component => component.Component == "camera_orientation");
+        Assert.Equal("corroborated_candidate", actorYaw.EvidenceReadiness);
+        Assert.Equal("corroborated_candidate", cameraOrientation.EvidenceReadiness);
+        Assert.Equal("manual_review_promoted_candidate_before_final_truth_claim", actorYaw.NextAction);
+        Assert.Equal("manual_review_promoted_candidate_before_final_truth_claim", cameraOrientation.NextAction);
+        Assert.DoesNotContain(result.EvidenceMissing, missing => missing.StartsWith("actor_yaw:", StringComparison.OrdinalIgnoreCase));
+        Assert.DoesNotContain(result.EvidenceMissing, missing => missing.StartsWith("camera_orientation:", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains("scalar_truth_promotion_is_not_final_truth_without_manual_review", result.Warnings);
+    }
+
+    [Fact]
+    public void Report_capability_cli_accepts_scalar_truth_promotion_packet()
+    {
+        using var temp = new TempDirectory();
+        Directory.CreateDirectory(temp.Path);
+        var recoveryPath = Path.Combine(temp.Path, "combined-scalar-truth-recovery.json");
+        var promotionPath = Path.Combine(temp.Path, "combined-scalar-truth-promotion.json");
+        var capabilityPath = Path.Combine(temp.Path, "capability-status.json");
+        var recovery = BuildCombinedScalarTruthRecovery(temp.Path) with { OutputPath = recoveryPath };
+        File.WriteAllText(recoveryPath, JsonSerializer.Serialize(recovery, SessionJson.Options));
+        var corroborationPath = WriteCombinedCorroboration(temp.Path, actorStatus: "corroborated", cameraStatus: "corroborated");
+        var promotion = new ScalarTruthPromotionService().Promote(recoveryPath, corroborationPath) with { OutputPath = promotionPath };
+        File.WriteAllText(promotionPath, JsonSerializer.Serialize(promotion, SessionJson.Options));
+
+        var exitCode = RiftScan.Cli.Program.Main(["report", "capability", "--scalar-truth-promotion", promotionPath, "--json-out", capabilityPath]);
+
+        Assert.Equal(0, exitCode);
+        Assert.True(File.Exists(capabilityPath));
+        var result = JsonSerializer.Deserialize<CapabilityStatusResult>(File.ReadAllText(capabilityPath), SessionJson.Options)!;
+        Assert.Equal([Path.GetFullPath(promotionPath)], result.ScalarTruthPromotionPaths);
+        Assert.Equal("corroborated_candidate", Assert.Single(result.TruthComponents, component => component.Component == "actor_yaw").EvidenceReadiness);
+        Assert.Equal("corroborated_candidate", Assert.Single(result.TruthComponents, component => component.Component == "camera_orientation").EvidenceReadiness);
     }
 
     [Fact]
@@ -941,6 +1147,56 @@ public sealed class SessionComparisonServiceTests
         });
 
         return session;
+    }
+
+    private static ScalarTruthRecoveryResult BuildCombinedScalarTruthRecovery(string outputRoot)
+    {
+        using var passiveA = CaptureDualScalarSession("passive_idle", [1.5f, 1.5f, 1.5f], [2.0f, 2.0f, 2.0f]);
+        using var turnLeftA = CaptureDualScalarSession("turn_left", [1.5f, 2.5f, 3.5f], [2.0f, 2.0f, 2.0f]);
+        using var turnRightA = CaptureDualScalarSession("turn_right", [3.5f, 2.5f, 1.5f], [2.0f, 2.0f, 2.0f]);
+        using var cameraOnlyA = CaptureDualScalarSession("camera_only", [1.5f, 1.5f, 1.5f], [2.0f, 3.0f, 4.0f]);
+        using var passiveB = CaptureDualScalarSession("passive_idle", [1.5f, 1.5f, 1.5f], [2.0f, 2.0f, 2.0f]);
+        using var turnLeftB = CaptureDualScalarSession("turn_left", [1.5f, 2.5f, 3.5f], [2.0f, 2.0f, 2.0f]);
+        using var turnRightB = CaptureDualScalarSession("turn_right", [3.5f, 2.5f, 1.5f], [2.0f, 2.0f, 2.0f]);
+        using var cameraOnlyB = CaptureDualScalarSession("camera_only", [1.5f, 1.5f, 1.5f], [2.0f, 3.0f, 4.0f]);
+        var resultA = new ScalarEvidenceSetService().Aggregate([passiveA.Path, turnLeftA.Path, turnRightA.Path, cameraOnlyA.Path]);
+        var resultB = new ScalarEvidenceSetService().Aggregate([passiveB.Path, turnLeftB.Path, turnRightB.Path, cameraOnlyB.Path]);
+        var truthOutA = Path.Combine(outputRoot, "combined-scalar-truth-candidates-a.jsonl");
+        var truthOutB = Path.Combine(outputRoot, "combined-scalar-truth-candidates-b.jsonl");
+
+        _ = new ScalarTruthCandidateExporter().Export(resultA, truthOutA);
+        _ = new ScalarTruthCandidateExporter().Export(resultB, truthOutB);
+        return new ScalarTruthRecoveryService().Recover([truthOutA, truthOutB]);
+    }
+
+    private static string WriteCombinedCorroboration(string outputRoot, string actorStatus, string cameraStatus)
+    {
+        var path = Path.Combine(outputRoot, "combined-scalar-truth-corroboration.jsonl");
+        var entries = new[]
+        {
+            new ScalarTruthCorroborationEntry
+            {
+                BaseAddressHex = "0x1000",
+                OffsetHex = "0x4",
+                DataType = "float32",
+                Classification = "actor_yaw_angle_scalar_candidate",
+                CorroborationStatus = actorStatus,
+                Source = "fixture_addon_truth",
+                EvidenceSummary = $"fixture actor yaw {actorStatus}"
+            },
+            new ScalarTruthCorroborationEntry
+            {
+                BaseAddressHex = "0x1000",
+                OffsetHex = "0x8",
+                DataType = "float32",
+                Classification = "camera_orientation_angle_scalar_candidate",
+                CorroborationStatus = cameraStatus,
+                Source = "fixture_camera_truth",
+                EvidenceSummary = $"fixture camera orientation {cameraStatus}"
+            }
+        };
+        File.WriteAllLines(path, entries.Select(entry => JsonSerializer.Serialize(entry, SessionJson.Options).ReplaceLineEndings(string.Empty)));
+        return path;
     }
 
     private static TempDirectory CaptureVec3Session(IProcessMemoryReader reader, string stimulusLabel)

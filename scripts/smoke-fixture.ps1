@@ -828,6 +828,10 @@ try {
         "--out", $combinedScalarTruthRecovery
     )
     Assert-FileExists -Path $combinedScalarTruthRecovery
+    $combinedScalarTruthRecoveryVerification = Invoke-RiftScanJson -Arguments @("verify", "scalar-truth-recovery", $combinedScalarTruthRecovery)
+    if (-not $combinedScalarTruthRecoveryVerification.success -or $combinedScalarTruthRecoveryVerification.recovered_candidate_count -lt 2) {
+        throw "Expected combined scalar truth recovery packet to verify with actor and camera candidates."
+    }
     $combinedScalarTruthRecoveryJson = Get-Content $combinedScalarTruthRecovery -Raw | ConvertFrom-Json
     if (-not $combinedScalarTruthRecoveryJson.success -or $combinedScalarTruthRecoveryJson.recovered_candidate_count -lt 2) {
         throw "Expected combined scalar truth recovery to recover actor and camera candidates from repeated packets."
@@ -852,6 +856,65 @@ try {
         throw "Expected combined scalar truth recovery to preserve recovered actor and camera candidates."
     }
 
+    $combinedScalarTruthCorroboration = Join-Path $reportRoot "fixture-combined-scalar-truth-corroboration.jsonl"
+    Write-JsonLine -Path $combinedScalarTruthCorroboration -Value ([ordered]@{
+        schema_version = "riftscan.scalar_truth_corroboration.v1"
+        base_address_hex = "0x60000000"
+        offset_hex = "0x4"
+        data_type = "float32"
+        classification = "actor_yaw_angle_scalar_candidate"
+        corroboration_status = "corroborated"
+        source = "fixture_addon_actor_truth"
+        evidence_summary = "fixture actor yaw externally corroborated"
+    })
+    Write-JsonLine -Path $combinedScalarTruthCorroboration -Append -Value ([ordered]@{
+        schema_version = "riftscan.scalar_truth_corroboration.v1"
+        base_address_hex = "0x60000000"
+        offset_hex = "0x8"
+        data_type = "float32"
+        classification = "camera_orientation_angle_scalar_candidate"
+        corroboration_status = "corroborated"
+        source = "fixture_camera_truth"
+        evidence_summary = "fixture camera orientation externally corroborated"
+    })
+    $combinedScalarTruthCorroborationVerification = Invoke-RiftScanJson -Arguments @("verify", "scalar-corroboration", $combinedScalarTruthCorroboration)
+    if (-not $combinedScalarTruthCorroborationVerification.success -or $combinedScalarTruthCorroborationVerification.entry_count -lt 2) {
+        throw "Expected combined scalar truth corroboration JSONL to verify with actor and camera entries."
+    }
+
+    $combinedScalarTruthPromotion = Join-Path $reportRoot "fixture-combined-scalar-truth-promotion.json"
+    Invoke-RiftScan -Arguments @(
+        "compare", "scalar-promotion", $combinedScalarTruthRecovery,
+        "--corroboration", $combinedScalarTruthCorroboration,
+        "--top", "10",
+        "--out", $combinedScalarTruthPromotion
+    )
+    Assert-FileExists -Path $combinedScalarTruthPromotion
+    $combinedScalarTruthPromotionVerification = Invoke-RiftScanJson -Arguments @("verify", "scalar-truth-promotion", $combinedScalarTruthPromotion)
+    if (-not $combinedScalarTruthPromotionVerification.success -or $combinedScalarTruthPromotionVerification.promoted_candidate_count -lt 2) {
+        throw "Expected combined scalar truth promotion packet to verify with actor and camera promotions."
+    }
+    $combinedScalarTruthPromotionJson = Get-Content $combinedScalarTruthPromotion -Raw | ConvertFrom-Json
+    $promotedActorYawScalar = @($combinedScalarTruthPromotionJson.promoted_candidates) |
+        Where-Object {
+            $_.classification -eq "actor_yaw_angle_scalar_candidate" -and
+            $_.offset_hex -eq "0x4" -and
+            $_.truth_readiness -eq "corroborated_candidate" -and
+            $_.corroboration_status -eq "corroborated"
+        } |
+        Select-Object -First 1
+    $promotedCameraScalar = @($combinedScalarTruthPromotionJson.promoted_candidates) |
+        Where-Object {
+            $_.classification -eq "camera_orientation_angle_scalar_candidate" -and
+            $_.offset_hex -eq "0x8" -and
+            $_.truth_readiness -eq "corroborated_candidate" -and
+            $_.corroboration_status -eq "corroborated"
+        } |
+        Select-Object -First 1
+    if ($null -eq $promotedActorYawScalar -or $null -eq $promotedCameraScalar) {
+        throw "Expected scalar truth promotion to mark actor and camera recovered candidates as corroborated_candidate."
+    }
+
     $capabilityStatus = Join-Path $reportRoot "fixture-capability-status.json"
     & pwsh -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repoRoot "scripts/verify-readiness-workflow.ps1") `
         -TruthReadinessPath $vec3BehaviorTruthReadiness `
@@ -864,12 +927,12 @@ try {
 
     Assert-FileExists -Path $capabilityStatus
     $capabilityVerification = Invoke-RiftScanJson -Arguments @("verify", "capability-status", $capabilityStatus)
-    if (-not $capabilityVerification.success -or $capabilityVerification.capability_count -lt 16) {
+    if (-not $capabilityVerification.success -or $capabilityVerification.capability_count -lt 17) {
         throw "Expected generated capability status to verify successfully."
     }
 
     $capabilityStatusJson = Get-Content $capabilityStatus -Raw | ConvertFrom-Json
-    if ($capabilityStatusJson.capability_count -lt 16 -or [string]::IsNullOrWhiteSpace($capabilityStatusJson.scalar_evidence_set_path)) {
+    if ($capabilityStatusJson.capability_count -lt 17 -or [string]::IsNullOrWhiteSpace($capabilityStatusJson.scalar_evidence_set_path)) {
         throw "Expected capability status to include implemented scanner capabilities."
     }
     $actorYawStatus = @($capabilityStatusJson.truth_components) |
@@ -888,7 +951,7 @@ try {
     )
     Assert-FileExists -Path $cameraCapabilityStatus
     $cameraCapabilityVerification = Invoke-RiftScanJson -Arguments @("verify", "capability-status", $cameraCapabilityStatus)
-    if (-not $cameraCapabilityVerification.success -or $cameraCapabilityVerification.capability_count -lt 16) {
+    if (-not $cameraCapabilityVerification.success -or $cameraCapabilityVerification.capability_count -lt 17) {
         throw "Expected generated camera capability status to verify successfully."
     }
     $cameraCapabilityStatusJson = Get-Content $cameraCapabilityStatus -Raw | ConvertFrom-Json
@@ -905,17 +968,27 @@ try {
         "--truth-readiness", $entityLayoutTruthReadiness,
         "--truth-readiness", $vec3BehaviorTruthReadiness,
         "--scalar-evidence-set", $validatedCombinedScalarEvidenceSetJson,
+        "--scalar-truth-recovery", $combinedScalarTruthRecovery,
+        "--scalar-truth-promotion", $combinedScalarTruthPromotion,
         "--json-out", $combinedCapabilityStatus
     )
     Assert-FileExists -Path $combinedCapabilityStatus
     $combinedCapabilityVerification = Invoke-RiftScanJson -Arguments @("verify", "capability-status", $combinedCapabilityStatus)
-    if (-not $combinedCapabilityVerification.success -or $combinedCapabilityVerification.capability_count -lt 16) {
+    if (-not $combinedCapabilityVerification.success -or $combinedCapabilityVerification.capability_count -lt 17) {
         throw "Expected generated combined capability status to verify successfully."
     }
     $combinedCapabilityStatusJson = Get-Content $combinedCapabilityStatus -Raw | ConvertFrom-Json
     if (@($combinedCapabilityStatusJson.scalar_evidence_set_paths).Count -ne 1 -or
         @($combinedCapabilityStatusJson.scalar_evidence_set_paths)[0] -ne $validatedCombinedScalarEvidenceSetJson) {
         throw "Expected combined capability status to record the single dual-lane scalar evidence set path."
+    }
+    if (@($combinedCapabilityStatusJson.scalar_truth_recovery_paths).Count -ne 1 -or
+        @($combinedCapabilityStatusJson.scalar_truth_recovery_paths)[0] -ne $combinedScalarTruthRecovery) {
+        throw "Expected combined capability status to record the dual-lane scalar truth recovery path."
+    }
+    if (@($combinedCapabilityStatusJson.scalar_truth_promotion_paths).Count -ne 1 -or
+        @($combinedCapabilityStatusJson.scalar_truth_promotion_paths)[0] -ne $combinedScalarTruthPromotion) {
+        throw "Expected combined capability status to record the dual-lane scalar truth promotion path."
     }
     if (@($combinedCapabilityStatusJson.truth_readiness_paths).Count -lt 2) {
         throw "Expected combined capability status to record both truth-readiness paths."
@@ -932,11 +1005,11 @@ try {
     if ($null -eq $combinedEntityLayoutStatus -or $combinedEntityLayoutStatus.evidence_readiness -ne "strong_candidate") {
         throw "Expected combined capability status to keep entity_layout readiness as strong_candidate."
     }
-    if ($null -eq $combinedActorYawStatus -or $combinedActorYawStatus.evidence_readiness -ne "validated_candidate") {
-        throw "Expected combined capability status to keep scalar actor_yaw readiness as validated_candidate."
+    if ($null -eq $combinedActorYawStatus -or $combinedActorYawStatus.evidence_readiness -ne "corroborated_candidate") {
+        throw "Expected combined capability status to promote scalar actor_yaw readiness to corroborated_candidate."
     }
-    if ($null -eq $combinedCameraStatus -or $combinedCameraStatus.evidence_readiness -ne "validated_candidate") {
-        throw "Expected combined capability status to keep scalar camera_orientation readiness as validated_candidate."
+    if ($null -eq $combinedCameraStatus -or $combinedCameraStatus.evidence_readiness -ne "corroborated_candidate") {
+        throw "Expected combined capability status to promote scalar camera_orientation readiness to corroborated_candidate."
     }
     if (@($combinedCapabilityStatusJson.evidence_missing).Count -ne 0) {
         throw "Expected combined capability status to have no missing evidence after merged entity, position, actor, and camera packets."

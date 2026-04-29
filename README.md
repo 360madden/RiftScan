@@ -45,6 +45,8 @@ dotnet run --project src/RiftScan.Cli/RiftScan.Cli.csproj --configuration Releas
   --truth-readiness reports/generated/<additional-compare>.truth-readiness.json `
   --scalar-evidence-set reports/generated/<scalar-evidence-set>.json `
   --scalar-evidence-set reports/generated/<additional-scalar-evidence-set>.json `
+  --scalar-truth-recovery reports/generated/<scalar-truth-recovery>.json `
+  --scalar-truth-promotion reports/generated/<scalar-truth-promotion>.json `
   --json-out reports/generated/<capability-status>.json
 
 dotnet run --project src/RiftScan.Cli/RiftScan.Cli.csproj --configuration Release --no-build -- `
@@ -52,6 +54,17 @@ dotnet run --project src/RiftScan.Cli/RiftScan.Cli.csproj --configuration Releas
 
 dotnet run --project src/RiftScan.Cli/RiftScan.Cli.csproj --configuration Release --no-build -- `
   verify scalar-evidence-set reports/generated/<scalar-evidence-set>.json
+
+dotnet run --project src/RiftScan.Cli/RiftScan.Cli.csproj --configuration Release --no-build -- `
+  verify scalar-truth-recovery reports/generated/<scalar-truth-recovery>.json
+
+dotnet run --project src/RiftScan.Cli/RiftScan.Cli.csproj --configuration Release --no-build -- `
+  compare scalar-promotion reports/generated/<scalar-truth-recovery>.json `
+  --corroboration reports/generated/<scalar-truth-corroboration>.jsonl `
+  --out reports/generated/<scalar-truth-promotion>.json
+
+dotnet run --project src/RiftScan.Cli/RiftScan.Cli.csproj --configuration Release --no-build -- `
+  verify scalar-truth-promotion reports/generated/<scalar-truth-promotion>.json
 
 dotnet run --project src/RiftScan.Cli/RiftScan.Cli.csproj --configuration Release --no-build -- `
   capture plan reports/generated/<next-plan>.json --pid <rift_pid> `

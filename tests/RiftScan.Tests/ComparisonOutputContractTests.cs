@@ -370,6 +370,90 @@ public sealed class ComparisonOutputContractTests
             "candidate_index");
 
     [Fact]
+    public void Scalar_truth_recovery_verification_result_pins_json_contract_fields() =>
+        AssertJsonPropertySet(
+            new ScalarTruthRecoveryVerificationResult(),
+            "schema_version",
+            "success",
+            "path",
+            "truth_candidate_path_count",
+            "input_candidate_count",
+            "recovered_candidate_count",
+            "issues");
+
+    [Fact]
+    public void Scalar_truth_recovery_verification_issue_pins_json_contract_fields() =>
+        AssertJsonPropertySet(
+            new ScalarTruthRecoveryVerificationIssue(),
+            "severity",
+            "code",
+            "message",
+            "candidate_index");
+
+    [Fact]
+    public void Scalar_truth_promotion_result_pins_json_contract_fields() =>
+        AssertJsonPropertySet(
+            new ScalarTruthPromotionResult(),
+            "schema_version",
+            "success",
+            "recovery_path",
+            "corroboration_path",
+            "output_path",
+            "recovered_candidate_count",
+            "promoted_candidate_count",
+            "blocked_candidate_count",
+            "promoted_candidates",
+            "blocked_candidates",
+            "warnings");
+
+    [Fact]
+    public void Scalar_promoted_truth_candidate_pins_json_contract_fields() =>
+        AssertJsonPropertySet(
+            new ScalarPromotedTruthCandidate(),
+            "schema_version",
+            "candidate_id",
+            "source_recovered_candidate_id",
+            "base_address_hex",
+            "offset_hex",
+            "data_type",
+            "value_family",
+            "classification",
+            "promotion_status",
+            "truth_readiness",
+            "claim_level",
+            "corroboration_status",
+            "corroboration_sources",
+            "corroboration_summary",
+            "supporting_truth_candidate_ids",
+            "supporting_file_count",
+            "best_score_total",
+            "labels_present",
+            "supporting_reasons",
+            "evidence_summary",
+            "next_validation_step",
+            "warning");
+
+    [Fact]
+    public void Scalar_truth_promotion_verification_result_pins_json_contract_fields() =>
+        AssertJsonPropertySet(
+            new ScalarTruthPromotionVerificationResult(),
+            "schema_version",
+            "success",
+            "path",
+            "promoted_candidate_count",
+            "blocked_candidate_count",
+            "issues");
+
+    [Fact]
+    public void Scalar_truth_promotion_verification_issue_pins_json_contract_fields() =>
+        AssertJsonPropertySet(
+            new ScalarTruthPromotionVerificationIssue(),
+            "severity",
+            "code",
+            "message",
+            "candidate_index");
+
+    [Fact]
     public void Capability_status_result_pins_json_contract_fields() =>
         AssertJsonPropertySet(
             new CapabilityStatusResult(),
@@ -383,6 +467,10 @@ public sealed class ComparisonOutputContractTests
             "truth_readiness_paths",
             "scalar_evidence_set_path",
             "scalar_evidence_set_paths",
+            "scalar_truth_recovery_path",
+            "scalar_truth_recovery_paths",
+            "scalar_truth_promotion_path",
+            "scalar_truth_promotion_paths",
             "truth_components",
             "evidence_missing",
             "next_recommended_actions",
