@@ -96,6 +96,40 @@ public sealed class SessionMigrationServiceTests
     }
 
     [Fact]
+    public void Migrate_apply_request_fails_without_mutating_and_can_write_blocked_plan()
+    {
+        var tempDirectory = CreateTempDirectory();
+        var planPath = Path.Combine(tempDirectory, "apply-blocked-plan.json");
+
+        try
+        {
+            var result = new SessionMigrationService().Migrate(
+                ValidFixturePath,
+                SessionMigrationService.SupportedSessionSchemaVersion,
+                dryRun: false,
+                planOutputPath: planPath);
+
+            Assert.False(result.Success);
+            Assert.False(result.DryRun);
+            Assert.Equal("apply_not_supported", result.Status);
+            Assert.Contains(result.Issues, issue => issue.Code == "apply_not_supported");
+            var fullPlanPath = Path.GetFullPath(planPath);
+            Assert.Equal([fullPlanPath], result.ArtifactsWritten);
+
+            using var document = JsonDocument.Parse(File.ReadAllText(fullPlanPath));
+            Assert.False(document.RootElement.GetProperty("dry_run").GetBoolean());
+            Assert.Equal("apply_not_supported", document.RootElement.GetProperty("status").GetString());
+            Assert.False(document.RootElement.GetProperty("can_apply").GetBoolean());
+            Assert.Equal("implement-apply-path", document.RootElement.GetProperty("actions")[0].GetProperty("action_id").GetString());
+            Assert.False(document.RootElement.GetProperty("actions")[0].GetProperty("writes_raw_artifacts").GetBoolean());
+        }
+        finally
+        {
+            Directory.Delete(tempDirectory, recursive: true);
+        }
+    }
+
+    [Fact]
     public void Cli_migrate_session_emits_machine_readable_noop_result()
     {
         var result = RunCli(
@@ -167,6 +201,44 @@ public sealed class SessionMigrationServiceTests
         {
             Directory.Delete(tempDirectory, recursive: true);
         }
+    }
+
+    [Fact]
+    public void Cli_migrate_session_apply_returns_json_failure_not_exception()
+    {
+        var result = RunCli(
+            "migrate",
+            "session",
+            ValidFixturePath,
+            "--to-schema",
+            SessionMigrationService.SupportedSessionSchemaVersion,
+            "--apply");
+
+        Assert.Equal(1, result.ExitCode);
+        Assert.Equal(string.Empty, result.Stderr);
+        using var document = JsonDocument.Parse(result.Stdout);
+        Assert.False(document.RootElement.GetProperty("success").GetBoolean());
+        Assert.False(document.RootElement.GetProperty("dry_run").GetBoolean());
+        Assert.Equal("apply_not_supported", document.RootElement.GetProperty("status").GetString());
+    }
+
+    [Fact]
+    public void Cli_migrate_session_rejects_apply_and_dry_run_together()
+    {
+        var result = RunCli(
+            "migrate",
+            "session",
+            ValidFixturePath,
+            "--to-schema",
+            SessionMigrationService.SupportedSessionSchemaVersion,
+            "--apply",
+            "--dry-run");
+
+        Assert.Equal(2, result.ExitCode);
+        Assert.Equal(string.Empty, result.Stdout);
+        using var document = JsonDocument.Parse(result.Stderr);
+        Assert.Equal("command_failed", document.RootElement.GetProperty("issues")[0].GetProperty("code").GetString());
+        Assert.Contains("--dry-run and --apply cannot be used together", document.RootElement.GetProperty("issues")[0].GetProperty("message").GetString(), StringComparison.Ordinal);
     }
 
     private static string ValidFixturePath => Path.Combine(AppContext.BaseDirectory, "Fixtures", "valid-session");

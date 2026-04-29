@@ -415,6 +415,7 @@ public static class Program
         string? toSchemaVersion = null;
         string? planOutputPath = null;
         var dryRun = true;
+        var applyRequested = false;
         for (var index = 0; index < args.Length; index++)
         {
             var arg = args[index];
@@ -424,7 +425,21 @@ public static class Program
                     toSchemaVersion = RequireValue(args, ref index, arg);
                     break;
                 case "--dry-run":
+                    if (applyRequested)
+                    {
+                        throw new ArgumentException("Migrate options --dry-run and --apply cannot be used together.");
+                    }
+
                     dryRun = true;
+                    break;
+                case "--apply":
+                    if (applyRequested)
+                    {
+                        throw new ArgumentException("Migrate option --apply was specified more than once.");
+                    }
+
+                    applyRequested = true;
+                    dryRun = false;
                     break;
                 case "--plan-out":
                     planOutputPath = RequireValue(args, ref index, arg);
@@ -482,12 +497,12 @@ public static class Program
         Console.WriteLine("riftscan analyze session <session-path> [--all|--top 100]");
         Console.WriteLine("riftscan report session <session-path> [--top 100]");
         Console.WriteLine("riftscan compare sessions <session-a> <session-b> [--top 100] [--out reports/generated/comparison.json] [--report-md reports/generated/comparison.md] [--next-plan reports/generated/next-capture-plan.json]");
-        Console.WriteLine("riftscan migrate session <session-path> --to-schema riftscan.session.v1 [--dry-run] [--plan-out reports/generated/migration-plan.json]");
+        Console.WriteLine("riftscan migrate session <session-path> --to-schema riftscan.session.v1 [--dry-run|--apply] [--plan-out reports/generated/migration-plan.json]");
         Console.WriteLine("riftscan verify session <session-path>");
     }
 
     private static void PrintMigrateUsage() =>
-        Console.WriteLine("riftscan migrate session <session-path> --to-schema riftscan.session.v1 [--dry-run] [--plan-out reports/generated/migration-plan.json]");
+        Console.WriteLine("riftscan migrate session <session-path> --to-schema riftscan.session.v1 [--dry-run|--apply] [--plan-out reports/generated/migration-plan.json]");
 
     private static bool Is(string actual, string expected) =>
         string.Equals(actual, expected, StringComparison.OrdinalIgnoreCase);

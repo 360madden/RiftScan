@@ -26,6 +26,26 @@ public sealed class SessionMigrationService
         }
 
         var manifest = ReadManifest(fullSessionPath);
+        if (!dryRun)
+        {
+            var applyResult = CreateResult(
+                fullSessionPath,
+                manifest.SessionId,
+                manifest.SchemaVersion,
+                toSchemaVersion,
+                dryRun,
+                status: "apply_not_supported",
+                issues:
+                [
+                    Error(
+                        "apply_not_supported",
+                        "Session migration apply is not implemented yet. Re-run with --dry-run and --plan-out to produce a non-mutating plan.",
+                        null)
+                ]);
+
+            return WritePlanIfRequested(applyResult, planOutputPath);
+        }
+
         if (!string.Equals(manifest.SchemaVersion, SupportedSessionSchemaVersion, StringComparison.OrdinalIgnoreCase))
         {
             var unsupportedSourceResult = CreateResult(
@@ -171,6 +191,17 @@ public sealed class SessionMigrationService
                     ActionId = "define-target-schema-contract",
                     ActionType = "blocked",
                     Description = "No target-schema contract is registered for the requested schema. Define and test the target schema before applying changes.",
+                    WritesRawArtifacts = false,
+                    TargetPath = null
+                }
+            ],
+            "apply_not_supported" =>
+            [
+                new SessionMigrationPlanAction
+                {
+                    ActionId = "implement-apply-path",
+                    ActionType = "blocked",
+                    Description = "Apply mode is intentionally disabled until a fixture-backed migrator can write migrated generated artifacts without mutating raw evidence.",
                     WritesRawArtifacts = false,
                     TargetPath = null
                 }
