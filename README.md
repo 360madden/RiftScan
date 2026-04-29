@@ -34,6 +34,29 @@ dotnet run --project src/RiftScan.Cli/RiftScan.Cli.csproj --configuration Releas
 - Use explicit stimulus labels before behavior claims.
 - Do not use RIFT input/window control inside RiftScan core.
 
+## Session migration
+
+Migration is offline and artifact-based. Dry-run planning is safe and writes a machine-readable plan without changing the source session.
+
+```powershell
+dotnet run --project src/RiftScan.Cli/RiftScan.Cli.csproj --configuration Release --no-build -- `
+  migrate session tests/RiftScan.Tests/Fixtures/valid-session-v0 `
+  --to-schema riftscan.session.v1 `
+  --plan-out reports/generated/v0-to-v1-migration-plan.json
+```
+
+Apply mode is only supported for `riftscan.session.v0` to `riftscan.session.v1`. It writes a separate migrated session directory, recalculates generated checksums, verifies the migrated output, and does not mutate the source session.
+
+```powershell
+dotnet run --project src/RiftScan.Cli/RiftScan.Cli.csproj --configuration Release --no-build -- `
+  migrate session tests/RiftScan.Tests/Fixtures/valid-session-v0 `
+  --to-schema riftscan.session.v1 `
+  --apply `
+  --out sessions/<migrated_id>
+```
+
+Migration apply refuses missing `--out`, non-empty output directories, unsupported source schemas, and unsupported target schemas.
+
 ## Validation
 
 `scripts/smoke-fixture.ps1` is fixture-only and does not attach to RIFT. Live capture and plan-follow-up need an explicit process ID; fake-process plan coverage runs in unit tests.
