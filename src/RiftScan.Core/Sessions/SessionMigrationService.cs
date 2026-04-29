@@ -6,7 +6,7 @@ public sealed class SessionMigrationService
 {
     public const string SupportedSessionSchemaVersion = "riftscan.session.v1";
 
-    public SessionMigrationResult Migrate(string sessionPath, string toSchemaVersion, bool dryRun = true)
+    public SessionMigrationResult Migrate(string sessionPath, string toSchemaVersion, bool dryRun = true, string? planOutputPath = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(sessionPath);
         ArgumentException.ThrowIfNullOrWhiteSpace(toSchemaVersion);
@@ -62,7 +62,7 @@ public sealed class SessionMigrationService
                 ]);
         }
 
-        return CreateResult(
+        var result = CreateResult(
             fullSessionPath,
             manifest.SessionId,
             manifest.SchemaVersion,
@@ -70,6 +70,8 @@ public sealed class SessionMigrationService
             dryRun,
             status: "noop_current_schema",
             issues: []);
+
+        return WritePlanIfRequested(result, planOutputPath);
     }
 
     private static SessionMigrationResult CreateResult(
@@ -107,4 +109,39 @@ public sealed class SessionMigrationService
             Message = message,
             Path = path
         };
+
+    private static SessionMigrationResult WritePlanIfRequested(SessionMigrationResult result, string? planOutputPath)
+    {
+        if (string.IsNullOrWhiteSpace(planOutputPath))
+        {
+            return result;
+        }
+
+        var fullPlanPath = Path.GetFullPath(planOutputPath);
+        Directory.CreateDirectory(Path.GetDirectoryName(fullPlanPath) ?? ".");
+        var plan = new SessionMigrationPlan
+        {
+            SourceSessionPath = result.SessionPath,
+            SessionId = result.SessionId,
+            FromSchemaVersion = result.FromSchemaVersion,
+            ToSchemaVersion = result.ToSchemaVersion,
+            DryRun = result.DryRun,
+            Status = result.Status,
+            CanApply = false,
+            Actions =
+            [
+                new SessionMigrationPlanAction
+                {
+                    ActionId = "verify-current-schema-noop",
+                    ActionType = "noop",
+                    Description = "Source session already uses the supported schema; no raw or generated session artifacts need migration.",
+                    WritesRawArtifacts = false,
+                    TargetPath = null
+                }
+            ]
+        };
+
+        File.WriteAllText(fullPlanPath, JsonSerializer.Serialize(plan, SessionJson.Options));
+        return result with { ArtifactsWritten = [.. result.ArtifactsWritten, fullPlanPath] };
+    }
 }

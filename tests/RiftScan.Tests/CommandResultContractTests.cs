@@ -55,6 +55,31 @@ public sealed class CommandResultContractTests
             "issues");
 
     [Fact]
+    public void Session_migration_plan_pins_json_contract_fields() =>
+        AssertJsonPropertySet(
+            new SessionMigrationPlan(),
+            "plan_schema_version",
+            "source_session_path",
+            "session_id",
+            "from_schema_version",
+            "to_schema_version",
+            "dry_run",
+            "status",
+            "can_apply",
+            "raw_data_policy",
+            "actions");
+
+    [Fact]
+    public void Session_migration_plan_action_pins_json_contract_fields() =>
+        AssertJsonPropertySet(
+            new SessionMigrationPlanAction(),
+            "action_id",
+            "action_type",
+            "description",
+            "writes_raw_artifacts",
+            "target_path");
+
+    [Fact]
     public void Command_result_schema_versions_are_stable()
     {
         Assert.Equal("riftscan.session_analysis_result.v1", ReadSchema(new SessionAnalysisResult()));

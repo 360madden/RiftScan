@@ -154,14 +154,20 @@ public static class Program
 
     private static int MigrateSession(string[] args)
     {
+        if (args.Length == 1 && IsHelp(args[0]))
+        {
+            PrintMigrateUsage();
+            return 0;
+        }
+
         if (args.Length == 0)
         {
             throw new ArgumentException("Migrate requires a session path.");
         }
 
         var sessionPath = args[0];
-        var (toSchemaVersion, dryRun) = ParseMigrateOptions(args[1..]);
-        var result = new SessionMigrationService().Migrate(sessionPath, toSchemaVersion, dryRun);
+        var (toSchemaVersion, dryRun, planOutputPath) = ParseMigrateOptions(args[1..]);
+        var result = new SessionMigrationService().Migrate(sessionPath, toSchemaVersion, dryRun, planOutputPath);
         Console.WriteLine(JsonSerializer.Serialize(result, SessionJson.Options));
         return result.Success ? 0 : 1;
     }
@@ -404,9 +410,10 @@ public static class Program
         return (top, outputPath, reportPath, nextPlanPath);
     }
 
-    private static (string ToSchemaVersion, bool DryRun) ParseMigrateOptions(string[] args)
+    private static (string ToSchemaVersion, bool DryRun, string? PlanOutputPath) ParseMigrateOptions(string[] args)
     {
         string? toSchemaVersion = null;
+        string? planOutputPath = null;
         var dryRun = true;
         for (var index = 0; index < args.Length; index++)
         {
@@ -419,12 +426,15 @@ public static class Program
                 case "--dry-run":
                     dryRun = true;
                     break;
+                case "--plan-out":
+                    planOutputPath = RequireValue(args, ref index, arg);
+                    break;
                 default:
                     throw new ArgumentException($"Unknown migrate option: {arg}");
             }
         }
 
-        return (toSchemaVersion ?? throw new ArgumentException("Migrate requires --to-schema <schema-version>."), dryRun);
+        return (toSchemaVersion ?? throw new ArgumentException("Migrate requires --to-schema <schema-version>."), dryRun, planOutputPath);
     }
 
     private static string RequireValue(string[] args, ref int index, string option)
@@ -472,9 +482,12 @@ public static class Program
         Console.WriteLine("riftscan analyze session <session-path> [--all|--top 100]");
         Console.WriteLine("riftscan report session <session-path> [--top 100]");
         Console.WriteLine("riftscan compare sessions <session-a> <session-b> [--top 100] [--out reports/generated/comparison.json] [--report-md reports/generated/comparison.md] [--next-plan reports/generated/next-capture-plan.json]");
-        Console.WriteLine("riftscan migrate session <session-path> --to-schema riftscan.session.v1 [--dry-run]");
+        Console.WriteLine("riftscan migrate session <session-path> --to-schema riftscan.session.v1 [--dry-run] [--plan-out reports/generated/migration-plan.json]");
         Console.WriteLine("riftscan verify session <session-path>");
     }
+
+    private static void PrintMigrateUsage() =>
+        Console.WriteLine("riftscan migrate session <session-path> --to-schema riftscan.session.v1 [--dry-run] [--plan-out reports/generated/migration-plan.json]");
 
     private static bool Is(string actual, string expected) =>
         string.Equals(actual, expected, StringComparison.OrdinalIgnoreCase);
