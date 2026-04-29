@@ -67,6 +67,12 @@ public sealed record Vec3CandidateComparison
     [JsonPropertyName("session_b_validation_status")]
     public string SessionBValidationStatus { get; init; } = string.Empty;
 
+    [JsonPropertyName("session_a_value_sequence_summary")]
+    public string SessionAValueSequenceSummary { get; init; } = string.Empty;
+
+    [JsonPropertyName("session_b_value_sequence_summary")]
+    public string SessionBValueSequenceSummary { get; init; } = string.Empty;
+
     [JsonPropertyName("recommendation")]
     public string Recommendation { get; init; } = string.Empty;
 }

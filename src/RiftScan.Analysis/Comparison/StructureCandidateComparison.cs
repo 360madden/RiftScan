@@ -13,6 +13,12 @@ public sealed record StructureCandidateComparison
     [JsonPropertyName("structure_kind")]
     public string StructureKind { get; init; } = string.Empty;
 
+    [JsonPropertyName("session_a_candidate_id")]
+    public string SessionACandidateId { get; init; } = string.Empty;
+
+    [JsonPropertyName("session_b_candidate_id")]
+    public string SessionBCandidateId { get; init; } = string.Empty;
+
     [JsonPropertyName("session_a_region_id")]
     public string SessionARegionId { get; init; } = string.Empty;
 
@@ -33,6 +39,12 @@ public sealed record StructureCandidateComparison
 
     [JsonPropertyName("session_b_snapshot_support")]
     public int SessionBSnapshotSupport { get; init; }
+
+    [JsonPropertyName("session_a_value_sequence_summary")]
+    public string SessionAValueSequenceSummary { get; init; } = string.Empty;
+
+    [JsonPropertyName("session_b_value_sequence_summary")]
+    public string SessionBValueSequenceSummary { get; init; } = string.Empty;
 
     [JsonPropertyName("recommendation")]
     public string Recommendation { get; init; } = string.Empty;

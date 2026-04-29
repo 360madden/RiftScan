@@ -29,12 +29,18 @@ public sealed class SessionComparisonServiceTests
         Assert.Contains(result.StructureCandidateMatches, match =>
             match.BaseAddressHex == "0x10000000" &&
             match.OffsetHex == "0x0" &&
+            match.SessionACandidateId == "structure-000001" &&
+            match.SessionBCandidateId == "structure-000001" &&
+            match.SessionAValueSequenceSummary.StartsWith("support=", StringComparison.Ordinal) &&
             match.StructureKind == "float32_triplet" &&
             match.Recommendation == "stable_structure_candidate");
         Assert.True(result.MatchingVec3CandidateCount >= 1);
         Assert.Contains(result.Vec3CandidateMatches, match =>
             match.BaseAddressHex == "0x10000000" &&
             match.OffsetHex == "0x0" &&
+            match.SessionACandidateId == "vec3-000001" &&
+            match.SessionBCandidateId == "vec3-000001" &&
+            match.SessionAValueSequenceSummary.StartsWith("samples=", StringComparison.Ordinal) &&
             match.DataType == "vec3_float32" &&
             match.Recommendation == "stable_vec3_candidate_across_sessions");
         Assert.Contains("comparison_is_candidate_evidence_not_truth_claim", result.Warnings);
@@ -56,6 +62,9 @@ public sealed class SessionComparisonServiceTests
             match.BaseAddressHex == "0x1000" &&
             match.OffsetHex == "0x4" &&
             match.DataType == "float32" &&
+            match.SessionACandidateId == "value-000001" &&
+            match.SessionBCandidateId == "value-000001" &&
+            match.SessionAValueSequenceSummary.StartsWith("samples=3", StringComparison.Ordinal) &&
             match.Recommendation == "stable_typed_value_lane_candidate");
     }
 
@@ -77,6 +86,8 @@ public sealed class SessionComparisonServiceTests
         Assert.Equal(5, match.BehaviorScoreDelta);
         Assert.Equal(0, match.SessionAValueDeltaMagnitude);
         Assert.True(match.SessionBValueDeltaMagnitude > 0);
+        Assert.StartsWith("samples=", match.SessionAValueSequenceSummary, StringComparison.Ordinal);
+        Assert.Contains("delta=", match.SessionBValueSequenceSummary, StringComparison.Ordinal);
         Assert.Equal("behavior_consistent_candidate", match.SessionAValidationStatus);
         Assert.Equal("behavior_consistent_candidate", match.SessionBValidationStatus);
         Assert.Equal("passive_to_move_vec3_behavior_contrast_candidate", match.Recommendation);
@@ -132,6 +143,8 @@ public sealed class SessionComparisonServiceTests
             Assert.Contains("comparison_next_capture_plan_path", output.ToString(), StringComparison.Ordinal);
             var report = File.ReadAllText(reportPath);
             Assert.Contains("Vec3 behavior summary", report, StringComparison.Ordinal);
+            Assert.Contains("Top typed value matches", report, StringComparison.Ordinal);
+            Assert.Contains("structure-000001", report, StringComparison.Ordinal);
             Assert.Contains("candidate evidence, not recovered truth", report, StringComparison.Ordinal);
             var plan = File.ReadAllText(nextPlanPath);
             Assert.Contains("recommended_mode", plan, StringComparison.Ordinal);

@@ -40,6 +40,12 @@ public sealed record ValueCandidateComparison
     [JsonPropertyName("session_b_distinct_values")]
     public int SessionBDistinctValues { get; init; }
 
+    [JsonPropertyName("session_a_value_sequence_summary")]
+    public string SessionAValueSequenceSummary { get; init; } = string.Empty;
+
+    [JsonPropertyName("session_b_value_sequence_summary")]
+    public string SessionBValueSequenceSummary { get; init; } = string.Empty;
+
     [JsonPropertyName("recommendation")]
     public string Recommendation { get; init; } = string.Empty;
 }

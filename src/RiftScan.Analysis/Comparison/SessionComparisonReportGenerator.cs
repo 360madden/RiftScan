@@ -47,37 +47,55 @@ public sealed class SessionComparisonReportGenerator
         yield return string.Empty;
         yield return "## Top vec3 matches";
         yield return string.Empty;
-        yield return "| Rank | Base | Offset | A stimulus | B stimulus | A score | B score | A delta | B delta | Recommendation |";
-        yield return "|---:|---|---:|---|---|---:|---:|---:|---:|---|";
+        yield return "| Rank | A candidate | B candidate | Base | Offset | A stimulus | B stimulus | A delta | B delta | A summary | B summary | Recommendation |";
+        yield return "|---:|---|---|---|---:|---|---|---:|---:|---|---|---|";
 
         var rank = 1;
         foreach (var match in result.Vec3CandidateMatches.Take(top))
         {
-            yield return $"| {rank} | `{match.BaseAddressHex}` | `{match.OffsetHex}` | `{FormatLabel(match.SessionAStimulusLabel)}` | `{FormatLabel(match.SessionBStimulusLabel)}` | {match.SessionABehaviorScore:F3} | {match.SessionBBehaviorScore:F3} | {match.SessionAValueDeltaMagnitude:F6} | {match.SessionBValueDeltaMagnitude:F6} | `{match.Recommendation}` |";
+            yield return $"| {rank} | `{match.SessionACandidateId}` | `{match.SessionBCandidateId}` | `{match.BaseAddressHex}` | `{match.OffsetHex}` | `{FormatLabel(match.SessionAStimulusLabel)}` | `{FormatLabel(match.SessionBStimulusLabel)}` | {match.SessionAValueDeltaMagnitude:F6} | {match.SessionBValueDeltaMagnitude:F6} | `{match.SessionAValueSequenceSummary}` | `{match.SessionBValueSequenceSummary}` | `{match.Recommendation}` |";
             rank++;
         }
 
         if (rank == 1)
         {
-            yield return "| 0 | none | - | - | - | 0 | 0 | 0 | 0 | - |";
+            yield return "| 0 | none | none | - | - | - | - | 0 | 0 | - | - | - |";
         }
 
         yield return string.Empty;
         yield return "## Top structure matches";
         yield return string.Empty;
-        yield return "| Rank | Base | Offset | Kind | A score | B score | Recommendation |";
-        yield return "|---:|---|---:|---|---:|---:|---|";
+        yield return "| Rank | A candidate | B candidate | Base | Offset | Kind | A score | B score | A summary | B summary | Recommendation |";
+        yield return "|---:|---|---|---|---:|---|---:|---:|---|---|---|";
 
         rank = 1;
         foreach (var match in result.StructureCandidateMatches.Take(top))
         {
-            yield return $"| {rank} | `{match.BaseAddressHex}` | `{match.OffsetHex}` | `{match.StructureKind}` | {match.SessionAScore:F3} | {match.SessionBScore:F3} | `{match.Recommendation}` |";
+            yield return $"| {rank} | `{match.SessionACandidateId}` | `{match.SessionBCandidateId}` | `{match.BaseAddressHex}` | `{match.OffsetHex}` | `{match.StructureKind}` | {match.SessionAScore:F3} | {match.SessionBScore:F3} | `{match.SessionAValueSequenceSummary}` | `{match.SessionBValueSequenceSummary}` | `{match.Recommendation}` |";
             rank++;
         }
 
         if (rank == 1)
         {
-            yield return "| 0 | none | - | - | 0 | 0 | - |";
+            yield return "| 0 | none | none | - | - | - | 0 | 0 | - | - | - |";
+        }
+
+        yield return string.Empty;
+        yield return "## Top typed value matches";
+        yield return string.Empty;
+        yield return "| Rank | A candidate | B candidate | Base | Offset | Type | A score | B score | A summary | B summary | Recommendation |";
+        yield return "|---:|---|---|---|---:|---|---:|---:|---|---|---|";
+
+        rank = 1;
+        foreach (var match in result.ValueCandidateMatches.Take(top))
+        {
+            yield return $"| {rank} | `{match.SessionACandidateId}` | `{match.SessionBCandidateId}` | `{match.BaseAddressHex}` | `{match.OffsetHex}` | `{match.DataType}` | {match.SessionARankScore:F3} | {match.SessionBRankScore:F3} | `{match.SessionAValueSequenceSummary}` | `{match.SessionBValueSequenceSummary}` | `{match.Recommendation}` |";
+            rank++;
+        }
+
+        if (rank == 1)
+        {
+            yield return "| 0 | none | none | - | - | - | 0 | 0 | - | - | - |";
         }
 
         yield return string.Empty;

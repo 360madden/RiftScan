@@ -182,6 +182,8 @@ public sealed class SessionComparisonService
             BaseAddressHex = a.BaseAddressHex,
             OffsetHex = a.OffsetHex,
             StructureKind = a.StructureKind,
+            SessionACandidateId = a.CandidateId,
+            SessionBCandidateId = b.CandidateId,
             SessionARegionId = a.RegionId,
             SessionBRegionId = b.RegionId,
             SessionAScore = a.Score,
@@ -189,6 +191,8 @@ public sealed class SessionComparisonService
             ScoreDelta = Math.Round(b.Score - a.Score, 3),
             SessionASnapshotSupport = a.SnapshotSupport,
             SessionBSnapshotSupport = b.SnapshotSupport,
+            SessionAValueSequenceSummary = a.ValueSequenceSummary,
+            SessionBValueSequenceSummary = b.ValueSequenceSummary,
             Recommendation = a.Score >= 75 && b.Score >= 75
                 ? "stable_structure_candidate"
                 : "matching_structure_candidate_needs_more_evidence"
@@ -241,6 +245,8 @@ public sealed class SessionComparisonService
             SessionBValueDeltaMagnitude = b.ValueDeltaMagnitude,
             SessionAValidationStatus = a.ValidationStatus,
             SessionBValidationStatus = b.ValidationStatus,
+            SessionAValueSequenceSummary = a.ValueSequenceSummary,
+            SessionBValueSequenceSummary = b.ValueSequenceSummary,
             Recommendation = RecommendVec3Candidate(a, b)
         };
 
@@ -374,6 +380,8 @@ public sealed class SessionComparisonService
             ScoreDelta = Math.Round(b.RankScore - a.RankScore, 3),
             SessionADistinctValues = a.DistinctValueCount,
             SessionBDistinctValues = b.DistinctValueCount,
+            SessionAValueSequenceSummary = a.ValueSequenceSummary,
+            SessionBValueSequenceSummary = b.ValueSequenceSummary,
             Recommendation = RecommendValueCandidate(a, b)
         };
 
