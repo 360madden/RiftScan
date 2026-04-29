@@ -1038,6 +1038,26 @@ public sealed class SessionComparisonServiceTests
     }
 
     [Fact]
+    public void Aggregate_scalar_evidence_set_keeps_zoom_camera_stimulus_out_of_orientation_truth()
+    {
+        using var passive = CaptureStableFloatSession("passive_idle");
+        using var turnLeft = CaptureStableFloatSession("turn_left");
+        using var turnRight = CaptureStableFloatSession("turn_right");
+        using var camera = CaptureChangingFloatSession("camera_only", "fixture_mouse_wheel_zoom_camera_only");
+
+        var result = new ScalarEvidenceSetService().Aggregate([passive.Path, turnLeft.Path, turnRight.Path, camera.Path]);
+
+        var candidate = Assert.Single(result.RankedCandidates, candidate =>
+            candidate.BaseAddressHex == "0x1000" &&
+            candidate.OffsetHex == "0x4");
+        Assert.Equal("camera_zoom_angle_scalar_candidate", candidate.Classification);
+        Assert.Equal("validated_candidate", candidate.TruthReadiness);
+        Assert.DoesNotContain("camera_orientation", candidate.Classification, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("camera_zoom_stimulus_note_present", candidate.SupportingReasons);
+        Assert.Equal("add_yaw_or_pitch_camera_only_capture_for_orientation", candidate.NextValidationStep);
+    }
+
+    [Fact]
     public void Aggregate_scalar_evidence_set_does_not_promote_zero_net_camera_blip()
     {
         using var passive = CaptureDualScalarSession("passive_idle", [1.5f, 1.5f, 1.5f], [20.0f, 20.0f, 20.0f]);
@@ -1357,7 +1377,7 @@ public sealed class SessionComparisonServiceTests
         return CaptureChangingFloatSession(stimulusLabel: null);
     }
 
-    private static TempDirectory CaptureChangingFloatSession(string? stimulusLabel)
+    private static TempDirectory CaptureChangingFloatSession(string? stimulusLabel, string? stimulusNotes = null)
     {
         var session = new TempDirectory();
         _ = new PassiveCaptureService(new ChangingFloatProcessMemoryReader(stimulusLabel == "turn_right" ? -1.0f : 1.0f)).Capture(new PassiveCaptureOptions
@@ -1369,7 +1389,8 @@ public sealed class SessionComparisonServiceTests
             MaxRegions = 1,
             MaxBytesPerRegion = 16,
             MaxTotalBytes = 48,
-            StimulusLabel = stimulusLabel
+            StimulusLabel = stimulusLabel,
+            StimulusNotes = stimulusNotes
         });
 
         return session;

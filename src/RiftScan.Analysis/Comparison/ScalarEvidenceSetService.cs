@@ -60,14 +60,15 @@ public sealed class ScalarEvidenceSetService
     {
         EnsureAnalyzed(sessionPath, top);
         var manifest = ReadJson<SessionManifest>(sessionPath, "manifest.json");
-        var label = ReadStimulusLabel(sessionPath);
+        var stimulus = ReadStimulus(sessionPath);
         var candidates = ReadJsonLines<ScalarCandidate>(sessionPath, "scalar_candidates.jsonl");
         return new LoadedScalarSession(
             new ScalarEvidenceSessionSummary
             {
                 SessionId = manifest.SessionId,
                 SessionPath = sessionPath,
-                StimulusLabel = label,
+                StimulusLabel = stimulus?.Label ?? string.Empty,
+                StimulusNotes = stimulus?.Notes ?? string.Empty,
                 ScalarCandidateCount = candidates.Count
             },
             candidates);
@@ -107,6 +108,7 @@ public sealed class ScalarEvidenceSetService
         var leftChanged = leftEntries.Any(entry => HasDirectedBehaviorChange(entry.Candidate));
         var rightChanged = rightEntries.Any(entry => HasDirectedBehaviorChange(entry.Candidate));
         var cameraChanged = cameraEntries.Any(entry => HasDirectedBehaviorChange(entry.Candidate));
+        var cameraOnlyIsZoom = cameraEntries.Any(entry => IsCameraZoomNote(entry.Session.Summary.StimulusNotes));
         var leftSignedDelta = SumSignedDelta(leftEntries);
         var rightSignedDelta = SumSignedDelta(rightEntries);
         var cameraSignedDelta = SumSignedDelta(cameraEntries);
@@ -127,13 +129,14 @@ public sealed class ScalarEvidenceSetService
         scoreBreakdown["turn_polarity_score"] = turnScore;
         var cameraScore = ScoreCameraSeparation(cameraTurnSeparation, supportingReasons, rejectionReasons);
         scoreBreakdown["camera_turn_separation_score"] = cameraScore;
+        AddCameraStimulusReasons(cameraOnlyIsZoom, cameraEntries.Length > 0, supportingReasons);
         var rawScore = labelScore + angleScore + passiveScore + turnScore + cameraScore;
         var scoreTotal = Math.Round(Math.Clamp(rawScore, 0, 100), 3);
         scoreBreakdown["score_total"] = scoreTotal;
 
         return new ScalarEvidenceAggregateCandidate
         {
-            Classification = Classify(scoreTotal, oppositePolarity, cameraTurnSeparation, first.ValueFamily),
+            Classification = Classify(scoreTotal, oppositePolarity, cameraTurnSeparation, first.ValueFamily, cameraOnlyIsZoom),
             BaseAddressHex = first.BaseAddressHex,
             OffsetHex = first.OffsetHex,
             DataType = first.DataType,
@@ -155,8 +158,8 @@ public sealed class ScalarEvidenceSetService
             CameraOnlySignedDelta = Math.Round(cameraSignedDelta, 6),
             SupportingReasons = supportingReasons.Distinct(StringComparer.OrdinalIgnoreCase).ToArray(),
             RejectionReasons = rejectionReasons.Distinct(StringComparer.OrdinalIgnoreCase).ToArray(),
-            EvidenceSummary = $"labels={string.Join(",", labels)};passive_stable={passiveStable};left_delta={leftSignedDelta:F6};right_delta={rightSignedDelta:F6};camera_delta={cameraSignedDelta:F6};camera_turn={cameraTurnSeparation}",
-            NextValidationStep = NextValidation(scoreTotal, passiveStable, cameraTurnSeparation, oppositePolarity)
+            EvidenceSummary = $"labels={string.Join(",", labels)};passive_stable={passiveStable};left_delta={leftSignedDelta:F6};right_delta={rightSignedDelta:F6};camera_delta={cameraSignedDelta:F6};camera_turn={cameraTurnSeparation};camera_stimulus={(cameraOnlyIsZoom ? "zoom" : "yaw_or_pitch_unspecified")}",
+            NextValidationStep = NextValidation(scoreTotal, passiveStable, cameraTurnSeparation, oppositePolarity, cameraOnlyIsZoom)
         };
     }
 
@@ -282,7 +285,19 @@ public sealed class ScalarEvidenceSetService
         return 0;
     }
 
-    private static string Classify(double scoreTotal, bool oppositePolarity, string cameraTurnSeparation, string valueFamily)
+    private static void AddCameraStimulusReasons(bool cameraOnlyIsZoom, bool hasCameraSession, ICollection<string> supportingReasons)
+    {
+        if (!hasCameraSession)
+        {
+            return;
+        }
+
+        supportingReasons.Add(cameraOnlyIsZoom
+            ? "camera_zoom_stimulus_note_present"
+            : "camera_yaw_or_pitch_stimulus_not_proven_by_note");
+    }
+
+    private static string Classify(double scoreTotal, bool oppositePolarity, string cameraTurnSeparation, string valueFamily, bool cameraOnlyIsZoom)
     {
         if (scoreTotal < 50)
         {
@@ -292,6 +307,11 @@ public sealed class ScalarEvidenceSetService
         var suffix = IsAngleFamily(valueFamily) ? "angle_scalar_candidate" : "scalar_candidate";
         if (string.Equals(cameraTurnSeparation, "camera_only_changes_turn_stable", StringComparison.OrdinalIgnoreCase))
         {
+            if (cameraOnlyIsZoom)
+            {
+                return $"camera_zoom_{suffix}";
+            }
+
             return $"camera_orientation_{suffix}";
         }
 
@@ -360,10 +380,15 @@ public sealed class ScalarEvidenceSetService
         return "candidate";
     }
 
-    private static string NextValidation(double scoreTotal, bool passiveStable, string cameraTurnSeparation, bool oppositePolarity)
+    private static string NextValidation(double scoreTotal, bool passiveStable, string cameraTurnSeparation, bool oppositePolarity, bool cameraOnlyIsZoom)
     {
         if (string.Equals(cameraTurnSeparation, "camera_only_changes_turn_stable", StringComparison.OrdinalIgnoreCase))
         {
+            if (cameraOnlyIsZoom)
+            {
+                return "add_yaw_or_pitch_camera_only_capture_for_orientation";
+            }
+
             return scoreTotal >= 80 && passiveStable
                 ? "repeat_camera_only_capture_or_validate_against_camera_truth"
                 : "repeat_passive_baseline_and_camera_only_capture";
@@ -498,6 +523,11 @@ public sealed class ScalarEvidenceSetService
         (Math.Abs(candidate.SignedCircularDelta) >= MinMeaningfulBehaviorDelta ||
          candidate.ValueDeltaMagnitude >= MinMeaningfulBehaviorDelta);
 
+    private static bool IsCameraZoomNote(string notes) =>
+        !string.IsNullOrWhiteSpace(notes) &&
+        (notes.Contains("zoom", StringComparison.OrdinalIgnoreCase) ||
+         notes.Contains("wheel", StringComparison.OrdinalIgnoreCase));
+
     private static double SumSignedDelta(IEnumerable<SessionScalarCandidate> entries) =>
         entries.Sum(entry => entry.Candidate.SignedCircularDelta);
 
@@ -540,19 +570,19 @@ public sealed class ScalarEvidenceSetService
             .ToArray();
     }
 
-    private static string ReadStimulusLabel(string sessionPath)
+    private static StimulusEvent? ReadStimulus(string sessionPath)
     {
         var path = ResolveSessionPath(sessionPath, "stimuli.jsonl");
         if (!File.Exists(path))
         {
-            return string.Empty;
+            return null;
         }
 
         var stimulus = File.ReadLines(path)
             .Where(line => !string.IsNullOrWhiteSpace(line))
             .Select(line => JsonSerializer.Deserialize<StimulusEvent>(line, SessionJson.Options) ?? throw new InvalidOperationException("Invalid stimulus entry."))
             .FirstOrDefault();
-        return stimulus?.Label ?? string.Empty;
+        return stimulus;
     }
 
     private static string ResolveSessionPath(string sessionPath, string relativePath) =>

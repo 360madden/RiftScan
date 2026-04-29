@@ -55,6 +55,9 @@ public sealed record ScalarEvidenceSessionSummary
     [JsonPropertyName("stimulus_label")]
     public string StimulusLabel { get; init; } = string.Empty;
 
+    [JsonPropertyName("stimulus_notes")]
+    public string StimulusNotes { get; init; } = string.Empty;
+
     [JsonPropertyName("scalar_candidate_count")]
     public int ScalarCandidateCount { get; init; }
 }
