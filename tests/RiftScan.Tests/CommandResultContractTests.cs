@@ -3,6 +3,7 @@ using RiftScan.Analysis.Reports;
 using RiftScan.Analysis.Triage;
 using RiftScan.Analysis.Xrefs;
 using RiftScan.Core.Sessions;
+using RiftScan.Rift.Addons;
 
 namespace RiftScan.Tests;
 
@@ -273,6 +274,88 @@ public sealed class CommandResultContractTests
             "severity");
 
     [Fact]
+    public void Rift_session_addon_coordinate_match_result_pins_json_contract_fields() =>
+        AssertJsonPropertySet(
+            new RiftSessionAddonCoordinateMatchResult(),
+            "result_schema_version",
+            "success",
+            "session_path",
+            "session_id",
+            "observation_path",
+            "analyzer_id",
+            "analyzer_version",
+            "analyzer_sources",
+            "tolerance",
+            "top_limit",
+            "latest_only",
+            "region_base_filters",
+            "latest_observation_utc",
+            "observation_count",
+            "observations_used",
+            "snapshot_count",
+            "regions_scanned",
+            "bytes_scanned",
+            "match_count",
+            "candidate_count",
+            "candidates",
+            "matches",
+            "output_path",
+            "markdown_report_path",
+            "warnings",
+            "diagnostics");
+
+    [Fact]
+    public void Rift_session_addon_coordinate_candidate_pins_json_contract_fields() =>
+        AssertJsonPropertySet(
+            new RiftSessionAddonCoordinateCandidate(),
+            "candidate_id",
+            "source_region_id",
+            "source_base_address_hex",
+            "source_offset_hex",
+            "source_absolute_address_hex",
+            "axis_order",
+            "support_count",
+            "observation_support_count",
+            "best_max_abs_distance",
+            "best_memory_x",
+            "best_memory_y",
+            "best_memory_z",
+            "best_addon_x",
+            "best_addon_y",
+            "best_addon_z",
+            "supporting_snapshot_ids",
+            "supporting_observation_ids",
+            "addon_sources",
+            "zone_ids",
+            "validation_status",
+            "evidence_summary");
+
+    [Fact]
+    public void Rift_session_addon_coordinate_match_pins_json_contract_fields() =>
+        AssertJsonPropertySet(
+            new RiftSessionAddonCoordinateMatch(),
+            "match_id",
+            "candidate_id",
+            "snapshot_id",
+            "source_region_id",
+            "source_base_address_hex",
+            "source_offset_hex",
+            "source_absolute_address_hex",
+            "axis_order",
+            "memory_x",
+            "memory_y",
+            "memory_z",
+            "observation_id",
+            "addon_name",
+            "source_pattern",
+            "addon_observed_x",
+            "addon_observed_y",
+            "addon_observed_z",
+            "zone_id",
+            "max_abs_distance",
+            "evidence_summary");
+
+    [Fact]
     public void Session_prune_candidate_pins_json_contract_fields() =>
         AssertJsonPropertySet(
             new SessionPruneCandidate(),
@@ -318,6 +401,7 @@ public sealed class CommandResultContractTests
         Assert.Equal("riftscan.session_xref_analysis_result.v1", ReadSchema(new SessionXrefAnalysisResult()));
         Assert.Equal("riftscan.session_xref_chain_summary_result.v1", ReadSchema(new SessionXrefChainSummaryResult()));
         Assert.Equal("riftscan.session_xref_chain_summary_verification_result.v1", ReadSchema(new SessionXrefChainSummaryVerificationResult()));
+        Assert.Equal("riftscan.rift_session_addon_coordinate_match_result.v1", ReadSchema(new RiftSessionAddonCoordinateMatchResult()));
     }
 
     private static string? ReadSchema<T>(T value)

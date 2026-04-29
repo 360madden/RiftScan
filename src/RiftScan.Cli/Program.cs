@@ -78,6 +78,11 @@ public static class Program
                 return RiftAddonCoords(args[2..]);
             }
 
+            if (args.Length >= 2 && Is(args[0], "rift") && Is(args[1], "match-addon-coords"))
+            {
+                return RiftMatchAddonCoords(args[2..]);
+            }
+
             if (args.Length >= 2 && Is(args[0], "rift") && Is(args[1], "addon-corroboration"))
             {
                 return RiftAddonCorroboration(args[2..]);
@@ -500,6 +505,101 @@ public static class Program
 
         var result = new RiftAddonCoordinateObservationService().Scan(rootPath, maxFiles, jsonlOutputPath);
         WriteOptionalJson(jsonOutputPath, result);
+        Console.WriteLine(JsonSerializer.Serialize(result, SessionJson.Options));
+        return result.Success ? 0 : 1;
+    }
+
+    private static int RiftMatchAddonCoords(string[] args)
+    {
+        if (args.Length == 1 && IsHelp(args[0]))
+        {
+            PrintRiftMatchAddonCoordsUsage();
+            return 0;
+        }
+
+        string? sessionPath = null;
+        string? observationPath = null;
+        string? outputPath = null;
+        string? reportPath = null;
+        var regionBaseAddresses = new List<ulong>();
+        var tolerance = 5d;
+        var top = 100;
+        var latestOnly = false;
+        for (var index = 0; index < args.Length; index++)
+        {
+            var arg = args[index];
+            switch (arg)
+            {
+                case "--observations":
+                    observationPath = RequireValue(args, ref index, arg);
+                    break;
+                case "--region-base":
+                case "--region-bases":
+                    regionBaseAddresses.AddRange(ParseBaseAddresses(RequireValue(args, ref index, arg)));
+                    break;
+                case "--tolerance":
+                    tolerance = double.Parse(RequireValue(args, ref index, arg), CultureInfo.InvariantCulture);
+                    break;
+                case "--top":
+                    top = int.Parse(RequireValue(args, ref index, arg), CultureInfo.InvariantCulture);
+                    break;
+                case "--latest-only":
+                    latestOnly = true;
+                    break;
+                case "--out":
+                case "--json-out":
+                    outputPath = RequireValue(args, ref index, arg);
+                    break;
+                case "--report-md":
+                    reportPath = RequireValue(args, ref index, arg);
+                    break;
+                default:
+                    if (sessionPath is not null || arg.StartsWith("--", StringComparison.Ordinal))
+                    {
+                        throw new ArgumentException($"Unknown rift match-addon-coords option: {arg}");
+                    }
+
+                    sessionPath = arg;
+                    break;
+            }
+        }
+
+        if (string.IsNullOrWhiteSpace(sessionPath))
+        {
+            throw new ArgumentException("rift match-addon-coords requires a session path.");
+        }
+
+        if (string.IsNullOrWhiteSpace(observationPath))
+        {
+            throw new ArgumentException("rift match-addon-coords requires --observations <addon-coordinate-observations.jsonl>.");
+        }
+
+        var service = new RiftSessionAddonCoordinateMatchService();
+        var result = service.Match(new RiftSessionAddonCoordinateMatchOptions
+        {
+            SessionPath = sessionPath,
+            ObservationPath = observationPath,
+            RegionBaseAddresses = regionBaseAddresses.Distinct().Order().ToArray(),
+            Tolerance = tolerance,
+            Top = top,
+            LatestOnly = latestOnly
+        });
+        if (!string.IsNullOrWhiteSpace(outputPath))
+        {
+            result = result with { OutputPath = Path.GetFullPath(outputPath) };
+        }
+
+        if (!string.IsNullOrWhiteSpace(reportPath))
+        {
+            result = result with { MarkdownReportPath = Path.GetFullPath(reportPath) };
+        }
+
+        if (!string.IsNullOrWhiteSpace(result.MarkdownReportPath))
+        {
+            service.WriteMarkdown(result, result.MarkdownReportPath);
+        }
+
+        WriteOptionalJson(result.OutputPath, result);
         Console.WriteLine(JsonSerializer.Serialize(result, SessionJson.Options));
         return result.Success ? 0 : 1;
     }
@@ -2125,6 +2225,7 @@ public static class Program
         PrintReportSessionUsage();
         PrintReportCapabilityUsage();
         PrintRiftAddonCoordsUsage();
+        PrintRiftMatchAddonCoordsUsage();
         PrintRiftAddonCorroborationUsage();
         PrintRiftVerifyPromotedCoordinateUsage();
         PrintCompareSessionsUsage();
@@ -2220,6 +2321,9 @@ public static class Program
 
     private static void PrintRiftAddonCoordsUsage() =>
         Console.WriteLine("riftscan rift addon-coords <savedvariables-file-or-directory> [--jsonl-out reports/generated/addon-coordinate-observations.jsonl] [--json-out reports/generated/addon-coordinate-scan.json] [--max-files 5000]");
+
+    private static void PrintRiftMatchAddonCoordsUsage() =>
+        Console.WriteLine("riftscan rift match-addon-coords <session-path> --observations reports/generated/addon-coordinate-observations.jsonl [--region-base 0xADDR] [--tolerance 5] [--top 100] [--out reports/generated/session-addon-coordinate-matches.json] [--report-md reports/generated/session-addon-coordinate-matches.md] [--latest-only]");
 
     private static void PrintRiftAddonCorroborationUsage() =>
         Console.WriteLine("riftscan rift addon-corroboration --candidates reports/generated/vec3-truth-candidates.jsonl --observations reports/generated/addon-coordinate-observations.jsonl --out reports/generated/vec3-truth-corroboration.jsonl [--json-out reports/generated/addon-coordinate-corroboration.json] [--tolerance 5]");
