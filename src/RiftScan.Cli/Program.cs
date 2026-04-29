@@ -65,9 +65,9 @@ public static class Program
                 return SummarizeSession(args[2..]);
             }
 
-            if (args.Length == 3 && Is(args[0], "verify") && Is(args[1], "session"))
+            if (args.Length >= 2 && Is(args[0], "verify") && Is(args[1], "session"))
             {
-                return VerifySession(args[2]);
+                return VerifySession(args[2..]);
             }
 
             return PrintMachineReadableError("unknown_command", $"Unknown command: {string.Join(' ', args)}");
@@ -80,6 +80,12 @@ public static class Program
 
     private static int CapturePassive(string[] args)
     {
+        if (args.Length == 1 && IsHelp(args[0]))
+        {
+            PrintCapturePassiveUsage();
+            return 0;
+        }
+
         var options = ParsePassiveCaptureOptions(args);
         var result = new PassiveCaptureService(new WindowsProcessMemoryReader()).Capture(options);
         Console.WriteLine(JsonSerializer.Serialize(result, SessionJson.Options));
@@ -88,6 +94,12 @@ public static class Program
 
     private static int CapturePlan(string[] args)
     {
+        if (args.Length == 1 && IsHelp(args[0]))
+        {
+            PrintCapturePlanUsage();
+            return 0;
+        }
+
         var options = ParsePassiveCapturePlanOptions(args);
         var result = new PassiveCapturePlanService(new WindowsProcessMemoryReader()).CaptureFromPlan(options);
         Console.WriteLine(JsonSerializer.Serialize(result, SessionJson.Options));
@@ -96,6 +108,12 @@ public static class Program
 
     private static int AnalyzeSession(string[] args)
     {
+        if (args.Length == 1 && IsHelp(args[0]))
+        {
+            PrintAnalyzeSessionUsage();
+            return 0;
+        }
+
         if (args.Length == 0)
         {
             throw new ArgumentException("Analyze requires a session path.");
@@ -110,6 +128,12 @@ public static class Program
 
     private static int ReportSession(string[] args)
     {
+        if (args.Length == 1 && IsHelp(args[0]))
+        {
+            PrintReportSessionUsage();
+            return 0;
+        }
+
         if (args.Length == 0)
         {
             throw new ArgumentException("Report requires a session path.");
@@ -124,6 +148,12 @@ public static class Program
 
     private static int CompareSessions(string[] args)
     {
+        if (args.Length == 1 && IsHelp(args[0]))
+        {
+            PrintCompareSessionsUsage();
+            return 0;
+        }
+
         if (args.Length < 2)
         {
             throw new ArgumentException("Compare requires two session paths.");
@@ -606,7 +636,28 @@ public static class Program
         return args[index];
     }
 
-    private static int VerifySession(string sessionPath)
+    private static int VerifySession(string[] args)
+    {
+        if (args.Length == 1 && IsHelp(args[0]))
+        {
+            PrintVerifySessionUsage();
+            return 0;
+        }
+
+        if (args.Length == 0)
+        {
+            throw new ArgumentException("Verify requires a session path.");
+        }
+
+        if (args.Length > 1)
+        {
+            throw new ArgumentException($"Unknown verify session option: {args[1]}");
+        }
+
+        return VerifySessionPath(args[0]);
+    }
+
+    private static int VerifySessionPath(string sessionPath)
     {
         var result = new SessionVerifier().Verify(sessionPath);
         Console.WriteLine(JsonSerializer.Serialize(result, SessionJson.Options));
@@ -634,18 +685,33 @@ public static class Program
 
     private static void PrintUsage()
     {
-        Console.WriteLine("riftscan capture passive --process <name> --out sessions/<id> [--samples 1] [--interval-ms 100] [--stimulus passive_idle] [--intervention-wait-ms 1200000] [--intervention-poll-ms 2000]");
+        PrintCapturePassiveUsage();
         Console.WriteLine("riftscan capture passive --pid <id> [--process <name>] --out sessions/<id> [--samples 1] [--interval-ms 100] [--region-ids region-000001,region-000002] [--stimulus move_forward]");
-        Console.WriteLine("riftscan capture plan <source-session-or-plan-json> --pid <id> [--process <name>] --out sessions/<id> [--top-regions 5] [--stimulus move_forward] [--intervention-wait-ms 1200000] [--intervention-poll-ms 2000]");
-        Console.WriteLine("riftscan analyze session <session-path> [--all|--top 100]");
-        Console.WriteLine("riftscan report session <session-path> [--top 100]");
-        Console.WriteLine("riftscan compare sessions <session-a> <session-b> [--top 100] [--out reports/generated/comparison.json] [--report-md reports/generated/comparison.md] [--next-plan reports/generated/next-capture-plan.json]");
-        Console.WriteLine("riftscan migrate session <session-path> --to-schema riftscan.session.v1 [--dry-run|--apply] [--out sessions/<migrated-id>] [--plan-out reports/generated/migration-plan.json]");
-        Console.WriteLine("riftscan session prune <session-path> [--dry-run] [--json-out reports/generated/prune-inventory.json]");
-        Console.WriteLine("riftscan session inventory <session-path> [--json-out reports/generated/session-inventory.json]");
-        Console.WriteLine("riftscan session summary <session-path> [--json-out reports/generated/session-summary.json]");
-        Console.WriteLine("riftscan verify session <session-path>");
+        PrintCapturePlanUsage();
+        PrintAnalyzeSessionUsage();
+        PrintReportSessionUsage();
+        PrintCompareSessionsUsage();
+        PrintMigrateUsage();
+        PrintSessionPruneUsage();
+        PrintSessionInventoryUsage();
+        PrintSessionSummaryUsage();
+        PrintVerifySessionUsage();
     }
+
+    private static void PrintCapturePassiveUsage() =>
+        Console.WriteLine("riftscan capture passive --process <name> --out sessions/<id> [--samples 1] [--interval-ms 100] [--stimulus passive_idle] [--intervention-wait-ms 1200000] [--intervention-poll-ms 2000]");
+
+    private static void PrintCapturePlanUsage() =>
+        Console.WriteLine("riftscan capture plan <source-session-or-plan-json> --pid <id> [--process <name>] --out sessions/<id> [--top-regions 5] [--stimulus move_forward] [--intervention-wait-ms 1200000] [--intervention-poll-ms 2000]");
+
+    private static void PrintAnalyzeSessionUsage() =>
+        Console.WriteLine("riftscan analyze session <session-path> [--all|--top 100]");
+
+    private static void PrintReportSessionUsage() =>
+        Console.WriteLine("riftscan report session <session-path> [--top 100]");
+
+    private static void PrintCompareSessionsUsage() =>
+        Console.WriteLine("riftscan compare sessions <session-a> <session-b> [--top 100] [--out reports/generated/comparison.json] [--report-md reports/generated/comparison.md] [--next-plan reports/generated/next-capture-plan.json]");
 
     private static void PrintMigrateUsage() =>
         Console.WriteLine("riftscan migrate session <session-path> --to-schema riftscan.session.v1 [--dry-run|--apply] [--out sessions/<migrated-id>] [--plan-out reports/generated/migration-plan.json]");
@@ -658,6 +724,9 @@ public static class Program
 
     private static void PrintSessionSummaryUsage() =>
         Console.WriteLine("riftscan session summary <session-path> [--json-out reports/generated/session-summary.json]");
+
+    private static void PrintVerifySessionUsage() =>
+        Console.WriteLine("riftscan verify session <session-path>");
 
     private static bool Is(string actual, string expected) =>
         string.Equals(actual, expected, StringComparison.OrdinalIgnoreCase);
