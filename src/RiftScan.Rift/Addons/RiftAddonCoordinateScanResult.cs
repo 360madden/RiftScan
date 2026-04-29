@@ -2,6 +2,19 @@ using System.Text.Json.Serialization;
 
 namespace RiftScan.Rift.Addons;
 
+public sealed record RiftAddonCoordinateScanOptions
+{
+    public string Path { get; init; } = string.Empty;
+
+    public int MaxFiles { get; init; } = 5000;
+
+    public string? JsonlOutputPath { get; init; }
+
+    public IReadOnlyList<string> IncludeAddonNames { get; init; } = [];
+
+    public DateTimeOffset? MinFileLastWriteUtc { get; init; }
+}
+
 public sealed record RiftAddonCoordinateScanResult
 {
     [JsonPropertyName("schema_version")]

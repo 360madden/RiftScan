@@ -14,14 +14,23 @@ public sealed class RiftAddonCoordinateObservationService
         RegexOptions.IgnoreCase | RegexOptions.Singleline);
     private static readonly Regex ZoneRegex = new(@"(?:zone|zoneId)\s*=\s*""(?<zone>[^""]+)""", RegexOptions.IgnoreCase);
 
-    public RiftAddonCoordinateScanResult Scan(string path, int maxFiles = 5000, string? jsonlOutputPath = null)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(path);
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxFiles);
+    public RiftAddonCoordinateScanResult Scan(string path, int maxFiles = 5000, string? jsonlOutputPath = null) =>
+        Scan(new RiftAddonCoordinateScanOptions
+        {
+            Path = path,
+            MaxFiles = maxFiles,
+            JsonlOutputPath = jsonlOutputPath
+        });
 
-        var fullPath = Path.GetFullPath(path);
+    public RiftAddonCoordinateScanResult Scan(RiftAddonCoordinateScanOptions options)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        ArgumentException.ThrowIfNullOrWhiteSpace(options.Path);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(options.MaxFiles);
+
+        var fullPath = Path.GetFullPath(options.Path);
         var warnings = new List<string>();
-        var files = EnumerateLuaFiles(fullPath, maxFiles, warnings).ToArray();
+        var files = EnumerateLuaFiles(fullPath, options.MaxFiles, warnings).ToArray();
         var observations = new List<RiftAddonCoordinateObservation>();
         foreach (var file in files)
         {
@@ -34,20 +43,55 @@ public sealed class RiftAddonCoordinateObservationService
             .ThenBy(observation => observation.LineNumber)
             .Select((observation, index) => observation with { ObservationId = $"rift-addon-coord-{index + 1:000000}" })
             .ToArray();
+        var filtered = ApplyFilters(ordered, options, warnings)
+            .Select((observation, index) => observation with { ObservationId = $"rift-addon-coord-{index + 1:000000}" })
+            .ToArray();
+        if (ordered.Length > 0 && filtered.Length == 0)
+        {
+            warnings.Add("no_addon_coordinate_observations_after_filters");
+        }
 
-        var fullJsonlOutputPath = WriteJsonLines(jsonlOutputPath, ordered);
+        var fullJsonlOutputPath = WriteJsonLines(options.JsonlOutputPath, filtered);
         return new RiftAddonCoordinateScanResult
         {
             RootPathRedacted = RedactPath(fullPath),
             JsonlOutputPath = fullJsonlOutputPath,
             FilesScanned = files.Length,
-            ObservationCount = ordered.Length,
-            Observations = ordered,
+            ObservationCount = filtered.Length,
+            Observations = filtered,
             Warnings = warnings
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .Order(StringComparer.OrdinalIgnoreCase)
                 .ToArray()
         };
+    }
+
+    private static IEnumerable<RiftAddonCoordinateObservation> ApplyFilters(
+        IEnumerable<RiftAddonCoordinateObservation> observations,
+        RiftAddonCoordinateScanOptions options,
+        ICollection<string> warnings)
+    {
+        var filtered = observations;
+        var includeAddonNames = options.IncludeAddonNames
+            .Where(name => !string.IsNullOrWhiteSpace(name))
+            .SelectMany(name => name.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            .Where(name => !string.IsNullOrWhiteSpace(name))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+        if (includeAddonNames.Length > 0)
+        {
+            var includeSet = includeAddonNames.ToHashSet(StringComparer.OrdinalIgnoreCase);
+            filtered = filtered.Where(observation => includeSet.Contains(observation.AddonName));
+            warnings.Add("addon_coordinate_observations_filtered_by_addon_name");
+        }
+
+        if (options.MinFileLastWriteUtc.HasValue)
+        {
+            filtered = filtered.Where(observation => observation.FileLastWriteUtc >= options.MinFileLastWriteUtc.Value);
+            warnings.Add("addon_coordinate_observations_filtered_by_min_file_write_utc");
+        }
+
+        return filtered;
     }
 
     private static IEnumerable<string> EnumerateLuaFiles(string fullPath, int maxFiles, ICollection<string> warnings)

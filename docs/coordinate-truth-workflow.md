@@ -157,6 +157,20 @@ The scan emits `riftscan.rift_addon_coordinate_observation.v1` JSONL and redacts
 - `coord = { x = ..., y = ..., z = ... }`
 - `coordX = ...`, `coordY = ...`, `coordZ = ...`
 
+For current-player validation, prefer fresh player-export sources and keep waypoint/history sources available as context instead of mixing them into a canonical-position claim. The scan helper can filter by addon name and file timestamp:
+
+```powershell
+riftscan rift addon-coords `
+  "C:\Users\<user>\OneDrive\Documents\RIFT\Interface\Saved" `
+  --addon-name ReaderBridgeExport `
+  --addon-name AutoFish `
+  --min-file-write-utc 2026-04-29T23:16:00Z `
+  --jsonl-out reports/generated/current-player-addon-coordinates.jsonl `
+  --json-out reports/generated/current-player-addon-coordinate-scan.json
+```
+
+Use broader unfiltered scans for waypoint/history discovery. Use filtered current-player scans when matching live movement snapshots.
+
 ### Candidate corroboration helper
 
 After exporting vec3 truth candidates and addon observations:

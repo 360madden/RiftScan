@@ -478,6 +478,8 @@ public static class Program
         string? jsonOutputPath = null;
         string? jsonlOutputPath = null;
         var maxFiles = 5000;
+        var includeAddonNames = new List<string>();
+        DateTimeOffset? minFileWriteUtc = null;
         for (var index = 0; index < args.Length; index++)
         {
             var arg = args[index];
@@ -491,6 +493,13 @@ public static class Program
                     break;
                 case "--max-files":
                     maxFiles = int.Parse(RequireValue(args, ref index, arg));
+                    break;
+                case "--addon-name":
+                case "--include-addon":
+                    includeAddonNames.Add(RequireValue(args, ref index, arg));
+                    break;
+                case "--min-file-write-utc":
+                    minFileWriteUtc = DateTimeOffset.Parse(RequireValue(args, ref index, arg), CultureInfo.InvariantCulture);
                     break;
                 default:
                     if (rootPath is not null)
@@ -508,7 +517,14 @@ public static class Program
             throw new ArgumentException("rift addon-coords requires a SavedVariables file or directory path.");
         }
 
-        var result = new RiftAddonCoordinateObservationService().Scan(rootPath, maxFiles, jsonlOutputPath);
+        var result = new RiftAddonCoordinateObservationService().Scan(new RiftAddonCoordinateScanOptions
+        {
+            Path = rootPath,
+            MaxFiles = maxFiles,
+            JsonlOutputPath = jsonlOutputPath,
+            IncludeAddonNames = includeAddonNames,
+            MinFileLastWriteUtc = minFileWriteUtc
+        });
         WriteOptionalJson(jsonOutputPath, result);
         Console.WriteLine(JsonSerializer.Serialize(result, SessionJson.Options));
         return result.Success ? 0 : 1;
@@ -2406,7 +2422,7 @@ public static class Program
         Console.WriteLine("riftscan report capability [--truth-readiness reports/generated/truth-readiness.json ...] [--scalar-evidence-set reports/generated/scalar-evidence-set.json ...] [--scalar-truth-recovery reports/generated/scalar-truth-recovery.json ...] [--scalar-truth-promotion reports/generated/scalar-truth-promotion.json ...] [--scalar-promotion-review reports/generated/scalar-promotion-review.json ...] [--rift-promoted-coordinate-live reports/generated/rift-promoted-coordinate-live.json ...] [--json-out reports/generated/capability-status.json] [--report-md reports/generated/capability-status.md]");
 
     private static void PrintRiftAddonCoordsUsage() =>
-        Console.WriteLine("riftscan rift addon-coords <savedvariables-file-or-directory> [--jsonl-out reports/generated/addon-coordinate-observations.jsonl] [--json-out reports/generated/addon-coordinate-scan.json] [--max-files 5000]");
+        Console.WriteLine("riftscan rift addon-coords <savedvariables-file-or-directory> [--jsonl-out reports/generated/addon-coordinate-observations.jsonl] [--json-out reports/generated/addon-coordinate-scan.json] [--max-files 5000] [--addon-name ReaderBridgeExport] [--min-file-write-utc 2026-04-29T23:16:00Z]");
 
     private static void PrintRiftMatchAddonCoordsUsage() =>
         Console.WriteLine("riftscan rift match-addon-coords <session-path> --observations reports/generated/addon-coordinate-observations.jsonl [--region-base 0xADDR] [--tolerance 5] [--top 100] [--out reports/generated/session-addon-coordinate-matches.json] [--report-md reports/generated/session-addon-coordinate-matches.md] [--latest-only]");

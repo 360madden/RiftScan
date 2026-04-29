@@ -62,6 +62,44 @@ public sealed class RiftAddonCoordinateObservationTests
     }
 
     [Fact]
+    public void Addon_coordinate_scan_can_filter_current_player_addon_sources()
+    {
+        using var temp = new TempDirectory();
+        Directory.CreateDirectory(temp.Path);
+        var currentTime = DateTime.Parse("2026-04-29T23:16:01Z", null, System.Globalization.DateTimeStyles.AdjustToUniversal);
+        var oldTime = DateTime.Parse("2026-04-25T23:16:01Z", null, System.Globalization.DateTimeStyles.AdjustToUniversal);
+        WriteCoordinateFile(Path.Combine(temp.Path, "ReaderBridgeExport.lua"), 7229.07, 872.59, 3029.19, currentTime);
+        WriteCoordinateFile(Path.Combine(temp.Path, "AutoFish.lua"), 7229.07, 872.59, 3029.19, currentTime);
+        WriteCoordinateFile(Path.Combine(temp.Path, "RiftReaderValidator.lua"), 7222.65, 873.14, 3026.55, currentTime);
+        WriteCoordinateFile(Path.Combine(temp.Path, "Leader.lua"), 7408.15, 863.59, 2978.13, oldTime);
+        var observationsPath = Path.Combine(temp.Path, "addon-coordinate-observations-filtered.jsonl");
+        var resultPath = Path.Combine(temp.Path, "addon-coordinate-scan-filtered.json");
+
+        var cliExitCode = RiftScan.Cli.Program.Main([
+            "rift",
+            "addon-coords",
+            temp.Path,
+            "--jsonl-out",
+            observationsPath,
+            "--json-out",
+            resultPath,
+            "--addon-name",
+            "ReaderBridgeExport,AutoFish",
+            "--min-file-write-utc",
+            "2026-04-29T23:16:00Z"
+        ]);
+
+        Assert.Equal(0, cliExitCode);
+        var result = JsonSerializer.Deserialize<RiftAddonCoordinateScanResult>(File.ReadAllText(resultPath), SessionJson.Options)
+            ?? throw new InvalidOperationException("scan result missing");
+        Assert.Equal(2, result.ObservationCount);
+        Assert.All(result.Observations, observation => Assert.Contains(observation.AddonName, new[] { "ReaderBridgeExport", "AutoFish" }));
+        Assert.Contains("addon_coordinate_observations_filtered_by_addon_name", result.Warnings);
+        Assert.Contains("addon_coordinate_observations_filtered_by_min_file_write_utc", result.Warnings);
+        Assert.Equal(2, File.ReadLines(observationsPath).Count(line => !string.IsNullOrWhiteSpace(line)));
+    }
+
+    [Fact]
     public void Addon_coordinate_corroboration_matches_vec3_truth_candidate_preview()
     {
         using var temp = new TempDirectory();
@@ -115,6 +153,25 @@ public sealed class RiftAddonCoordinateObservationTests
         Assert.Empty(verification.Issues);
         Assert.True(File.Exists(resultPath));
         Assert.Equal(0, cliExitCode);
+    }
+
+    private static void WriteCoordinateFile(string path, double x, double y, double z, DateTime lastWriteUtc)
+    {
+        File.WriteAllText(
+            path,
+            $$"""
+            State = {
+              player = {
+                coord = {
+                  x = {{x.ToString(System.Globalization.CultureInfo.InvariantCulture)}},
+                  y = {{y.ToString(System.Globalization.CultureInfo.InvariantCulture)}},
+                  z = {{z.ToString(System.Globalization.CultureInfo.InvariantCulture)}}
+                },
+                zone = "zFixture"
+              }
+            }
+            """);
+        File.SetLastWriteTimeUtc(path, lastWriteUtc);
     }
 
     private sealed class TempDirectory : IDisposable

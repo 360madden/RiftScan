@@ -1,6 +1,6 @@
 # RiftScan xref-chain current evidence
 
-Timestamp: 2026-04-29 19:04 America/New_York
+Timestamp: 2026-04-29 19:23 America/New_York
 
 Status: **validated pointer-chain evidence plus addon-coordinate-matched vec3 candidates and movement-response evidence, not final semantic truth**.
 
@@ -53,6 +53,16 @@ These artifacts are intentionally under ignored capture/report directories and a
 - `reports/generated/live-coordinate-motion-20260429-after-w-addon-coordinate-matches.md`
 - `reports/generated/live-coordinate-motion-20260429-before-after-coordinate-motion.json`
 - `reports/generated/live-coordinate-motion-20260429-before-after-coordinate-motion.md`
+- `sessions/live-coordinate-fresh-20260429-before`
+- `sessions/live-coordinate-fresh-20260429-after-long-w`
+- `reports/generated/addon-coordinate-observations-20260429-after-reloadui.jsonl`
+- `reports/generated/addon-coordinate-observations-20260429-after-reloadui-current-player.jsonl`
+- `reports/generated/addon-coordinate-observations-20260429-after-long-w-reloadui.jsonl`
+- `reports/generated/addon-coordinate-observations-20260429-after-long-w-reloadui-current-player.jsonl`
+- `reports/generated/live-coordinate-fresh-20260429-before-current-player-matches.json`
+- `reports/generated/live-coordinate-fresh-20260429-after-long-w-current-player-matches.json`
+- `reports/generated/live-coordinate-fresh-20260429-before-after-long-w-current-player-motion.json`
+- `reports/generated/live-coordinate-fresh-20260429-before-after-long-w-current-player-motion.md`
 
 Capture result:
 
@@ -184,15 +194,58 @@ Mirror clusters:
 
 Interpretation: `0x975E1D8000` is now behavior-backed as a live coordinate-vector family for this process instance. Multiple offsets are synchronized mirrors/copies, so this still does not identify the single canonical owner field.
 
+## Fresh current-player-source movement result
+
+Fresh addon export path: `/reloadui` was sent to the exact RIFT window before and after the longer movement. The current-player validation pass filtered SavedVariables observations to `ReaderBridgeExport` and `AutoFish` with a minimum file timestamp, while preserving the broader unfiltered scan for waypoint/history context.
+
+Filtered addon observations:
+
+| Phase | Sources | Latest observation | Addon xyz |
+|---|---|---|---|
+| before | `ReaderBridgeExport`, `AutoFish` | `2026-04-29T23:13:29Z` | `7224.479980, 873.190002, 3027.300049` |
+| after long `W` | `ReaderBridgeExport`, `AutoFish` | `2026-04-29T23:16:01Z` | `7229.069824, 872.589966, 3029.189941` |
+
+Longer movement control note: `W` was held for `3600ms` via Windows keyboard events against PID `41220`, then `/reloadui` forced the addon SavedVariables export.
+
+Result summary from `reports/generated/live-coordinate-fresh-20260429-before-after-long-w-current-player-motion.json`:
+
+- `success=true`
+- pre candidates: `15`
+- post candidates: `15`
+- common candidates: `15`
+- moved candidates: `15`
+- motion clusters: `3`
+- synchronized mirror clusters: `3`
+- canonical promotion status: `blocked_by_synchronized_mirror_clusters`
+- shared movement delta: `+4.595703, -0.602051, +1.889404`
+- delta distance: `5.005277`
+- warnings: `motion_comparison_is_behavior_evidence_not_final_truth`, `synchronized_coordinate_mirror_clusters_detected`
+
+Representative current-player-source moved offset:
+
+| Offset | Absolute | Axis | Pre xyz | Post xyz | Delta xyz | Distance | Best addon distance pre/post |
+|---:|---:|---|---|---|---|---:|---:|
+| `0x47EC` | `0x975E1DC7EC` | `xyz` | `7224.385742, 873.197083, 3027.265381` | `7228.981445, 872.595032, 3029.154785` | `+4.595703, -0.602051, +1.889404` | `5.005277` | `0.094238 / 0.088379` |
+
+Mirror clusters remained unchanged under the fresh current-player source pass:
+
+| Representative | Count | Offsets | Promotion status |
+|---:|---:|---|---|
+| `0x47EC` | 11 | `0x47EC`, `0x482C`, `0x485C`, `0x4884`, `0x48D0`, `0x5094`, `0x50BC`, `0x50E4`, `0x510C`, `0x5134`, `0x515C` | `blocked_by_synchronized_mirror_cluster` |
+| `0x3A50` | 2 | `0x3A50`, `0x3B40` | `blocked_by_synchronized_mirror_cluster` |
+| `0x3A60` | 2 | `0x3A60`, `0x3B50` | `blocked_by_synchronized_mirror_cluster` |
+
+Interpretation: fresh addon current-player exports removed the stale-addon warning and strengthened the coordinate-family claim, but the same synchronized mirror families still block canonical promotion.
+
 ## Interpretation
 
 - This is stable owner/provenance evidence for the current process instance.
 - Addon observations now corroborate coordinate-like vec3 copies inside the `0x975E1D8000` vector family.
 - Controlled movement now proves the matched vec3 copies respond to player translation.
 - It does **not** prove that `0x975E1D8000+0x47EC` is the canonical owner field, actor yaw, or camera truth.
-- The next semantic validation must separate canonical live position from synchronized mirrors/cache copies and refresh addon coordinates after movement.
+- The next semantic validation must separate canonical live position from synchronized mirrors/cache copies. Fresh `ReaderBridgeExport`/`AutoFish` coordinates should be used for current-player matching, while broader addon waypoint/history observations should stay as discovery context.
 - RiftScan core remains read-only. Do not add input/window control or launcher automation to scanner core.
 
 ## Next smallest proof step
 
-Force a fresh post-movement addon coordinate export, then run a second before/after comparison across a longer movement or zone-change boundary to find a cluster that diverges from mirrors before promoting any one offset as canonical.
+Trace owner/container fields around the three synchronized mirror clusters, starting from the `0x47EC` cluster and the verified `0x975E5FE000 <-> 0x975E234000 -> 0x975E1D8000` chain, to find a discriminator that identifies the canonical live coordinate owner.
