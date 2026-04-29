@@ -49,7 +49,23 @@ jobs:
         run: dotnet build RiftScan.slnx --configuration Release --no-restore
 
       - name: Test
-        run: dotnet test RiftScan.slnx --configuration Release --no-build
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path artifacts/ci-diagnostics -Force | Out-Null
+          $logPath = "artifacts/ci-diagnostics/dotnet-test.log"
+          $output = & dotnet test RiftScan.slnx --configuration Release --no-build 2>&1
+          $exitCode = $LASTEXITCODE
+          $output | Tee-Object -FilePath $logPath
+          [ordered]@{
+            schema_version = "riftscan.ci_step_status.v1"
+            step = "Test"
+            exit_code = $exitCode
+            log_path = $logPath.Replace('\', '/')
+            completed_utc = (Get-Date).ToUniversalTime().ToString("O")
+          } | ConvertTo-Json -Depth 3 | Set-Content -LiteralPath artifacts/ci-diagnostics/dotnet-test-status.json -Encoding utf8
+          if ($exitCode -ne 0) {
+            exit $exitCode
+          }
 
       - name: Format check
         run: dotnet format RiftScan.slnx --verify-no-changes --no-restore
