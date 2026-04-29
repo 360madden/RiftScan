@@ -88,6 +88,22 @@ riftscan verify vec3-truth-recovery reports/generated/<combined>-vec3-truth-reco
 
 Recovered candidates are stronger than one-run candidates, but still need addon waypoint/player-coordinate corroboration before a final coordinate truth claim.
 
+## Promotion review packet
+
+After recovery and addon corroboration, create a review packet that ranks repeated vec3 candidates. If actor-yaw recovery is available, pass it so duplicate coordinate copies near the actor-yaw field are sorted first:
+
+```powershell
+riftscan compare vec3-promotion `
+  reports/generated/<combined>-vec3-truth-recovery.json `
+  --corroboration reports/generated/<run>-vec3-truth-corroboration.jsonl `
+  --actor-yaw-recovery reports/generated/<scalar>-scalar-truth-recovery.json `
+  --out reports/generated/<combined>-vec3-truth-promotion.json
+
+riftscan verify vec3-truth-promotion reports/generated/<combined>-vec3-truth-promotion.json
+```
+
+The output is a manual-review promotion packet. A `corroborated_candidate` is still not final coordinate truth until reviewed against the session evidence and current addon export timing.
+
 ## Addon waypoint/player-coordinate use
 
 When addon telemetry is available, record the addon coordinate source, observed player/world coordinates, and timing beside the RiftScan session artifacts. Use it to confirm the memory candidate's vec3 values and axis order.

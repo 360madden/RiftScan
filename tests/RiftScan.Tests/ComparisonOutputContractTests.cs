@@ -454,6 +454,82 @@ public sealed class ComparisonOutputContractTests
             "candidate_index");
 
     [Fact]
+    public void Vec3_truth_promotion_result_pins_json_contract_fields() =>
+        AssertJsonPropertySet(
+            new Vec3TruthPromotionResult(),
+            "schema_version",
+            "success",
+            "recovery_path",
+            "corroboration_path",
+            "actor_yaw_recovery_path",
+            "output_path",
+            "recovered_candidate_count",
+            "promoted_candidate_count",
+            "blocked_candidate_count",
+            "recommended_manual_review_candidate_id",
+            "promoted_candidates",
+            "blocked_candidates",
+            "warnings");
+
+    [Fact]
+    public void Vec3_promoted_truth_candidate_pins_json_contract_fields() =>
+        AssertJsonPropertySet(
+            new Vec3PromotedTruthCandidate(),
+            "schema_version",
+            "candidate_id",
+            "source_recovered_candidate_id",
+            "base_address_hex",
+            "offset_hex",
+            "x_offset_hex",
+            "y_offset_hex",
+            "z_offset_hex",
+            "data_type",
+            "classification",
+            "promotion_status",
+            "truth_readiness",
+            "claim_level",
+            "corroboration_status",
+            "corroboration_sources",
+            "corroboration_summary",
+            "addon_observed_x",
+            "addon_observed_y",
+            "addon_observed_z",
+            "tolerance",
+            "supporting_truth_candidate_ids",
+            "supporting_file_count",
+            "best_score_total",
+            "labels_present",
+            "supporting_reasons",
+            "actor_yaw_source_candidate_id",
+            "actor_yaw_base_address_hex",
+            "actor_yaw_offset_hex",
+            "actor_yaw_proximity_bytes",
+            "evidence_summary",
+            "next_validation_step",
+            "warning");
+
+    [Fact]
+    public void Vec3_truth_promotion_verification_result_pins_json_contract_fields() =>
+        AssertJsonPropertySet(
+            new Vec3TruthPromotionVerificationResult(),
+            "schema_version",
+            "success",
+            "path",
+            "promoted_candidate_count",
+            "blocked_candidate_count",
+            "recommended_manual_review_candidate_id",
+            "issues");
+
+    [Fact]
+    public void Vec3_truth_promotion_verification_issue_pins_json_contract_fields() =>
+        AssertJsonPropertySet(
+            new Vec3TruthPromotionVerificationIssue(),
+            "severity",
+            "code",
+            "message",
+            "candidate_index");
+
+    [Fact]
     public void Scalar_promotion_review_result_pins_json_contract_fields() =>
         AssertJsonPropertySet(
             new ScalarPromotionReviewResult(),
