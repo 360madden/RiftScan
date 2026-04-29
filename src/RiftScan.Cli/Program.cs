@@ -1,5 +1,6 @@
 using System.Reflection;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using RiftScan.Analysis.Comparison;
 using RiftScan.Analysis.Reports;
 using RiftScan.Analysis.Triage;
@@ -15,12 +16,6 @@ public static class Program
 
     public static int Main(string[] args)
     {
-        if (args.Length == 1 && IsVersion(args[0]))
-        {
-            PrintVersion();
-            return 0;
-        }
-
         if (args.Length == 0 || IsHelp(args[0]))
         {
             PrintUsage();
@@ -29,6 +24,11 @@ public static class Program
 
         try
         {
+            if (args.Length >= 1 && IsVersion(args[0]))
+            {
+                return Version(args[1..]);
+            }
+
             if (args.Length >= 2 && Is(args[0], "capture") && Is(args[1], "passive"))
             {
                 return CapturePassive(args[2..]);
@@ -705,15 +705,47 @@ public static class Program
         PrintSessionInventoryUsage();
         PrintSessionSummaryUsage();
         PrintVerifySessionUsage();
-        Console.WriteLine("riftscan --version");
+        Console.WriteLine("riftscan --version [--json]");
     }
 
-    private static void PrintVersion()
+    private static int Version(string[] args)
+    {
+        var json = false;
+        foreach (var arg in args)
+        {
+            if (Is(arg, "--json"))
+            {
+                json = true;
+                continue;
+            }
+
+            throw new ArgumentException($"Unknown version option: {arg}");
+        }
+
+        var result = BuildVersionResult();
+        Console.WriteLine(json
+            ? JsonSerializer.Serialize(result, SessionJson.Options)
+            : $"riftscan {result.InformationalVersion}");
+        return 0;
+    }
+
+    private static VersionResult BuildVersionResult()
     {
         var version = typeof(Program).Assembly
             .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?
             .InformationalVersion;
-        Console.WriteLine($"riftscan {FirstNonEmpty(version, FallbackVersion)}");
+        var informationalVersion = FirstNonEmpty(version, FallbackVersion);
+        var sourceRevisionSeparator = informationalVersion.IndexOf('+', StringComparison.Ordinal);
+        return new VersionResult
+        {
+            Version = sourceRevisionSeparator < 0
+                ? informationalVersion
+                : informationalVersion[..sourceRevisionSeparator],
+            InformationalVersion = informationalVersion,
+            SourceRevision = sourceRevisionSeparator < 0 || sourceRevisionSeparator == informationalVersion.Length - 1
+                ? null
+                : informationalVersion[(sourceRevisionSeparator + 1)..]
+        };
     }
 
     private static void PrintCapturePassiveUsage() =>
@@ -757,4 +789,25 @@ public static class Program
 
     private static string FirstNonEmpty(string? value, string fallback) =>
         string.IsNullOrWhiteSpace(value) ? fallback : value;
+
+    private sealed class VersionResult
+    {
+        [JsonPropertyName("result_schema_version")]
+        public string ResultSchemaVersion { get; init; } = "riftscan.version_result.v1";
+
+        [JsonPropertyName("success")]
+        public bool Success { get; init; } = true;
+
+        [JsonPropertyName("executable")]
+        public string Executable { get; init; } = "riftscan";
+
+        [JsonPropertyName("version")]
+        public string Version { get; init; } = FallbackVersion;
+
+        [JsonPropertyName("informational_version")]
+        public string InformationalVersion { get; init; } = FallbackVersion;
+
+        [JsonPropertyName("source_revision")]
+        public string? SourceRevision { get; init; }
+    }
 }

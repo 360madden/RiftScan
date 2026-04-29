@@ -1,3 +1,5 @@
+using System.Text.Json;
+
 namespace RiftScan.Tests;
 
 public sealed class CliSessionHelpTests
@@ -34,6 +36,38 @@ public sealed class CliSessionHelpTests
         Assert.Equal(0, result.ExitCode);
         Assert.Matches(@"^riftscan 0\.1\.0(?:\+[0-9a-f]+)?\r?\n$", result.Stdout);
         Assert.Equal(string.Empty, result.Stderr);
+    }
+
+    [Theory]
+    [InlineData("--version --json")]
+    [InlineData("-v --json")]
+    [InlineData("version --json")]
+    public void Cli_version_json_prints_machine_readable_version(string commandLine)
+    {
+        var result = RunCli(commandLine.Split(' ', StringSplitOptions.RemoveEmptyEntries));
+
+        Assert.Equal(0, result.ExitCode);
+        Assert.Equal(string.Empty, result.Stderr);
+        using var document = JsonDocument.Parse(result.Stdout);
+        Assert.Equal("riftscan.version_result.v1", document.RootElement.GetProperty("result_schema_version").GetString());
+        Assert.True(document.RootElement.GetProperty("success").GetBoolean());
+        Assert.Equal("riftscan", document.RootElement.GetProperty("executable").GetString());
+        Assert.Equal("0.1.0", document.RootElement.GetProperty("version").GetString());
+        Assert.StartsWith("0.1.0", document.RootElement.GetProperty("informational_version").GetString(), StringComparison.Ordinal);
+        Assert.True(document.RootElement.TryGetProperty("source_revision", out _));
+    }
+
+    [Fact]
+    public void Cli_version_unknown_option_returns_machine_readable_error()
+    {
+        var result = RunCli("--version", "--unknown");
+
+        Assert.Equal(2, result.ExitCode);
+        Assert.Equal(string.Empty, result.Stdout);
+        using var document = JsonDocument.Parse(result.Stderr);
+        Assert.False(document.RootElement.GetProperty("success").GetBoolean());
+        Assert.Equal("command_failed", document.RootElement.GetProperty("issues")[0].GetProperty("code").GetString());
+        Assert.Contains("Unknown version option: --unknown", document.RootElement.GetProperty("issues")[0].GetProperty("message").GetString(), StringComparison.Ordinal);
     }
 
     private static (int ExitCode, string Stdout, string Stderr) RunCli(params string[] args)
