@@ -1078,6 +1078,25 @@ public sealed class SessionComparisonServiceTests
     }
 
     [Fact]
+    public void Aggregate_scalar_evidence_set_does_not_validate_camera_orientation_without_turn_sessions()
+    {
+        using var passive = CaptureStableFloatSession("passive_idle");
+        using var camera = CaptureChangingFloatSession("camera_only", "fixture_horizontal_yaw_drag_camera_only");
+
+        var result = new ScalarEvidenceSetService().Aggregate([passive.Path, camera.Path]);
+
+        var candidate = Assert.Single(result.RankedCandidates, candidate =>
+            candidate.BaseAddressHex == "0x1000" &&
+            candidate.OffsetHex == "0x4");
+        Assert.True(candidate.CameraOnlyChanged);
+        Assert.Equal("camera_only_changes_turn_untested", candidate.CameraTurnSeparation);
+        Assert.NotEqual("camera_orientation_angle_scalar_candidate", candidate.Classification);
+        Assert.NotEqual("validated_candidate", candidate.TruthReadiness);
+        Assert.Contains("missing_turn_stability_for_camera_only", candidate.RejectionReasons);
+        Assert.Equal("add_opposite_turn_sessions_for_camera_actor_split", candidate.NextValidationStep);
+    }
+
+    [Fact]
     public void Aggregate_scalar_evidence_set_does_not_promote_zero_net_camera_blip()
     {
         using var passive = CaptureDualScalarSession("passive_idle", [1.5f, 1.5f, 1.5f], [20.0f, 20.0f, 20.0f]);
@@ -1143,6 +1162,26 @@ public sealed class SessionComparisonServiceTests
         Assert.NotEqual("camera_orientation_angle_scalar_candidate", candidate.Classification);
         Assert.NotEqual("validated_candidate", candidate.TruthReadiness);
         Assert.Contains("camera_yaw_or_pitch_delta_below_threshold", candidate.RejectionReasons);
+    }
+
+    [Fact]
+    public void Aggregate_scalar_evidence_set_does_not_promote_binary_camera_yaw_toggle()
+    {
+        using var passive = CaptureDualScalarSession("passive_idle", [1.5f, 1.5f, 1.5f, 1.5f], [0.0f, 0.0f, 0.0f, 0.0f], samples: 4);
+        using var turnLeft = CaptureDualScalarSession("turn_left", [1.5f, 1.5f, 1.5f, 1.5f], [0.0f, 0.0f, 0.0f, 0.0f], samples: 4);
+        using var turnRight = CaptureDualScalarSession("turn_right", [1.5f, 1.5f, 1.5f, 1.5f], [0.0f, 0.0f, 0.0f, 0.0f], samples: 4);
+        using var cameraOnly = CaptureDualScalarSession(
+            "camera_only",
+            [1.5f, 1.5f, 1.5f, 1.5f],
+            [0.0f, 1.0f, 0.0f, 1.0f],
+            "fixture_horizontal_yaw_drag_camera_only",
+            samples: 4);
+
+        var result = new ScalarEvidenceSetService().Aggregate([passive.Path, turnLeft.Path, turnRight.Path, cameraOnly.Path]);
+
+        Assert.DoesNotContain(result.RankedCandidates, candidate =>
+            candidate.Classification == "camera_orientation_angle_scalar_candidate" &&
+            candidate.TruthReadiness == "validated_candidate");
     }
 
     [Fact]
@@ -1486,14 +1525,15 @@ public sealed class SessionComparisonServiceTests
         string stimulusLabel,
         IReadOnlyList<float> actorValues,
         IReadOnlyList<float> cameraValues,
-        string? stimulusNotes = null)
+        string? stimulusNotes = null,
+        int samples = 3)
     {
         var session = new TempDirectory();
         _ = new PassiveCaptureService(new DualScalarProcessMemoryReader(actorValues, cameraValues)).Capture(new PassiveCaptureOptions
         {
             ProcessName = "fixture_process",
             OutputPath = session.Path,
-            Samples = 3,
+            Samples = samples,
             IntervalMilliseconds = 0,
             MaxRegions = 1,
             MaxBytesPerRegion = 16,

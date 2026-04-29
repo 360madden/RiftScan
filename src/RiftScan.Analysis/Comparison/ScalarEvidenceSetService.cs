@@ -10,6 +10,7 @@ public sealed class ScalarEvidenceSetService
     private const double MinMeaningfulBehaviorDelta = 0.0001;
     private const double MinCameraYawPitchDelta = 0.01;
     private const int MinCameraYawPitchChangedSamples = 2;
+    private const int MinCameraYawPitchDistinctValues = 3;
 
     public ScalarEvidenceSetResult Aggregate(IReadOnlyList<string> sessionPaths, int top = 100)
     {
@@ -104,6 +105,7 @@ public sealed class ScalarEvidenceSetService
         var leftEntries = entries.Where(entry => IsTurnLeft(entry.Session.Summary.StimulusLabel)).ToArray();
         var rightEntries = entries.Where(entry => IsTurnRight(entry.Session.Summary.StimulusLabel)).ToArray();
         var cameraEntries = entries.Where(entry => IsCameraOnly(entry.Session.Summary.StimulusLabel)).ToArray();
+        var hasOppositeTurnPair = leftEntries.Length > 0 && rightEntries.Length > 0;
 
         var passiveStable = passiveEntries.Length > 0 && passiveEntries.All(entry => entry.Candidate.ChangedSampleCount == 0);
         var passiveChanged = passiveEntries.Any(entry => entry.Candidate.ChangedSampleCount > 0);
@@ -118,7 +120,7 @@ public sealed class ScalarEvidenceSetService
         var cameraSignedDelta = SumSignedDelta(cameraEntries);
         var oppositePolarity = leftChanged && rightChanged && Math.Sign(leftSignedDelta) != 0 && Math.Sign(leftSignedDelta) == -Math.Sign(rightSignedDelta);
         var turnChanged = leftChanged || rightChanged;
-        var cameraTurnSeparation = ClassifyCameraTurnSeparation(cameraChanged, turnChanged);
+        var cameraTurnSeparation = ClassifyCameraTurnSeparation(cameraChanged, turnChanged, hasOppositeTurnPair);
 
         var supportingReasons = new List<string>();
         var rejectionReasons = new List<string>();
@@ -287,6 +289,11 @@ public sealed class ScalarEvidenceSetService
             return -10;
         }
 
+        if (string.Equals(relationship, "camera_only_changes_turn_untested", StringComparison.OrdinalIgnoreCase))
+        {
+            rejectionReasons.Add("missing_turn_stability_for_camera_only");
+        }
+
         return 0;
     }
 
@@ -336,6 +343,12 @@ public sealed class ScalarEvidenceSetService
                                        entry.Candidate.ChangedSampleCount < MinCameraYawPitchChangedSamples))
         {
             rejectionReasons.Add("camera_yaw_or_pitch_change_not_temporally_smooth");
+        }
+
+        if (cameraEntries.Any(entry => HasDirectedBehaviorChange(entry.Candidate) &&
+                                       entry.Candidate.DistinctValueCount < MinCameraYawPitchDistinctValues))
+        {
+            rejectionReasons.Add("camera_yaw_or_pitch_change_too_discrete");
         }
 
         if (cameraEntries.Any(entry => HasDirectedBehaviorChange(entry.Candidate) &&
@@ -453,6 +466,11 @@ public sealed class ScalarEvidenceSetService
                 : "repeat_passive_baseline_and_camera_only_capture";
         }
 
+        if (string.Equals(cameraTurnSeparation, "camera_only_changes_turn_untested", StringComparison.OrdinalIgnoreCase))
+        {
+            return "add_opposite_turn_sessions_for_camera_actor_split";
+        }
+
         if (scoreTotal >= 80 && oppositePolarity && !string.IsNullOrWhiteSpace(cameraTurnSeparation))
         {
             return "repeat_labeled_capture_or_validate_against_addon_truth";
@@ -560,6 +578,11 @@ public sealed class ScalarEvidenceSetService
             reasons.Add("camera_and_turn_both_change");
         }
 
+        if (string.Equals(candidate.CameraTurnSeparation, "camera_only_changes_turn_untested", StringComparison.OrdinalIgnoreCase))
+        {
+            reasons.Add("missing_turn_stability_for_camera_only");
+        }
+
         if (reasons.Count == 0)
         {
             reasons.Add("score_below_candidate_threshold");
@@ -568,12 +591,13 @@ public sealed class ScalarEvidenceSetService
         return reasons.Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
     }
 
-    private static string ClassifyCameraTurnSeparation(bool cameraChanged, bool turnChanged) =>
-        (cameraChanged, turnChanged) switch
+    private static string ClassifyCameraTurnSeparation(bool cameraChanged, bool turnChanged, bool hasOppositeTurnPair) =>
+        (cameraChanged, turnChanged, hasOppositeTurnPair) switch
         {
-            (true, false) => "camera_only_changes_turn_stable",
-            (false, true) => "turn_changes_camera_only_stable",
-            (true, true) => "camera_and_turn_both_change",
+            (true, false, true) => "camera_only_changes_turn_stable",
+            (true, false, false) => "camera_only_changes_turn_untested",
+            (false, true, _) => "turn_changes_camera_only_stable",
+            (true, true, _) => "camera_and_turn_both_change",
             _ => "camera_and_turn_both_stable"
         };
 
@@ -592,6 +616,7 @@ public sealed class ScalarEvidenceSetService
         if (!IsCameraZoomNote(stimulusNotes) && IsCameraYawOrPitchNote(stimulusNotes))
         {
             return candidate.ChangedSampleCount >= MinCameraYawPitchChangedSamples &&
+                   candidate.DistinctValueCount >= MinCameraYawPitchDistinctValues &&
                    MaxSignedOrLinearDelta(candidate) >= MinCameraYawPitchDelta;
         }
 
