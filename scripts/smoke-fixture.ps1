@@ -56,6 +56,38 @@ function Assert-FileExists {
     }
 }
 
+function Write-SmokeManifest {
+    param(
+        [string]$OutputRoot,
+        [string]$SmokeName
+    )
+
+    $fullOutputRoot = [System.IO.Path]::GetFullPath($OutputRoot)
+    $files = Get-ChildItem -LiteralPath $fullOutputRoot -File -Recurse |
+        Where-Object { $_.Name -ne "smoke-manifest.json" } |
+        Sort-Object FullName |
+        ForEach-Object {
+            $relativePath = [System.IO.Path]::GetRelativePath($fullOutputRoot, $_.FullName).Replace('\', '/')
+            [ordered]@{
+                path = $relativePath
+                bytes = $_.Length
+                sha256 = (Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+            }
+        }
+
+    $manifest = [ordered]@{
+        schema_version = "riftscan.smoke_manifest.v1"
+        smoke_name = $SmokeName
+        output_root = $fullOutputRoot
+        created_utc = [DateTimeOffset]::UtcNow.ToString("O")
+        file_count = @($files).Count
+        files = @($files)
+    }
+
+    $manifestPath = Join-Path $fullOutputRoot "smoke-manifest.json"
+    $manifest | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath $manifestPath -Encoding utf8
+    return $manifestPath
+}
 Push-Location $repoRoot
 try {
     $fixtureSource = Join-Path $repoRoot "tests/RiftScan.Tests/Fixtures/valid-session"
@@ -129,6 +161,13 @@ try {
     }
     Assert-FileExists -Path (Join-Path $sessionA "report.md")
     Assert-FileExists -Path $pruneInventory
+
+    $manifestPath = Write-SmokeManifest -OutputRoot $tempRoot -SmokeName "fixture"
+    Assert-FileExists -Path $manifestPath
+    $smokeManifest = Get-Content $manifestPath -Raw | ConvertFrom-Json
+    if ($smokeManifest.schema_version -ne "riftscan.smoke_manifest.v1" -or $smokeManifest.file_count -lt 1) {
+        throw "Fixture smoke manifest was invalid."
+    }
 
     Write-Host "Fixture smoke passed."
     if ($KeepOutput) {
