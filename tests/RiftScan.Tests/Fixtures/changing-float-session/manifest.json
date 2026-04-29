@@ -1,0 +1,19 @@
+{
+  "schema_version": "riftscan.session.v1",
+  "session_id": "fixture-changing-float-session",
+  "project_version": "0.1.0",
+  "created_utc": "2026-04-28T18:00:00Z",
+  "machine_name": "fixture-machine",
+  "os_version": "fixture-os",
+  "process_name": "rift_x64",
+  "process_id": 1235,
+  "process_start_time_utc": "2026-04-28T17:59:00Z",
+  "capture_mode": "fixture_multi_snapshot",
+  "snapshot_count": 3,
+  "region_count": 1,
+  "total_bytes_raw": 48,
+  "total_bytes_stored": 48,
+  "compression": "none",
+  "checksum_algorithm": "SHA256",
+  "status": "complete"
+}

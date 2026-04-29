@@ -94,6 +94,10 @@ try {
     if (-not (Test-Path -LiteralPath (Join-Path $fixtureSource "manifest.json") -PathType Leaf)) {
         throw "Fixture session not found: $fixtureSource"
     }
+    $changingFixtureSource = Join-Path $repoRoot "tests/RiftScan.Tests/Fixtures/changing-float-session"
+    if (-not (Test-Path -LiteralPath (Join-Path $changingFixtureSource "manifest.json") -PathType Leaf)) {
+        throw "Changing fixture session not found: $changingFixtureSource"
+    }
 
     if (Test-Path -LiteralPath $tempRoot) {
         $repoArtifactRoot = [System.IO.Path]::GetFullPath((Join-Path $repoRoot "artifacts"))
@@ -109,10 +113,12 @@ try {
     New-Item -ItemType Directory -Path $tempRoot | Out-Null
     $sessionA = Join-Path $tempRoot "session-a"
     $sessionB = Join-Path $tempRoot "session-b"
+    $sessionChangingFloat = Join-Path $tempRoot "session-changing-float"
     $reportRoot = Join-Path $tempRoot "reports"
     New-Item -ItemType Directory -Path $reportRoot | Out-Null
     Copy-Item -Path $fixtureSource -Destination $sessionA -Recurse
     Copy-Item -Path $fixtureSource -Destination $sessionB -Recurse
+    Copy-Item -Path $changingFixtureSource -Destination $sessionChangingFloat -Recurse
 
     Invoke-DotNet -Arguments @("build", "RiftScan.slnx", "--configuration", $Configuration)
     Invoke-RiftScan -Arguments @("verify", "session", $sessionA)
@@ -121,6 +127,10 @@ try {
     Invoke-RiftScan -Arguments @("verify", "session", $sessionA)
     Invoke-RiftScan -Arguments @("analyze", "session", $sessionB, "--top", "10")
     Invoke-RiftScan -Arguments @("verify", "session", $sessionB)
+    Invoke-RiftScan -Arguments @("verify", "session", $sessionChangingFloat)
+    Invoke-RiftScan -Arguments @("analyze", "session", $sessionChangingFloat, "--top", "10")
+    Invoke-RiftScan -Arguments @("report", "session", $sessionChangingFloat, "--top", "10")
+    Invoke-RiftScan -Arguments @("verify", "session", $sessionChangingFloat)
 
     $comparisonJson = Join-Path $reportRoot "fixture-comparison.json"
     $comparisonMarkdown = Join-Path $reportRoot "fixture-comparison.md"
