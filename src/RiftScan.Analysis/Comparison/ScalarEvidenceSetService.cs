@@ -107,7 +107,8 @@ public sealed class ScalarEvidenceSetService
         var cameraEntries = entries.Where(entry => IsCameraOnly(entry.Session.Summary.StimulusLabel)).ToArray();
         var hasOppositeTurnPair = leftEntries.Length > 0 && rightEntries.Length > 0;
 
-        var passiveStable = passiveEntries.Length > 0 && passiveEntries.All(entry => entry.Candidate.ChangedSampleCount == 0);
+        var hasPassiveBaseline = passiveEntries.Length > 0;
+        var passiveStable = hasPassiveBaseline && passiveEntries.All(entry => entry.Candidate.ChangedSampleCount == 0);
         var passiveChanged = passiveEntries.Any(entry => entry.Candidate.ChangedSampleCount > 0);
         var leftChanged = leftEntries.Any(entry => HasDirectedBehaviorChange(entry.Candidate));
         var rightChanged = rightEntries.Any(entry => HasDirectedBehaviorChange(entry.Candidate));
@@ -129,7 +130,7 @@ public sealed class ScalarEvidenceSetService
         scoreBreakdown["label_coverage_score"] = labelScore;
         var angleScore = ScoreAngleFamily(first.ValueFamily, supportingReasons, rejectionReasons);
         scoreBreakdown["angle_family_score"] = angleScore;
-        var passiveScore = ScorePassive(passiveStable, passiveChanged, supportingReasons, rejectionReasons);
+        var passiveScore = ScorePassive(hasPassiveBaseline, passiveStable, passiveChanged, supportingReasons, rejectionReasons);
         scoreBreakdown["passive_baseline_score"] = passiveScore;
         var turnScore = ScoreTurns(leftChanged, rightChanged, oppositePolarity, cameraTurnSeparation, supportingReasons, rejectionReasons);
         scoreBreakdown["turn_polarity_score"] = turnScore;
@@ -222,8 +223,19 @@ public sealed class ScalarEvidenceSetService
         return 0;
     }
 
-    private static double ScorePassive(bool passiveStable, bool passiveChanged, ICollection<string> supportingReasons, ICollection<string> rejectionReasons)
+    private static double ScorePassive(
+        bool hasPassiveBaseline,
+        bool passiveStable,
+        bool passiveChanged,
+        ICollection<string> supportingReasons,
+        ICollection<string> rejectionReasons)
     {
+        if (!hasPassiveBaseline)
+        {
+            rejectionReasons.Add("missing_passive_baseline_for_candidate");
+            return 0;
+        }
+
         if (passiveStable)
         {
             supportingReasons.Add("passive_baseline_stable");

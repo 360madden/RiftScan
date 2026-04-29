@@ -1097,6 +1097,23 @@ public sealed class SessionComparisonServiceTests
     }
 
     [Fact]
+    public void Aggregate_scalar_evidence_set_does_not_mark_camera_orientation_strong_without_passive_baseline()
+    {
+        using var turnLeft = CaptureStableFloatSession("turn_left");
+        using var turnRight = CaptureStableFloatSession("turn_right");
+        using var camera = CaptureChangingFloatSession("camera_only", "fixture_horizontal_yaw_drag_camera_only");
+
+        var result = new ScalarEvidenceSetService().Aggregate([turnLeft.Path, turnRight.Path, camera.Path]);
+
+        var candidate = Assert.Single(result.RankedCandidates, candidate =>
+            candidate.BaseAddressHex == "0x1000" &&
+            candidate.OffsetHex == "0x4");
+        Assert.Equal("camera_orientation_angle_scalar_candidate", candidate.Classification);
+        Assert.Equal("candidate", candidate.TruthReadiness);
+        Assert.Contains("missing_passive_baseline_for_candidate", candidate.RejectionReasons);
+    }
+
+    [Fact]
     public void Aggregate_scalar_evidence_set_does_not_promote_zero_net_camera_blip()
     {
         using var passive = CaptureDualScalarSession("passive_idle", [1.5f, 1.5f, 1.5f], [20.0f, 20.0f, 20.0f]);
