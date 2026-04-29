@@ -437,6 +437,87 @@ public sealed class CommandResultContractTests
             "evidence_summary");
 
     [Fact]
+    public void Rift_coordinate_mirror_context_result_pins_json_contract_fields() =>
+        AssertJsonPropertySet(
+            new RiftCoordinateMirrorContextResult(),
+            "result_schema_version",
+            "success",
+            "motion_comparison_path",
+            "session_path",
+            "session_id",
+            "analyzer_id",
+            "analyzer_version",
+            "analyzer_sources",
+            "window_bytes",
+            "max_pointer_hits",
+            "top_limit",
+            "motion_cluster_count",
+            "context_count",
+            "contexts",
+            "output_path",
+            "markdown_report_path",
+            "warnings",
+            "diagnostics");
+
+    [Fact]
+    public void Rift_coordinate_mirror_context_pins_json_contract_fields() =>
+        AssertJsonPropertySet(
+            new RiftCoordinateMirrorContext(),
+            "context_id",
+            "motion_cluster_id",
+            "representative_source_region_id",
+            "representative_source_base_address_hex",
+            "representative_source_offset_hex",
+            "representative_source_absolute_address_hex",
+            "axis_order",
+            "candidate_count",
+            "source_offsets",
+            "source_absolute_addresses",
+            "member_relative_offsets_bytes",
+            "member_gap_bytes",
+            "member_span_bytes",
+            "local_window_start_offset_hex",
+            "local_window_end_offset_hex",
+            "local_window_size_bytes",
+            "snapshots_inspected",
+            "first_snapshot_id",
+            "last_snapshot_id",
+            "first_snapshot_finite_float32_count",
+            "first_snapshot_plausible_vec3_count",
+            "first_snapshot_readable_member_count",
+            "first_snapshot_unique_member_value_count",
+            "last_snapshot_unique_member_value_count",
+            "first_snapshot_member_values",
+            "last_snapshot_member_values",
+            "pointer_like_value_count",
+            "pointer_like_hits",
+            "canonical_discriminator_status",
+            "evidence_summary");
+
+    [Fact]
+    public void Rift_coordinate_mirror_member_value_pins_json_contract_fields() =>
+        AssertJsonPropertySet(
+            new RiftCoordinateMirrorMemberValue(),
+            "source_offset_hex",
+            "source_absolute_address_hex",
+            "readable",
+            "x",
+            "y",
+            "z");
+
+    [Fact]
+    public void Rift_coordinate_mirror_pointer_hit_pins_json_contract_fields() =>
+        AssertJsonPropertySet(
+            new RiftCoordinateMirrorPointerHit(),
+            "source_offset_hex",
+            "source_absolute_address_hex",
+            "pointer_value_hex",
+            "target_region_id",
+            "target_base_address_hex",
+            "target_offset_hex",
+            "source_is_representative_region");
+
+    [Fact]
     public void Session_prune_candidate_pins_json_contract_fields() =>
         AssertJsonPropertySet(
             new SessionPruneCandidate(),
@@ -484,6 +565,7 @@ public sealed class CommandResultContractTests
         Assert.Equal("riftscan.session_xref_chain_summary_verification_result.v1", ReadSchema(new SessionXrefChainSummaryVerificationResult()));
         Assert.Equal("riftscan.rift_session_addon_coordinate_match_result.v1", ReadSchema(new RiftSessionAddonCoordinateMatchResult()));
         Assert.Equal("riftscan.rift_addon_coordinate_motion_comparison_result.v1", ReadSchema(new RiftAddonCoordinateMotionComparisonResult()));
+        Assert.Equal("riftscan.rift_coordinate_mirror_context_result.v1", ReadSchema(new RiftCoordinateMirrorContextResult()));
     }
 
     private static string? ReadSchema<T>(T value)

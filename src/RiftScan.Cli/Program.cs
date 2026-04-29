@@ -88,6 +88,11 @@ public static class Program
                 return RiftCompareAddonCoordinateMotion(args[2..]);
             }
 
+            if (args.Length >= 2 && Is(args[0], "rift") && Is(args[1], "coordinate-mirror-context"))
+            {
+                return RiftCoordinateMirrorContext(args[2..]);
+            }
+
             if (args.Length >= 2 && Is(args[0], "rift") && Is(args[1], "addon-corroboration"))
             {
                 return RiftAddonCorroboration(args[2..]);
@@ -683,6 +688,95 @@ public static class Program
             PostMatchPath = inputPaths[1],
             MinDeltaDistance = minDeltaDistance,
             MirrorEpsilon = mirrorEpsilon,
+            Top = top
+        });
+        if (!string.IsNullOrWhiteSpace(outputPath))
+        {
+            result = result with { OutputPath = Path.GetFullPath(outputPath) };
+        }
+
+        if (!string.IsNullOrWhiteSpace(reportPath))
+        {
+            result = result with { MarkdownReportPath = Path.GetFullPath(reportPath) };
+        }
+
+        if (!string.IsNullOrWhiteSpace(result.MarkdownReportPath))
+        {
+            service.WriteMarkdown(result, result.MarkdownReportPath);
+        }
+
+        WriteOptionalJson(result.OutputPath, result);
+        Console.WriteLine(JsonSerializer.Serialize(result, SessionJson.Options));
+        return result.Success ? 0 : 1;
+    }
+
+    private static int RiftCoordinateMirrorContext(string[] args)
+    {
+        if (args.Length == 1 && IsHelp(args[0]))
+        {
+            PrintRiftCoordinateMirrorContextUsage();
+            return 0;
+        }
+
+        string? motionComparisonPath = null;
+        string? sessionPath = null;
+        string? outputPath = null;
+        string? reportPath = null;
+        var windowBytes = 256;
+        var maxPointerHits = 32;
+        var top = 100;
+        for (var index = 0; index < args.Length; index++)
+        {
+            var arg = args[index];
+            switch (arg)
+            {
+                case "--session":
+                    sessionPath = RequireValue(args, ref index, arg);
+                    break;
+                case "--window-bytes":
+                    windowBytes = int.Parse(RequireValue(args, ref index, arg), CultureInfo.InvariantCulture);
+                    break;
+                case "--max-pointer-hits":
+                    maxPointerHits = int.Parse(RequireValue(args, ref index, arg), CultureInfo.InvariantCulture);
+                    break;
+                case "--top":
+                    top = int.Parse(RequireValue(args, ref index, arg), CultureInfo.InvariantCulture);
+                    break;
+                case "--out":
+                case "--json-out":
+                    outputPath = RequireValue(args, ref index, arg);
+                    break;
+                case "--report-md":
+                    reportPath = RequireValue(args, ref index, arg);
+                    break;
+                default:
+                    if (arg.StartsWith("--", StringComparison.Ordinal) || motionComparisonPath is not null)
+                    {
+                        throw new ArgumentException($"Unknown rift coordinate-mirror-context option: {arg}");
+                    }
+
+                    motionComparisonPath = arg;
+                    break;
+            }
+        }
+
+        if (string.IsNullOrWhiteSpace(motionComparisonPath))
+        {
+            throw new ArgumentException("rift coordinate-mirror-context requires <motion-comparison-json>.");
+        }
+
+        if (string.IsNullOrWhiteSpace(sessionPath))
+        {
+            throw new ArgumentException("rift coordinate-mirror-context requires --session <session-path>.");
+        }
+
+        var service = new RiftCoordinateMirrorContextService();
+        var result = service.Analyze(new RiftCoordinateMirrorContextOptions
+        {
+            MotionComparisonPath = motionComparisonPath,
+            SessionPath = sessionPath,
+            WindowBytes = windowBytes,
+            MaxPointerHits = maxPointerHits,
             Top = top
         });
         if (!string.IsNullOrWhiteSpace(outputPath))
@@ -2328,6 +2422,7 @@ public static class Program
         PrintRiftAddonCoordsUsage();
         PrintRiftMatchAddonCoordsUsage();
         PrintRiftCompareAddonCoordinateMotionUsage();
+        PrintRiftCoordinateMirrorContextUsage();
         PrintRiftAddonCorroborationUsage();
         PrintRiftVerifyPromotedCoordinateUsage();
         PrintCompareSessionsUsage();
@@ -2429,6 +2524,9 @@ public static class Program
 
     private static void PrintRiftCompareAddonCoordinateMotionUsage() =>
         Console.WriteLine("riftscan rift compare-addon-coordinate-motion <pre-match-json> <post-match-json> [--min-delta-distance 1] [--mirror-epsilon 0.001] [--top 100] [--out reports/generated/addon-coordinate-motion.json] [--report-md reports/generated/addon-coordinate-motion.md]");
+
+    private static void PrintRiftCoordinateMirrorContextUsage() =>
+        Console.WriteLine("riftscan rift coordinate-mirror-context <motion-comparison-json> --session <session-path> [--window-bytes 256] [--max-pointer-hits 32] [--top 100] [--out reports/generated/coordinate-mirror-context.json] [--report-md reports/generated/coordinate-mirror-context.md]");
 
     private static void PrintRiftAddonCorroborationUsage() =>
         Console.WriteLine("riftscan rift addon-corroboration --candidates reports/generated/vec3-truth-candidates.jsonl --observations reports/generated/addon-coordinate-observations.jsonl --out reports/generated/vec3-truth-corroboration.jsonl [--json-out reports/generated/addon-coordinate-corroboration.json] [--tolerance 5]");

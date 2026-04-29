@@ -1,6 +1,6 @@
 # RiftScan xref-chain current evidence
 
-Timestamp: 2026-04-29 19:23 America/New_York
+Timestamp: 2026-04-29 19:42 America/New_York
 
 Status: **validated pointer-chain evidence plus addon-coordinate-matched vec3 candidates and movement-response evidence, not final semantic truth**.
 
@@ -63,6 +63,8 @@ These artifacts are intentionally under ignored capture/report directories and a
 - `reports/generated/live-coordinate-fresh-20260429-after-long-w-current-player-matches.json`
 - `reports/generated/live-coordinate-fresh-20260429-before-after-long-w-current-player-motion.json`
 - `reports/generated/live-coordinate-fresh-20260429-before-after-long-w-current-player-motion.md`
+- `reports/generated/live-coordinate-fresh-20260429-coordinate-mirror-context.json`
+- `reports/generated/live-coordinate-fresh-20260429-coordinate-mirror-context.md`
 
 Capture result:
 
@@ -237,6 +239,40 @@ Mirror clusters remained unchanged under the fresh current-player source pass:
 
 Interpretation: fresh addon current-player exports removed the stale-addon warning and strengthened the coordinate-family claim, but the same synchronized mirror families still block canonical promotion.
 
+## Coordinate mirror context result
+
+The next offline pass inspected the fresh post-movement stored snapshots around each synchronized mirror cluster. This pass does not attach to the live process and does not promote a canonical coordinate owner; it emits local member spacing plus pointer-like values that can be used as owner/container xref targets.
+
+```powershell
+riftscan rift coordinate-mirror-context `
+  reports/generated/live-coordinate-fresh-20260429-before-after-long-w-current-player-motion.json `
+  --session sessions/live-coordinate-fresh-20260429-after-long-w `
+  --window-bytes 512 `
+  --max-pointer-hits 64 `
+  --top 100 `
+  --out reports/generated/live-coordinate-fresh-20260429-coordinate-mirror-context.json `
+  --report-md reports/generated/live-coordinate-fresh-20260429-coordinate-mirror-context.md
+```
+
+Result summary:
+
+- `success=true`
+- motion clusters: `3`
+- contexts emitted: `3`
+- warning: `coordinate_mirror_context_is_owner_discriminator_evidence_not_final_truth`
+- all three mirror clusters have stable duplicate member values within the post-movement session (`unique first/last = 1/1`)
+- all three mirror clusters have pointer-like local context ready for xref follow-up
+
+Mirror-context summary:
+
+| Representative | Count | Member span bytes | Unique first/last | Pointer-like values | First pointer-like samples |
+|---:|---:|---:|---:|---:|---|
+| `0x47EC` | 11 | 2428 | `1/1` | 57 | `0x46F0->0x48A0`, `0x4710->0x48A0`, `0x4720->0x4810`, `0x4748->0x4810`, `0x4770->0x5AC8` |
+| `0x3A50` | 2 | 252 | `1/1` | 11 | `0x3960->0x4052`, `0x3998->0x3F00`, `0x3A00->0x43E0`, `0x3A20->0x3A88`, `0x3A40->0x42E0` |
+| `0x3A60` | 2 | 252 | `1/1` | 11 | `0x3960->0x4052`, `0x3998->0x3F00`, `0x3A00->0x43E0`, `0x3A20->0x3A88`, `0x3A40->0x42E0` |
+
+Interpretation: the local windows contain many in-region pointer-like values near the mirrored coordinate members. This gives the next analyzer concrete xref targets, but it still does not identify which mirror is the canonical live owner.
+
 ## Interpretation
 
 - This is stable owner/provenance evidence for the current process instance.
@@ -248,4 +284,4 @@ Interpretation: fresh addon current-player exports removed the stale-addon warni
 
 ## Next smallest proof step
 
-Trace owner/container fields around the three synchronized mirror clusters, starting from the `0x47EC` cluster and the verified `0x975E5FE000 <-> 0x975E234000 -> 0x975E1D8000` chain, to find a discriminator that identifies the canonical live coordinate owner.
+Run xref analysis against the coordinate-mirror pointer-like targets, starting with the `0x47EC` context window and the verified `0x975E5FE000 <-> 0x975E234000 -> 0x975E1D8000` chain, to find a stable owner/container discriminator that separates canonical live position from synchronized mirrors.
