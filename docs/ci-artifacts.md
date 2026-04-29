@@ -77,10 +77,13 @@ The CLI exposes its package version and source metadata:
 
 ```powershell
 dotnet run --project src/RiftScan.Cli/RiftScan.Cli.csproj --configuration Release --no-build -- --version
+dotnet run --project src/RiftScan.Cli/RiftScan.Cli.csproj --configuration Release --no-build -- --version --json
 ```
 
-Expected output starts with:
+Text output starts with:
 
 ```text
 riftscan 0.1.0
 ```
+
+JSON output uses schema `riftscan.version_result.v1` and includes `version`, `informational_version`, and `source_revision`.
