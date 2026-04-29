@@ -159,6 +159,7 @@ public sealed class SessionComparisonServiceTests
             Assert.Contains("Vec3 behavior summary", report, StringComparison.Ordinal);
             Assert.Contains("Top typed value matches", report, StringComparison.Ordinal);
             Assert.Contains("structure-000001", report, StringComparison.Ordinal);
+            Assert.Contains("snapshots/*.bin", report, StringComparison.Ordinal);
             Assert.Contains("candidate evidence, not recovered truth", report, StringComparison.Ordinal);
             var plan = File.ReadAllText(nextPlanPath);
             Assert.Contains("recommended_mode", plan, StringComparison.Ordinal);
