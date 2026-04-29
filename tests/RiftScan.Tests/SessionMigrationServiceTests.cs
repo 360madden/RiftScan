@@ -22,6 +22,18 @@ public sealed class SessionMigrationServiceTests
     }
 
     [Fact]
+    public void Valid_v0_fixture_is_structurally_valid_for_migration_tests()
+    {
+        var verification = new SessionVerifier().Verify(ValidV0FixturePath);
+
+        Assert.True(verification.Success, string.Join(Environment.NewLine, verification.Issues.Select(issue => $"{issue.Code}: {issue.Message}")));
+        var manifest = JsonSerializer.Deserialize<SessionManifest>(
+            File.ReadAllText(Path.Combine(ValidV0FixturePath, "manifest.json")),
+            SessionJson.Options)!;
+        Assert.Equal(SessionMigrationService.LegacySessionSchemaVersionV0, manifest.SchemaVersion);
+    }
+
+    [Fact]
     public void Migrate_unsupported_target_schema_fails_without_writing_artifacts()
     {
         var result = new SessionMigrationService().Migrate(ValidFixturePath, "riftscan.session.v2");
@@ -135,16 +147,12 @@ public sealed class SessionMigrationServiceTests
     public void Migrate_v0_source_with_plan_out_writes_dry_run_upgrade_plan()
     {
         var tempDirectory = CreateTempDirectory();
-        var legacySessionPath = Path.Combine(tempDirectory, "legacy-v0-session");
         var planPath = Path.Combine(tempDirectory, "v0-to-v1-plan.json");
 
         try
         {
-            CopyDirectory(ValidFixturePath, legacySessionPath);
-            RewriteManifestSchemaVersion(legacySessionPath, SessionMigrationService.LegacySessionSchemaVersionV0);
-
             var result = new SessionMigrationService().Migrate(
-                legacySessionPath,
+                ValidV0FixturePath,
                 SessionMigrationService.SupportedSessionSchemaVersion,
                 planOutputPath: planPath);
 
@@ -209,16 +217,12 @@ public sealed class SessionMigrationServiceTests
     public void Migrate_v0_apply_writes_verified_v1_copy_without_mutating_source()
     {
         var tempDirectory = CreateTempDirectory();
-        var legacySessionPath = Path.Combine(tempDirectory, "legacy-v0-session");
         var migratedSessionPath = Path.Combine(tempDirectory, "migrated-v1-session");
 
         try
         {
-            CopyDirectory(ValidFixturePath, legacySessionPath);
-            RewriteManifestSchemaVersion(legacySessionPath, SessionMigrationService.LegacySessionSchemaVersionV0);
-
             var result = new SessionMigrationService().Migrate(
-                legacySessionPath,
+                ValidV0FixturePath,
                 SessionMigrationService.SupportedSessionSchemaVersion,
                 dryRun: false,
                 migrationOutputPath: migratedSessionPath);
@@ -229,7 +233,7 @@ public sealed class SessionMigrationServiceTests
             Assert.Contains(Path.GetFullPath(migratedSessionPath), result.ArtifactsWritten);
 
             var sourceManifest = JsonSerializer.Deserialize<SessionManifest>(
-                File.ReadAllText(Path.Combine(legacySessionPath, "manifest.json")),
+                File.ReadAllText(Path.Combine(ValidV0FixturePath, "manifest.json")),
                 SessionJson.Options)!;
             var migratedManifest = JsonSerializer.Deserialize<SessionManifest>(
                 File.ReadAllText(Path.Combine(migratedSessionPath, "manifest.json")),
@@ -264,6 +268,34 @@ public sealed class SessionMigrationServiceTests
             Assert.False(result.Success);
             Assert.Equal("apply_output_required", result.Status);
             Assert.Contains(result.Issues, issue => issue.Code == "apply_output_required");
+        }
+        finally
+        {
+            Directory.Delete(tempDirectory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void Migrate_v0_apply_rejects_non_empty_output_directory()
+    {
+        var tempDirectory = CreateTempDirectory();
+        var migratedSessionPath = Path.Combine(tempDirectory, "migrated-v1-session");
+
+        try
+        {
+            Directory.CreateDirectory(migratedSessionPath);
+            File.WriteAllText(Path.Combine(migratedSessionPath, "existing.txt"), "do-not-overwrite");
+
+            var result = new SessionMigrationService().Migrate(
+                ValidV0FixturePath,
+                SessionMigrationService.SupportedSessionSchemaVersion,
+                dryRun: false,
+                migrationOutputPath: migratedSessionPath);
+
+            Assert.False(result.Success);
+            Assert.Equal("apply_output_exists", result.Status);
+            Assert.Contains(result.Issues, issue => issue.Code == "apply_output_exists");
+            Assert.Equal("do-not-overwrite", File.ReadAllText(Path.Combine(migratedSessionPath, "existing.txt")));
         }
         finally
         {
@@ -418,18 +450,14 @@ public sealed class SessionMigrationServiceTests
     public void Cli_migrate_session_v0_apply_writes_verified_output_directory()
     {
         var tempDirectory = CreateTempDirectory();
-        var legacySessionPath = Path.Combine(tempDirectory, "legacy-v0-session");
         var migratedSessionPath = Path.Combine(tempDirectory, "migrated-v1-session");
 
         try
         {
-            CopyDirectory(ValidFixturePath, legacySessionPath);
-            RewriteManifestSchemaVersion(legacySessionPath, SessionMigrationService.LegacySessionSchemaVersionV0);
-
             var result = RunCli(
                 "migrate",
                 "session",
-                legacySessionPath,
+                ValidV0FixturePath,
                 "--to-schema",
                 SessionMigrationService.SupportedSessionSchemaVersion,
                 "--apply",
@@ -450,6 +478,8 @@ public sealed class SessionMigrationServiceTests
     }
 
     private static string ValidFixturePath => Path.Combine(AppContext.BaseDirectory, "Fixtures", "valid-session");
+
+    private static string ValidV0FixturePath => Path.Combine(AppContext.BaseDirectory, "Fixtures", "valid-session-v0");
 
     private static string CreateTempDirectory()
     {
