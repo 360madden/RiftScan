@@ -38,6 +38,18 @@ git diff --check
 
 If any command cannot be run, state the exact reason and the unverified risk.
 
+## Live RIFT window control authorization
+
+As of 2026-04-29, the operator explicitly authorized autonomous Codex control of the local RIFT game window when needed for RiftScan live testing. This authorization applies to focusing the exact `rift_x64` / `RIFT` window and sending bounded stimulus input such as turn-left, turn-right, camera-only, or short movement actions required to label capture sessions.
+
+Boundaries:
+
+- Keep RiftScan core read-only; do not add game input, launcher control, credential handling, or window automation to scanner core.
+- Verify the target process/window before sending input.
+- Prefer short, reversible input bursts and record the stimulus label in session artifacts.
+- Do not control Glyph launcher/auth flows or handle credentials/tokens.
+- Stop live input if the target window/process cannot be verified or if input appears to affect the wrong window.
+
 ## Rule of thumb
 
 Smallest coherent milestone, not smallest possible code change.
