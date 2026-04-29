@@ -405,6 +405,49 @@ public sealed class SessionComparisonServiceTests
     }
 
     [Fact]
+    public void Vec3_truth_recovery_verifier_accepts_recovered_packet_and_cli()
+    {
+        using var passive = CaptureVec3Session(new FixedVec3ProcessMemoryReader(), "passive_idle");
+        using var moving = CaptureVec3Session(new MovingVec3ProcessMemoryReader(), "move_forward");
+        _ = new DynamicRegionTriageAnalyzer().AnalyzeSession(passive.Path);
+        _ = new DynamicRegionTriageAnalyzer().AnalyzeSession(moving.Path);
+        var comparison = new SessionComparisonService().Compare(passive.Path, moving.Path);
+        var truthOut = Path.Combine(passive.Path, "vec3_truth_candidates.jsonl");
+        var repeatOut = Path.Combine(passive.Path, "vec3_truth_candidates_repeat.jsonl");
+        _ = new Vec3TruthCandidateExporter().Export(comparison, truthOut);
+        _ = new Vec3TruthCandidateExporter().Export(comparison, repeatOut);
+        var recoveryPath = Path.Combine(passive.Path, "vec3-truth-recovery.json");
+        var recovery = new Vec3TruthRecoveryService().Recover([truthOut, repeatOut]) with { OutputPath = recoveryPath };
+        File.WriteAllText(recoveryPath, JsonSerializer.Serialize(recovery, SessionJson.Options));
+
+        var result = new Vec3TruthRecoveryVerifier().Verify(recoveryPath);
+        var cliExitCode = RiftScan.Cli.Program.Main(["verify", "vec3-truth-recovery", recoveryPath]);
+
+        Assert.True(result.Success);
+        Assert.Equal(2, result.TruthCandidatePathCount);
+        Assert.Equal(2, result.InputCandidateCount);
+        Assert.Equal(1, result.RecoveredCandidateCount);
+        Assert.Empty(result.Issues);
+        Assert.Equal(0, cliExitCode);
+    }
+
+    [Fact]
+    public void Vec3_corroboration_verifier_accepts_addon_waypoint_packet_and_cli()
+    {
+        using var temp = new TempDirectory();
+        Directory.CreateDirectory(temp.Path);
+        var corroborationPath = WriteVec3Corroboration(temp.Path, "corroborated");
+
+        var result = new Vec3TruthCorroborationVerifier().Verify(corroborationPath);
+        var cliExitCode = RiftScan.Cli.Program.Main(["verify", "vec3-corroboration", corroborationPath]);
+
+        Assert.True(result.Success);
+        Assert.Equal(1, result.EntryCount);
+        Assert.Empty(result.Issues);
+        Assert.Equal(0, cliExitCode);
+    }
+
+    [Fact]
     public void Scalar_evidence_set_verifier_rejects_missing_truth_claim_warning()
     {
         using var passive = CaptureStableFloatSession("passive_idle");
@@ -1080,6 +1123,43 @@ public sealed class SessionComparisonServiceTests
         Assert.Equal("review_existing_behavior_contrast", readiness.NextRequiredCapture.Mode);
         Assert.Single(readiness.TopVec3BehaviorCandidates);
         Assert.Contains("truth_readiness_is_candidate_evidence_not_truth_claim", readiness.Warnings);
+
+        var truthOut = Path.Combine(passive.Path, "vec3_truth_candidates.jsonl");
+        var exported = new Vec3TruthCandidateExporter().Export(result, truthOut);
+        var truthCandidate = Assert.Single(exported);
+        Assert.True(File.Exists(truthOut));
+        Assert.Equal("vec3-truth-000001", truthCandidate.CandidateId);
+        Assert.Equal("riftscan.session_comparison.v1", truthCandidate.SourceSchemaVersion);
+        Assert.Equal("position_like_vec3_candidate", truthCandidate.Classification);
+        Assert.Equal("strong_candidate", truthCandidate.TruthReadiness);
+        Assert.Equal("behavior_strong_candidate", truthCandidate.ValidationStatus);
+        Assert.Equal("candidate", truthCandidate.ClaimLevel);
+        Assert.True(truthCandidate.PassiveStable);
+        Assert.True(truthCandidate.MoveForwardChanged);
+        Assert.Equal("addon_waypoint_or_player_coord_truth", truthCandidate.ExternalTruthSourceHint);
+        Assert.Equal("not_requested", truthCandidate.CorroborationStatus);
+        Assert.Contains("preview=", truthCandidate.SessionAValueSequenceSummary, StringComparison.Ordinal);
+        Assert.Contains("snapshots/*.bin", truthCandidate.SessionAAnalyzerSources);
+
+        var corroborationPath = WriteVec3Corroboration(passive.Path, "corroborated");
+        var corroboratedOut = Path.Combine(passive.Path, "vec3_truth_candidates_corroborated.jsonl");
+        var corroboratedCandidate = Assert.Single(new Vec3TruthCandidateExporter().Export(result, corroboratedOut, corroborationPath: corroborationPath));
+        Assert.Equal("corroborated", corroboratedCandidate.CorroborationStatus);
+        Assert.Equal("behavior_and_addon_waypoint_corroborated_candidate", corroboratedCandidate.ValidationStatus);
+        Assert.Equal(["fixture_readerbridge_coordX_coordY_coordZ"], corroboratedCandidate.CorroborationSources);
+        Assert.Equal("fixture addon coord corroborated", corroboratedCandidate.CorroborationSummary);
+        Assert.Equal("repeat_move_forward_contrast_or_recover_across_sessions", corroboratedCandidate.NextValidationStep);
+
+        var repeatOut = Path.Combine(passive.Path, "vec3_truth_candidates_repeat.jsonl");
+        _ = new Vec3TruthCandidateExporter().Export(result, repeatOut);
+        var recovery = new Vec3TruthRecoveryService().Recover([truthOut, repeatOut]);
+        var recovered = Assert.Single(recovery.RecoveredCandidates);
+        Assert.Equal("vec3-recovered-000001", recovered.CandidateId);
+        Assert.Equal("recovered_candidate", recovered.TruthReadiness);
+        Assert.Equal("recovered_candidate", recovered.ClaimLevel);
+        Assert.Equal(2, recovered.SupportingFileCount);
+        Assert.Contains("repeated_truth_candidate_match", recovered.SupportingReasons);
+        Assert.Equal("recovered_coordinate_candidate_requires_addon_waypoint_review_before_final_truth_claim", recovered.Warning);
     }
 
     [Fact]
@@ -1355,6 +1435,31 @@ public sealed class SessionComparisonServiceTests
                 CorroborationStatus = cameraStatus,
                 Source = "fixture_camera_truth",
                 EvidenceSummary = $"fixture camera orientation {cameraStatus}"
+            }
+        };
+        File.WriteAllLines(path, entries.Select(entry => JsonSerializer.Serialize(entry, SessionJson.Options).ReplaceLineEndings(string.Empty)));
+        return path;
+    }
+
+    private static string WriteVec3Corroboration(string outputRoot, string status)
+    {
+        var path = Path.Combine(outputRoot, "vec3-truth-corroboration.jsonl");
+        var entries = new[]
+        {
+            new Vec3TruthCorroborationEntry
+            {
+                BaseAddressHex = "0x1000",
+                OffsetHex = "0x0",
+                DataType = "vec3_float32",
+                Classification = "position_like_vec3_candidate",
+                CorroborationStatus = status,
+                Source = "fixture_readerbridge_coordX_coordY_coordZ",
+                AddonSourceType = "readerbridge_player_coord",
+                AddonObservedX = 1,
+                AddonObservedY = 2,
+                AddonObservedZ = 3,
+                Tolerance = 0.5,
+                EvidenceSummary = $"fixture addon coord {status}"
             }
         };
         File.WriteAllLines(path, entries.Select(entry => JsonSerializer.Serialize(entry, SessionJson.Options).ReplaceLineEndings(string.Empty)));

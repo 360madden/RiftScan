@@ -74,6 +74,11 @@ public static class Program
                 return CompareScalarTruth(args[2..]);
             }
 
+            if (args.Length >= 2 && Is(args[0], "compare") && Is(args[1], "vec3-truth"))
+            {
+                return CompareVec3Truth(args[2..]);
+            }
+
             if (args.Length >= 2 && Is(args[0], "compare") && Is(args[1], "scalar-promotion"))
             {
                 return CompareScalarPromotion(args[2..]);
@@ -114,6 +119,11 @@ public static class Program
                 return VerifyScalarCorroboration(args[2..]);
             }
 
+            if (args.Length >= 2 && Is(args[0], "verify") && Is(args[1], "vec3-corroboration"))
+            {
+                return VerifyVec3Corroboration(args[2..]);
+            }
+
             if (args.Length >= 2 && Is(args[0], "verify") && Is(args[1], "scalar-evidence-set"))
             {
                 return VerifyScalarEvidenceSet(args[2..]);
@@ -122,6 +132,11 @@ public static class Program
             if (args.Length >= 2 && Is(args[0], "verify") && Is(args[1], "scalar-truth-recovery"))
             {
                 return VerifyScalarTruthRecovery(args[2..]);
+            }
+
+            if (args.Length >= 2 && Is(args[0], "verify") && Is(args[1], "vec3-truth-recovery"))
+            {
+                return VerifyVec3TruthRecovery(args[2..]);
             }
 
             if (args.Length >= 2 && Is(args[0], "verify") && Is(args[1], "scalar-truth-promotion"))
@@ -257,7 +272,7 @@ public static class Program
             throw new ArgumentException("Compare requires two session paths.");
         }
 
-        var (top, outputPath, reportPath, nextPlanPath, truthReadinessPath) = ParseCompareOptions(args[2..]);
+        var (top, outputPath, reportPath, nextPlanPath, truthReadinessPath, vec3TruthCandidatePath, vec3CorroborationPath) = ParseCompareOptions(args[2..]);
         var result = new SessionComparisonService().Compare(args[0], args[1], top);
         if (!string.IsNullOrWhiteSpace(reportPath))
         {
@@ -292,6 +307,11 @@ public static class Program
         if (!string.IsNullOrWhiteSpace(result.ComparisonTruthReadinessPath))
         {
             _ = new ComparisonTruthReadinessService().Write(result, result.ComparisonTruthReadinessPath, top);
+        }
+
+        if (!string.IsNullOrWhiteSpace(vec3TruthCandidatePath))
+        {
+            _ = new Vec3TruthCandidateExporter().Export(result, Path.GetFullPath(vec3TruthCandidatePath), top, vec3CorroborationPath);
         }
 
         if (!string.IsNullOrWhiteSpace(outputPath))
@@ -433,6 +453,54 @@ public static class Program
         }
 
         var result = new ScalarTruthRecoveryService().Recover(paths, top);
+        if (!string.IsNullOrWhiteSpace(outputPath))
+        {
+            result = result with { OutputPath = Path.GetFullPath(outputPath) };
+            Directory.CreateDirectory(Path.GetDirectoryName(result.OutputPath)!);
+            File.WriteAllText(result.OutputPath, JsonSerializer.Serialize(result, SessionJson.Options));
+        }
+
+        Console.WriteLine(JsonSerializer.Serialize(result, SessionJson.Options));
+        return result.Success ? 0 : 1;
+    }
+
+    private static int CompareVec3Truth(string[] args)
+    {
+        if (args.Length == 1 && IsHelp(args[0]))
+        {
+            PrintCompareVec3TruthUsage();
+            return 0;
+        }
+
+        var paths = new List<string>();
+        var top = 100;
+        string? outputPath = null;
+        for (var index = 0; index < args.Length; index++)
+        {
+            var arg = args[index];
+            switch (arg)
+            {
+                case "--all":
+                    top = int.MaxValue;
+                    break;
+                case "--top":
+                    top = int.Parse(RequireValue(args, ref index, arg));
+                    break;
+                case "--out":
+                    outputPath = RequireValue(args, ref index, arg);
+                    break;
+                default:
+                    paths.Add(arg);
+                    break;
+            }
+        }
+
+        if (paths.Count < 2)
+        {
+            throw new ArgumentException("Vec3-truth compare requires at least two vec3 truth candidate JSONL files.");
+        }
+
+        var result = new Vec3TruthRecoveryService().Recover(paths, top);
         if (!string.IsNullOrWhiteSpace(outputPath))
         {
             result = result with { OutputPath = Path.GetFullPath(outputPath) };
@@ -960,13 +1028,15 @@ public static class Program
         return top;
     }
 
-    private static (int Top, string? OutputPath, string? ReportPath, string? NextPlanPath, string? TruthReadinessPath) ParseCompareOptions(string[] args)
+    private static (int Top, string? OutputPath, string? ReportPath, string? NextPlanPath, string? TruthReadinessPath, string? Vec3TruthCandidatePath, string? Vec3CorroborationPath) ParseCompareOptions(string[] args)
     {
         var top = 100;
         string? outputPath = null;
         string? reportPath = null;
         string? nextPlanPath = null;
         string? truthReadinessPath = null;
+        string? vec3TruthCandidatePath = null;
+        string? vec3CorroborationPath = null;
         for (var index = 0; index < args.Length; index++)
         {
             var arg = args[index];
@@ -990,12 +1060,20 @@ public static class Program
                 case "--truth-readiness":
                     truthReadinessPath = RequireValue(args, ref index, arg);
                     break;
+                case "--vec3-truth-out":
+                case "--coordinate-truth-out":
+                    vec3TruthCandidatePath = RequireValue(args, ref index, arg);
+                    break;
+                case "--vec3-corroboration":
+                case "--coordinate-corroboration":
+                    vec3CorroborationPath = RequireValue(args, ref index, arg);
+                    break;
                 default:
                     throw new ArgumentException($"Unknown compare option: {arg}");
             }
         }
 
-        return (top, outputPath, reportPath, nextPlanPath, truthReadinessPath);
+        return (top, outputPath, reportPath, nextPlanPath, truthReadinessPath, vec3TruthCandidatePath, vec3CorroborationPath);
     }
 
     private static string? ParseSummaryOptions(string[] args)
@@ -1237,6 +1315,29 @@ public static class Program
         return result.Success ? 0 : 1;
     }
 
+    private static int VerifyVec3Corroboration(string[] args)
+    {
+        if (args.Length == 1 && IsHelp(args[0]))
+        {
+            PrintVerifyVec3CorroborationUsage();
+            return 0;
+        }
+
+        if (args.Length == 0)
+        {
+            throw new ArgumentException("Verify vec3-corroboration requires a JSONL path.");
+        }
+
+        if (args.Length > 1)
+        {
+            throw new ArgumentException($"Unknown verify vec3-corroboration option: {args[1]}");
+        }
+
+        var result = new Vec3TruthCorroborationVerifier().Verify(args[0]);
+        Console.WriteLine(JsonSerializer.Serialize(result, SessionJson.Options));
+        return result.Success ? 0 : 1;
+    }
+
     private static int VerifyScalarTruthRecovery(string[] args)
     {
         if (args.Length == 1 && IsHelp(args[0]))
@@ -1256,6 +1357,29 @@ public static class Program
         }
 
         var result = new ScalarTruthRecoveryVerifier().Verify(args[0]);
+        Console.WriteLine(JsonSerializer.Serialize(result, SessionJson.Options));
+        return result.Success ? 0 : 1;
+    }
+
+    private static int VerifyVec3TruthRecovery(string[] args)
+    {
+        if (args.Length == 1 && IsHelp(args[0]))
+        {
+            PrintVerifyVec3TruthRecoveryUsage();
+            return 0;
+        }
+
+        if (args.Length == 0)
+        {
+            throw new ArgumentException("Verify vec3-truth-recovery requires a JSON path.");
+        }
+
+        if (args.Length > 1)
+        {
+            throw new ArgumentException($"Unknown verify vec3-truth-recovery option: {args[1]}");
+        }
+
+        var result = new Vec3TruthRecoveryVerifier().Verify(args[0]);
         Console.WriteLine(JsonSerializer.Serialize(result, SessionJson.Options));
         return result.Success ? 0 : 1;
     }
@@ -1390,6 +1514,7 @@ public static class Program
         PrintCompareSessionsUsage();
         PrintCompareScalarSetUsage();
         PrintCompareScalarTruthUsage();
+        PrintCompareVec3TruthUsage();
         PrintCompareScalarPromotionUsage();
         PrintReviewScalarPromotionUsage();
         PrintMigrateUsage();
@@ -1398,8 +1523,10 @@ public static class Program
         PrintSessionSummaryUsage();
         PrintVerifySessionUsage();
         PrintVerifyScalarCorroborationUsage();
+        PrintVerifyVec3CorroborationUsage();
         PrintVerifyScalarEvidenceSetUsage();
         PrintVerifyScalarTruthRecoveryUsage();
+        PrintVerifyVec3TruthRecoveryUsage();
         PrintVerifyScalarTruthPromotionUsage();
         PrintVerifyScalarPromotionReviewUsage();
         PrintVerifyComparisonReadinessUsage();
@@ -1466,13 +1593,16 @@ public static class Program
         Console.WriteLine("riftscan report capability [--truth-readiness reports/generated/truth-readiness.json ...] [--scalar-evidence-set reports/generated/scalar-evidence-set.json ...] [--scalar-truth-recovery reports/generated/scalar-truth-recovery.json ...] [--scalar-truth-promotion reports/generated/scalar-truth-promotion.json ...] [--scalar-promotion-review reports/generated/scalar-promotion-review.json ...] [--json-out reports/generated/capability-status.json]");
 
     private static void PrintCompareSessionsUsage() =>
-        Console.WriteLine("riftscan compare sessions <session-a> <session-b> [--top 100] [--out reports/generated/comparison.json] [--report-md reports/generated/comparison.md] [--next-plan reports/generated/next-capture-plan.json] [--truth-readiness reports/generated/truth-readiness.json]");
+        Console.WriteLine("riftscan compare sessions <session-a> <session-b> [--top 100] [--out reports/generated/comparison.json] [--report-md reports/generated/comparison.md] [--next-plan reports/generated/next-capture-plan.json] [--truth-readiness reports/generated/truth-readiness.json] [--vec3-truth-out reports/generated/vec3-truth-candidates.jsonl] [--vec3-corroboration reports/generated/vec3-truth-corroboration.jsonl]");
 
     private static void PrintCompareScalarSetUsage() =>
         Console.WriteLine("riftscan compare scalar-set <session-a> <session-b> [session-c ...] [--top 100] [--out reports/generated/scalar-evidence-set.json] [--report-md reports/generated/scalar-evidence-set.md] [--truth-out reports/generated/scalar_truth_candidates.jsonl] [--corroboration reports/generated/scalar_truth_corroboration.jsonl]");
 
     private static void PrintCompareScalarTruthUsage() =>
         Console.WriteLine("riftscan compare scalar-truth <truth-a.jsonl> <truth-b.jsonl> [truth-c.jsonl ...] [--top 100] [--out reports/generated/scalar-truth-recovery.json]");
+
+    private static void PrintCompareVec3TruthUsage() =>
+        Console.WriteLine("riftscan compare vec3-truth <truth-a.jsonl> <truth-b.jsonl> [truth-c.jsonl ...] [--top 100] [--out reports/generated/vec3-truth-recovery.json]");
 
     private static void PrintCompareScalarPromotionUsage() =>
         Console.WriteLine("riftscan compare scalar-promotion <scalar-truth-recovery.json> --corroboration reports/generated/scalar_truth_corroboration.jsonl [--top 100] [--out reports/generated/scalar-truth-promotion.json]");
@@ -1498,11 +1628,17 @@ public static class Program
     private static void PrintVerifyScalarCorroborationUsage() =>
         Console.WriteLine("riftscan verify scalar-corroboration <corroboration.jsonl>");
 
+    private static void PrintVerifyVec3CorroborationUsage() =>
+        Console.WriteLine("riftscan verify vec3-corroboration <vec3-truth-corroboration.jsonl>");
+
     private static void PrintVerifyScalarEvidenceSetUsage() =>
         Console.WriteLine("riftscan verify scalar-evidence-set <scalar-evidence-set.json>");
 
     private static void PrintVerifyScalarTruthRecoveryUsage() =>
         Console.WriteLine("riftscan verify scalar-truth-recovery <scalar-truth-recovery.json>");
+
+    private static void PrintVerifyVec3TruthRecoveryUsage() =>
+        Console.WriteLine("riftscan verify vec3-truth-recovery <vec3-truth-recovery.json>");
 
     private static void PrintVerifyScalarTruthPromotionUsage() =>
         Console.WriteLine("riftscan verify scalar-truth-promotion <scalar-truth-promotion.json>");
