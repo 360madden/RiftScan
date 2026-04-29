@@ -86,6 +86,7 @@ public sealed class CommandResultContractTests
             "region_count",
             "total_bytes_raw",
             "total_bytes_stored",
+            "summary_path",
             "artifact_count",
             "artifact_bytes",
             "generated_artifacts",

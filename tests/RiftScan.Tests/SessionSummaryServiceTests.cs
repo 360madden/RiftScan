@@ -68,6 +68,65 @@ public sealed class SessionSummaryServiceTests
         }
     }
 
+    [Fact]
+    public void Summary_json_out_writes_summary_file_and_reports_path()
+    {
+        var tempDirectory = CreateTempDirectory();
+        var sessionPath = Path.Combine(tempDirectory, "session-with-generated-artifacts");
+        var summaryPath = Path.Combine(tempDirectory, "reports", "session-summary.json");
+
+        try
+        {
+            CopyDirectory(ValidFixturePath, sessionPath);
+            File.WriteAllText(Path.Combine(sessionPath, "report.json"), "{}\n");
+
+            var result = new SessionSummaryService().Summarize(sessionPath, summaryPath);
+
+            var fullSummaryPath = Path.GetFullPath(summaryPath);
+            Assert.True(result.Success, string.Join(Environment.NewLine, result.Issues.Select(issue => $"{issue.Code}: {issue.Message}")));
+            Assert.Equal(fullSummaryPath, result.SummaryPath);
+            Assert.True(File.Exists(fullSummaryPath));
+
+            using var document = JsonDocument.Parse(File.ReadAllText(fullSummaryPath));
+            Assert.Equal("riftscan.session_summary_result.v1", document.RootElement.GetProperty("result_schema_version").GetString());
+            Assert.Equal(fullSummaryPath, document.RootElement.GetProperty("summary_path").GetString());
+            Assert.Equal("report.json", document.RootElement.GetProperty("generated_artifacts")[0].GetProperty("path").GetString());
+        }
+        finally
+        {
+            Directory.Delete(tempDirectory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void Cli_session_summary_json_out_writes_summary_file()
+    {
+        var tempDirectory = CreateTempDirectory();
+        var sessionPath = Path.Combine(tempDirectory, "session-with-generated-artifacts");
+        var summaryPath = Path.Combine(tempDirectory, "reports", "cli-session-summary.json");
+
+        try
+        {
+            CopyDirectory(ValidFixturePath, sessionPath);
+            File.WriteAllText(Path.Combine(sessionPath, "clusters.jsonl"), "{}\n");
+
+            var result = RunCli("session", "summary", sessionPath, "--json-out", summaryPath);
+
+            Assert.Equal(0, result.ExitCode);
+            Assert.Equal(string.Empty, result.Stderr);
+            var fullSummaryPath = Path.GetFullPath(summaryPath);
+            using var document = JsonDocument.Parse(result.Stdout);
+            Assert.Equal(fullSummaryPath, document.RootElement.GetProperty("summary_path").GetString());
+            Assert.True(File.Exists(fullSummaryPath));
+            using var summaryDocument = JsonDocument.Parse(File.ReadAllText(fullSummaryPath));
+            Assert.Equal(fullSummaryPath, summaryDocument.RootElement.GetProperty("summary_path").GetString());
+        }
+        finally
+        {
+            Directory.Delete(tempDirectory, recursive: true);
+        }
+    }
+
     private static string ValidFixturePath => Path.Combine(AppContext.BaseDirectory, "Fixtures", "valid-session");
 
     private static string CreateTempDirectory()

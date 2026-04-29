@@ -19,20 +19,20 @@ public sealed class SessionSummaryService
         ["intervention_handoff.json"] = "capture_handoff"
     };
 
-    public SessionSummaryResult Summarize(string sessionPath)
+    public SessionSummaryResult Summarize(string sessionPath, string? summaryOutputPath = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(sessionPath);
         var fullSessionPath = Path.GetFullPath(sessionPath);
         if (!Directory.Exists(fullSessionPath))
         {
-            return new SessionSummaryResult
+            return WriteSummaryIfRequested(new SessionSummaryResult
             {
                 SessionPath = fullSessionPath,
                 Issues =
                 [
                     Error("session_root_missing", "Session directory does not exist.", fullSessionPath)
                 ]
-            };
+            }, summaryOutputPath);
         }
 
         var verification = new SessionVerifier().Verify(fullSessionPath);
@@ -44,7 +44,7 @@ public sealed class SessionSummaryService
             .OrderBy(artifact => artifact.Path, StringComparer.Ordinal)
             .ToArray();
 
-        return new SessionSummaryResult
+        return WriteSummaryIfRequested(new SessionSummaryResult
         {
             SessionPath = fullSessionPath,
             SessionId = manifest?.SessionId ?? verification.SessionId,
@@ -60,7 +60,21 @@ public sealed class SessionSummaryService
             ArtifactBytes = generatedArtifacts.Sum(artifact => artifact.Bytes),
             GeneratedArtifacts = generatedArtifacts,
             Issues = verification.Issues
-        };
+        }, summaryOutputPath);
+    }
+
+    private static SessionSummaryResult WriteSummaryIfRequested(SessionSummaryResult result, string? summaryOutputPath)
+    {
+        if (string.IsNullOrWhiteSpace(summaryOutputPath))
+        {
+            return result;
+        }
+
+        var fullSummaryPath = Path.GetFullPath(summaryOutputPath);
+        Directory.CreateDirectory(Path.GetDirectoryName(fullSummaryPath) ?? ".");
+        var resultWithSummaryPath = result with { SummaryPath = fullSummaryPath };
+        File.WriteAllText(fullSummaryPath, JsonSerializer.Serialize(resultWithSummaryPath, SessionJson.Options));
+        return resultWithSummaryPath;
     }
 
     private static SessionManifest? ReadManifestIfPresent(string sessionPath)

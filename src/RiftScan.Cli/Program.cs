@@ -191,12 +191,8 @@ public static class Program
             throw new ArgumentException("Summary requires a session path.");
         }
 
-        if (args.Length > 1)
-        {
-            throw new ArgumentException($"Unknown session summary option: {args[1]}");
-        }
-
-        var result = new SessionSummaryService().Summarize(args[0]);
+        var summaryOutputPath = ParseSummaryOptions(args[1..]);
+        var result = new SessionSummaryService().Summarize(args[0], summaryOutputPath);
         Console.WriteLine(JsonSerializer.Serialize(result, SessionJson.Options));
         return result.Success ? 0 : 1;
     }
@@ -453,6 +449,24 @@ public static class Program
         return (top, outputPath, reportPath, nextPlanPath);
     }
 
+    private static string? ParseSummaryOptions(string[] args)
+    {
+        string? summaryOutputPath = null;
+        for (var index = 0; index < args.Length; index++)
+        {
+            var arg = args[index];
+            switch (arg)
+            {
+                case "--json-out":
+                    summaryOutputPath = RequireValue(args, ref index, arg);
+                    break;
+                default:
+                    throw new ArgumentException($"Unknown session summary option: {arg}");
+            }
+        }
+
+        return summaryOutputPath;
+    }
 
     private static (bool DryRun, string? InventoryOutputPath) ParsePruneOptions(string[] args)
     {
@@ -573,7 +587,7 @@ public static class Program
         Console.WriteLine("riftscan compare sessions <session-a> <session-b> [--top 100] [--out reports/generated/comparison.json] [--report-md reports/generated/comparison.md] [--next-plan reports/generated/next-capture-plan.json]");
         Console.WriteLine("riftscan migrate session <session-path> --to-schema riftscan.session.v1 [--dry-run|--apply] [--out sessions/<migrated-id>] [--plan-out reports/generated/migration-plan.json]");
         Console.WriteLine("riftscan session prune <session-path> [--dry-run] [--json-out reports/generated/prune-inventory.json]");
-        Console.WriteLine("riftscan session summary <session-path>");
+        Console.WriteLine("riftscan session summary <session-path> [--json-out reports/generated/session-summary.json]");
         Console.WriteLine("riftscan verify session <session-path>");
     }
 

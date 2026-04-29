@@ -40,6 +40,9 @@ public sealed record SessionSummaryResult
     [JsonPropertyName("total_bytes_stored")]
     public long TotalBytesStored { get; init; }
 
+    [JsonPropertyName("summary_path")]
+    public string? SummaryPath { get; init; }
+
     [JsonPropertyName("artifact_count")]
     public int ArtifactCount { get; init; }
 
