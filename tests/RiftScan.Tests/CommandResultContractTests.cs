@@ -356,6 +356,48 @@ public sealed class CommandResultContractTests
             "evidence_summary");
 
     [Fact]
+    public void Rift_addon_api_observation_scan_result_pins_json_contract_fields() =>
+        AssertJsonPropertySet(
+            new RiftAddonApiObservationScanResult(),
+            "result_schema_version",
+            "success",
+            "root_path_redacted",
+            "jsonl_output_path",
+            "files_scanned",
+            "observation_count",
+            "observations",
+            "warnings");
+
+    [Fact]
+    public void Rift_addon_api_observation_pins_json_contract_fields() =>
+        AssertJsonPropertySet(
+            new RiftAddonApiObservation(),
+            "schema_version",
+            "observation_id",
+            "kind",
+            "source_addon",
+            "source_file_name",
+            "source_path_redacted",
+            "source_pattern",
+            "line_number",
+            "file_last_write_utc",
+            "realtime",
+            "api_source",
+            "source_mode",
+            "unit_id",
+            "unit_name",
+            "zone_id",
+            "location_name",
+            "coordinate_space",
+            "confidence_level",
+            "coord_x",
+            "coord_y",
+            "coord_z",
+            "waypoint_x",
+            "waypoint_z",
+            "evidence_summary");
+
+    [Fact]
     public void Rift_addon_coordinate_motion_comparison_result_pins_json_contract_fields() =>
         AssertJsonPropertySet(
             new RiftAddonCoordinateMotionComparisonResult(),
@@ -564,6 +606,7 @@ public sealed class CommandResultContractTests
         Assert.Equal("riftscan.session_xref_chain_summary_result.v1", ReadSchema(new SessionXrefChainSummaryResult()));
         Assert.Equal("riftscan.session_xref_chain_summary_verification_result.v1", ReadSchema(new SessionXrefChainSummaryVerificationResult()));
         Assert.Equal("riftscan.rift_session_addon_coordinate_match_result.v1", ReadSchema(new RiftSessionAddonCoordinateMatchResult()));
+        Assert.Equal("riftscan.rift_addon_api_observation_scan_result.v1", ReadSchema(new RiftAddonApiObservationScanResult()));
         Assert.Equal("riftscan.rift_addon_coordinate_motion_comparison_result.v1", ReadSchema(new RiftAddonCoordinateMotionComparisonResult()));
         Assert.Equal("riftscan.rift_coordinate_mirror_context_result.v1", ReadSchema(new RiftCoordinateMirrorContextResult()));
     }

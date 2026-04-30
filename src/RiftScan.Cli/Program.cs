@@ -78,6 +78,11 @@ public static class Program
                 return RiftAddonCoords(args[2..]);
             }
 
+            if (args.Length >= 2 && Is(args[0], "rift") && Is(args[1], "addon-api-observations"))
+            {
+                return RiftAddonApiObservations(args[2..]);
+            }
+
             if (args.Length >= 2 && Is(args[0], "rift") && Is(args[1], "match-addon-coords"))
             {
                 return RiftMatchAddonCoords(args[2..]);
@@ -523,6 +528,70 @@ public static class Program
         }
 
         var result = new RiftAddonCoordinateObservationService().Scan(new RiftAddonCoordinateScanOptions
+        {
+            Path = rootPath,
+            MaxFiles = maxFiles,
+            JsonlOutputPath = jsonlOutputPath,
+            IncludeAddonNames = includeAddonNames,
+            MinFileLastWriteUtc = minFileWriteUtc
+        });
+        WriteOptionalJson(jsonOutputPath, result);
+        Console.WriteLine(JsonSerializer.Serialize(result, SessionJson.Options));
+        return result.Success ? 0 : 1;
+    }
+
+    private static int RiftAddonApiObservations(string[] args)
+    {
+        if (args.Length == 1 && IsHelp(args[0]))
+        {
+            PrintRiftAddonApiObservationsUsage();
+            return 0;
+        }
+
+        string? rootPath = null;
+        string? jsonOutputPath = null;
+        string? jsonlOutputPath = null;
+        var maxFiles = 5000;
+        var includeAddonNames = new List<string>();
+        DateTimeOffset? minFileWriteUtc = null;
+        for (var index = 0; index < args.Length; index++)
+        {
+            var arg = args[index];
+            switch (arg)
+            {
+                case "--json-out":
+                    jsonOutputPath = RequireValue(args, ref index, arg);
+                    break;
+                case "--jsonl-out":
+                    jsonlOutputPath = RequireValue(args, ref index, arg);
+                    break;
+                case "--max-files":
+                    maxFiles = int.Parse(RequireValue(args, ref index, arg), CultureInfo.InvariantCulture);
+                    break;
+                case "--addon-name":
+                case "--include-addon":
+                    includeAddonNames.Add(RequireValue(args, ref index, arg));
+                    break;
+                case "--min-file-write-utc":
+                    minFileWriteUtc = DateTimeOffset.Parse(RequireValue(args, ref index, arg), CultureInfo.InvariantCulture);
+                    break;
+                default:
+                    if (rootPath is not null)
+                    {
+                        throw new ArgumentException($"Unknown rift addon-api-observations option: {arg}");
+                    }
+
+                    rootPath = arg;
+                    break;
+            }
+        }
+
+        if (string.IsNullOrWhiteSpace(rootPath))
+        {
+            throw new ArgumentException("rift addon-api-observations requires a SavedVariables file or directory path.");
+        }
+
+        var result = new RiftAddonApiObservationService().Scan(new RiftAddonApiObservationScanOptions
         {
             Path = rootPath,
             MaxFiles = maxFiles,
@@ -2420,6 +2489,7 @@ public static class Program
         PrintReportSessionUsage();
         PrintReportCapabilityUsage();
         PrintRiftAddonCoordsUsage();
+        PrintRiftAddonApiObservationsUsage();
         PrintRiftMatchAddonCoordsUsage();
         PrintRiftCompareAddonCoordinateMotionUsage();
         PrintRiftCoordinateMirrorContextUsage();
@@ -2518,6 +2588,9 @@ public static class Program
 
     private static void PrintRiftAddonCoordsUsage() =>
         Console.WriteLine("riftscan rift addon-coords <savedvariables-file-or-directory> [--jsonl-out reports/generated/addon-coordinate-observations.jsonl] [--json-out reports/generated/addon-coordinate-scan.json] [--max-files 5000] [--addon-name ReaderBridgeExport] [--min-file-write-utc 2026-04-29T23:16:00Z]");
+
+    private static void PrintRiftAddonApiObservationsUsage() =>
+        Console.WriteLine("riftscan rift addon-api-observations <savedvariables-file-or-directory> [--jsonl-out reports/generated/addon-api-observations.jsonl] [--json-out reports/generated/addon-api-observation-scan.json] [--max-files 5000] [--addon-name ReaderBridgeExport] [--min-file-write-utc 2026-04-29T23:16:00Z]");
 
     private static void PrintRiftMatchAddonCoordsUsage() =>
         Console.WriteLine("riftscan rift match-addon-coords <session-path> --observations reports/generated/addon-coordinate-observations.jsonl [--region-base 0xADDR] [--tolerance 5] [--top 100] [--out reports/generated/session-addon-coordinate-matches.json] [--report-md reports/generated/session-addon-coordinate-matches.md] [--latest-only]");
