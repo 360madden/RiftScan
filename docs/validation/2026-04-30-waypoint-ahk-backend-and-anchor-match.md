@@ -276,3 +276,90 @@ scalar pair. The targeted same-process follow-up captured the lead base after a
 known waypoint change and found no matching scalars, so that pair is rejected.
 The comparer now avoids over-rejecting offsets from regions that a targeted
 follow-up did not capture.
+
+## Wide-256 waypoint follow-up and second targeted rejection
+
+A fifth waypoint used a larger distinct offset to broaden the passive scan:
+
+- command proof:
+  `reports/generated/verified-addon-command-waypoint-test-317-223-wide256-20260430-052035.json`
+- anchor scan:
+  `reports/generated/addon-api-observation-scan-waypoint-test-317-223-wide256-20260430-052035.json`
+- waypoint X/Z: `7554.6196289062`, `3274.0598144531`
+
+The broader passive capture was still low-pressure and read-only:
+
+- session: `sessions/live-waypoint-317-223-wide256-20260430-0521-passive`
+- regions captured: `256`
+- snapshots captured: `2048`
+- verified: session verifier passed
+- vec3 anchor matcher:
+  `reports/generated/session-waypoint-anchor-matches-live-wide256-317-223-20260430-0521.json`
+- vec3 result: `match_count = 0`, `candidate_count = 0`
+- scalar matcher:
+  `reports/generated/session-waypoint-scalar-matches-live-wide256-317-223-20260430-0521.json`
+- scalar hits:
+  `reports/generated/session-waypoint-scalar-hits-live-wide256-317-223-20260430-0521.jsonl`
+- scalar result: `waypoint_x hits = 40`, `waypoint_z hits = 84`,
+  `pair_candidate_count = 2`
+
+The two scalar pair leads were:
+
+1. base `0x21682420000`, X offset `0x112C`, Z offset `0xE3D4`,
+   support `8`, best distance total `5.734375000075033`
+2. base `0x21683F10000`, X offset `0x6094`, Z offset `0xBED8`,
+   support `8`, best distance total `6.616699218775011`
+
+Comparing the older wide-128 waypoint state against this wide-256 state
+rejected overlap candidates and left only uncaptured-region candidates
+unverified:
+
+- comparison:
+  `reports/generated/waypoint-scalar-comparison-123-77-vs-317-223-wide-coverage-aware-20260430-0522.json`
+- `classification_counts = { missing_after_waypoint_change = 17, not_captured_in_missing_input = 11 }`
+- no `tracks_waypoint_candidate` classifications
+
+A sixth waypoint then changed the anchor by X `+186` and Z `+136` from the
+wide-256 state:
+
+- command proof:
+  `reports/generated/verified-addon-command-waypoint-test-503-359-target-new-leads-20260430-052224.json`
+- anchor scan:
+  `reports/generated/addon-api-observation-scan-waypoint-test-503-359-target-new-leads-20260430-052224.json`
+- waypoint X/Z: `7740.6196289062`, `3410.0598144531`
+
+Only the two wide-256 lead bases were captured for targeted validation:
+
+- session: `sessions/live-waypoint-503-359-target-new-leads-20260430-0523-passive`
+- base filters: `0x21682420000`, `0x21683F10000`
+- regions captured: `2`
+- snapshots captured: `16`
+- verified: session verifier passed
+- scalar matcher:
+  `reports/generated/session-waypoint-scalar-matches-target-new-leads-503-359-20260430-0523.json`
+- scalar hits:
+  `reports/generated/session-waypoint-scalar-hits-target-new-leads-503-359-20260430-0523.jsonl`
+- result: `scalar_hit_count = 0`, `pair_candidate_count = 0`
+
+The targeted comparison output is:
+
+- `reports/generated/waypoint-scalar-comparison-317-223-vs-503-359-target-new-leads-20260430-0523.json`
+- `classification_counts = { missing_after_waypoint_change = 4, not_captured_in_missing_input = 15 }`
+- the four true rejections are the two X/Z pairs from the captured lead bases:
+  - `0x21682420000+0x112C`
+  - `0x21682420000+0xE3D4`
+  - `0x21683F10000+0x6094`
+  - `0x21683F10000+0xBED8`
+
+Final cleanup was verified:
+
+- proof:
+  `reports/generated/verified-addon-command-waypoint-clear-after-wide256-loop-20260430-052332.json`
+- final state: `waypoint_has_waypoint = false`, `waypoint_anchor_count = 0`
+
+Interpretation: the wider search found two stronger-looking scalar pairs, but
+both failed targeted validation after a deliberate waypoint change. The current
+best evidence says the captured scalar pairs are environmental/noise mirrors,
+not durable player waypoint storage. The next useful improvement is to generate
+targeted follow-up plans automatically from scalar-pair outputs rather than
+manually copying base addresses.
