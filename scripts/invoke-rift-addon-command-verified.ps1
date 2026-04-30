@@ -78,24 +78,23 @@ function Invoke-JsonCommand {
         [string[]]$Arguments
     )
 
-    $stdout = New-Object System.Collections.Generic.List[string]
-    $stderr = New-Object System.Collections.Generic.List[string]
-    $allArguments = @("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", $FilePath) + $Arguments
-    $output = & powershell.exe @allArguments 2>&1
-    $exitCode = $LASTEXITCODE
-    foreach ($line in @($output)) {
-        if ($line -is [System.Management.Automation.ErrorRecord]) {
-            $stderr.Add($line.ToString())
-        }
-        else {
-            $stdout.Add([string]$line)
-        }
-    }
+    $processStartInfo = [System.Diagnostics.ProcessStartInfo]::new()
+    $processStartInfo.FileName = "powershell.exe"
+    $processStartInfo.UseShellExecute = $false
+    $processStartInfo.RedirectStandardOutput = $true
+    $processStartInfo.RedirectStandardError = $true
+    $processStartInfo.Arguments = (@("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", $FilePath) + $Arguments |
+        ForEach-Object { '"' + ([string]$_ -replace '"', '\"') + '"' }) -join " "
+
+    $process = [System.Diagnostics.Process]::Start($processStartInfo)
+    $stdoutText = $process.StandardOutput.ReadToEnd()
+    $stderrText = $process.StandardError.ReadToEnd()
+    $process.WaitForExit()
 
     return [pscustomobject]@{
-        exit_code = $exitCode
-        stdout = $stdout.ToArray()
-        stderr = $stderr.ToArray()
+        exit_code = $process.ExitCode
+        stdout = @($stdoutText -split "\r?\n" | Where-Object { $_ -ne "" })
+        stderr = @($stderrText -split "\r?\n" | Where-Object { $_ -ne "" })
     }
 }
 
@@ -246,8 +245,12 @@ $result = [pscustomobject]@{
     expected_waypoint_has_waypoint = $expectedWaypointHasWaypointValue
     sender_path = if ($SkipSend) { $null } else { $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($SenderPath) }
     send_exit_code = if ($sendResult) { $sendResult.exit_code } else { $null }
+    send_stdout = if ($sendResult) { $sendResult.stdout } else { @() }
+    send_stderr = if ($sendResult) { $sendResult.stderr } else { @() }
     reloadui_after_command = $ReloadUiAfterCommand.IsPresent
     reload_exit_code = if ($reloadResult) { $reloadResult.exit_code } else { $null }
+    reload_stdout = if ($reloadResult) { $reloadResult.stdout } else { @() }
+    reload_stderr = if ($reloadResult) { $reloadResult.stderr } else { @() }
     saved_variables_root = $SavedVariablesRoot
     addon_name = $AddonName
     scan_json_path = $jsonOut
