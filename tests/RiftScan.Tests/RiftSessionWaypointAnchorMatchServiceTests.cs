@@ -55,6 +55,31 @@ public sealed class RiftSessionWaypointAnchorMatchServiceTests
     }
 
     [Fact]
+    public void Match_derives_anchor_from_legacy_observation_scan()
+    {
+        using var session = CreateWaypointFixtureSession();
+        var anchorPath = WriteLegacyObservationScan(session.Path);
+
+        var result = new RiftSessionWaypointAnchorMatchService().Match(new RiftSessionWaypointAnchorMatchOptions
+        {
+            SessionPath = session.Path,
+            AnchorPath = anchorPath,
+            Tolerance = 0.01,
+            Top = 10
+        });
+
+        Assert.True(result.Success);
+        Assert.Equal(1, result.AnchorCount);
+        Assert.Equal(1, result.AnchorsUsed);
+        Assert.Equal(1, result.MatchCount);
+        Assert.Contains("waypoint_anchors_derived_from_observations_for_legacy_scan_result", result.Warnings);
+        var match = Assert.Single(result.Matches);
+        Assert.Equal("rift-addon-waypoint-anchor-000001", match.AnchorId);
+        Assert.Equal(20, match.MemoryDeltaX, precision: 6);
+        Assert.Equal(0, match.MemoryDeltaZ, precision: 6);
+    }
+
+    [Fact]
     public void Cli_match_waypoint_anchors_writes_json_output()
     {
         using var session = CreateWaypointFixtureSession();
@@ -127,6 +152,62 @@ public sealed class RiftSessionWaypointAnchorMatchServiceTests
                     HorizontalDistance = 20,
                     ZoneId = "zFixture",
                     LocationName = "Fixture"
+                }
+            ]
+        };
+        File.WriteAllText(path, JsonSerializer.Serialize(result, SessionJson.Options));
+        return path;
+    }
+
+    private static string WriteLegacyObservationScan(string directory)
+    {
+        var path = Path.Combine(directory, "legacy-addon-api-observation-scan.json");
+        var result = new RiftAddonApiObservationScanResult
+        {
+            Success = true,
+            ObservationCount = 3,
+            Observations =
+            [
+                new RiftAddonApiObservation
+                {
+                    ObservationId = "rift-addon-api-obs-000001",
+                    Kind = "current_player",
+                    SourceAddon = "ReaderBridgeExport",
+                    SourceFileName = "ReaderBridgeExport.lua",
+                    SourcePathRedacted = "ReaderBridgeExport.lua",
+                    FileLastWriteUtc = DateTimeOffset.Parse("2026-04-30T02:20:53Z"),
+                    Realtime = 116070.96875,
+                    CoordX = 100,
+                    CoordY = 200,
+                    CoordZ = 300,
+                    ZoneId = "zFixture",
+                    LocationName = "Fixture"
+                },
+                new RiftAddonApiObservation
+                {
+                    ObservationId = "rift-addon-api-obs-000002",
+                    Kind = "waypoint",
+                    SourceAddon = "ReaderBridgeExport",
+                    SourceFileName = "ReaderBridgeExport.lua",
+                    SourcePathRedacted = "ReaderBridgeExport.lua",
+                    FileLastWriteUtc = DateTimeOffset.Parse("2026-04-30T02:20:53Z"),
+                    Realtime = 116070.96875,
+                    WaypointX = 120,
+                    WaypointZ = 300
+                },
+                new RiftAddonApiObservation
+                {
+                    ObservationId = "rift-addon-api-obs-000003",
+                    Kind = "waypoint_status",
+                    SourceAddon = "ReaderBridgeExport",
+                    SourceFileName = "ReaderBridgeExport.lua",
+                    SourcePathRedacted = "ReaderBridgeExport.lua",
+                    FileLastWriteUtc = DateTimeOffset.Parse("2026-04-30T02:20:53Z"),
+                    Realtime = 116070.96875,
+                    WaypointApiAvailable = true,
+                    WaypointHasWaypoint = true,
+                    WaypointX = 120,
+                    WaypointZ = 300
                 }
             ]
         };

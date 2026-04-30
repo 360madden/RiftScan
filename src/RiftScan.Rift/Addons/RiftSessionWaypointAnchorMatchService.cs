@@ -49,7 +49,10 @@ public sealed class RiftSessionWaypointAnchorMatchService
         var snapshots = ReadSnapshotIndex(sessionPath);
         var scanResult = JsonSerializer.Deserialize<RiftAddonApiObservationScanResult>(File.ReadAllText(anchorPath), SessionJson.Options)
             ?? throw new InvalidOperationException("Waypoint anchor scan result JSON could not be read.");
-        var allAnchors = scanResult.WaypointAnchors
+        var sourceAnchors = scanResult.WaypointAnchors.Count > 0
+            ? scanResult.WaypointAnchors
+            : RiftAddonApiObservationService.BuildWaypointAnchors(scanResult.Observations);
+        var allAnchors = sourceAnchors
             .Select((anchor, index) => string.IsNullOrWhiteSpace(anchor.AnchorId)
                 ? anchor with { AnchorId = $"rift-addon-waypoint-anchor-{index + 1:000000}" }
                 : anchor)
@@ -70,6 +73,11 @@ public sealed class RiftSessionWaypointAnchorMatchService
         if (anchors.Length != allAnchors.Length)
         {
             warnings.Add("invalid_or_implausible_waypoint_anchors_ignored");
+        }
+
+        if (scanResult.WaypointAnchors.Count == 0 && allAnchors.Length > 0)
+        {
+            warnings.Add("waypoint_anchors_derived_from_observations_for_legacy_scan_result");
         }
 
         var candidateSnapshots = snapshots

@@ -75,6 +75,10 @@ and a waypoint coordinate whose memory delta matches the addon anchor delta. Its
 output is validation evidence only; it narrows candidate regions/offsets but
 does not by itself promote final coordinate truth.
 
+For older scan JSON created before `waypoint_anchors` were emitted, the matcher
+can derive the same anchor from saved `current_player` plus `waypoint` or active
+`waypoint_status` observations.
+
 ## Confidence tiers
 
 - `addon_api_direct_savedvariables`: SavedVariables export declares

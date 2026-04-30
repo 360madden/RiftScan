@@ -67,7 +67,7 @@ public sealed class RiftAddonApiObservationService
         };
     }
 
-    private static RiftAddonWaypointAnchor[] BuildWaypointAnchors(IReadOnlyList<RiftAddonApiObservation> observations) =>
+    internal static RiftAddonWaypointAnchor[] BuildWaypointAnchors(IReadOnlyList<RiftAddonApiObservation> observations) =>
         observations
             .GroupBy(
                 observation => $"{observation.SourceAddon}\n{observation.SourcePathRedacted}",
