@@ -688,9 +688,11 @@ public static class Program
 
         string? sessionPath = null;
         string? observationPath = null;
+        string? truthSummaryPath = null;
         string? outputPath = null;
         string? reportPath = null;
         var regionBaseAddresses = new List<ulong>();
+        var truthKinds = new List<string>();
         var tolerance = 5d;
         var top = 100;
         var latestOnly = false;
@@ -701,6 +703,13 @@ public static class Program
             {
                 case "--observations":
                     observationPath = RequireValue(args, ref index, arg);
+                    break;
+                case "--truth-summary":
+                    truthSummaryPath = RequireValue(args, ref index, arg);
+                    break;
+                case "--truth-kind":
+                case "--truth-kinds":
+                    truthKinds.Add(RequireValue(args, ref index, arg));
                     break;
                 case "--region-base":
                 case "--region-bases":
@@ -738,16 +747,18 @@ public static class Program
             throw new ArgumentException("rift match-addon-coords requires a session path.");
         }
 
-        if (string.IsNullOrWhiteSpace(observationPath))
+        if (string.IsNullOrWhiteSpace(observationPath) && string.IsNullOrWhiteSpace(truthSummaryPath))
         {
-            throw new ArgumentException("rift match-addon-coords requires --observations <addon-coordinate-observations.jsonl>.");
+            throw new ArgumentException("rift match-addon-coords requires --observations <addon-coordinate-observations.jsonl> or --truth-summary <addon-api-truth-summary.json>.");
         }
 
         var service = new RiftSessionAddonCoordinateMatchService();
         var result = service.Match(new RiftSessionAddonCoordinateMatchOptions
         {
             SessionPath = sessionPath,
-            ObservationPath = observationPath,
+            ObservationPath = observationPath ?? string.Empty,
+            TruthSummaryPath = truthSummaryPath ?? string.Empty,
+            TruthKinds = truthKinds,
             RegionBaseAddresses = regionBaseAddresses.Distinct().Order().ToArray(),
             Tolerance = tolerance,
             Top = top,
@@ -2966,7 +2977,7 @@ public static class Program
         Console.WriteLine("riftscan rift addon-api-truth <addon-api-observation-scan.json> [--out reports/generated/addon-api-truth-summary.json]");
 
     private static void PrintRiftMatchAddonCoordsUsage() =>
-        Console.WriteLine("riftscan rift match-addon-coords <session-path> --observations reports/generated/addon-coordinate-observations.jsonl [--region-base 0xADDR] [--tolerance 5] [--top 100] [--out reports/generated/session-addon-coordinate-matches.json] [--report-md reports/generated/session-addon-coordinate-matches.md] [--latest-only]");
+        Console.WriteLine("riftscan rift match-addon-coords <session-path> (--observations reports/generated/addon-coordinate-observations.jsonl|--truth-summary reports/generated/addon-api-truth-summary.json [--truth-kind current_player]) [--region-base 0xADDR] [--tolerance 5] [--top 100] [--out reports/generated/session-addon-coordinate-matches.json] [--report-md reports/generated/session-addon-coordinate-matches.md] [--latest-only]");
 
     private static void PrintRiftMatchWaypointAnchorsUsage() =>
         Console.WriteLine("riftscan rift match-waypoint-anchors <session-path> --anchors reports/generated/addon-api-observation-scan.json [--region-base 0xADDR] [--tolerance 5] [--top 100] [--out reports/generated/session-waypoint-anchor-matches.json]");

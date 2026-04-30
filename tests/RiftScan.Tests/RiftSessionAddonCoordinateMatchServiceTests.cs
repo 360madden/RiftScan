@@ -43,6 +43,37 @@ public sealed class RiftSessionAddonCoordinateMatchServiceTests
     }
 
     [Fact]
+    public void Match_finds_stable_snapshot_vec3_from_addon_api_truth_summary()
+    {
+        using var session = CreateCoordinateFixtureSession();
+        var truthSummaryPath = WriteTruthSummaryFixture(session.Path);
+
+        var result = new RiftSessionAddonCoordinateMatchService().Match(new RiftSessionAddonCoordinateMatchOptions
+        {
+            SessionPath = session.Path,
+            TruthSummaryPath = truthSummaryPath,
+            RegionBaseAddresses = [0x5000_0000],
+            Tolerance = 0.1,
+            Top = 10
+        });
+
+        Assert.True(result.Success);
+        Assert.Equal(Path.GetFullPath(truthSummaryPath), result.TruthSummaryPath);
+        Assert.Equal(["current_player"], result.TruthKinds);
+        Assert.Equal(string.Empty, result.ObservationPath);
+        Assert.Contains(Path.GetFullPath(truthSummaryPath), result.AnalyzerSources);
+        Assert.Equal(2, result.ObservationCount);
+        Assert.Equal(2, result.ObservationsUsed);
+        Assert.Equal(2, result.MatchCount);
+        var candidate = Assert.Single(result.Candidates);
+        Assert.Equal("0x20", candidate.SourceOffsetHex);
+        Assert.Equal(2, candidate.SupportCount);
+        Assert.Equal(2, candidate.ObservationSupportCount);
+        Assert.Contains("ReaderBridgeExport:addon_api_truth_summary:current_player", candidate.AddonSources);
+        Assert.Contains("addon_api_truth_summary_coordinate_source_enabled", result.Diagnostics);
+    }
+
+    [Fact]
     public void Cli_match_addon_coords_writes_json_and_markdown_report()
     {
         using var session = CreateCoordinateFixtureSession();
@@ -84,6 +115,55 @@ public sealed class RiftSessionAddonCoordinateMatchServiceTests
             using var fileJson = JsonDocument.Parse(File.ReadAllText(jsonPath));
             Assert.Equal(Path.GetFullPath(markdownPath), fileJson.RootElement.GetProperty("markdown_report_path").GetString());
             Assert.Contains("RiftScan Addon Coordinate Match Report", File.ReadAllText(markdownPath), StringComparison.Ordinal);
+        }
+        finally
+        {
+            Console.SetOut(originalOut);
+            Console.SetError(originalError);
+        }
+    }
+
+    [Fact]
+    public void Cli_match_addon_coords_accepts_addon_api_truth_summary()
+    {
+        using var session = CreateCoordinateFixtureSession();
+        var truthSummaryPath = WriteTruthSummaryFixture(session.Path);
+        var jsonPath = Path.Combine(session.Path, "truth-summary-coordinate-matches.json");
+        var originalOut = Console.Out;
+        var originalError = Console.Error;
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+
+        try
+        {
+            Console.SetOut(output);
+            Console.SetError(error);
+            var exitCode = RiftScan.Cli.Program.Main([
+                "rift",
+                "match-addon-coords",
+                session.Path,
+                "--truth-summary",
+                truthSummaryPath,
+                "--truth-kind",
+                "current_player",
+                "--region-base",
+                "0x50000000",
+                "--tolerance",
+                "0.1",
+                "--out",
+                jsonPath
+            ]);
+
+            Assert.Equal(0, exitCode);
+            Assert.Equal(string.Empty, error.ToString());
+            Assert.True(File.Exists(jsonPath));
+            using var stdoutJson = JsonDocument.Parse(output.ToString());
+            Assert.Equal("riftscan.rift_session_addon_coordinate_match_result.v1", stdoutJson.RootElement.GetProperty("result_schema_version").GetString());
+            Assert.Equal(Path.GetFullPath(truthSummaryPath), stdoutJson.RootElement.GetProperty("truth_summary_path").GetString());
+            Assert.Equal("current_player", stdoutJson.RootElement.GetProperty("truth_kinds")[0].GetString());
+            Assert.Equal(1, stdoutJson.RootElement.GetProperty("candidate_count").GetInt32());
+            using var fileJson = JsonDocument.Parse(File.ReadAllText(jsonPath));
+            Assert.Equal(Path.GetFullPath(truthSummaryPath), fileJson.RootElement.GetProperty("truth_summary_path").GetString());
         }
         finally
         {
@@ -362,6 +442,62 @@ public sealed class RiftSessionAddonCoordinateMatchServiceTests
         ]);
         return observationsPath;
     }
+
+    private static string WriteTruthSummaryFixture(string directory)
+    {
+        var truthSummaryPath = Path.Combine(directory, "addon-api-truth-summary.json");
+        WriteJson(truthSummaryPath, new RiftAddonApiTruthSummaryResult
+        {
+            Success = true,
+            ScanPath = Path.Combine(directory, "addon-api-observation-scan.json"),
+            ObservationCount = 2,
+            ObservationKindCounts = new Dictionary<string, int>
+            {
+                ["current_player"] = 2
+            },
+            TruthRecordCount = 2,
+            LatestPlayer = BuildTruthRecord("rift-addon-api-obs-000002", "rift-addon-api-truth-000002", DateTimeOffset.Parse("2026-04-29T20:01:00Z"), 101.25, 200.5, 301.75),
+            TruthRecords =
+            [
+                BuildTruthRecord("rift-addon-api-obs-000001", "rift-addon-api-truth-000001", DateTimeOffset.Parse("2026-04-29T20:00:00Z"), 100.25, 200.5, 300.75),
+                BuildTruthRecord("rift-addon-api-obs-000002", "rift-addon-api-truth-000002", DateTimeOffset.Parse("2026-04-29T20:01:00Z"), 101.25, 200.5, 301.75)
+            ]
+        });
+        return truthSummaryPath;
+    }
+
+    private static RiftAddonApiTruthRecord BuildTruthRecord(
+        string sourceObservationId,
+        string truthId,
+        DateTimeOffset fileLastWriteUtc,
+        double x,
+        double y,
+        double z) =>
+        new()
+        {
+            TruthId = truthId,
+            Kind = "current_player",
+            SourceObservationId = sourceObservationId,
+            SourceAddon = "ReaderBridgeExport",
+            SourceFileName = "ReaderBridgeExport.lua",
+            SourcePathRedacted = "ReaderBridgeExport.lua",
+            FileLastWriteUtc = fileLastWriteUtc,
+            ApiSource = "Inspect.Unit.Detail",
+            SourceMode = "DirectAPI",
+            CoordinateSpace = "world_xyz",
+            ConfidenceLevel = "addon_api_direct_savedvariables",
+            UnitId = "player",
+            UnitName = "FixturePlayer",
+            ZoneId = "zFixture",
+            LocationName = "Fixture Location",
+            CoordinateX = x,
+            CoordinateY = y,
+            CoordinateZ = z,
+            PlayerX = x,
+            PlayerY = y,
+            PlayerZ = z,
+            EvidenceSummary = $"kind=current_player;source=Inspect.Unit.Detail;x={x:F6};y={y:F6};z={z:F6}"
+        };
 
     private static RiftSessionAddonCoordinateCandidate BuildCoordinateCandidate(
         string offsetHex,

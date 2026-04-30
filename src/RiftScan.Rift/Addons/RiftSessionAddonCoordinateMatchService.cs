@@ -26,7 +26,11 @@ public sealed class RiftSessionAddonCoordinateMatchService
     {
         ArgumentNullException.ThrowIfNull(options);
         ArgumentException.ThrowIfNullOrWhiteSpace(options.SessionPath);
-        ArgumentException.ThrowIfNullOrWhiteSpace(options.ObservationPath);
+        if (string.IsNullOrWhiteSpace(options.ObservationPath) && string.IsNullOrWhiteSpace(options.TruthSummaryPath))
+        {
+            throw new ArgumentException("Either an addon coordinate observation JSONL path or an addon API truth summary path is required.");
+        }
+
         if (double.IsNaN(options.Tolerance) || double.IsInfinity(options.Tolerance) || options.Tolerance < 0)
         {
             throw new ArgumentOutOfRangeException(nameof(options.Tolerance), "Tolerance must be finite and non-negative.");
@@ -38,7 +42,12 @@ public sealed class RiftSessionAddonCoordinateMatchService
         }
 
         var sessionPath = Path.GetFullPath(options.SessionPath);
-        var observationPath = Path.GetFullPath(options.ObservationPath);
+        var observationPath = string.IsNullOrWhiteSpace(options.ObservationPath)
+            ? string.Empty
+            : Path.GetFullPath(options.ObservationPath);
+        var truthSummaryPath = string.IsNullOrWhiteSpace(options.TruthSummaryPath)
+            ? string.Empty
+            : Path.GetFullPath(options.TruthSummaryPath);
         var verification = new SessionVerifier().Verify(sessionPath);
         if (!verification.Success)
         {
@@ -61,8 +70,12 @@ public sealed class RiftSessionAddonCoordinateMatchService
             $"float_stride_bytes={FloatStrideBytes}",
             $"axis_order_count={AxisOrders.Length}"
         };
+        if (!string.IsNullOrWhiteSpace(truthSummaryPath))
+        {
+            diagnostics.Add("addon_api_truth_summary_coordinate_source_enabled");
+        }
 
-        var allObservations = ReadObservations(observationPath).ToArray();
+        var allObservations = ReadCoordinateInputs(observationPath, truthSummaryPath, options.TruthKinds, warnings).ToArray();
         DateTimeOffset? latestObservationUtc = allObservations.Length == 0 ? null : allObservations.Max(observation => observation.FileLastWriteUtc);
         var observations = NormalizeObservationIds(allObservations)
             .Where(IsFinitePlausibleObservation)
@@ -146,7 +159,9 @@ public sealed class RiftSessionAddonCoordinateMatchService
             SessionPath = sessionPath,
             SessionId = manifest.SessionId,
             ObservationPath = observationPath,
-            AnalyzerSources = ["manifest.json", "snapshots/index.jsonl", "snapshots/*.bin", observationPath],
+            TruthSummaryPath = truthSummaryPath,
+            TruthKinds = NormalizeTruthKinds(options.TruthKinds),
+            AnalyzerSources = BuildAnalyzerSources(observationPath, truthSummaryPath),
             Tolerance = options.Tolerance,
             TopLimit = options.Top,
             LatestOnly = options.LatestOnly,
@@ -308,6 +323,8 @@ public sealed class RiftSessionAddonCoordinateMatchService
         builder.AppendLine();
         builder.AppendLine($"- Session: `{result.SessionPath}`");
         builder.AppendLine($"- Addon observations: `{result.ObservationPath}`");
+        builder.AppendLine($"- Addon API truth summary: `{result.TruthSummaryPath}`");
+        builder.AppendLine($"- Truth kinds: `{Escape(string.Join(", ", result.TruthKinds))}`");
         builder.AppendLine($"- Observations used: {result.ObservationsUsed}/{result.ObservationCount}");
         builder.AppendLine($"- Snapshots scanned: {result.SnapshotCount}");
         builder.AppendLine($"- Regions scanned: {result.RegionsScanned}");
@@ -357,6 +374,115 @@ public sealed class RiftSessionAddonCoordinateMatchService
         return File.ReadLines(observationPath)
             .Where(line => !string.IsNullOrWhiteSpace(line))
             .Select(line => JsonSerializer.Deserialize<RiftAddonCoordinateObservation>(line, SessionJson.Options) ?? throw new InvalidOperationException($"Invalid addon coordinate observation entry in {observationPath}."));
+    }
+
+    private static IEnumerable<RiftAddonCoordinateObservation> ReadCoordinateInputs(
+        string observationPath,
+        string truthSummaryPath,
+        IReadOnlyList<string> truthKinds,
+        ICollection<string> warnings)
+    {
+        if (!string.IsNullOrWhiteSpace(observationPath))
+        {
+            foreach (var observation in ReadObservations(observationPath))
+            {
+                yield return observation;
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(truthSummaryPath))
+        {
+            foreach (var observation in ReadTruthSummaryObservations(truthSummaryPath, truthKinds, warnings))
+            {
+                yield return observation;
+            }
+        }
+    }
+
+    private static IEnumerable<RiftAddonCoordinateObservation> ReadTruthSummaryObservations(
+        string truthSummaryPath,
+        IReadOnlyList<string> truthKinds,
+        ICollection<string> warnings)
+    {
+        if (!File.Exists(truthSummaryPath))
+        {
+            throw new FileNotFoundException("Addon API truth summary JSON file does not exist.", truthSummaryPath);
+        }
+
+        var summary = JsonSerializer.Deserialize<RiftAddonApiTruthSummaryResult>(File.ReadAllText(truthSummaryPath), SessionJson.Options)
+            ?? throw new InvalidOperationException($"Invalid addon API truth summary file: {truthSummaryPath}");
+        var selectedKinds = NormalizeTruthKinds(truthKinds);
+        var selectedKindSet = selectedKinds.ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var records = summary.TruthRecords
+            .Where(record => selectedKindSet.Contains(record.Kind))
+            .ToArray();
+        if (records.Length == 0)
+        {
+            warnings.Add("truth_summary_had_no_selected_coordinate_records");
+        }
+
+        var skipped = 0;
+        foreach (var record in records)
+        {
+            if (!record.CoordinateX.HasValue || !record.CoordinateY.HasValue || !record.CoordinateZ.HasValue)
+            {
+                skipped++;
+                continue;
+            }
+
+            yield return new RiftAddonCoordinateObservation
+            {
+                ObservationId = string.IsNullOrWhiteSpace(record.SourceObservationId)
+                    ? record.TruthId
+                    : record.SourceObservationId,
+                SourceFileName = record.SourceFileName,
+                SourcePathRedacted = record.SourcePathRedacted,
+                AddonName = record.SourceAddon,
+                SourcePattern = $"addon_api_truth_summary:{record.Kind}",
+                FileLastWriteUtc = record.FileLastWriteUtc,
+                CoordX = record.CoordinateX.Value,
+                CoordY = record.CoordinateY.Value,
+                CoordZ = record.CoordinateZ.Value,
+                ZoneId = record.ZoneId,
+                EvidenceSummary = $"truth_id={record.TruthId};kind={record.Kind};source={record.ApiSource};x={record.CoordinateX.Value:F6};y={record.CoordinateY.Value:F6};z={record.CoordinateZ.Value:F6}"
+            };
+        }
+
+        if (skipped > 0)
+        {
+            warnings.Add("truth_summary_records_without_full_xyz_ignored");
+        }
+    }
+
+    private static IReadOnlyList<string> NormalizeTruthKinds(IReadOnlyList<string> truthKinds)
+    {
+        IReadOnlyList<string> selected = truthKinds.Count == 0
+            ? ["current_player"]
+            : truthKinds;
+        return selected
+            .Where(kind => !string.IsNullOrWhiteSpace(kind))
+            .SelectMany(kind => kind.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            .Where(kind => !string.IsNullOrWhiteSpace(kind))
+            .Select(kind => kind.Trim().ToLowerInvariant())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Order(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+    }
+
+    private static IReadOnlyList<string> BuildAnalyzerSources(string observationPath, string truthSummaryPath)
+    {
+        var sources = new List<string> { "manifest.json", "snapshots/index.jsonl", "snapshots/*.bin" };
+        if (!string.IsNullOrWhiteSpace(observationPath))
+        {
+            sources.Add(observationPath);
+        }
+
+        if (!string.IsNullOrWhiteSpace(truthSummaryPath))
+        {
+            sources.Add(truthSummaryPath);
+        }
+
+        return sources.ToArray();
     }
 
     private static T ReadJson<T>(string sessionPath, string relativePath)

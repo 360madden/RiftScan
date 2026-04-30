@@ -38,6 +38,31 @@ sources exist. Missing records are explicit warnings, so a missing target or
 waypoint is treated as "not observed by the addon scan" rather than a memory
 discovery failure.
 
+## Actor/player coordinate matching
+
+For actor-coordinate discovery, use the truth summary directly as the semantic
+label source instead of first converting it to a separate coordinate JSONL file:
+
+```powershell
+riftscan rift match-addon-coords `
+  sessions/<session_id> `
+  --truth-summary reports/generated/addon-api-truth-summary.json `
+  --truth-kind current_player `
+  --region-base 0xADDR `
+  --tolerance 0.25 `
+  --latest-only `
+  --top 100 `
+  --out reports/generated/session-current-player-coordinate-matches.json `
+  --report-md reports/generated/session-current-player-coordinate-matches.md
+```
+
+`current_player` is the default truth kind when `--truth-kind` is omitted.
+Repeat `--truth-kind` or pass comma-separated kinds when deliberately comparing
+additional coordinate labels such as `target`. Match output is validation
+evidence only: synchronized mirrors can all match the same player coordinate, so
+canonical actor-coordinate promotion still needs movement/cross-session
+separation.
+
 ## Current observation kinds
 
 - `current_player`: addon-saved `Inspect.Unit.Detail`-style player `coord`

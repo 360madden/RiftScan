@@ -282,6 +282,8 @@ public sealed class CommandResultContractTests
             "session_path",
             "session_id",
             "observation_path",
+            "truth_summary_path",
+            "truth_kinds",
             "analyzer_id",
             "analyzer_version",
             "analyzer_sources",

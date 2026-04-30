@@ -8,6 +8,10 @@ public sealed record RiftSessionAddonCoordinateMatchOptions
 
     public string ObservationPath { get; init; } = string.Empty;
 
+    public string TruthSummaryPath { get; init; } = string.Empty;
+
+    public IReadOnlyList<string> TruthKinds { get; init; } = [];
+
     public IReadOnlyList<ulong> RegionBaseAddresses { get; init; } = [];
 
     public double Tolerance { get; init; } = 5;
@@ -33,6 +37,12 @@ public sealed record RiftSessionAddonCoordinateMatchResult
 
     [JsonPropertyName("observation_path")]
     public string ObservationPath { get; init; } = string.Empty;
+
+    [JsonPropertyName("truth_summary_path")]
+    public string TruthSummaryPath { get; init; } = string.Empty;
+
+    [JsonPropertyName("truth_kinds")]
+    public IReadOnlyList<string> TruthKinds { get; init; } = [];
 
     [JsonPropertyName("analyzer_id")]
     public string AnalyzerId { get; init; } = "rift_session_addon_coordinate_match";
