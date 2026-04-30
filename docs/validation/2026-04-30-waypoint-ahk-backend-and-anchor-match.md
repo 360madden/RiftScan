@@ -85,3 +85,29 @@ to the already known player vec3 family.
 Add an offline waypoint-scalar/loose-pair scanner that can search for waypoint
 X/Z independently across captured regions, then relate those hits back to known
 player coordinate candidates and addon delta evidence.
+
+## Follow-up implementation note
+
+The next analyzer lane is now `riftscan rift match-waypoint-scalars`. It is
+offline-only and was run against this session/anchor pair:
+
+```powershell
+riftscan rift match-waypoint-scalars `
+  sessions/live-waypoint-anchor-wide-20260430-0402-passive `
+  --anchors reports/generated/addon-api-observation-scan-proof-wpclear-ahk-backend-arraycheck-20260430-040045.json `
+  --tolerance 5 `
+  --top 100 `
+  --out reports/generated/session-waypoint-scalar-matches-live-wide-20260430-0402.json
+```
+
+Result:
+
+- `scalar_hit_count = 200`
+- `scalar_axis_hit_counts = { waypoint_x = 0, waypoint_z = 200 }`
+- `pair_candidate_count = 0`
+- key warning: `no_waypoint_x_scalar_hits_within_tolerance`
+
+Interpretation: the wide captured region contains repeated float32 values near
+the addon waypoint Z, but no matching waypoint X scalar within tolerance. This
+keeps the active waypoint API proof strong while showing the current memory
+capture did not include both waypoint axes.

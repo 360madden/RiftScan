@@ -93,6 +93,11 @@ public static class Program
                 return RiftMatchWaypointAnchors(args[2..]);
             }
 
+            if (args.Length >= 2 && Is(args[0], "rift") && Is(args[1], "match-waypoint-scalars"))
+            {
+                return RiftMatchWaypointScalars(args[2..]);
+            }
+
             if (args.Length >= 2 && Is(args[0], "rift") && Is(args[1], "compare-addon-coordinate-motion"))
             {
                 return RiftCompareAddonCoordinateMotion(args[2..]);
@@ -769,6 +774,87 @@ public static class Program
             RegionBaseAddresses = regionBaseAddresses.Distinct().Order().ToArray(),
             Tolerance = tolerance,
             Top = top
+        });
+        if (!string.IsNullOrWhiteSpace(outputPath))
+        {
+            result = result with { OutputPath = Path.GetFullPath(outputPath) };
+        }
+
+        WriteOptionalJson(result.OutputPath, result);
+        Console.WriteLine(JsonSerializer.Serialize(result, SessionJson.Options));
+        return result.Success ? 0 : 1;
+    }
+
+    private static int RiftMatchWaypointScalars(string[] args)
+    {
+        if (args.Length == 1 && IsHelp(args[0]))
+        {
+            PrintRiftMatchWaypointScalarsUsage();
+            return 0;
+        }
+
+        string? sessionPath = null;
+        string? anchorPath = null;
+        string? outputPath = null;
+        var regionBaseAddresses = new List<ulong>();
+        var tolerance = 5d;
+        var top = 100;
+        var maxScalarHitsPerSnapshotAxis = 64;
+        for (var index = 0; index < args.Length; index++)
+        {
+            var arg = args[index];
+            switch (arg)
+            {
+                case "--anchors":
+                case "--anchor-scan":
+                    anchorPath = RequireValue(args, ref index, arg);
+                    break;
+                case "--region-base":
+                case "--region-bases":
+                    regionBaseAddresses.AddRange(ParseBaseAddresses(RequireValue(args, ref index, arg)));
+                    break;
+                case "--tolerance":
+                    tolerance = double.Parse(RequireValue(args, ref index, arg), CultureInfo.InvariantCulture);
+                    break;
+                case "--top":
+                    top = int.Parse(RequireValue(args, ref index, arg), CultureInfo.InvariantCulture);
+                    break;
+                case "--max-scalar-hits-per-snapshot-axis":
+                    maxScalarHitsPerSnapshotAxis = int.Parse(RequireValue(args, ref index, arg), CultureInfo.InvariantCulture);
+                    break;
+                case "--out":
+                case "--json-out":
+                    outputPath = RequireValue(args, ref index, arg);
+                    break;
+                default:
+                    if (sessionPath is not null || arg.StartsWith("--", StringComparison.Ordinal))
+                    {
+                        throw new ArgumentException($"Unknown rift match-waypoint-scalars option: {arg}");
+                    }
+
+                    sessionPath = arg;
+                    break;
+            }
+        }
+
+        if (string.IsNullOrWhiteSpace(sessionPath))
+        {
+            throw new ArgumentException("rift match-waypoint-scalars requires a session path.");
+        }
+
+        if (string.IsNullOrWhiteSpace(anchorPath))
+        {
+            throw new ArgumentException("rift match-waypoint-scalars requires --anchors <addon-api-observation-scan.json>.");
+        }
+
+        var result = new RiftSessionWaypointScalarMatchService().Match(new RiftSessionWaypointScalarMatchOptions
+        {
+            SessionPath = sessionPath,
+            AnchorPath = anchorPath,
+            RegionBaseAddresses = regionBaseAddresses.Distinct().Order().ToArray(),
+            Tolerance = tolerance,
+            Top = top,
+            MaxScalarHitsPerSnapshotAxis = maxScalarHitsPerSnapshotAxis
         });
         if (!string.IsNullOrWhiteSpace(outputPath))
         {
@@ -2573,6 +2659,7 @@ public static class Program
         PrintRiftAddonApiObservationsUsage();
         PrintRiftMatchAddonCoordsUsage();
         PrintRiftMatchWaypointAnchorsUsage();
+        PrintRiftMatchWaypointScalarsUsage();
         PrintRiftCompareAddonCoordinateMotionUsage();
         PrintRiftCoordinateMirrorContextUsage();
         PrintRiftAddonCorroborationUsage();
@@ -2679,6 +2766,9 @@ public static class Program
 
     private static void PrintRiftMatchWaypointAnchorsUsage() =>
         Console.WriteLine("riftscan rift match-waypoint-anchors <session-path> --anchors reports/generated/addon-api-observation-scan.json [--region-base 0xADDR] [--tolerance 5] [--top 100] [--out reports/generated/session-waypoint-anchor-matches.json]");
+
+    private static void PrintRiftMatchWaypointScalarsUsage() =>
+        Console.WriteLine("riftscan rift match-waypoint-scalars <session-path> --anchors reports/generated/addon-api-observation-scan.json [--region-base 0xADDR] [--tolerance 5] [--top 100] [--max-scalar-hits-per-snapshot-axis 64] [--out reports/generated/session-waypoint-scalar-matches.json]");
 
     private static void PrintRiftCompareAddonCoordinateMotionUsage() =>
         Console.WriteLine("riftscan rift compare-addon-coordinate-motion <pre-match-json> <post-match-json> [--min-delta-distance 1] [--mirror-epsilon 0.001] [--top 100] [--out reports/generated/addon-coordinate-motion.json] [--report-md reports/generated/addon-coordinate-motion.md]");

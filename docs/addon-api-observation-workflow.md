@@ -75,6 +75,28 @@ and a waypoint coordinate whose memory delta matches the addon anchor delta. Its
 output is validation evidence only; it narrows candidate regions/offsets but
 does not by itself promote final coordinate truth.
 
+If the vec3-pair matcher returns no hits, run the looser scalar matcher before
+starting another live capture. It searches the same stored snapshots for
+waypoint X and waypoint Z independently, then ranks non-adjacent X/Z pair
+candidates:
+
+```powershell
+riftscan rift match-waypoint-scalars `
+  sessions/<session_id> `
+  --anchors reports/generated/addon-api-observation-scan.json `
+  --tolerance 5 `
+  --top 100 `
+  --out reports/generated/session-waypoint-scalar-matches.json
+```
+
+Optional scalar-specific cap:
+
+- `--max-scalar-hits-per-snapshot-axis <n>`: defaults to `64`; keeps pair
+  generation bounded when a broad snapshot contains many loose scalar hits.
+
+Scalar matcher output is still validation evidence, not final truth. A strong
+result is a repeated X/Z source pair across multiple snapshots or anchors.
+
 For older scan JSON created before `waypoint_anchors` were emitted, the matcher
 can derive the same anchor from saved `current_player` plus `waypoint` or active
 `waypoint_status` observations.
