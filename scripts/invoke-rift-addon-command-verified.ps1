@@ -24,6 +24,9 @@ param(
 
     [string]$SenderPath = ".\scripts\send-rift-slash-command.ps1",
 
+    [ValidateSet("powershell", "autohotkey-sendtext")]
+    [string]$SenderBackend = "powershell",
+
     [string]$TargetProcessName = "rift_x64",
 
     [int]$TargetProcessId,
@@ -48,6 +51,10 @@ if (-not $CommandText.StartsWith("/", [System.StringComparison]::Ordinal)) {
 
 if (-not (Test-Path -LiteralPath $SavedVariablesRoot)) {
     throw "SavedVariablesRoot was not found: $SavedVariablesRoot"
+}
+
+if ($SenderBackend -eq "autohotkey-sendtext" -and -not $PSBoundParameters.ContainsKey("SenderPath")) {
+    $SenderPath = ".\scripts\send-rift-slash-command-ahk.ps1"
 }
 
 $expectedWaypointHasWaypointValue = switch ($ExpectedWaypointHasWaypoint) {
@@ -243,14 +250,15 @@ $result = [pscustomobject]@{
     command_text = $CommandText
     expected_last_command = $ExpectedLastCommand
     expected_waypoint_has_waypoint = $expectedWaypointHasWaypointValue
+    sender_backend = if ($SkipSend) { $null } else { $SenderBackend }
     sender_path = if ($SkipSend) { $null } else { $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($SenderPath) }
     send_exit_code = if ($sendResult) { $sendResult.exit_code } else { $null }
-    send_stdout = if ($sendResult) { $sendResult.stdout } else { @() }
-    send_stderr = if ($sendResult) { $sendResult.stderr } else { @() }
+    send_stdout = if ($sendResult) { ,[string[]]@($sendResult.stdout) } else { ,[string[]]@() }
+    send_stderr = if ($sendResult) { ,[string[]]@($sendResult.stderr) } else { ,[string[]]@() }
     reloadui_after_command = $ReloadUiAfterCommand.IsPresent
     reload_exit_code = if ($reloadResult) { $reloadResult.exit_code } else { $null }
-    reload_stdout = if ($reloadResult) { $reloadResult.stdout } else { @() }
-    reload_stderr = if ($reloadResult) { $reloadResult.stderr } else { @() }
+    reload_stdout = if ($reloadResult) { ,[string[]]@($reloadResult.stdout) } else { ,[string[]]@() }
+    reload_stderr = if ($reloadResult) { ,[string[]]@($reloadResult.stderr) } else { ,[string[]]@() }
     saved_variables_root = $SavedVariablesRoot
     addon_name = $AddonName
     scan_json_path = $jsonOut

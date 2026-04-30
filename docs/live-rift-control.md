@@ -38,6 +38,21 @@ SavedVariables through `riftscan rift addon-api-observations`, writes JSON/JSONL
 evidence under `reports/generated`, and exits nonzero when the expected addon
 state is not observed.
 
+If the default PowerShell sender cannot see the foreground RIFT window from the
+current execution context, use the AutoHotkey `SendText` backend:
+
+```powershell
+.\scripts\invoke-rift-addon-command-verified.ps1 `
+  -SenderBackend autohotkey-sendtext `
+  -CommandText "/rbx waypoint-clear" `
+  -ExpectedLastCommand "waypoint-clear" `
+  -ExpectedWaypointHasWaypoint false `
+  -ReloadUiAfterCommand
+```
+
+This backend still verifies the target PID/window and records foreground
+diagnostics in the result JSON before any memory-capture followup is trusted.
+
 ## Safety rules
 
 - Verify the target process and window title before sending input.
