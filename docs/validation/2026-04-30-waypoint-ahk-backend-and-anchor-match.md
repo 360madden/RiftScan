@@ -152,6 +152,22 @@ Machine-readable summary:
 
 - `reports/generated/waypoint-differential-summary-20260430-0438.json`
 
+The reusable comparer command for this class of follow-up is:
+
+```powershell
+riftscan rift compare-waypoint-scalars `
+  reports/generated/session-waypoint-scalar-matches-live-wide-20260430-0402.json `
+  reports/generated/session-waypoint-scalar-matches-live-wide-anchor2-20260430-0436.json `
+  --delta-tolerance 5 `
+  --out reports/generated/waypoint-scalar-comparison-20260430-0438.json
+```
+
+Comparer result:
+
+- comparison output: `reports/generated/waypoint-scalar-comparison-20260430-0438.json`
+- `comparison_count = 14`
+- `classification_counts = { missing_after_waypoint_change = 14 }`
+
 Cleanup was also verified:
 
 - proof: `reports/generated/verified-addon-command-wrapper-proof-waypoint-clear-sendevent-openchat-20260430-20260430-043748.json`

@@ -570,6 +570,71 @@ public sealed class CommandResultContractTests
             "evidence_summary");
 
     [Fact]
+    public void Rift_waypoint_scalar_comparison_result_pins_json_contract_fields() =>
+        AssertJsonPropertySet(
+            new RiftWaypointScalarComparisonResult(),
+            "result_schema_version",
+            "success",
+            "analyzer_id",
+            "analyzer_version",
+            "input_paths",
+            "analyzer_sources",
+            "delta_tolerance",
+            "top_limit",
+            "input_count",
+            "input_summaries",
+            "comparison_count",
+            "classification_counts",
+            "comparisons",
+            "output_path",
+            "warnings",
+            "diagnostics");
+
+    [Fact]
+    public void Rift_waypoint_scalar_comparison_input_summary_pins_json_contract_fields() =>
+        AssertJsonPropertySet(
+            new RiftWaypointScalarComparisonInputSummary(),
+            "input_index",
+            "input_path",
+            "session_id",
+            "session_path",
+            "anchor_path",
+            "primary_anchor_id",
+            "primary_waypoint_x",
+            "primary_waypoint_z",
+            "primary_delta_x",
+            "primary_delta_z",
+            "scalar_hit_count",
+            "emitted_scalar_hit_count",
+            "scalar_axis_hit_counts",
+            "pair_candidate_count",
+            "warnings");
+
+    [Fact]
+    public void Rift_waypoint_scalar_comparison_candidate_pins_json_contract_fields() =>
+        AssertJsonPropertySet(
+            new RiftWaypointScalarComparisonCandidate(),
+            "candidate_id",
+            "axis",
+            "source_base_address_hex",
+            "source_offset_hex",
+            "source_region_ids",
+            "present_input_indexes",
+            "missing_input_indexes",
+            "support_count",
+            "baseline_memory_value",
+            "latest_memory_value",
+            "baseline_anchor_value",
+            "latest_anchor_value",
+            "observed_delta",
+            "waypoint_delta",
+            "delta_error",
+            "best_abs_distance",
+            "classification",
+            "validation_status",
+            "evidence_summary");
+
+    [Fact]
     public void Rift_addon_api_observation_pins_json_contract_fields() =>
         AssertJsonPropertySet(
             new RiftAddonApiObservation(),
@@ -821,6 +886,7 @@ public sealed class CommandResultContractTests
         Assert.Equal("riftscan.rift_addon_api_observation_scan_result.v1", ReadSchema(new RiftAddonApiObservationScanResult()));
         Assert.Equal("riftscan.rift_session_waypoint_anchor_match_result.v1", ReadSchema(new RiftSessionWaypointAnchorMatchResult()));
         Assert.Equal("riftscan.rift_session_waypoint_scalar_match_result.v1", ReadSchema(new RiftSessionWaypointScalarMatchResult()));
+        Assert.Equal("riftscan.rift_waypoint_scalar_comparison_result.v1", ReadSchema(new RiftWaypointScalarComparisonResult()));
         Assert.Equal("riftscan.rift_addon_coordinate_motion_comparison_result.v1", ReadSchema(new RiftAddonCoordinateMotionComparisonResult()));
         Assert.Equal("riftscan.rift_coordinate_mirror_context_result.v1", ReadSchema(new RiftCoordinateMirrorContextResult()));
     }

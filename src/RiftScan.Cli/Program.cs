@@ -98,6 +98,11 @@ public static class Program
                 return RiftMatchWaypointScalars(args[2..]);
             }
 
+            if (args.Length >= 2 && Is(args[0], "rift") && Is(args[1], "compare-waypoint-scalars"))
+            {
+                return RiftCompareWaypointScalars(args[2..]);
+            }
+
             if (args.Length >= 2 && Is(args[0], "rift") && Is(args[1], "compare-addon-coordinate-motion"))
             {
                 return RiftCompareAddonCoordinateMotion(args[2..]);
@@ -855,6 +860,65 @@ public static class Program
             Tolerance = tolerance,
             Top = top,
             MaxScalarHitsPerSnapshotAxis = maxScalarHitsPerSnapshotAxis
+        });
+        if (!string.IsNullOrWhiteSpace(outputPath))
+        {
+            result = result with { OutputPath = Path.GetFullPath(outputPath) };
+        }
+
+        WriteOptionalJson(result.OutputPath, result);
+        Console.WriteLine(JsonSerializer.Serialize(result, SessionJson.Options));
+        return result.Success ? 0 : 1;
+    }
+
+    private static int RiftCompareWaypointScalars(string[] args)
+    {
+        if (args.Length == 1 && IsHelp(args[0]))
+        {
+            PrintRiftCompareWaypointScalarsUsage();
+            return 0;
+        }
+
+        var inputPaths = new List<string>();
+        string? outputPath = null;
+        var deltaTolerance = 5d;
+        var top = 100;
+        for (var index = 0; index < args.Length; index++)
+        {
+            var arg = args[index];
+            switch (arg)
+            {
+                case "--delta-tolerance":
+                    deltaTolerance = double.Parse(RequireValue(args, ref index, arg), CultureInfo.InvariantCulture);
+                    break;
+                case "--top":
+                    top = int.Parse(RequireValue(args, ref index, arg), CultureInfo.InvariantCulture);
+                    break;
+                case "--out":
+                case "--json-out":
+                    outputPath = RequireValue(args, ref index, arg);
+                    break;
+                default:
+                    if (arg.StartsWith("--", StringComparison.Ordinal))
+                    {
+                        throw new ArgumentException($"Unknown rift compare-waypoint-scalars option: {arg}");
+                    }
+
+                    inputPaths.Add(arg);
+                    break;
+            }
+        }
+
+        if (inputPaths.Count < 2)
+        {
+            throw new ArgumentException("rift compare-waypoint-scalars requires at least two waypoint scalar match JSON paths.");
+        }
+
+        var result = new RiftWaypointScalarComparisonService().Compare(new RiftWaypointScalarComparisonOptions
+        {
+            InputPaths = inputPaths,
+            DeltaTolerance = deltaTolerance,
+            Top = top
         });
         if (!string.IsNullOrWhiteSpace(outputPath))
         {
@@ -2660,6 +2724,7 @@ public static class Program
         PrintRiftMatchAddonCoordsUsage();
         PrintRiftMatchWaypointAnchorsUsage();
         PrintRiftMatchWaypointScalarsUsage();
+        PrintRiftCompareWaypointScalarsUsage();
         PrintRiftCompareAddonCoordinateMotionUsage();
         PrintRiftCoordinateMirrorContextUsage();
         PrintRiftAddonCorroborationUsage();
@@ -2769,6 +2834,9 @@ public static class Program
 
     private static void PrintRiftMatchWaypointScalarsUsage() =>
         Console.WriteLine("riftscan rift match-waypoint-scalars <session-path> --anchors reports/generated/addon-api-observation-scan.json [--region-base 0xADDR] [--tolerance 5] [--top 100] [--max-scalar-hits-per-snapshot-axis 64] [--out reports/generated/session-waypoint-scalar-matches.json]");
+
+    private static void PrintRiftCompareWaypointScalarsUsage() =>
+        Console.WriteLine("riftscan rift compare-waypoint-scalars <scalar-match-json-a> <scalar-match-json-b> [scalar-match-json-c ...] [--delta-tolerance 5] [--top 100] [--out reports/generated/waypoint-scalar-comparison.json]");
 
     private static void PrintRiftCompareAddonCoordinateMotionUsage() =>
         Console.WriteLine("riftscan rift compare-addon-coordinate-motion <pre-match-json> <post-match-json> [--min-delta-distance 1] [--mirror-epsilon 0.001] [--top 100] [--out reports/generated/addon-coordinate-motion.json] [--report-md reports/generated/addon-coordinate-motion.md]");
