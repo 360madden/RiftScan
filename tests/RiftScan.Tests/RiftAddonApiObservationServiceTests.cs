@@ -90,6 +90,74 @@ public sealed class RiftAddonApiObservationServiceTests
     }
 
     [Fact]
+    public void Addon_api_observation_scan_exports_target_focus_and_focus_target_context()
+    {
+        using var temp = new TempDirectory();
+        Directory.CreateDirectory(temp.Path);
+        File.WriteAllText(
+            Path.Combine(temp.Path, "ReaderBridgeExport.lua"),
+            """
+            ReaderBridgeExport_State = {
+              current = {
+                sourceMode = "DirectAPI",
+                target = {
+                  id = "target-id",
+                  name = "Training Dummy",
+                  coord = {
+                    x = 7240.5,
+                    y = 873.25,
+                    z = 3054.75
+                  }
+                },
+                focus = {
+                  id = "focus-id",
+                  name = "Focus Mob",
+                  coord = {
+                    x = 7250.25,
+                    y = 874.5,
+                    z = 3060.75
+                  }
+                },
+                focusTarget = {
+                  id = "focus-target-id",
+                  name = "Focus Target",
+                  coord = {
+                    x = 7260.25,
+                    y = 875.5,
+                    z = 3070.75
+                  }
+                }
+              }
+            }
+            """);
+
+        var result = new RiftAddonApiObservationService().Scan(new RiftAddonApiObservationScanOptions
+        {
+            Path = temp.Path
+        });
+
+        Assert.True(result.Success);
+        Assert.Equal(3, result.ObservationCount);
+        Assert.Contains(result.Observations, observation =>
+            observation.Kind == "target" &&
+            observation.ApiSource == "Inspect.Unit.Detail" &&
+            observation.UnitId == "target-id" &&
+            observation.CoordX == 7240.5);
+        Assert.Contains(result.Observations, observation =>
+            observation.Kind == "focus" &&
+            observation.ApiSource == "Inspect.Unit.Detail" &&
+            observation.UnitId == "focus-id" &&
+            observation.UnitName == "Focus Mob" &&
+            observation.CoordZ == 3060.75);
+        Assert.Contains(result.Observations, observation =>
+            observation.Kind == "focus_target" &&
+            observation.ApiSource == "Inspect.Unit.Detail" &&
+            observation.UnitId == "focus-target-id" &&
+            observation.UnitName == "Focus Target" &&
+            observation.CoordZ == 3070.75);
+    }
+
+    [Fact]
     public void Addon_api_observation_scan_builds_player_waypoint_anchor_from_same_snapshot()
     {
         using var temp = new TempDirectory();

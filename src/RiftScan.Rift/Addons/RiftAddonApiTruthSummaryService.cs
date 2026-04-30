@@ -21,6 +21,14 @@ public sealed class RiftAddonApiTruthSummaryService
             observation.Kind.Equals("target", StringComparison.OrdinalIgnoreCase) &&
             observation.CoordX.HasValue &&
             observation.CoordZ.HasValue);
+        var latestFocus = LatestObservation(scan.Observations, observation =>
+            observation.Kind.Equals("focus", StringComparison.OrdinalIgnoreCase) &&
+            observation.CoordX.HasValue &&
+            observation.CoordZ.HasValue);
+        var latestFocusTarget = LatestObservation(scan.Observations, observation =>
+            observation.Kind.Equals("focus_target", StringComparison.OrdinalIgnoreCase) &&
+            observation.CoordX.HasValue &&
+            observation.CoordZ.HasValue);
         var latestPlayerLoc = LatestObservation(scan.Observations, observation =>
             observation.Kind.Equals("player_loc", StringComparison.OrdinalIgnoreCase) &&
             observation.LocX.HasValue &&
@@ -45,6 +53,8 @@ public sealed class RiftAddonApiTruthSummaryService
         var records = new List<RiftAddonApiTruthRecord>();
         AddRecord(records, latestPlayer, "current_player");
         AddRecord(records, latestTarget, "target");
+        AddRecord(records, latestFocus, "focus");
+        AddRecord(records, latestFocusTarget, "focus_target");
         AddRecord(records, latestPlayerLoc, "player_loc");
         AddRecord(records, latestWaypoint, "waypoint");
         AddRecord(records, latestWaypointStatus, "waypoint_status");
@@ -56,7 +66,7 @@ public sealed class RiftAddonApiTruthSummaryService
         var truthRecords = records
             .Select((record, index) => record with { TruthId = $"rift-addon-api-truth-{index + 1:000000}" })
             .ToArray();
-        var warnings = BuildWarnings(scan, latestPlayer, latestTarget, latestPlayerLoc, latestWaypoint, latestWaypointStatus, latestAnchor);
+        var warnings = BuildWarnings(scan, latestPlayer, latestTarget, latestFocus, latestFocusTarget, latestPlayerLoc, latestWaypoint, latestWaypointStatus, latestAnchor);
 
         return new()
         {
@@ -72,6 +82,8 @@ public sealed class RiftAddonApiTruthSummaryService
             TruthRecordCount = truthRecords.Length,
             LatestPlayer = FindRecord(truthRecords, "current_player"),
             LatestTarget = FindRecord(truthRecords, "target"),
+            LatestFocus = FindRecord(truthRecords, "focus"),
+            LatestFocusTarget = FindRecord(truthRecords, "focus_target"),
             LatestPlayerLoc = FindRecord(truthRecords, "player_loc"),
             LatestWaypoint = FindRecord(truthRecords, "waypoint"),
             LatestWaypointStatus = FindRecord(truthRecords, "waypoint_status"),
@@ -82,7 +94,7 @@ public sealed class RiftAddonApiTruthSummaryService
             [
                 "uses_addon_api_observation_scan_only",
                 "coordinate_truth_should_label_capture_sessions_before_memory_candidate_promotion",
-                "missing_target_or_waypoint_records_mean_the_addon_scan_did_not_observe_that_truth_source"
+                "missing_target_focus_or_waypoint_records_mean_the_addon_scan_did_not_observe_that_truth_source"
             ]
         };
     }
@@ -205,6 +217,8 @@ public sealed class RiftAddonApiTruthSummaryService
         RiftAddonApiObservationScanResult scan,
         RiftAddonApiObservation? latestPlayer,
         RiftAddonApiObservation? latestTarget,
+        RiftAddonApiObservation? latestFocus,
+        RiftAddonApiObservation? latestFocusTarget,
         RiftAddonApiObservation? latestPlayerLoc,
         RiftAddonApiObservation? latestWaypoint,
         RiftAddonApiObservation? latestWaypointStatus,
@@ -224,6 +238,16 @@ public sealed class RiftAddonApiTruthSummaryService
         else if (latestPlayer is not null && CoordinatesMatch(latestPlayer, latestTarget) && UnitIdentityMatches(latestPlayer, latestTarget))
         {
             warnings.Add("target_coordinate_matches_current_player_coordinate_truth");
+        }
+
+        if (latestFocus is null)
+        {
+            warnings.Add("no_focus_coordinate_truth_observed");
+        }
+
+        if (latestFocusTarget is null)
+        {
+            warnings.Add("no_focus_target_coordinate_truth_observed");
         }
 
         if (latestPlayerLoc is null)

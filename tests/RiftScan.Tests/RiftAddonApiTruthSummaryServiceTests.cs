@@ -38,6 +38,24 @@ public sealed class RiftAddonApiTruthSummaryServiceTests
                     z = 3054.75
                   }
                 },
+                focus = {
+                  id = "focus-id",
+                  name = "Focus Mob",
+                  coord = {
+                    x = 7250.25,
+                    y = 874.5,
+                    z = 3060.75
+                  }
+                },
+                focusTarget = {
+                  id = "focus-target-id",
+                  name = "Focus Target",
+                  coord = {
+                    x = 7260.25,
+                    y = 875.5,
+                    z = 3070.75
+                  }
+                },
                 waypoint = {
                   source = "Inspect.Map.Waypoint.Get",
                   unit = "player",
@@ -79,9 +97,9 @@ public sealed class RiftAddonApiTruthSummaryServiceTests
 
         Assert.True(summary.Success);
         Assert.Equal("riftscan.rift_addon_api_truth_summary.v1", summary.ResultSchemaVersion);
-        Assert.Equal(5, summary.ObservationCount);
+        Assert.Equal(7, summary.ObservationCount);
         Assert.Equal(1, summary.WaypointAnchorCount);
-        Assert.Equal(6, summary.TruthRecordCount);
+        Assert.Equal(8, summary.TruthRecordCount);
         Assert.NotNull(summary.LatestPlayer);
         Assert.Equal(7237.6196289062, summary.LatestPlayer.CoordinateX);
         Assert.Equal(3051.0598144531, summary.LatestPlayer.CoordinateZ);
@@ -90,6 +108,14 @@ public sealed class RiftAddonApiTruthSummaryServiceTests
         Assert.Equal(7240.5, summary.LatestTarget.TargetX);
         Assert.Equal(3054.75, summary.LatestTarget.TargetZ);
         Assert.Equal("Training Dummy", summary.LatestTarget.UnitName);
+        Assert.NotNull(summary.LatestFocus);
+        Assert.Equal(7250.25, summary.LatestFocus.CoordinateX);
+        Assert.Equal(3060.75, summary.LatestFocus.CoordinateZ);
+        Assert.Equal("Focus Mob", summary.LatestFocus.UnitName);
+        Assert.NotNull(summary.LatestFocusTarget);
+        Assert.Equal(7260.25, summary.LatestFocusTarget.CoordinateX);
+        Assert.Equal(3070.75, summary.LatestFocusTarget.CoordinateZ);
+        Assert.Equal("Focus Target", summary.LatestFocusTarget.UnitName);
         Assert.NotNull(summary.LatestWaypoint);
         Assert.Equal(7257.6196289062, summary.LatestWaypoint.WaypointX);
         Assert.Equal(3051.0598144531, summary.LatestWaypoint.WaypointZ);
@@ -104,6 +130,8 @@ public sealed class RiftAddonApiTruthSummaryServiceTests
         Assert.Equal(0, summary.LatestPlayerWaypointAnchor.DeltaZ!.Value, precision: 6);
         Assert.Contains("addon_api_truth_summary_is_snapshot_evidence_not_memory_truth", summary.Warnings);
         Assert.DoesNotContain("no_target_coordinate_truth_observed", summary.Warnings);
+        Assert.DoesNotContain("no_focus_coordinate_truth_observed", summary.Warnings);
+        Assert.DoesNotContain("no_focus_target_coordinate_truth_observed", summary.Warnings);
     }
 
     [Fact]

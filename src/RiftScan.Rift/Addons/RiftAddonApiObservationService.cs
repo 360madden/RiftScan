@@ -18,7 +18,7 @@ public sealed class RiftAddonApiObservationService
     private static readonly Regex LocXzRegex = new(
         $@"locX\s*=\s*(?<x>{NumberPattern})\s*,?(?:\s*locY\s*=\s*(?<y>{NumberPattern})\s*,?)?\s*locZ\s*=\s*(?<z>{NumberPattern})",
         RegexOptions.IgnoreCase | RegexOptions.Singleline);
-    private static readonly Regex ContextKeyRegex = new(@"\b(?<key>player|target|nearbyUnits|nearbyUnit|party|member|unit|waypoint)\s*=\s*\{", RegexOptions.IgnoreCase);
+    private static readonly Regex ContextKeyRegex = new(@"\b(?<key>focusTarget|focus_target|playerTarget|player_target|player|target|focus|nearbyUnits|nearbyUnit|party|member|unit|waypoint)\s*=\s*\{", RegexOptions.IgnoreCase);
 
     public RiftAddonApiObservationScanResult Scan(RiftAddonApiObservationScanOptions options)
     {
@@ -301,7 +301,7 @@ public sealed class RiftAddonApiObservationService
         var confidence = sourceMode.Equals("DirectAPI", StringComparison.OrdinalIgnoreCase)
             ? "addon_api_direct_savedvariables"
             : "addon_savedvariables_direct";
-        var apiSource = kind is "current_player" or "target" or "nearby_unit" or "party_member"
+        var apiSource = kind is "current_player" or "target" or "focus" or "focus_target" or "nearby_unit" or "party_member"
             ? "Inspect.Unit.Detail"
             : "addon_coordinate_savedvariables";
         var zoneId = ExtractString(contextText, "zone", "zoneId") ?? string.Empty;
@@ -485,6 +485,23 @@ public sealed class RiftAddonApiObservationService
         }
 
         if (contextKey.Equals("target", StringComparison.OrdinalIgnoreCase))
+        {
+            return "target";
+        }
+
+        if (contextKey.Equals("focus", StringComparison.OrdinalIgnoreCase))
+        {
+            return "focus";
+        }
+
+        if (contextKey.Equals("focusTarget", StringComparison.OrdinalIgnoreCase) ||
+            contextKey.Equals("focus_target", StringComparison.OrdinalIgnoreCase))
+        {
+            return "focus_target";
+        }
+
+        if (contextKey.Equals("playerTarget", StringComparison.OrdinalIgnoreCase) ||
+            contextKey.Equals("player_target", StringComparison.OrdinalIgnoreCase))
         {
             return "target";
         }

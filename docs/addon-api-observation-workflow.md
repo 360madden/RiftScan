@@ -58,17 +58,18 @@ riftscan rift match-addon-coords `
 
 `current_player` is the default truth kind when `--truth-kind` is omitted.
 Repeat `--truth-kind` or pass comma-separated kinds when deliberately comparing
-additional coordinate labels such as `target`. Match output is validation
-evidence only: synchronized mirrors can all match the same player coordinate, so
-canonical actor-coordinate promotion still needs movement/cross-session
-separation.
+additional coordinate labels such as `target`, `focus`, or `focus_target`.
+Match output is validation evidence only: synchronized mirrors can all match the
+same player coordinate, and a self-target will intentionally match the player
+coordinate family. Canonical actor-coordinate promotion still needs a fresh
+distinct target/focus capture plus movement/cross-session separation.
 
 ## Current observation kinds
 
 - `current_player`: addon-saved `Inspect.Unit.Detail`-style player `coord`
   table with `x/y/z`.
-- `target`, `nearby_unit`, `party_member`: classified from nearby saved table
-  context when present.
+- `target`, `focus`, `focus_target`, `nearby_unit`, `party_member`: classified
+  from nearby saved table context when present.
 - `waypoint`: saved `waypoint = { x = ..., z = ... }` table exported from
   `Inspect.Map.Waypoint.Get`.
 - `waypoint_status`: saved `waypointStatus = { ... }` diagnostic table with

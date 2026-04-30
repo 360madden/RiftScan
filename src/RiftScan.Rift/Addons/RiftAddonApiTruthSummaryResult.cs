@@ -45,6 +45,12 @@ public sealed record RiftAddonApiTruthSummaryResult
     [JsonPropertyName("latest_target")]
     public RiftAddonApiTruthRecord? LatestTarget { get; init; }
 
+    [JsonPropertyName("latest_focus")]
+    public RiftAddonApiTruthRecord? LatestFocus { get; init; }
+
+    [JsonPropertyName("latest_focus_target")]
+    public RiftAddonApiTruthRecord? LatestFocusTarget { get; init; }
+
     [JsonPropertyName("latest_player_loc")]
     public RiftAddonApiTruthRecord? LatestPlayerLoc { get; init; }
 

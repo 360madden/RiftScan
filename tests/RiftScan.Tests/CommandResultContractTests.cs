@@ -415,6 +415,8 @@ public sealed class CommandResultContractTests
             "truth_record_count",
             "latest_player",
             "latest_target",
+            "latest_focus",
+            "latest_focus_target",
             "latest_player_loc",
             "latest_waypoint",
             "latest_waypoint_status",
