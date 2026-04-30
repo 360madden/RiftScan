@@ -274,6 +274,180 @@ public sealed class CommandResultContractTests
             "severity");
 
     [Fact]
+    public void Rift_actor_coordinate_owner_discovery_packet_verification_result_pins_json_contract_fields() =>
+        AssertJsonPropertySet(
+            new RiftActorCoordinateOwnerDiscoveryPacketVerificationResult(),
+            "result_schema_version",
+            "success",
+            "path",
+            "packet_schema_version",
+            "passive_session_id",
+            "move_session_id",
+            "target_base_address_hex",
+            "canonical_promotion_status",
+            "context01_stable_edge_count",
+            "cross_session_min160_stable_edge_count",
+            "cross_session_min320_stable_edge_count",
+            "issues");
+
+    [Fact]
+    public void Rift_actor_coordinate_owner_discovery_packet_verification_issue_pins_json_contract_fields() =>
+        AssertJsonPropertySet(
+            new RiftActorCoordinateOwnerDiscoveryPacketVerificationIssue(),
+            "code",
+            "message",
+            "severity");
+
+    [Fact]
+    public void Rift_actor_coordinate_owner_followup_findings_verification_result_pins_json_contract_fields() =>
+        AssertJsonPropertySet(
+            new RiftActorCoordinateOwnerFollowupFindingsVerificationResult(),
+            "result_schema_version",
+            "success",
+            "path",
+            "findings_schema_version",
+            "session_id",
+            "status",
+            "pointer_hit_count",
+            "exact_target_pointer_count",
+            "outside_exact_target_pointer_count",
+            "stable_exact_target_edge_count",
+            "reciprocal_pair_count",
+            "source_artifact_count",
+            "issues");
+
+    [Fact]
+    public void Rift_actor_coordinate_owner_followup_findings_verification_issue_pins_json_contract_fields() =>
+        AssertJsonPropertySet(
+            new RiftActorCoordinateOwnerFollowupFindingsVerificationIssue(),
+            "code",
+            "message",
+            "severity");
+
+    [Fact]
+    public void Rift_actor_coordinate_owner_combined_passive_findings_verification_result_pins_json_contract_fields() =>
+        AssertJsonPropertySet(
+            new RiftActorCoordinateOwnerCombinedPassiveFindingsVerificationResult(),
+            "result_schema_version",
+            "success",
+            "path",
+            "findings_schema_version",
+            "session_id",
+            "status",
+            "target_region_base_hex",
+            "owner_candidate_region_base_hex",
+            "external_exact_edge_count",
+            "external_exact_edge_support_max",
+            "target_region_pointer_hit_count",
+            "target_region_exact_target_pointer_count",
+            "target_region_outside_exact_target_pointer_count",
+            "target_region_stable_edge_count",
+            "owner_region_pointer_hit_count",
+            "owner_region_exact_target_pointer_count",
+            "owner_region_outside_target_region_pointer_count",
+            "owner_region_outside_exact_target_pointer_count",
+            "owner_region_stable_edge_count",
+            "reciprocal_pair_count",
+            "source_artifact_count",
+            "issues");
+
+    [Fact]
+    public void Rift_actor_coordinate_owner_combined_passive_findings_verification_issue_pins_json_contract_fields() =>
+        AssertJsonPropertySet(
+            new RiftActorCoordinateOwnerCombinedPassiveFindingsVerificationIssue(),
+            "code",
+            "message",
+            "severity");
+
+    [Fact]
+    public void Rift_actor_coordinate_owner_path_hypotheses_verification_result_pins_json_contract_fields() =>
+        AssertJsonPropertySet(
+            new RiftActorCoordinateOwnerPathHypothesesVerificationResult(),
+            "result_schema_version",
+            "success",
+            "path",
+            "hypotheses_schema_version",
+            "session_id",
+            "status",
+            "target_region_base_hex",
+            "owner_candidate_region_base_hex",
+            "exact_pointer_hit_count",
+            "unique_exact_edge_count",
+            "missing_discriminating_exact_offset_count",
+            "external_base_edge_count",
+            "external_base_edge_support_max",
+            "internal_exact_edge_count",
+            "target_output_is_capped",
+            "owner_reciprocal_pair_count",
+            "source_artifact_count",
+            "issues");
+
+    [Fact]
+    public void Rift_actor_coordinate_owner_path_hypotheses_verification_issue_pins_json_contract_fields() =>
+        AssertJsonPropertySet(
+            new RiftActorCoordinateOwnerPathHypothesesVerificationIssue(),
+            "code",
+            "message",
+            "severity");
+
+    [Fact]
+    public void Rift_actor_coordinate_owner_followup_plan_result_pins_json_contract_fields() =>
+        AssertJsonPropertySet(
+            new RiftActorCoordinateOwnerFollowupPlanResult(),
+            "result_schema_version",
+            "success",
+            "analyzer_id",
+            "analyzer_version",
+            "packet_path",
+            "packet_verification_path",
+            "passive_session_id",
+            "move_session_id",
+            "target_base_address_hex",
+            "top_offsets",
+            "selected_offset_count",
+            "target_address_count",
+            "target_addresses",
+            "samples",
+            "interval_ms",
+            "windows_per_region",
+            "max_bytes_per_region",
+            "max_total_bytes",
+            "capture_plan_path",
+            "capture_plan",
+            "recommended_capture_args",
+            "recommended_capture_command_template",
+            "warnings",
+            "diagnostics");
+
+    [Fact]
+    public void Rift_actor_coordinate_owner_move_capture_plan_result_pins_json_contract_fields() =>
+        AssertJsonPropertySet(
+            new RiftActorCoordinateOwnerMoveCapturePlanResult(),
+            "result_schema_version",
+            "success",
+            "analyzer_id",
+            "analyzer_version",
+            "hypotheses_path",
+            "hypotheses_verification_path",
+            "session_id",
+            "target_region_base_hex",
+            "owner_candidate_region_base_hex",
+            "target_region_count",
+            "target_region_bases",
+            "samples",
+            "interval_ms",
+            "max_bytes_per_region",
+            "max_total_bytes",
+            "intervention_wait_ms",
+            "intervention_poll_ms",
+            "capture_plan_path",
+            "capture_plan",
+            "recommended_capture_args",
+            "recommended_capture_command_template",
+            "warnings",
+            "diagnostics");
+
+    [Fact]
     public void Rift_session_addon_coordinate_match_result_pins_json_contract_fields() =>
         AssertJsonPropertySet(
             new RiftSessionAddonCoordinateMatchResult(),
@@ -1001,6 +1175,9 @@ public sealed class CommandResultContractTests
         Assert.Equal("riftscan.session_xref_analysis_result.v1", ReadSchema(new SessionXrefAnalysisResult()));
         Assert.Equal("riftscan.session_xref_chain_summary_result.v1", ReadSchema(new SessionXrefChainSummaryResult()));
         Assert.Equal("riftscan.session_xref_chain_summary_verification_result.v1", ReadSchema(new SessionXrefChainSummaryVerificationResult()));
+        Assert.Equal("riftscan.rift_actor_coordinate_owner_discovery_packet_verification_result.v1", ReadSchema(new RiftActorCoordinateOwnerDiscoveryPacketVerificationResult()));
+        Assert.Equal("riftscan.rift_actor_coordinate_owner_followup_findings_verification_result.v1", ReadSchema(new RiftActorCoordinateOwnerFollowupFindingsVerificationResult()));
+        Assert.Equal("riftscan.rift_actor_coordinate_owner_followup_plan.v1", ReadSchema(new RiftActorCoordinateOwnerFollowupPlanResult()));
         Assert.Equal("riftscan.rift_session_addon_coordinate_match_result.v1", ReadSchema(new RiftSessionAddonCoordinateMatchResult()));
         Assert.Equal("riftscan.rift_addon_api_observation_scan_result.v1", ReadSchema(new RiftAddonApiObservationScanResult()));
         Assert.Equal("riftscan.rift_addon_api_truth_summary.v1", ReadSchema(new RiftAddonApiTruthSummaryResult()));

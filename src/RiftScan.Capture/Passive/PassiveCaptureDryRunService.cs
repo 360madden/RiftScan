@@ -200,7 +200,8 @@ public sealed class PassiveCaptureDryRunService(IProcessMemoryReader processMemo
     {
         if (options.RegionIds.Count > 0 || options.BaseAddresses.Count > 0)
         {
-            var requested = options.RegionIds.Contains(region.RegionId) || options.BaseAddresses.Contains(region.BaseAddress);
+            var requested = options.RegionIds.Contains(region.RegionId) ||
+                ContainsRequestedBaseAddress(region, options.BaseAddresses);
             if (!requested)
             {
                 yield return "not_requested_by_region_filter";
@@ -237,6 +238,20 @@ public sealed class PassiveCaptureDryRunService(IProcessMemoryReader processMemo
         {
             yield return "unreadable_protection";
         }
+    }
+
+    private static bool ContainsRequestedBaseAddress(VirtualMemoryRegion region, IReadOnlySet<ulong> baseAddresses) =>
+        baseAddresses.Any(address => ContainsAddress(region, address));
+
+    private static bool ContainsAddress(VirtualMemoryRegion region, ulong address)
+    {
+        var regionEndExclusive = region.BaseAddress + region.SizeBytes;
+        if (regionEndExclusive < region.BaseAddress)
+        {
+            return address >= region.BaseAddress;
+        }
+
+        return address >= region.BaseAddress && address < regionEndExclusive;
     }
 
     private ProcessDescriptor ResolveProcess(PassiveCaptureDryRunOptions options)

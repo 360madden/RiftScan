@@ -41,7 +41,9 @@ public sealed class SessionXrefChainSummaryService
         {
             if (report.Report.PointerHits.Count < report.Report.PointerHitCount)
             {
-                warnings.Add($"input_pointer_hits_truncated:{report.Path}");
+                warnings.Add(SavedAllExactTargetPointerHits(report.Report)
+                    ? $"input_pointer_hits_truncated_after_exact_targets:{report.Path}"
+                    : $"input_pointer_hits_truncated:{report.Path}");
             }
 
             foreach (var warning in report.Report.Warnings.Where(warning => warning.Contains("truncated", StringComparison.OrdinalIgnoreCase)))
@@ -275,6 +277,18 @@ public sealed class SessionXrefChainSummaryService
 
     private static string EdgeKey(SessionXrefPointerHit hit) =>
         string.Join("|", hit.SourceAbsoluteAddressHex, hit.PointerValueHex, hit.MatchKind);
+
+    private static bool SavedAllExactTargetPointerHits(SessionXrefAnalysisResult report)
+    {
+        if (report.ExactTargetPointerCount <= 0)
+        {
+            return false;
+        }
+
+        var savedExactTargetHits = report.PointerHits.Count(hit =>
+            string.Equals(hit.MatchKind, "exact_target_offset_pointer", StringComparison.OrdinalIgnoreCase));
+        return savedExactTargetHits >= report.ExactTargetPointerCount;
+    }
 
     private static string Classify(SessionXrefPointerHit hit)
     {

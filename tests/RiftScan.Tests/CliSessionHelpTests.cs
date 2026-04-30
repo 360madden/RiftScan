@@ -17,6 +17,8 @@ public sealed class CliSessionHelpTests
     [InlineData("rift match-addon-coords --help", "riftscan rift match-addon-coords <session-path>")]
     [InlineData("rift compare-addon-coordinate-motion --help", "riftscan rift compare-addon-coordinate-motion <pre-match-json>")]
     [InlineData("rift coordinate-mirror-context --help", "riftscan rift coordinate-mirror-context <motion-comparison-json>")]
+    [InlineData("rift plan-actor-coordinate-owner-followup --help", "riftscan rift plan-actor-coordinate-owner-followup <actor-coordinate-owner-discovery-packet.json>")]
+    [InlineData("rift plan-actor-coordinate-owner-move-capture --help", "riftscan rift plan-actor-coordinate-owner-move-capture <actor-coordinate-owner-path-hypotheses.json>")]
     [InlineData("compare sessions --help", "riftscan compare sessions <session-a> <session-b>")]
     [InlineData("migrate session --help", "riftscan migrate session <session-path>")]
     [InlineData("session prune --help", "riftscan session prune <session-path>")]
@@ -24,12 +26,26 @@ public sealed class CliSessionHelpTests
     [InlineData("session summary --help", "riftscan session summary <session-path>")]
     [InlineData("verify session --help", "riftscan verify session <session-path>")]
     [InlineData("verify xref-chain-summary --help", "riftscan verify xref-chain-summary <xref-chain-summary.json>")]
+    [InlineData("verify actor-coordinate-owner-discovery --help", "riftscan verify actor-coordinate-owner-discovery <actor-coordinate-owner-discovery-packet.json>")]
+    [InlineData("verify actor-coordinate-owner-followup-findings --help", "riftscan verify actor-coordinate-owner-followup-findings <actor-coordinate-owner-followup-findings.json>")]
+    [InlineData("verify actor-coordinate-owner-combined-passive-findings --help", "riftscan verify actor-coordinate-owner-combined-passive-findings <actor-coordinate-owner-combined-passive-findings.json>")]
+    [InlineData("verify actor-coordinate-owner-path-hypotheses --help", "riftscan verify actor-coordinate-owner-path-hypotheses <actor-coordinate-owner-path-hypotheses.json>")]
     public void Cli_public_help_prints_usage_without_error(string commandLine, string expectedUsage)
     {
         var result = RunCli(commandLine.Split(' ', StringSplitOptions.RemoveEmptyEntries));
 
         Assert.Equal(0, result.ExitCode);
         Assert.Contains(expectedUsage, result.Stdout, StringComparison.Ordinal);
+        Assert.Equal(string.Empty, result.Stderr);
+    }
+
+    [Fact]
+    public void Rift_match_addon_coords_help_lists_api_truth_kinds()
+    {
+        var result = RunCli("rift", "match-addon-coords", "--help");
+
+        Assert.Equal(0, result.ExitCode);
+        Assert.Contains("--truth-kind current_player|target|focus|focus_target", result.Stdout, StringComparison.Ordinal);
         Assert.Equal(string.Empty, result.Stderr);
     }
 

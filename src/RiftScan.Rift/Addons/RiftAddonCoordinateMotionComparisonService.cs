@@ -54,7 +54,10 @@ public sealed class RiftAddonCoordinateMotionComparisonService
 
         ValidateInput(pre, prePath, warnings);
         ValidateInput(post, postPath, warnings);
-        var staleAddonObservations = pre.ObservationPath.Equals(post.ObservationPath, StringComparison.OrdinalIgnoreCase) || pre.LatestObservationUtc == post.LatestObservationUtc;
+        var staleAddonObservations =
+            SameNonEmptyPath(pre.ObservationPath, post.ObservationPath) ||
+            SameNonEmptyPath(pre.TruthSummaryPath, post.TruthSummaryPath) ||
+            SameObservationTimestamp(pre.LatestObservationUtc, post.LatestObservationUtc);
         if (staleAddonObservations)
         {
             warnings.Add("addon_observations_may_be_stale_or_identical_between_pre_and_post");
@@ -337,6 +340,16 @@ public sealed class RiftAddonCoordinateMotionComparisonService
 
     private static string BuildKey(RiftSessionAddonCoordinateCandidate candidate) =>
         string.Join('|', candidate.SourceRegionId, candidate.SourceBaseAddressHex, candidate.SourceOffsetHex, candidate.AxisOrder);
+
+    private static bool SameNonEmptyPath(string first, string second) =>
+        !string.IsNullOrWhiteSpace(first) &&
+        !string.IsNullOrWhiteSpace(second) &&
+        first.Equals(second, StringComparison.OrdinalIgnoreCase);
+
+    private static bool SameObservationTimestamp(DateTimeOffset? first, DateTimeOffset? second) =>
+        first.HasValue &&
+        second.HasValue &&
+        first.Value == second.Value;
 
     private static T ReadJson<T>(string path)
     {

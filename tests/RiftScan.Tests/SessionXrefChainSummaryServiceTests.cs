@@ -44,6 +44,34 @@ public sealed class SessionXrefChainSummaryServiceTests
     }
 
     [Fact]
+    public void Summarize_marks_truncation_after_complete_exact_target_hits()
+    {
+        using var workspace = new XrefReportWorkspace();
+        var report = BuildReport(
+            targetBaseAddressHex: "0x2000",
+            sourceRegionId: "region-a",
+            sourceBaseAddressHex: "0x1000",
+            sourceOffsetHex: "0x10",
+            sourceAbsoluteAddressHex: "0x1010",
+            pointerValueHex: "0x2000") with
+        {
+            PointerHitCount = 10,
+            Warnings = ["pointer_hits_truncated_by_max_hits"]
+        };
+        WriteJson(workspace.FirstReportPath, report);
+
+        var result = new SessionXrefChainSummaryService().Summarize(new SessionXrefChainSummaryOptions
+        {
+            InputPaths = [workspace.FirstReportPath],
+            MinSupport = 1,
+            Top = 10
+        });
+
+        Assert.Contains(result.Warnings, warning => warning.StartsWith("input_pointer_hits_truncated_after_exact_targets:", StringComparison.Ordinal));
+        Assert.DoesNotContain(result.Warnings, warning => warning.StartsWith("input_pointer_hits_truncated:", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public void Cli_analyze_xref_chain_writes_json_and_markdown_report()
     {
         using var workspace = CreateReciprocalXrefReports();

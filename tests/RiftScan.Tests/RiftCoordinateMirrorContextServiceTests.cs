@@ -64,6 +64,31 @@ public sealed class RiftCoordinateMirrorContextServiceTests
     }
 
     [Fact]
+    public void Analyze_nulls_non_finite_member_values_before_json_serialization()
+    {
+        using var session = CreateMirrorFixtureSession(includeNonFiniteMember: true);
+        var motionPath = WriteMirrorMotionComparison(session.Path);
+
+        var result = new RiftCoordinateMirrorContextService().Analyze(new RiftCoordinateMirrorContextOptions
+        {
+            MotionComparisonPath = motionPath,
+            SessionPath = session.Path,
+            WindowBytes = 64,
+            MaxPointerHits = 10,
+            Top = 10
+        });
+
+        var nonFiniteMember = Assert.Single(result.Contexts[0].FirstSnapshotMemberValues, value => value.SourceOffsetHex == "0x40");
+        Assert.True(nonFiniteMember.Readable);
+        Assert.Null(nonFiniteMember.X);
+        Assert.Null(nonFiniteMember.Y);
+        Assert.Null(nonFiniteMember.Z);
+
+        var json = JsonSerializer.Serialize(result, SessionJson.Options);
+        Assert.Contains("\"x\": null", json, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Cli_coordinate_mirror_context_writes_json_and_markdown_report()
     {
         using var session = CreateMirrorFixtureSession();
@@ -141,7 +166,7 @@ public sealed class RiftCoordinateMirrorContextServiceTests
         return path;
     }
 
-    private static TempDirectory CreateMirrorFixtureSession()
+    private static TempDirectory CreateMirrorFixtureSession(bool includeNonFiniteMember = false)
     {
         var session = new TempDirectory();
         Directory.CreateDirectory(Path.Combine(session.Path, "snapshots"));
@@ -156,6 +181,11 @@ public sealed class RiftCoordinateMirrorContextServiceTests
         WriteVec3(firstBytes, 0x40, 100, 200, 300);
         WriteVec3(secondBytes, 0x20, 105, 201, 303);
         WriteVec3(secondBytes, 0x40, 105, 201, 303);
+        if (includeNonFiniteMember)
+        {
+            WriteVec3(firstBytes, 0x40, float.PositiveInfinity, float.NaN, float.NegativeInfinity);
+        }
+
         File.WriteAllBytes(firstPath, firstBytes);
         File.WriteAllBytes(secondPath, secondBytes);
 

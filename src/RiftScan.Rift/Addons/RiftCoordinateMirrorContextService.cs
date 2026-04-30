@@ -314,9 +314,9 @@ public sealed class RiftCoordinateMirrorContextService
                 SourceOffsetHex = FormatHex(offset),
                 SourceAbsoluteAddressHex = FormatHex(absoluteAddress),
                 Readable = true,
-                X = ReadSingle(bytes, index),
-                Y = ReadSingle(bytes, index + FloatStrideBytes),
-                Z = ReadSingle(bytes, index + FloatStrideBytes + FloatStrideBytes)
+                X = ReadJsonSafeSingle(bytes, index),
+                Y = ReadJsonSafeSingle(bytes, index + FloatStrideBytes),
+                Z = ReadJsonSafeSingle(bytes, index + FloatStrideBytes + FloatStrideBytes)
             };
         }).ToArray();
 
@@ -540,6 +540,12 @@ public sealed class RiftCoordinateMirrorContextService
 
     private static float ReadSingle(byte[] bytes, int offset) =>
         BitConverter.Int32BitsToSingle(BinaryPrimitives.ReadInt32LittleEndian(bytes.AsSpan(offset, FloatStrideBytes)));
+
+    private static double? ReadJsonSafeSingle(byte[] bytes, int offset)
+    {
+        var value = ReadSingle(bytes, offset);
+        return float.IsFinite(value) ? value : null;
+    }
 
     private static int AlignUp(int value, int alignment) =>
         value % alignment == 0 ? value : checked(value + alignment - (value % alignment));

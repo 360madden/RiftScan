@@ -113,6 +113,16 @@ public static class Program
                 return RiftPlanWaypointScalarFollowup(args[2..]);
             }
 
+            if (args.Length >= 2 && Is(args[0], "rift") && Is(args[1], "plan-actor-coordinate-owner-followup"))
+            {
+                return RiftPlanActorCoordinateOwnerFollowup(args[2..]);
+            }
+
+            if (args.Length >= 2 && Is(args[0], "rift") && Is(args[1], "plan-actor-coordinate-owner-move-capture"))
+            {
+                return RiftPlanActorCoordinateOwnerMoveCapture(args[2..]);
+            }
+
             if (args.Length >= 2 && Is(args[0], "rift") && Is(args[1], "compare-addon-coordinate-motion"))
             {
                 return RiftCompareAddonCoordinateMotion(args[2..]);
@@ -196,6 +206,26 @@ public static class Program
             if (args.Length >= 2 && Is(args[0], "verify") && Is(args[1], "xref-chain-summary"))
             {
                 return VerifyXrefChainSummary(args[2..]);
+            }
+
+            if (args.Length >= 2 && Is(args[0], "verify") && Is(args[1], "actor-coordinate-owner-discovery"))
+            {
+                return VerifyActorCoordinateOwnerDiscovery(args[2..]);
+            }
+
+            if (args.Length >= 2 && Is(args[0], "verify") && Is(args[1], "actor-coordinate-owner-followup-findings"))
+            {
+                return VerifyActorCoordinateOwnerFollowupFindings(args[2..]);
+            }
+
+            if (args.Length >= 2 && Is(args[0], "verify") && Is(args[1], "actor-coordinate-owner-combined-passive-findings"))
+            {
+                return VerifyActorCoordinateOwnerCombinedPassiveFindings(args[2..]);
+            }
+
+            if (args.Length >= 2 && Is(args[0], "verify") && Is(args[1], "actor-coordinate-owner-path-hypotheses"))
+            {
+                return VerifyActorCoordinateOwnerPathHypotheses(args[2..]);
             }
 
             if (args.Length >= 2 && Is(args[0], "verify") && Is(args[1], "scalar-corroboration"))
@@ -1071,6 +1101,144 @@ public static class Program
         }
 
         WriteOptionalJson(result.OutputPath, result);
+        Console.WriteLine(JsonSerializer.Serialize(result, SessionJson.Options));
+        return result.Success ? 0 : 1;
+    }
+
+    private static int RiftPlanActorCoordinateOwnerFollowup(string[] args)
+    {
+        if (args.Length == 1 && IsHelp(args[0]))
+        {
+            PrintRiftPlanActorCoordinateOwnerFollowupUsage();
+            return 0;
+        }
+
+        string? packetPath = null;
+        string? outputPath = null;
+        var topOffsets = 18;
+        var samples = 8;
+        var intervalMs = 100;
+        var maxBytesPerRegion = 65536;
+        var windowsPerRegion = 3;
+        for (var index = 0; index < args.Length; index++)
+        {
+            var arg = args[index];
+            switch (arg)
+            {
+                case "--top-offsets":
+                    topOffsets = int.Parse(RequireValue(args, ref index, arg), CultureInfo.InvariantCulture);
+                    break;
+                case "--samples":
+                    samples = int.Parse(RequireValue(args, ref index, arg), CultureInfo.InvariantCulture);
+                    break;
+                case "--interval-ms":
+                    intervalMs = int.Parse(RequireValue(args, ref index, arg), CultureInfo.InvariantCulture);
+                    break;
+                case "--max-bytes-per-region":
+                    maxBytesPerRegion = int.Parse(RequireValue(args, ref index, arg), CultureInfo.InvariantCulture);
+                    break;
+                case "--windows-per-region":
+                    windowsPerRegion = int.Parse(RequireValue(args, ref index, arg), CultureInfo.InvariantCulture);
+                    break;
+                case "--out":
+                case "--plan-out":
+                    outputPath = RequireValue(args, ref index, arg);
+                    break;
+                default:
+                    if (packetPath is not null || arg.StartsWith("--", StringComparison.Ordinal))
+                    {
+                        throw new ArgumentException($"Unknown rift plan-actor-coordinate-owner-followup option: {arg}");
+                    }
+
+                    packetPath = arg;
+                    break;
+            }
+        }
+
+        if (string.IsNullOrWhiteSpace(packetPath))
+        {
+            throw new ArgumentException("rift plan-actor-coordinate-owner-followup requires an actor-coordinate owner discovery packet JSON path.");
+        }
+
+        var result = new RiftActorCoordinateOwnerFollowupPlanService().Plan(new RiftActorCoordinateOwnerFollowupPlanOptions
+        {
+            PacketPath = packetPath,
+            TopOffsets = topOffsets,
+            Samples = samples,
+            IntervalMilliseconds = intervalMs,
+            MaxBytesPerRegion = maxBytesPerRegion,
+            WindowsPerRegion = windowsPerRegion,
+            OutputPath = outputPath
+        });
+        Console.WriteLine(JsonSerializer.Serialize(result, SessionJson.Options));
+        return result.Success ? 0 : 1;
+    }
+
+    private static int RiftPlanActorCoordinateOwnerMoveCapture(string[] args)
+    {
+        if (args.Length == 1 && IsHelp(args[0]))
+        {
+            PrintRiftPlanActorCoordinateOwnerMoveCaptureUsage();
+            return 0;
+        }
+
+        string? hypothesesPath = null;
+        string? outputPath = null;
+        var samples = 8;
+        var intervalMs = 100;
+        var maxBytesPerRegion = 98304;
+        var interventionWaitMs = 120000;
+        var interventionPollMs = 2000;
+        for (var index = 0; index < args.Length; index++)
+        {
+            var arg = args[index];
+            switch (arg)
+            {
+                case "--samples":
+                    samples = int.Parse(RequireValue(args, ref index, arg), CultureInfo.InvariantCulture);
+                    break;
+                case "--interval-ms":
+                    intervalMs = int.Parse(RequireValue(args, ref index, arg), CultureInfo.InvariantCulture);
+                    break;
+                case "--max-bytes-per-region":
+                    maxBytesPerRegion = int.Parse(RequireValue(args, ref index, arg), CultureInfo.InvariantCulture);
+                    break;
+                case "--intervention-wait-ms":
+                    interventionWaitMs = int.Parse(RequireValue(args, ref index, arg), CultureInfo.InvariantCulture);
+                    break;
+                case "--intervention-poll-ms":
+                    interventionPollMs = int.Parse(RequireValue(args, ref index, arg), CultureInfo.InvariantCulture);
+                    break;
+                case "--out":
+                case "--plan-out":
+                    outputPath = RequireValue(args, ref index, arg);
+                    break;
+                default:
+                    if (hypothesesPath is not null || arg.StartsWith("--", StringComparison.Ordinal))
+                    {
+                        throw new ArgumentException($"Unknown rift plan-actor-coordinate-owner-move-capture option: {arg}");
+                    }
+
+                    hypothesesPath = arg;
+                    break;
+            }
+        }
+
+        if (string.IsNullOrWhiteSpace(hypothesesPath))
+        {
+            throw new ArgumentException("rift plan-actor-coordinate-owner-move-capture requires an actor-coordinate owner path hypotheses JSON path.");
+        }
+
+        var result = new RiftActorCoordinateOwnerMoveCapturePlanService().Plan(new RiftActorCoordinateOwnerMoveCapturePlanOptions
+        {
+            HypothesesPath = hypothesesPath,
+            Samples = samples,
+            IntervalMilliseconds = intervalMs,
+            MaxBytesPerRegion = maxBytesPerRegion,
+            InterventionWaitMilliseconds = interventionWaitMs,
+            InterventionPollMilliseconds = interventionPollMs,
+            OutputPath = outputPath
+        });
         Console.WriteLine(JsonSerializer.Serialize(result, SessionJson.Options));
         return result.Success ? 0 : 1;
     }
@@ -2574,6 +2742,98 @@ public static class Program
         return result.Success ? 0 : 1;
     }
 
+    private static int VerifyActorCoordinateOwnerDiscovery(string[] args)
+    {
+        if (args.Length == 1 && IsHelp(args[0]))
+        {
+            PrintVerifyActorCoordinateOwnerDiscoveryUsage();
+            return 0;
+        }
+
+        if (args.Length == 0)
+        {
+            throw new ArgumentException("Verify actor-coordinate-owner-discovery requires a JSON path.");
+        }
+
+        if (args.Length > 1)
+        {
+            throw new ArgumentException($"Unknown verify actor-coordinate-owner-discovery option: {args[1]}");
+        }
+
+        var result = new RiftActorCoordinateOwnerDiscoveryPacketVerifier().Verify(args[0]);
+        Console.WriteLine(JsonSerializer.Serialize(result, SessionJson.Options));
+        return result.Success ? 0 : 1;
+    }
+
+    private static int VerifyActorCoordinateOwnerFollowupFindings(string[] args)
+    {
+        if (args.Length == 1 && IsHelp(args[0]))
+        {
+            PrintVerifyActorCoordinateOwnerFollowupFindingsUsage();
+            return 0;
+        }
+
+        if (args.Length == 0)
+        {
+            throw new ArgumentException("Verify actor-coordinate-owner-followup-findings requires a JSON path.");
+        }
+
+        if (args.Length > 1)
+        {
+            throw new ArgumentException($"Unknown verify actor-coordinate-owner-followup-findings option: {args[1]}");
+        }
+
+        var result = new RiftActorCoordinateOwnerFollowupFindingsVerifier().Verify(args[0]);
+        Console.WriteLine(JsonSerializer.Serialize(result, SessionJson.Options));
+        return result.Success ? 0 : 1;
+    }
+
+    private static int VerifyActorCoordinateOwnerCombinedPassiveFindings(string[] args)
+    {
+        if (args.Length == 1 && IsHelp(args[0]))
+        {
+            PrintVerifyActorCoordinateOwnerCombinedPassiveFindingsUsage();
+            return 0;
+        }
+
+        if (args.Length == 0)
+        {
+            throw new ArgumentException("Verify actor-coordinate-owner-combined-passive-findings requires a JSON path.");
+        }
+
+        if (args.Length > 1)
+        {
+            throw new ArgumentException($"Unknown verify actor-coordinate-owner-combined-passive-findings option: {args[1]}");
+        }
+
+        var result = new RiftActorCoordinateOwnerCombinedPassiveFindingsVerifier().Verify(args[0]);
+        Console.WriteLine(JsonSerializer.Serialize(result, SessionJson.Options));
+        return result.Success ? 0 : 1;
+    }
+
+    private static int VerifyActorCoordinateOwnerPathHypotheses(string[] args)
+    {
+        if (args.Length == 1 && IsHelp(args[0]))
+        {
+            PrintVerifyActorCoordinateOwnerPathHypothesesUsage();
+            return 0;
+        }
+
+        if (args.Length == 0)
+        {
+            throw new ArgumentException("Verify actor-coordinate-owner-path-hypotheses requires a JSON path.");
+        }
+
+        if (args.Length > 1)
+        {
+            throw new ArgumentException($"Unknown verify actor-coordinate-owner-path-hypotheses option: {args[1]}");
+        }
+
+        var result = new RiftActorCoordinateOwnerPathHypothesesVerifier().Verify(args[0]);
+        Console.WriteLine(JsonSerializer.Serialize(result, SessionJson.Options));
+        return result.Success ? 0 : 1;
+    }
+
     private static int VerifyScalarCorroboration(string[] args)
     {
         if (args.Length == 1 && IsHelp(args[0]))
@@ -2872,6 +3132,8 @@ public static class Program
         PrintRiftMatchWaypointScalarsUsage();
         PrintRiftCompareWaypointScalarsUsage();
         PrintRiftPlanWaypointScalarFollowupUsage();
+        PrintRiftPlanActorCoordinateOwnerFollowupUsage();
+        PrintRiftPlanActorCoordinateOwnerMoveCaptureUsage();
         PrintRiftCompareAddonCoordinateMotionUsage();
         PrintRiftCoordinateMirrorContextUsage();
         PrintRiftAddonCorroborationUsage();
@@ -2889,6 +3151,10 @@ public static class Program
         PrintSessionSummaryUsage();
         PrintVerifySessionUsage();
         PrintVerifyXrefChainSummaryUsage();
+        PrintVerifyActorCoordinateOwnerDiscoveryUsage();
+        PrintVerifyActorCoordinateOwnerFollowupFindingsUsage();
+        PrintVerifyActorCoordinateOwnerCombinedPassiveFindingsUsage();
+        PrintVerifyActorCoordinateOwnerPathHypothesesUsage();
         PrintVerifyScalarCorroborationUsage();
         PrintVerifyVec3CorroborationUsage();
         PrintVerifyScalarEvidenceSetUsage();
@@ -2977,7 +3243,7 @@ public static class Program
         Console.WriteLine("riftscan rift addon-api-truth <addon-api-observation-scan.json> [--out reports/generated/addon-api-truth-summary.json]");
 
     private static void PrintRiftMatchAddonCoordsUsage() =>
-        Console.WriteLine("riftscan rift match-addon-coords <session-path> (--observations reports/generated/addon-coordinate-observations.jsonl|--truth-summary reports/generated/addon-api-truth-summary.json [--truth-kind current_player]) [--region-base 0xADDR] [--tolerance 5] [--top 100] [--out reports/generated/session-addon-coordinate-matches.json] [--report-md reports/generated/session-addon-coordinate-matches.md] [--latest-only]");
+        Console.WriteLine("riftscan rift match-addon-coords <session-path> (--observations reports/generated/addon-coordinate-observations.jsonl|--truth-summary reports/generated/addon-api-truth-summary.json [--truth-kind current_player|target|focus|focus_target]) [--region-base 0xADDR] [--tolerance 5] [--top 100] [--out reports/generated/session-addon-coordinate-matches.json] [--report-md reports/generated/session-addon-coordinate-matches.md] [--latest-only]");
 
     private static void PrintRiftMatchWaypointAnchorsUsage() =>
         Console.WriteLine("riftscan rift match-waypoint-anchors <session-path> --anchors reports/generated/addon-api-observation-scan.json [--region-base 0xADDR] [--tolerance 5] [--top 100] [--out reports/generated/session-waypoint-anchor-matches.json]");
@@ -2990,6 +3256,12 @@ public static class Program
 
     private static void PrintRiftPlanWaypointScalarFollowupUsage() =>
         Console.WriteLine("riftscan rift plan-waypoint-scalar-followup <scalar-match-json> [--top-pairs 10] [--samples 8] [--interval-ms 100] [--max-bytes-per-region 65536] [--out reports/generated/waypoint-scalar-followup-plan.json]");
+
+    private static void PrintRiftPlanActorCoordinateOwnerFollowupUsage() =>
+        Console.WriteLine("riftscan rift plan-actor-coordinate-owner-followup <actor-coordinate-owner-discovery-packet.json> [--top-offsets 18] [--samples 8] [--interval-ms 100] [--windows-per-region 3] [--max-bytes-per-region 65536] [--out reports/generated/actor-coordinate-owner-followup-plan.json]");
+
+    private static void PrintRiftPlanActorCoordinateOwnerMoveCaptureUsage() =>
+        Console.WriteLine("riftscan rift plan-actor-coordinate-owner-move-capture <actor-coordinate-owner-path-hypotheses.json> [--samples 8] [--interval-ms 100] [--max-bytes-per-region 98304] [--intervention-wait-ms 120000] [--intervention-poll-ms 2000] [--out reports/generated/actor-coordinate-owner-move-capture-plan.json]");
 
     private static void PrintRiftCompareAddonCoordinateMotionUsage() =>
         Console.WriteLine("riftscan rift compare-addon-coordinate-motion <pre-match-json> <post-match-json> [--min-delta-distance 1] [--mirror-epsilon 0.001] [--top 100] [--out reports/generated/addon-coordinate-motion.json] [--report-md reports/generated/addon-coordinate-motion.md]");
@@ -3041,6 +3313,18 @@ public static class Program
 
     private static void PrintVerifyXrefChainSummaryUsage() =>
         Console.WriteLine("riftscan verify xref-chain-summary <xref-chain-summary.json> [--min-support 1] [--require-edge 0xSOURCE=0xTARGET] [--require-reciprocal 0xA=0xB]");
+
+    private static void PrintVerifyActorCoordinateOwnerDiscoveryUsage() =>
+        Console.WriteLine("riftscan verify actor-coordinate-owner-discovery <actor-coordinate-owner-discovery-packet.json>");
+
+    private static void PrintVerifyActorCoordinateOwnerFollowupFindingsUsage() =>
+        Console.WriteLine("riftscan verify actor-coordinate-owner-followup-findings <actor-coordinate-owner-followup-findings.json>");
+
+    private static void PrintVerifyActorCoordinateOwnerCombinedPassiveFindingsUsage() =>
+        Console.WriteLine("riftscan verify actor-coordinate-owner-combined-passive-findings <actor-coordinate-owner-combined-passive-findings.json>");
+
+    private static void PrintVerifyActorCoordinateOwnerPathHypothesesUsage() =>
+        Console.WriteLine("riftscan verify actor-coordinate-owner-path-hypotheses <actor-coordinate-owner-path-hypotheses.json>");
 
     private static void PrintVerifyScalarCorroborationUsage() =>
         Console.WriteLine("riftscan verify scalar-corroboration <corroboration.jsonl>");

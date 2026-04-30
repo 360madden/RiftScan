@@ -314,6 +314,50 @@ public sealed class RiftSessionAddonCoordinateMatchServiceTests
     }
 
     [Fact]
+    public void Motion_comparison_does_not_mark_distinct_truth_summary_inputs_stale()
+    {
+        using var temp = new TempDirectory();
+        Directory.CreateDirectory(temp.Path);
+        var prePath = Path.Combine(temp.Path, "pre-match.json");
+        var postPath = Path.Combine(temp.Path, "post-match.json");
+        WriteJson(prePath, new RiftSessionAddonCoordinateMatchResult
+        {
+            Success = true,
+            SessionId = "pre-session",
+            TruthSummaryPath = "addon-api-truth-before.json",
+            LatestObservationUtc = DateTimeOffset.Parse("2026-04-29T20:00:00Z"),
+            CandidateCount = 1,
+            Candidates =
+            [
+                BuildCoordinateCandidate("0x20", 100, 200, 300)
+            ]
+        });
+        WriteJson(postPath, new RiftSessionAddonCoordinateMatchResult
+        {
+            Success = true,
+            SessionId = "post-session",
+            TruthSummaryPath = "addon-api-truth-after.json",
+            LatestObservationUtc = DateTimeOffset.Parse("2026-04-29T20:01:00Z"),
+            CandidateCount = 1,
+            Candidates =
+            [
+                BuildCoordinateCandidate("0x20", 102, 200, 301)
+            ]
+        });
+
+        var result = new RiftAddonCoordinateMotionComparisonService().Compare(new RiftAddonCoordinateMotionComparisonOptions
+        {
+            PreMatchPath = prePath,
+            PostMatchPath = postPath,
+            MinDeltaDistance = 1,
+            Top = 10
+        });
+
+        Assert.Equal("requires_cross_session_validation_not_final_truth", result.CanonicalPromotionStatus);
+        Assert.DoesNotContain("addon_observations_may_be_stale_or_identical_between_pre_and_post", result.Warnings);
+    }
+
+    [Fact]
     public void Cli_compare_addon_coordinate_motion_writes_json_and_markdown_report()
     {
         using var temp = new TempDirectory();

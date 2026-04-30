@@ -95,6 +95,39 @@ public sealed class PassiveCaptureDryRunServiceTests
     }
 
     [Fact]
+    public void Dry_run_base_address_filter_selects_containing_region()
+    {
+        var reader = new FakeProcessMemoryReader
+        {
+            Regions =
+            [
+                new VirtualMemoryRegion("region-000001", 0x1000, 0x100, MemoryRegionConstants.MemCommit, MemoryRegionConstants.PageReadWrite, MemoryRegionConstants.MemPrivate),
+                new VirtualMemoryRegion("region-000002", 0x2000, 0x100, MemoryRegionConstants.MemCommit, MemoryRegionConstants.PageReadWrite, MemoryRegionConstants.MemPrivate)
+            ]
+        };
+
+        var result = new PassiveCaptureDryRunService(reader).Inspect(new PassiveCaptureDryRunOptions
+        {
+            ProcessName = "fixture_process",
+            MaxRegions = 2,
+            MaxBytesPerRegion = 16,
+            MaxTotalBytes = 32,
+            BaseAddresses = new HashSet<ulong> { 0x1080 }
+        });
+
+        Assert.True(result.Success);
+        Assert.Equal(1, result.SelectedRegionCount);
+        Assert.Contains(result.Regions, region =>
+            region.RegionId == "region-000001" &&
+            region.Selected &&
+            region.SkipReasons.Count == 0);
+        Assert.Contains(result.Regions, region =>
+            region.RegionId == "region-000002" &&
+            !region.Selected &&
+            region.SkipReasons.Contains("not_requested_by_region_filter"));
+    }
+
+    [Fact]
     public void Dry_run_default_selection_includes_large_writable_regions_with_read_cap()
     {
         var reader = new FakeProcessMemoryReader
