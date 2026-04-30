@@ -395,6 +395,10 @@ public sealed class CommandResultContractTests
             "coord_z",
             "waypoint_x",
             "waypoint_z",
+            "loc_x",
+            "loc_y",
+            "loc_z",
+            "raw_text",
             "evidence_summary");
 
     [Fact]

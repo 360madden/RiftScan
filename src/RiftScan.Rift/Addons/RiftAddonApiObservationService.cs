@@ -13,6 +13,10 @@ public sealed class RiftAddonApiObservationService
         $@"coordX\s*=\s*(?<x>{NumberPattern})\s*,?\s*coordY\s*=\s*(?<y>{NumberPattern})\s*,?\s*coordZ\s*=\s*(?<z>{NumberPattern})",
         RegexOptions.IgnoreCase | RegexOptions.Singleline);
     private static readonly Regex WaypointTableRegex = new(@"waypoint\s*=\s*\{(?<body>.*?)\}", RegexOptions.IgnoreCase | RegexOptions.Singleline);
+    private static readonly Regex LocTableRegex = new(@"\bloc\s*=\s*\{(?<body>.*?)\}", RegexOptions.IgnoreCase | RegexOptions.Singleline);
+    private static readonly Regex LocXzRegex = new(
+        $@"locX\s*=\s*(?<x>{NumberPattern})\s*,?(?:\s*locY\s*=\s*(?<y>{NumberPattern})\s*,?)?\s*locZ\s*=\s*(?<z>{NumberPattern})",
+        RegexOptions.IgnoreCase | RegexOptions.Singleline);
     private static readonly Regex ContextKeyRegex = new(@"\b(?<key>player|target|nearbyUnits|nearbyUnit|party|member|unit|waypoint)\s*=\s*\{", RegexOptions.IgnoreCase);
 
     public RiftAddonApiObservationScanResult Scan(RiftAddonApiObservationScanOptions options)
@@ -161,6 +165,31 @@ public sealed class RiftAddonApiObservationService
                 observations.Add(BuildWaypointObservation(rootPath, file, text, match.Index, "waypoint_table_xz", x, z, "addon_savedvariables_direct"));
             }
         }
+
+        foreach (Match match in LocTableRegex.Matches(text))
+        {
+            var body = match.Groups["body"].Value;
+            if (TryReadNamedNumber(body, "x", out var x) && TryReadNamedNumber(body, "z", out var z))
+            {
+                var hasY = TryReadNamedNumber(body, "y", out var y);
+                var rawText = ExtractString(body, "raw", "text", "line") ?? string.Empty;
+                observations.Add(BuildLocObservation(rootPath, file, text, match.Index, "loc_table_xz", x, hasY ? y : null, z, rawText));
+            }
+        }
+
+        foreach (Match match in LocXzRegex.Matches(text))
+        {
+            observations.Add(BuildLocObservation(
+                rootPath,
+                file,
+                text,
+                match.Index,
+                "locX_locZ",
+                ParseNumber(match.Groups["x"].Value),
+                match.Groups["y"].Success ? ParseNumber(match.Groups["y"].Value) : null,
+                ParseNumber(match.Groups["z"].Value),
+                ExtractNearbyString(text, match.Index, "locRaw", "locText") ?? string.Empty));
+        }
     }
 
     private static RiftAddonApiObservation BuildWorldCoordinateObservation(
@@ -249,6 +278,49 @@ public sealed class RiftAddonApiObservationService
             WaypointX = x,
             WaypointZ = z,
             EvidenceSummary = $"kind=waypoint;addon={sourceAddon};pattern={sourcePattern};space=map_xz;x={x:F6};z={z:F6}"
+        };
+    }
+
+    private static RiftAddonApiObservation BuildLocObservation(
+        string rootPath,
+        string file,
+        string text,
+        int matchIndex,
+        string sourcePattern,
+        double x,
+        double? y,
+        double z,
+        string rawText)
+    {
+        var sourceAddon = Path.GetFileNameWithoutExtension(file);
+        var nearText = Window(text, matchIndex, before: 1600, after: 1600);
+        var sourceMode = ExtractString(nearText, "sourceMode", "mode") ?? ExtractString(text, "sourceMode") ?? string.Empty;
+        var zoneId = ExtractNearbyString(text, matchIndex, "zone", "zoneId") ?? ExtractString(text, "zone", "zoneId") ?? string.Empty;
+        var locationName = ExtractNearbyString(text, matchIndex, "locationName", "location") ?? string.Empty;
+        var realtime = ExtractNumber(nearText, "generatedAtRealtime", "capturedAt", "realtime")
+            ?? ExtractNumber(text, "generatedAtRealtime", "capturedAt", "realtime");
+
+        return new()
+        {
+            Kind = "player_loc",
+            SourceAddon = sourceAddon,
+            SourceFileName = Path.GetFileName(file),
+            SourcePathRedacted = RedactPath(Path.GetRelativePath(rootPath, file)),
+            SourcePattern = sourcePattern,
+            LineNumber = LineNumber(text, matchIndex),
+            FileLastWriteUtc = new DateTimeOffset(File.GetLastWriteTimeUtc(file), TimeSpan.Zero),
+            Realtime = realtime,
+            ApiSource = "/loc",
+            SourceMode = sourceMode,
+            ZoneId = zoneId,
+            LocationName = locationName,
+            CoordinateSpace = "game_loc_xz",
+            ConfidenceLevel = "ingame_loc_output",
+            LocX = x,
+            LocY = y,
+            LocZ = z,
+            RawText = rawText,
+            EvidenceSummary = $"kind=player_loc;addon={sourceAddon};pattern={sourcePattern};space=game_loc_xz;x={x:F6};z={z:F6};zone={zoneId};location={locationName}"
         };
     }
 

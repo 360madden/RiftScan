@@ -114,6 +114,48 @@ public sealed class RiftAddonApiObservationServiceTests
     }
 
     [Fact]
+    public void Addon_api_observation_scan_exports_ingame_loc_output()
+    {
+        using var temp = new TempDirectory();
+        Directory.CreateDirectory(temp.Path);
+        File.WriteAllText(
+            Path.Combine(temp.Path, "ReaderBridgeExport.lua"),
+            """
+            ReaderBridgeExport_State = {
+              current = {
+                generatedAtRealtime = 104979.671875,
+                sourceMode = "DirectAPI",
+                zone = "z487C9102D2EA79BE",
+                locationName = "Sanctum Watch",
+                loc = {
+                  raw = "/loc Sanctum Watch 75.0888671875 292.11111450195",
+                  x = 75.0888671875,
+                  z = 292.11111450195
+                }
+              }
+            }
+            """);
+
+        var result = new RiftAddonApiObservationService().Scan(new RiftAddonApiObservationScanOptions
+        {
+            Path = temp.Path
+        });
+
+        var observation = Assert.Single(result.Observations);
+        Assert.Equal("player_loc", observation.Kind);
+        Assert.Equal("ReaderBridgeExport", observation.SourceAddon);
+        Assert.Equal("/loc", observation.ApiSource);
+        Assert.Equal("game_loc_xz", observation.CoordinateSpace);
+        Assert.Equal("ingame_loc_output", observation.ConfidenceLevel);
+        Assert.Equal(75.0888671875, observation.LocX);
+        Assert.Null(observation.LocY);
+        Assert.Equal(292.11111450195, observation.LocZ);
+        Assert.Equal("/loc Sanctum Watch 75.0888671875 292.11111450195", observation.RawText);
+        Assert.Equal("z487C9102D2EA79BE", observation.ZoneId);
+        Assert.Equal("Sanctum Watch", observation.LocationName);
+    }
+
+    [Fact]
     public void Addon_api_observation_scan_can_filter_to_fresh_direct_api_sources()
     {
         using var temp = new TempDirectory();

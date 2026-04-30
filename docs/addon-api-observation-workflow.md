@@ -28,6 +28,8 @@ Optional filters:
   context when present.
 - `waypoint`: saved `waypoint = { x = ..., z = ... }` table intended for
   future `Inspect.Map.Waypoint.Get` exports.
+- `player_loc`: captured `/loc` output for the player's in-game
+  waypoint/location coordinate space.
 
 ## Confidence tiers
 
@@ -42,6 +44,14 @@ TomTom SavedVariables are intentionally ignored for RiftScan truth discovery
 until the addon is developed enough to serve as a reliable observation source.
 Use direct addon/API exports such as `Inspect.Unit.Detail`,
 `Inspect.Map.Waypoint.Get`, or captured `/loc` output instead.
+
+## `/loc` policy
+
+Treat `/loc` as a high-value player-visible semantic observation source. It is
+not memory truth by itself, but it is stronger than addon route caches because
+it reflects the game's own in-client location/waypoint presentation. Capture it
+as `player_loc` with `coordinate_space = "game_loc_xz"` and retain the raw text
+when available.
 
 ## Boundary
 

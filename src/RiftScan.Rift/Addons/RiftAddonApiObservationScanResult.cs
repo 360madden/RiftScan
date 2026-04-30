@@ -113,6 +113,18 @@ public sealed record RiftAddonApiObservation
     [JsonPropertyName("waypoint_z")]
     public double? WaypointZ { get; init; }
 
+    [JsonPropertyName("loc_x")]
+    public double? LocX { get; init; }
+
+    [JsonPropertyName("loc_y")]
+    public double? LocY { get; init; }
+
+    [JsonPropertyName("loc_z")]
+    public double? LocZ { get; init; }
+
+    [JsonPropertyName("raw_text")]
+    public string RawText { get; init; } = string.Empty;
+
     [JsonPropertyName("evidence_summary")]
     public string EvidenceSummary { get; init; } = string.Empty;
 }
