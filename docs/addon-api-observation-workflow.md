@@ -69,6 +69,24 @@ Those observations keep `kind = "player_loc"` but use
 in `api_source`. Promote only live slash-captured `/loc` output as
 `confidence_level = "ingame_loc_output"`.
 
+## Live waypoint proof
+
+A live validation on 2026-04-29 EDT confirmed the preferred waypoint lane:
+`ReaderBridgeExport` set a temporary waypoint through `Command.Map.Waypoint.Set`,
+read it back through `Inspect.Map.Waypoint.Get("player")`, persisted it to
+SavedVariables, and RiftScan parsed it as `kind = "waypoint"`.
+
+Evidence summary:
+
+- player X/Z: `7237.6196289062`, `3051.0598144531`
+- waypoint X/Z: `7257.6196289062`, `3051.0598144531`
+- parser output: `observation_count = 4`
+- waypoint observation: `rift-addon-api-obs-000004`
+- proof doc: `docs/validation/2026-04-29-readerbridgeexport-waypoint-api-proof.md`
+
+The test used addon/API helpers only. It did not add game input/window-control
+logic to RiftScan core.
+
 ## Boundary
 
 This workflow does not replace memory proof. It provides semantic anchors for
