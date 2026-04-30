@@ -213,6 +213,11 @@ public static class Program
                 return VerifyActorCoordinateOwnerDiscovery(args[2..]);
             }
 
+            if (args.Length >= 2 && Is(args[0], "verify") && Is(args[1], "riftreader-actor-coordinate-scan"))
+            {
+                return VerifyRiftReaderActorCoordinateScan(args[2..]);
+            }
+
             if (args.Length >= 2 && Is(args[0], "verify") && Is(args[1], "actor-coordinate-owner-followup-findings"))
             {
                 return VerifyActorCoordinateOwnerFollowupFindings(args[2..]);
@@ -2765,6 +2770,29 @@ public static class Program
         return result.Success ? 0 : 1;
     }
 
+    private static int VerifyRiftReaderActorCoordinateScan(string[] args)
+    {
+        if (args.Length == 1 && IsHelp(args[0]))
+        {
+            PrintVerifyRiftReaderActorCoordinateScanUsage();
+            return 0;
+        }
+
+        if (args.Length == 0)
+        {
+            throw new ArgumentException("Verify riftreader-actor-coordinate-scan requires a JSON path.");
+        }
+
+        if (args.Length > 1)
+        {
+            throw new ArgumentException($"Unknown verify riftreader-actor-coordinate-scan option: {args[1]}");
+        }
+
+        var result = new RiftReaderActorCoordinateScanPacketVerifier().Verify(args[0]);
+        Console.WriteLine(JsonSerializer.Serialize(result, SessionJson.Options));
+        return result.Success ? 0 : 1;
+    }
+
     private static int VerifyActorCoordinateOwnerFollowupFindings(string[] args)
     {
         if (args.Length == 1 && IsHelp(args[0]))
@@ -3152,6 +3180,7 @@ public static class Program
         PrintVerifySessionUsage();
         PrintVerifyXrefChainSummaryUsage();
         PrintVerifyActorCoordinateOwnerDiscoveryUsage();
+        PrintVerifyRiftReaderActorCoordinateScanUsage();
         PrintVerifyActorCoordinateOwnerFollowupFindingsUsage();
         PrintVerifyActorCoordinateOwnerCombinedPassiveFindingsUsage();
         PrintVerifyActorCoordinateOwnerPathHypothesesUsage();
@@ -3316,6 +3345,9 @@ public static class Program
 
     private static void PrintVerifyActorCoordinateOwnerDiscoveryUsage() =>
         Console.WriteLine("riftscan verify actor-coordinate-owner-discovery <actor-coordinate-owner-discovery-packet.json>");
+
+    private static void PrintVerifyRiftReaderActorCoordinateScanUsage() =>
+        Console.WriteLine("riftscan verify riftreader-actor-coordinate-scan <riftreader-actor-coordinate-scan-packet.json>");
 
     private static void PrintVerifyActorCoordinateOwnerFollowupFindingsUsage() =>
         Console.WriteLine("riftscan verify actor-coordinate-owner-followup-findings <actor-coordinate-owner-followup-findings.json>");
