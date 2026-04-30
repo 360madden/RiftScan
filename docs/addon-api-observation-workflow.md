@@ -31,6 +31,15 @@ Optional filters:
 - `player_loc`: captured `/loc` output for the player's in-game
   waypoint/location coordinate space.
 
+## Waypoint policy
+
+Prefer `Inspect.Map.Waypoint.Get("player")` over `/loc` for waypoint discovery.
+It does not require foreground window focus or uninterrupted keyboard control.
+If no `waypoint` table is present, inspect the addon-side `waypointStatus`
+diagnostic before assuming failure: `apiAvailable = true` with
+`hasWaypoint = false` means the API is reachable but there is no active player
+waypoint to report.
+
 ## Confidence tiers
 
 - `addon_api_direct_savedvariables`: SavedVariables export declares
