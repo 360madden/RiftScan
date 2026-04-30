@@ -115,15 +115,18 @@ public sealed class RiftSessionWaypointScalarMatchService
             .Take(options.Top)
             .Select((candidate, index) => candidate with { CandidateId = $"rift-waypoint-scalar-pair-candidate-{index + 1:000000}" })
             .ToArray();
-        var topScalarHits = retainedHits
+        var rankedScalarHits = retainedHits
             .OrderBy(hit => hit.AbsDistance)
             .ThenBy(hit => hit.Axis, StringComparer.OrdinalIgnoreCase)
             .ThenBy(hit => hit.SnapshotId, StringComparer.OrdinalIgnoreCase)
             .ThenBy(hit => hit.SourceRegionId, StringComparer.OrdinalIgnoreCase)
             .ThenBy(hit => ParseUnsignedHexOrDecimal(hit.SourceOffsetHex))
-            .Take(options.Top)
             .Select((hit, index) => hit with { HitId = $"rift-waypoint-scalar-hit-{index + 1:000000}" })
             .ToArray();
+        var topScalarHits = rankedScalarHits
+            .Take(options.Top)
+            .ToArray();
+        var scalarHitsOutputPath = WriteJsonLines(options.ScalarHitsOutputPath, rankedScalarHits);
 
         if (retainedHitTruncation)
         {
@@ -183,6 +186,7 @@ public sealed class RiftSessionWaypointScalarMatchService
             RetainedScalarHitCount = retainedHits.Count,
             RetainedScalarAxisHitCounts = retainedScalarAxisHitCounts,
             PairCandidateCount = pairCandidateCount,
+            ScalarHitsOutputPath = scalarHitsOutputPath,
             ScalarHits = topScalarHits,
             PairCandidates = topPairCandidates,
             Warnings = warnings.Distinct(StringComparer.OrdinalIgnoreCase).Order(StringComparer.OrdinalIgnoreCase).ToArray(),
@@ -380,6 +384,19 @@ public sealed class RiftSessionWaypointScalarMatchService
 
     private static string ResolveSessionPath(string sessionPath, string relativePath) =>
         Path.Combine(sessionPath, relativePath.Replace('/', Path.DirectorySeparatorChar));
+
+    private static string? WriteJsonLines(string? outputPath, IReadOnlyList<RiftSessionWaypointScalarHit> hits)
+    {
+        if (string.IsNullOrWhiteSpace(outputPath))
+        {
+            return null;
+        }
+
+        var fullOutputPath = Path.GetFullPath(outputPath);
+        Directory.CreateDirectory(Path.GetDirectoryName(fullOutputPath)!);
+        File.WriteAllLines(fullOutputPath, hits.Select(hit => JsonSerializer.Serialize(hit, SessionJson.Options).ReplaceLineEndings(string.Empty)));
+        return fullOutputPath;
+    }
 
     private static float ReadSingle(byte[] bytes, int offset) =>
         BitConverter.Int32BitsToSingle(BinaryPrimitives.ReadInt32LittleEndian(bytes.AsSpan(offset, FloatStrideBytes)));

@@ -801,6 +801,7 @@ public static class Program
         string? sessionPath = null;
         string? anchorPath = null;
         string? outputPath = null;
+        string? scalarHitsOutputPath = null;
         var regionBaseAddresses = new List<ulong>();
         var tolerance = 5d;
         var top = 100;
@@ -826,6 +827,10 @@ public static class Program
                     break;
                 case "--max-scalar-hits-per-snapshot-axis":
                     maxScalarHitsPerSnapshotAxis = int.Parse(RequireValue(args, ref index, arg), CultureInfo.InvariantCulture);
+                    break;
+                case "--scalar-hits-out":
+                case "--all-scalar-hits-out":
+                    scalarHitsOutputPath = RequireValue(args, ref index, arg);
                     break;
                 case "--out":
                 case "--json-out":
@@ -859,7 +864,8 @@ public static class Program
             RegionBaseAddresses = regionBaseAddresses.Distinct().Order().ToArray(),
             Tolerance = tolerance,
             Top = top,
-            MaxScalarHitsPerSnapshotAxis = maxScalarHitsPerSnapshotAxis
+            MaxScalarHitsPerSnapshotAxis = maxScalarHitsPerSnapshotAxis,
+            ScalarHitsOutputPath = scalarHitsOutputPath
         });
         if (!string.IsNullOrWhiteSpace(outputPath))
         {
@@ -2833,7 +2839,7 @@ public static class Program
         Console.WriteLine("riftscan rift match-waypoint-anchors <session-path> --anchors reports/generated/addon-api-observation-scan.json [--region-base 0xADDR] [--tolerance 5] [--top 100] [--out reports/generated/session-waypoint-anchor-matches.json]");
 
     private static void PrintRiftMatchWaypointScalarsUsage() =>
-        Console.WriteLine("riftscan rift match-waypoint-scalars <session-path> --anchors reports/generated/addon-api-observation-scan.json [--region-base 0xADDR] [--tolerance 5] [--top 100] [--max-scalar-hits-per-snapshot-axis 64] [--out reports/generated/session-waypoint-scalar-matches.json]");
+        Console.WriteLine("riftscan rift match-waypoint-scalars <session-path> --anchors reports/generated/addon-api-observation-scan.json [--region-base 0xADDR] [--tolerance 5] [--top 100] [--max-scalar-hits-per-snapshot-axis 64] [--scalar-hits-out reports/generated/session-waypoint-scalar-hits.jsonl] [--out reports/generated/session-waypoint-scalar-matches.json]");
 
     private static void PrintRiftCompareWaypointScalarsUsage() =>
         Console.WriteLine("riftscan rift compare-waypoint-scalars <scalar-match-json-a> <scalar-match-json-b> [scalar-match-json-c ...] [--delta-tolerance 5] [--top 100] [--out reports/generated/waypoint-scalar-comparison.json]");

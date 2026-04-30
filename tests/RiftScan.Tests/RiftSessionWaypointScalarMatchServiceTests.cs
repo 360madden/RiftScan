@@ -58,6 +58,7 @@ public sealed class RiftSessionWaypointScalarMatchServiceTests
         using var session = CreateWaypointScalarFixtureSession();
         var anchorPath = WriteAnchorScan(session.Path);
         var outputPath = Path.Combine(session.Path, "waypoint-scalar-matches.json");
+        var scalarHitsOutputPath = Path.Combine(session.Path, "waypoint-scalar-hits.jsonl");
         var originalOut = Console.Out;
         var originalError = Console.Error;
         using var output = new StringWriter();
@@ -75,6 +76,8 @@ public sealed class RiftSessionWaypointScalarMatchServiceTests
                 anchorPath,
                 "--tolerance",
                 "0.01",
+                "--scalar-hits-out",
+                scalarHitsOutputPath,
                 "--out",
                 outputPath
             ]);
@@ -82,10 +85,13 @@ public sealed class RiftSessionWaypointScalarMatchServiceTests
             Assert.Equal(0, exitCode);
             Assert.Equal(string.Empty, error.ToString());
             Assert.True(File.Exists(outputPath));
+            Assert.True(File.Exists(scalarHitsOutputPath));
+            Assert.Equal(4, File.ReadLines(scalarHitsOutputPath).Count(line => !string.IsNullOrWhiteSpace(line)));
             using var stdoutJson = JsonDocument.Parse(output.ToString());
             Assert.Equal("riftscan.rift_session_waypoint_scalar_match_result.v1", stdoutJson.RootElement.GetProperty("result_schema_version").GetString());
             Assert.Equal(4, stdoutJson.RootElement.GetProperty("scalar_hit_count").GetInt32());
             Assert.Equal(1, stdoutJson.RootElement.GetProperty("pair_candidate_count").GetInt32());
+            Assert.Equal(Path.GetFullPath(scalarHitsOutputPath), stdoutJson.RootElement.GetProperty("scalar_hits_output_path").GetString());
             using var fileJson = JsonDocument.Parse(File.ReadAllText(outputPath));
             Assert.Equal(Path.GetFullPath(outputPath), fileJson.RootElement.GetProperty("output_path").GetString());
         }

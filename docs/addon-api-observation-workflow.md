@@ -86,6 +86,7 @@ riftscan rift match-waypoint-scalars `
   --anchors reports/generated/addon-api-observation-scan.json `
   --tolerance 5 `
   --top 100 `
+  --scalar-hits-out reports/generated/session-waypoint-scalar-hits.jsonl `
   --out reports/generated/session-waypoint-scalar-matches.json
 ```
 
@@ -93,6 +94,9 @@ Optional scalar-specific cap:
 
 - `--max-scalar-hits-per-snapshot-axis <n>`: defaults to `64`; keeps pair
   generation bounded when a broad snapshot contains many loose scalar hits.
+- `--scalar-hits-out <path>`: writes all retained scalar hits as JSONL so later
+  differential comparison is not limited to the top hits embedded in the summary
+  JSON.
 
 Scalar matcher output is still validation evidence, not final truth. A strong
 result is a repeated X/Z source pair across multiple snapshots or anchors.
@@ -111,8 +115,10 @@ riftscan rift compare-waypoint-scalars `
 
 The comparer classifies emitted scalar offsets as `tracks_waypoint_candidate`,
 `missing_after_waypoint_change`, `stable_despite_waypoint_change`, or
-`changes_but_not_waypoint`. Missing or static offsets after a deliberate
-waypoint change are rejection evidence, not waypoint truth.
+`changes_but_not_waypoint`. If an input match JSON has `scalar_hits_output_path`,
+the comparer uses that retained-hit JSONL artifact instead of only the embedded
+top-hit summary. Missing or static offsets after a deliberate waypoint change
+are rejection evidence, not waypoint truth.
 
 For older scan JSON created before `waypoint_anchors` were emitted, the matcher
 can derive the same anchor from saved `current_player` plus `waypoint` or active

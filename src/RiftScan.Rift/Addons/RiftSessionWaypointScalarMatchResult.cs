@@ -15,6 +15,8 @@ public sealed record RiftSessionWaypointScalarMatchOptions
     public int Top { get; init; } = 100;
 
     public int MaxScalarHitsPerSnapshotAxis { get; init; } = 64;
+
+    public string? ScalarHitsOutputPath { get; init; }
 }
 
 public sealed record RiftSessionWaypointScalarMatchResult
@@ -84,6 +86,9 @@ public sealed record RiftSessionWaypointScalarMatchResult
 
     [JsonPropertyName("pair_candidate_count")]
     public int PairCandidateCount { get; init; }
+
+    [JsonPropertyName("scalar_hits_output_path")]
+    public string? ScalarHitsOutputPath { get; init; }
 
     [JsonPropertyName("scalar_hits")]
     public IReadOnlyList<RiftSessionWaypointScalarHit> ScalarHits { get; init; } = [];

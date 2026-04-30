@@ -40,7 +40,7 @@ public sealed class RiftWaypointScalarComparisonService
         var diagnostics = new List<string>
         {
             "offline_scalar_result_comparison_only",
-            "uses_emitted_scalar_hits_from_match_results",
+            "uses_scalar_hits_output_path_when_present_else_embedded_scalar_hits",
             "classification_requires_replayable_capture_context"
         };
         var inputs = inputPaths.Select((path, index) => ReadInput(path, index + 1, warnings)).ToArray();
@@ -63,7 +63,7 @@ public sealed class RiftWaypointScalarComparisonService
             warnings.Add("comparison_output_truncated_by_top_limit");
         }
 
-        if (inputs.Any(input => input.Result.ScalarHitCount > input.Result.ScalarHits.Count))
+        if (inputs.Any(input => input.ExpectedScalarHitCount > input.ScalarHits.Count))
         {
             warnings.Add("one_or_more_inputs_have_truncated_scalar_hit_outputs");
         }
@@ -81,7 +81,11 @@ public sealed class RiftWaypointScalarComparisonService
         {
             Success = true,
             InputPaths = inputPaths,
-            AnalyzerSources = inputPaths.Concat(inputs.Select(input => input.Result.AnchorPath).Where(path => !string.IsNullOrWhiteSpace(path))).Distinct(StringComparer.OrdinalIgnoreCase).ToArray(),
+            AnalyzerSources = inputPaths
+                .Concat(inputs.Select(input => input.Result.AnchorPath).Where(path => !string.IsNullOrWhiteSpace(path)))
+                .Concat(inputs.Select(input => input.ScalarHitsSourcePath).OfType<string>())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToArray(),
             DeltaTolerance = options.DeltaTolerance,
             TopLimit = options.Top,
             InputCount = inputs.Length,
@@ -98,6 +102,7 @@ public sealed class RiftWaypointScalarComparisonService
     {
         var result = JsonSerializer.Deserialize<RiftSessionWaypointScalarMatchResult>(File.ReadAllText(path), SessionJson.Options)
             ?? throw new InvalidOperationException($"Unable to read waypoint scalar match result: {path}");
+        var (scalarHits, scalarHitsSourcePath) = ReadScalarHitsForComparison(path, result);
         var anchorPath = Path.GetFullPath(result.AnchorPath);
         var anchors = LoadAnchors(anchorPath)
             .Select((anchor, index) => string.IsNullOrWhiteSpace(anchor.AnchorId)
@@ -106,9 +111,15 @@ public sealed class RiftWaypointScalarComparisonService
             .Where(IsValidAnchor)
             .ToArray();
         var primaryAnchor = anchors.FirstOrDefault();
-        if (result.ScalarHitCount > result.ScalarHits.Count)
+        var expectedScalarHitCount = result.RetainedScalarHitCount > 0 ? result.RetainedScalarHitCount : result.ScalarHitCount;
+        if (expectedScalarHitCount > scalarHits.Count)
         {
             warnings.Add($"input_{inputIndex}_scalar_hits_truncated");
+        }
+
+        if (result.RetainedScalarHitCount > 0 && result.ScalarHitCount > result.RetainedScalarHitCount)
+        {
+            warnings.Add($"input_{inputIndex}_scalar_hits_limited_by_snapshot_axis_retention");
         }
 
         if (primaryAnchor is null)
@@ -130,12 +141,48 @@ public sealed class RiftWaypointScalarComparisonService
             PrimaryDeltaZ = primaryAnchor?.DeltaZ,
             ScalarHitCount = result.ScalarHitCount,
             EmittedScalarHitCount = result.ScalarHits.Count,
+            ComparisonScalarHitCount = scalarHits.Count,
+            ScalarHitsOutputPath = scalarHitsSourcePath,
             ScalarAxisHitCounts = result.ScalarAxisHitCounts,
             PairCandidateCount = result.PairCandidateCount,
             Warnings = result.Warnings
         };
 
-        return new(inputIndex, path, result, anchors, summary);
+        return new(inputIndex, path, result, anchors, summary, scalarHits, scalarHitsSourcePath, expectedScalarHitCount);
+    }
+
+    private static (IReadOnlyList<RiftSessionWaypointScalarHit> Hits, string? SourcePath) ReadScalarHitsForComparison(
+        string inputPath,
+        RiftSessionWaypointScalarMatchResult result)
+    {
+        if (string.IsNullOrWhiteSpace(result.ScalarHitsOutputPath))
+        {
+            return (result.ScalarHits, null);
+        }
+
+        var fullPath = ResolveRelatedPath(inputPath, result.ScalarHitsOutputPath);
+        if (!File.Exists(fullPath))
+        {
+            throw new FileNotFoundException("Waypoint scalar hits output path from match result does not exist.", fullPath);
+        }
+
+        var hits = File.ReadLines(fullPath)
+            .Where(line => !string.IsNullOrWhiteSpace(line))
+            .Select(line => JsonSerializer.Deserialize<RiftSessionWaypointScalarHit>(line, SessionJson.Options)
+                ?? throw new InvalidOperationException($"Unable to read waypoint scalar hit JSONL entry from {fullPath}."))
+            .ToArray();
+        return (hits, fullPath);
+    }
+
+    private static string ResolveRelatedPath(string inputPath, string outputPath)
+    {
+        if (Path.IsPathFullyQualified(outputPath))
+        {
+            return Path.GetFullPath(outputPath);
+        }
+
+        var inputDirectory = Path.GetDirectoryName(inputPath);
+        return Path.GetFullPath(Path.Combine(inputDirectory ?? Environment.CurrentDirectory, outputPath));
     }
 
     private static IReadOnlyList<RiftAddonWaypointAnchor> LoadAnchors(string anchorPath)
@@ -152,7 +199,7 @@ public sealed class RiftWaypointScalarComparisonService
         var observationsByKey = new Dictionary<string, Dictionary<int, ScalarObservation>>(StringComparer.Ordinal);
         foreach (var input in inputs)
         {
-            var bestHits = input.Result.ScalarHits
+            var bestHits = input.ScalarHits
                 .GroupBy(BuildScalarKey, StringComparer.Ordinal)
                 .Select(group => group
                     .OrderBy(hit => hit.AbsDistance)
@@ -347,7 +394,10 @@ public sealed class RiftWaypointScalarComparisonService
         string InputPath,
         RiftSessionWaypointScalarMatchResult Result,
         IReadOnlyList<RiftAddonWaypointAnchor> Anchors,
-        RiftWaypointScalarComparisonInputSummary Summary);
+        RiftWaypointScalarComparisonInputSummary Summary,
+        IReadOnlyList<RiftSessionWaypointScalarHit> ScalarHits,
+        string? ScalarHitsSourcePath,
+        int ExpectedScalarHitCount);
 
     private sealed record ScalarObservation(int InputIndex, RiftSessionWaypointScalarHit Hit);
 }

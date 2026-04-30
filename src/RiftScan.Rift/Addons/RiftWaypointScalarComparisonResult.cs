@@ -100,6 +100,12 @@ public sealed record RiftWaypointScalarComparisonInputSummary
     [JsonPropertyName("emitted_scalar_hit_count")]
     public int EmittedScalarHitCount { get; init; }
 
+    [JsonPropertyName("comparison_scalar_hit_count")]
+    public int ComparisonScalarHitCount { get; init; }
+
+    [JsonPropertyName("scalar_hits_output_path")]
+    public string? ScalarHitsOutputPath { get; init; }
+
     [JsonPropertyName("scalar_axis_hit_counts")]
     public IReadOnlyDictionary<string, int> ScalarAxisHitCounts { get; init; } = new Dictionary<string, int>();
 

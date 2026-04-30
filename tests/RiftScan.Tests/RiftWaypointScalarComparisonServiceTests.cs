@@ -83,6 +83,53 @@ public sealed class RiftWaypointScalarComparisonServiceTests
     }
 
     [Fact]
+    public void Compare_uses_scalar_hits_output_path_when_embedded_hits_are_truncated()
+    {
+        using var temp = new TempDirectory();
+        var firstAnchorPath = WriteAnchorScan(temp.Path, "anchor-a.json", waypointX: 120, waypointZ: 300, deltaX: 20, deltaZ: 0);
+        var secondAnchorPath = WriteAnchorScan(temp.Path, "anchor-b.json", waypointX: 140, waypointZ: 300, deltaX: 40, deltaZ: 0);
+        var firstResultPath = WriteScalarResult(
+            temp.Path,
+            "scalar-a.json",
+            firstAnchorPath,
+            "session-a",
+            [
+                BuildHit(axis: "waypoint_x", memoryValue: 120, anchorValue: 120, offsetHex: "0x24")
+            ],
+            embedHits: false,
+            writeScalarHitsOutput: true);
+        var secondResultPath = WriteScalarResult(
+            temp.Path,
+            "scalar-b.json",
+            secondAnchorPath,
+            "session-b",
+            [
+                BuildHit(axis: "waypoint_x", memoryValue: 140, anchorValue: 140, offsetHex: "0x24")
+            ],
+            embedHits: false,
+            writeScalarHitsOutput: true);
+
+        var result = new RiftWaypointScalarComparisonService().Compare(new RiftWaypointScalarComparisonOptions
+        {
+            InputPaths = [firstResultPath, secondResultPath],
+            DeltaTolerance = 0.01,
+            Top = 10
+        });
+
+        Assert.DoesNotContain("one_or_more_inputs_have_truncated_scalar_hit_outputs", result.Warnings);
+        Assert.All(result.InputSummaries, summary =>
+        {
+            Assert.Equal(0, summary.EmittedScalarHitCount);
+            Assert.Equal(1, summary.ComparisonScalarHitCount);
+            Assert.EndsWith("-hits.jsonl", summary.ScalarHitsOutputPath, StringComparison.OrdinalIgnoreCase);
+        });
+        var comparison = Assert.Single(result.Comparisons);
+        Assert.Equal("tracks_waypoint_candidate", comparison.Classification);
+        Assert.Equal(20, comparison.ObservedDelta!.Value, precision: 6);
+        Assert.Equal(20, comparison.WaypointDelta!.Value, precision: 6);
+    }
+
+    [Fact]
     public void Cli_compare_waypoint_scalars_writes_json_output()
     {
         using var temp = new TempDirectory();
@@ -171,9 +218,24 @@ public sealed class RiftWaypointScalarComparisonServiceTests
         return path;
     }
 
-    private static string WriteScalarResult(string directory, string fileName, string anchorPath, string sessionId, IReadOnlyList<RiftSessionWaypointScalarHit> hits)
+    private static string WriteScalarResult(
+        string directory,
+        string fileName,
+        string anchorPath,
+        string sessionId,
+        IReadOnlyList<RiftSessionWaypointScalarHit> hits,
+        bool embedHits = true,
+        bool writeScalarHitsOutput = false)
     {
         var path = Path.Combine(directory, fileName);
+        var scalarHitsOutputPath = writeScalarHitsOutput
+            ? Path.Combine(directory, Path.GetFileNameWithoutExtension(fileName) + "-hits.jsonl")
+            : null;
+        if (!string.IsNullOrWhiteSpace(scalarHitsOutputPath))
+        {
+            File.WriteAllLines(scalarHitsOutputPath, hits.Select(hit => JsonSerializer.Serialize(hit, SessionJson.Options).ReplaceLineEndings(string.Empty)));
+        }
+
         var result = new RiftSessionWaypointScalarMatchResult
         {
             Success = true,
@@ -189,7 +251,8 @@ public sealed class RiftWaypointScalarComparisonServiceTests
             RetainedScalarHitCount = hits.Count,
             RetainedScalarAxisHitCounts = CountHitsByAxis(hits),
             PairCandidateCount = 0,
-            ScalarHits = hits
+            ScalarHitsOutputPath = scalarHitsOutputPath,
+            ScalarHits = embedHits ? hits : []
         };
         File.WriteAllText(path, JsonSerializer.Serialize(result, SessionJson.Options));
         return path;

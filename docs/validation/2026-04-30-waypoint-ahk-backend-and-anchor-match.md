@@ -172,3 +172,38 @@ Cleanup was also verified:
 
 - proof: `reports/generated/verified-addon-command-wrapper-proof-waypoint-clear-sendevent-openchat-20260430-20260430-043748.json`
 - final state: `waypoint_has_waypoint = false`, `waypoint_anchor_count = 0`
+
+## Retained scalar-hit export follow-up
+
+The scalar matcher now supports a separate retained-hit JSONL artifact so
+cross-waypoint comparison is not limited to the top hits embedded in the summary
+JSON:
+
+```powershell
+riftscan rift match-waypoint-scalars `
+  sessions/live-waypoint-anchor-wide-20260430-0402-passive `
+  --anchors reports/generated/addon-api-observation-scan-proof-wpclear-ahk-backend-arraycheck-20260430-040045.json `
+  --tolerance 5 `
+  --top 100 `
+  --scalar-hits-out reports/generated/session-waypoint-scalar-hits-live-wide-allhits-20260430-010320.jsonl `
+  --out reports/generated/session-waypoint-scalar-matches-live-wide-allhits-20260430-010320.json
+```
+
+The same command was run against
+`sessions/live-waypoint-anchor2-wide-20260430-0436-passive`, producing:
+
+- `reports/generated/session-waypoint-scalar-matches-live-wide-anchor2-allhits-20260430-010320.json`
+- `reports/generated/session-waypoint-scalar-hits-live-wide-anchor2-allhits-20260430-010320.jsonl`
+
+The all-retained-hit comparison output is:
+
+- `reports/generated/waypoint-scalar-comparison-allhits-20260430-010320.json`
+- `comparison_count = 25`
+- `classification_counts = { missing_after_waypoint_change = 25 }`
+- comparison warnings only include
+  `waypoint_scalar_comparison_is_validation_evidence_not_final_truth`
+
+Interpretation: the top-hit truncation blind spot is removed for this replay.
+All 200 retained scalar hits from the first waypoint state were available to the
+comparer, and none persisted after the deliberate waypoint-Z change. The earlier
+`waypoint_z` scalar lead remains rejected.

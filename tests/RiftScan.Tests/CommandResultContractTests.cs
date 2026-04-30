@@ -518,6 +518,7 @@ public sealed class CommandResultContractTests
             "retained_scalar_hit_count",
             "retained_scalar_axis_hit_counts",
             "pair_candidate_count",
+            "scalar_hits_output_path",
             "scalar_hits",
             "pair_candidates",
             "output_path",
@@ -606,6 +607,8 @@ public sealed class CommandResultContractTests
             "primary_delta_z",
             "scalar_hit_count",
             "emitted_scalar_hit_count",
+            "comparison_scalar_hit_count",
+            "scalar_hits_output_path",
             "scalar_axis_hit_counts",
             "pair_candidate_count",
             "warnings");
