@@ -295,6 +295,7 @@ public sealed class RiftAddonApiObservationService
         var sourceAddon = Path.GetFileNameWithoutExtension(file);
         var contextKey = FindLastContextKey(text, matchIndex);
         var kind = ClassifyWorldCoordinateKind(contextKey, sourceAddon);
+        var contextText = ContextBlock(text, matchIndex);
         var nearText = Window(text, matchIndex, before: 1800, after: 1800);
         var sourceMode = ExtractString(nearText, "sourceMode", "mode") ?? ExtractString(text, "sourceMode") ?? string.Empty;
         var confidence = sourceMode.Equals("DirectAPI", StringComparison.OrdinalIgnoreCase)
@@ -303,10 +304,10 @@ public sealed class RiftAddonApiObservationService
         var apiSource = kind is "current_player" or "target" or "nearby_unit" or "party_member"
             ? "Inspect.Unit.Detail"
             : "addon_coordinate_savedvariables";
-        var zoneId = ExtractNearbyString(text, matchIndex, "zone", "zoneId") ?? ExtractString(text, "zone", "zoneId") ?? string.Empty;
-        var locationName = ExtractNearbyString(text, matchIndex, "locationName", "location") ?? string.Empty;
-        var unitId = ExtractNearbyString(text, matchIndex, "id", "playerUnit") ?? string.Empty;
-        var unitName = ExtractNearbyString(text, matchIndex, "name") ?? string.Empty;
+        var zoneId = ExtractString(contextText, "zone", "zoneId") ?? string.Empty;
+        var locationName = ExtractString(contextText, "locationName", "location") ?? string.Empty;
+        var unitId = ExtractString(contextText, "id", "playerUnit") ?? string.Empty;
+        var unitName = ExtractString(contextText, "name") ?? string.Empty;
         var realtime = ExtractNumber(nearText, "generatedAtRealtime", "capturedAt", "realtime")
             ?? ExtractNumber(text, "generatedAtRealtime", "capturedAt", "realtime");
 
@@ -508,15 +509,66 @@ public sealed class RiftAddonApiObservationService
 
     private static string FindLastContextKey(string text, int matchIndex)
     {
+        var match = FindLastContextMatch(text, matchIndex);
+        return match?.Groups["key"].Value ?? string.Empty;
+    }
+
+    private static Match? FindLastContextMatch(string text, int matchIndex)
+    {
         var beforeStart = Math.Max(0, matchIndex - 1600);
         var beforeWindow = text.Substring(beforeStart, matchIndex - beforeStart);
-        var key = string.Empty;
+        Match? latest = null;
         foreach (Match match in ContextKeyRegex.Matches(beforeWindow))
         {
-            key = match.Groups["key"].Value;
+            latest = match;
         }
 
-        return key;
+        return latest is null ? null : ContextKeyRegex.Match(text, beforeStart + latest.Index);
+    }
+
+    private static string ContextBlock(string text, int matchIndex)
+    {
+        var contextMatch = FindLastContextMatch(text, matchIndex);
+        if (contextMatch is null)
+        {
+            return Window(text, matchIndex, before: 400, after: 400);
+        }
+
+        var openBraceIndex = text.IndexOf('{', contextMatch.Index);
+        if (openBraceIndex < 0)
+        {
+            return Window(text, matchIndex, before: 400, after: 400);
+        }
+
+        var closeBraceIndex = MatchingBraceIndex(text, openBraceIndex);
+        if (closeBraceIndex < matchIndex)
+        {
+            return Window(text, matchIndex, before: 400, after: 400);
+        }
+
+        return text[contextMatch.Index..Math.Min(text.Length, closeBraceIndex + 1)];
+    }
+
+    private static int MatchingBraceIndex(string text, int openBraceIndex)
+    {
+        var depth = 0;
+        for (var index = openBraceIndex; index < text.Length; index++)
+        {
+            if (text[index] == '{')
+            {
+                depth++;
+            }
+            else if (text[index] == '}')
+            {
+                depth--;
+                if (depth == 0)
+                {
+                    return index;
+                }
+            }
+        }
+
+        return text.Length - 1;
     }
 
     private static bool TryReadCoordinateTable(string body, out double x, out double y, out double z)

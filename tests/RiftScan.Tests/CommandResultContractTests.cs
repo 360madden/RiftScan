@@ -398,6 +398,76 @@ public sealed class CommandResultContractTests
             "evidence_summary");
 
     [Fact]
+    public void Rift_addon_api_truth_summary_result_pins_json_contract_fields() =>
+        AssertJsonPropertySet(
+            new RiftAddonApiTruthSummaryResult(),
+            "result_schema_version",
+            "success",
+            "analyzer_id",
+            "analyzer_version",
+            "scan_path",
+            "scan_root_path_redacted",
+            "observation_count",
+            "waypoint_anchor_count",
+            "observation_kind_counts",
+            "truth_record_count",
+            "latest_player",
+            "latest_target",
+            "latest_player_loc",
+            "latest_waypoint",
+            "latest_waypoint_status",
+            "latest_player_waypoint_anchor",
+            "truth_records",
+            "output_path",
+            "warnings",
+            "diagnostics");
+
+    [Fact]
+    public void Rift_addon_api_truth_record_pins_json_contract_fields() =>
+        AssertJsonPropertySet(
+            new RiftAddonApiTruthRecord(),
+            "truth_id",
+            "kind",
+            "source_observation_id",
+            "source_anchor_id",
+            "source_addon",
+            "source_file_name",
+            "source_path_redacted",
+            "file_last_write_utc",
+            "realtime",
+            "api_source",
+            "source_mode",
+            "coordinate_space",
+            "confidence_level",
+            "unit_id",
+            "unit_name",
+            "zone_id",
+            "location_name",
+            "coordinate_x",
+            "coordinate_y",
+            "coordinate_z",
+            "player_x",
+            "player_y",
+            "player_z",
+            "target_x",
+            "target_y",
+            "target_z",
+            "waypoint_x",
+            "waypoint_z",
+            "loc_x",
+            "loc_y",
+            "loc_z",
+            "delta_x",
+            "delta_z",
+            "horizontal_distance",
+            "waypoint_has_waypoint",
+            "waypoint_update_count",
+            "waypoint_last_update_at",
+            "waypoint_last_command",
+            "raw_text",
+            "evidence_summary");
+
+    [Fact]
     public void Rift_session_waypoint_anchor_match_result_pins_json_contract_fields() =>
         AssertJsonPropertySet(
             new RiftSessionWaypointAnchorMatchResult(),
@@ -929,6 +999,7 @@ public sealed class CommandResultContractTests
         Assert.Equal("riftscan.session_xref_chain_summary_verification_result.v1", ReadSchema(new SessionXrefChainSummaryVerificationResult()));
         Assert.Equal("riftscan.rift_session_addon_coordinate_match_result.v1", ReadSchema(new RiftSessionAddonCoordinateMatchResult()));
         Assert.Equal("riftscan.rift_addon_api_observation_scan_result.v1", ReadSchema(new RiftAddonApiObservationScanResult()));
+        Assert.Equal("riftscan.rift_addon_api_truth_summary.v1", ReadSchema(new RiftAddonApiTruthSummaryResult()));
         Assert.Equal("riftscan.rift_session_waypoint_anchor_match_result.v1", ReadSchema(new RiftSessionWaypointAnchorMatchResult()));
         Assert.Equal("riftscan.rift_session_waypoint_scalar_match_result.v1", ReadSchema(new RiftSessionWaypointScalarMatchResult()));
         Assert.Equal("riftscan.rift_waypoint_scalar_comparison_result.v1", ReadSchema(new RiftWaypointScalarComparisonResult()));

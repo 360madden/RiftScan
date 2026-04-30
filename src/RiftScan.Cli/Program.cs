@@ -83,6 +83,11 @@ public static class Program
                 return RiftAddonApiObservations(args[2..]);
             }
 
+            if (args.Length >= 2 && Is(args[0], "rift") && Is(args[1], "addon-api-truth"))
+            {
+                return RiftAddonApiTruth(args[2..]);
+            }
+
             if (args.Length >= 2 && Is(args[0], "rift") && Is(args[1], "match-addon-coords"))
             {
                 return RiftMatchAddonCoords(args[2..]);
@@ -620,6 +625,55 @@ public static class Program
             MinFileLastWriteUtc = minFileWriteUtc
         });
         WriteOptionalJson(jsonOutputPath, result);
+        Console.WriteLine(JsonSerializer.Serialize(result, SessionJson.Options));
+        return result.Success ? 0 : 1;
+    }
+
+    private static int RiftAddonApiTruth(string[] args)
+    {
+        if (args.Length == 1 && IsHelp(args[0]))
+        {
+            PrintRiftAddonApiTruthUsage();
+            return 0;
+        }
+
+        string? scanPath = null;
+        string? outputPath = null;
+        for (var index = 0; index < args.Length; index++)
+        {
+            var arg = args[index];
+            switch (arg)
+            {
+                case "--out":
+                case "--json-out":
+                    outputPath = RequireValue(args, ref index, arg);
+                    break;
+                default:
+                    if (scanPath is not null || arg.StartsWith("--", StringComparison.Ordinal))
+                    {
+                        throw new ArgumentException($"Unknown rift addon-api-truth option: {arg}");
+                    }
+
+                    scanPath = arg;
+                    break;
+            }
+        }
+
+        if (string.IsNullOrWhiteSpace(scanPath))
+        {
+            throw new ArgumentException("rift addon-api-truth requires an addon API observation scan JSON path.");
+        }
+
+        var result = new RiftAddonApiTruthSummaryService().Summarize(new RiftAddonApiTruthSummaryOptions
+        {
+            ScanPath = scanPath
+        });
+        if (!string.IsNullOrWhiteSpace(outputPath))
+        {
+            result = result with { OutputPath = Path.GetFullPath(outputPath) };
+        }
+
+        WriteOptionalJson(result.OutputPath, result);
         Console.WriteLine(JsonSerializer.Serialize(result, SessionJson.Options));
         return result.Success ? 0 : 1;
     }
@@ -2801,6 +2855,7 @@ public static class Program
         PrintReportCapabilityUsage();
         PrintRiftAddonCoordsUsage();
         PrintRiftAddonApiObservationsUsage();
+        PrintRiftAddonApiTruthUsage();
         PrintRiftMatchAddonCoordsUsage();
         PrintRiftMatchWaypointAnchorsUsage();
         PrintRiftMatchWaypointScalarsUsage();
@@ -2906,6 +2961,9 @@ public static class Program
 
     private static void PrintRiftAddonApiObservationsUsage() =>
         Console.WriteLine("riftscan rift addon-api-observations <savedvariables-file-or-directory> [--jsonl-out reports/generated/addon-api-observations.jsonl] [--json-out reports/generated/addon-api-observation-scan.json] [--max-files 5000] [--addon-name ReaderBridgeExport] [--min-file-write-utc 2026-04-29T23:16:00Z]");
+
+    private static void PrintRiftAddonApiTruthUsage() =>
+        Console.WriteLine("riftscan rift addon-api-truth <addon-api-observation-scan.json> [--out reports/generated/addon-api-truth-summary.json]");
 
     private static void PrintRiftMatchAddonCoordsUsage() =>
         Console.WriteLine("riftscan rift match-addon-coords <session-path> --observations reports/generated/addon-coordinate-observations.jsonl [--region-base 0xADDR] [--tolerance 5] [--top 100] [--out reports/generated/session-addon-coordinate-matches.json] [--report-md reports/generated/session-addon-coordinate-matches.md] [--latest-only]");

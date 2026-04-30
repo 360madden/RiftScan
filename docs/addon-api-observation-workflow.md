@@ -20,6 +20,24 @@ Optional filters:
 - `--min-file-write-utc <timestamp>`: keeps only fresh SavedVariables files.
 - `--max-files <n>`: bounds recursive SavedVariables scans.
 
+## Compact coordinate truth summary
+
+Before chasing memory candidates, summarize the addon/API scan so the current
+semantic truth is visible in one small artifact:
+
+```powershell
+riftscan rift addon-api-truth `
+  reports/generated/addon-api-observation-scan.json `
+  --out reports/generated/addon-api-truth-summary.json
+```
+
+The summary promotes only addon/API observation evidence, not memory truth. It
+reports the latest observed `current_player`, `target`, `player_loc`,
+`waypoint`, `waypoint_status`, and `player_waypoint_anchor` records when those
+sources exist. Missing records are explicit warnings, so a missing target or
+waypoint is treated as "not observed by the addon scan" rather than a memory
+discovery failure.
+
 ## Current observation kinds
 
 - `current_player`: addon-saved `Inspect.Unit.Detail`-style player `coord`
