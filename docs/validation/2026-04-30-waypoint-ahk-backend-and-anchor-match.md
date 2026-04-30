@@ -111,3 +111,48 @@ Interpretation: the wide captured region contains repeated float32 values near
 the addon waypoint Z, but no matching waypoint X scalar within tolerance. This
 keeps the active waypoint API proof strong while showing the current memory
 capture did not include both waypoint axes.
+
+## Differential waypoint follow-up
+
+A second labeled waypoint was set through the foreground-safe AutoHotkey helper
+using normal keyboard events:
+
+```powershell
+.\scripts\send-rift-slash-command-ahk.ps1 `
+  -CommandText "/rbx waypoint-test 40 60" `
+  -Focus `
+  -OpenChatBeforeCommand `
+  -TextMode sendevent
+```
+
+After `/reloadui`, the addon/API scan confirmed:
+
+- scan: `reports/generated/addon-api-observation-scan-after-reload-waypoint-diff-40-60-20260430-0435.json`
+- player X/Z: `7237.6196289062`, `3051.0598144531`
+- waypoint X/Z: `7277.6196289062`, `3111.0598144531`
+- delta X/Z: `40`, `60`
+- waypoint anchor count: `1`
+
+A new wide passive capture used the same low-pressure shape as the earlier
+capture:
+
+- session: `sessions/live-waypoint-anchor2-wide-20260430-0436-passive`
+- regions captured: `32`
+- snapshots captured: `256`
+- bytes captured: `16777216`
+- scalar output: `reports/generated/session-waypoint-scalar-matches-live-wide-anchor2-20260430-0436.json`
+- result: `waypoint_x hits = 0`, `waypoint_z hits = 0`, `pair_candidate_count = 0`
+
+Conclusion: the earlier `waypoint_z = 3051.059814` scalar hits are not waypoint
+storage proof. They appeared because the first test waypoint reused the player's
+current Z. When the waypoint Z moved by `+60`, those same capture/scanner
+conditions produced zero waypoint scalar hits.
+
+Machine-readable summary:
+
+- `reports/generated/waypoint-differential-summary-20260430-0438.json`
+
+Cleanup was also verified:
+
+- proof: `reports/generated/verified-addon-command-wrapper-proof-waypoint-clear-sendevent-openchat-20260430-20260430-043748.json`
+- final state: `waypoint_has_waypoint = false`, `waypoint_anchor_count = 0`

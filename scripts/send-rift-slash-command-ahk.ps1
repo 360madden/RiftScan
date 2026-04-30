@@ -21,7 +21,12 @@ param(
 
     [switch]$SendEscapeBeforeCommand,
 
+    [switch]$OpenChatBeforeCommand,
+
     [switch]$NoEnter,
+
+    [ValidateSet("sendtext", "sendevent")]
+    [string]$TextMode = "sendtext",
 
     [int]$FocusDelayMilliseconds = 350,
 
@@ -160,7 +165,7 @@ GetWindowInfo(hwnd) {
     return Map("hwnd", Format("0x{:X}", hwnd), "pid", pid, "title", title)
 }
 
-WriteResult(success, exitCode, failure, commandText, dryRun, enterSent, targetHwnd, targetPid, targetTitle, beforeInfo, afterFocusInfo, afterSendInfo) {
+WriteResult(success, exitCode, failure, commandText, dryRun, enterSent, openChatBeforeCommand, textMode, targetHwnd, targetPid, targetTitle, beforeInfo, afterFocusInfo, afterSendInfo) {
     json := "{"
     json .= '"success":' JsonBool(success) ","
     json .= '"exit_code":' exitCode ","
@@ -169,6 +174,8 @@ WriteResult(success, exitCode, failure, commandText, dryRun, enterSent, targetHw
     json .= '"dry_run":' JsonBool(dryRun) ","
     json .= '"command_text":"' JsonEscape(commandText) '",'
     json .= '"enter_sent":' JsonBool(enterSent) ","
+    json .= '"open_chat_before_command":' JsonBool(openChatBeforeCommand) ","
+    json .= '"text_mode":"' JsonEscape(textMode) '",'
     json .= '"target_process_id":' targetPid ","
     json .= '"target_window_handle":"' Format("0x{:X}", targetHwnd) '",'
     json .= '"target_window_title":"' JsonEscape(targetTitle) '",'
@@ -186,7 +193,7 @@ WriteResult(success, exitCode, failure, commandText, dryRun, enterSent, targetHw
     ExitApp(exitCode)
 }
 
-if (A_Args.Length < 10) {
+if (A_Args.Length < 12) {
     FileAppend('{"success":false,"exit_code":9,"failure":"missing_arguments"}', "*")
     ExitApp(9)
 }
@@ -198,26 +205,28 @@ titleContains := A_Args[4]
 focusRequested := A_Args[5] = "true"
 dryRun := A_Args[6] = "true"
 sendEscape := A_Args[7] = "true"
-noEnter := A_Args[8] = "true"
-focusDelay := Integer(A_Args[9])
-postSendDelay := Integer(A_Args[10])
+openChatBeforeCommand := A_Args[8] = "true"
+noEnter := A_Args[9] = "true"
+textMode := A_Args[10]
+focusDelay := Integer(A_Args[11])
+postSendDelay := Integer(A_Args[12])
 enterSent := !noEnter
 
 beforeInfo := GetWindowInfo(WinExist("A"))
 emptyInfo := GetWindowInfo(0)
 
 if (!WinExist("ahk_id " targetHwnd)) {
-    WriteResult(false, 2, "target_window_not_found", commandText, dryRun, enterSent, targetHwnd, targetPid, "", beforeInfo, emptyInfo, emptyInfo)
+    WriteResult(false, 2, "target_window_not_found", commandText, dryRun, enterSent, openChatBeforeCommand, textMode, targetHwnd, targetPid, "", beforeInfo, emptyInfo, emptyInfo)
 }
 
 actualPid := WinGetPID("ahk_id " targetHwnd)
 targetTitle := WinGetTitle("ahk_id " targetHwnd)
 if (actualPid != targetPid) {
-    WriteResult(false, 3, "target_pid_mismatch", commandText, dryRun, enterSent, targetHwnd, targetPid, targetTitle, beforeInfo, emptyInfo, emptyInfo)
+    WriteResult(false, 3, "target_pid_mismatch", commandText, dryRun, enterSent, openChatBeforeCommand, textMode, targetHwnd, targetPid, targetTitle, beforeInfo, emptyInfo, emptyInfo)
 }
 
 if (titleContains != "" && !InStr(targetTitle, titleContains)) {
-    WriteResult(false, 4, "target_title_mismatch", commandText, dryRun, enterSent, targetHwnd, targetPid, targetTitle, beforeInfo, emptyInfo, emptyInfo)
+    WriteResult(false, 4, "target_title_mismatch", commandText, dryRun, enterSent, openChatBeforeCommand, textMode, targetHwnd, targetPid, targetTitle, beforeInfo, emptyInfo, emptyInfo)
 }
 
 if (focusRequested) {
@@ -230,7 +239,7 @@ if (focusRequested) {
 
 afterFocusInfo := GetWindowInfo(WinExist("A"))
 if (!dryRun && afterFocusInfo["pid"] != targetPid) {
-    WriteResult(false, 5, "target_not_foreground_after_focus", commandText, dryRun, enterSent, targetHwnd, targetPid, targetTitle, beforeInfo, afterFocusInfo, afterFocusInfo)
+    WriteResult(false, 5, "target_not_foreground_after_focus", commandText, dryRun, enterSent, openChatBeforeCommand, textMode, targetHwnd, targetPid, targetTitle, beforeInfo, afterFocusInfo, afterFocusInfo)
 }
 
 if (!dryRun) {
@@ -239,7 +248,16 @@ if (!dryRun) {
         Sleep(25)
     }
 
-    SendText(commandText)
+    if (openChatBeforeCommand) {
+        Send("{Enter}")
+        Sleep(50)
+    }
+
+    if (textMode = "sendevent") {
+        SendEvent(commandText)
+    } else {
+        SendText(commandText)
+    }
     Sleep(25)
     if (!noEnter) {
         Send("{Enter}")
@@ -251,7 +269,7 @@ if (!dryRun) {
 }
 
 afterSendInfo := GetWindowInfo(WinExist("A"))
-WriteResult(true, 0, "", commandText, dryRun, enterSent, targetHwnd, targetPid, targetTitle, beforeInfo, afterFocusInfo, afterSendInfo)
+WriteResult(true, 0, "", commandText, dryRun, enterSent, openChatBeforeCommand, textMode, targetHwnd, targetPid, targetTitle, beforeInfo, afterFocusInfo, afterSendInfo)
 '@
 
 Set-Content -LiteralPath $tempScript -Value $ahkSource -Encoding UTF8
@@ -265,7 +283,9 @@ try {
         Quote-ProcessArgument -Value ($Focus.IsPresent.ToString().ToLowerInvariant())
         Quote-ProcessArgument -Value ($DryRun.IsPresent.ToString().ToLowerInvariant())
         Quote-ProcessArgument -Value ($SendEscapeBeforeCommand.IsPresent.ToString().ToLowerInvariant())
+        Quote-ProcessArgument -Value ($OpenChatBeforeCommand.IsPresent.ToString().ToLowerInvariant())
         Quote-ProcessArgument -Value ($NoEnter.IsPresent.ToString().ToLowerInvariant())
+        Quote-ProcessArgument -Value $TextMode
         Quote-ProcessArgument -Value ([string]$FocusDelayMilliseconds)
         Quote-ProcessArgument -Value ([string]$PostSendDelayMilliseconds)
     ) -join " "

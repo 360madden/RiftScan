@@ -20,7 +20,8 @@ The allowed helper for bounded slash-command validation is:
   -CommandText "/rbx status" `
   -TargetProcessName rift_x64 `
   -TargetTitleContains RIFT `
-  -Focus
+  -Focus `
+  -OpenChatBeforeCommand
 ```
 
 For addon-state proof, prefer the verified wrapper:
@@ -28,9 +29,11 @@ For addon-state proof, prefer the verified wrapper:
 ```powershell
 .\scripts\invoke-rift-addon-command-verified.ps1 `
   -CommandText "/rbx waypoint-test 20 0" `
-  -ExpectedLastCommand "waypoint-test" `
   -ExpectedWaypointHasWaypoint true `
-  -ReloadUiAfterCommand
+  -OpenChatBeforeCommand `
+  -SenderTextMode sendevent `
+  -ReloadUiAfterCommand `
+  -PostReloadDelaySeconds 8
 ```
 
 The wrapper sends the bounded command, rescans `ReaderBridgeExport`
@@ -39,19 +42,31 @@ evidence under `reports/generated`, and exits nonzero when the expected addon
 state is not observed.
 
 If the default PowerShell sender cannot see the foreground RIFT window from the
-current execution context, use the AutoHotkey `SendText` backend:
+current execution context, use the AutoHotkey backend:
 
 ```powershell
 .\scripts\invoke-rift-addon-command-verified.ps1 `
   -SenderBackend autohotkey-sendtext `
   -CommandText "/rbx waypoint-clear" `
-  -ExpectedLastCommand "waypoint-clear" `
   -ExpectedWaypointHasWaypoint false `
-  -ReloadUiAfterCommand
+  -OpenChatBeforeCommand `
+  -SenderTextMode sendevent `
+  -ReloadUiAfterCommand `
+  -PostReloadDelaySeconds 8
 ```
 
 This backend still verifies the target PID/window and records foreground
 diagnostics in the result JSON before any memory-capture followup is trusted.
+Use `-OpenChatBeforeCommand` for fresh command delivery so the helper does not
+depend on chat already being open. If `SendText` reports foreground success but
+addon state does not change, retry the AutoHotkey backend with
+`-SenderTextMode sendevent` so RIFT receives ordinary keyboard events instead
+of Unicode text injection. Use
+`-SendEscapeBeforeCommand` only when a menu or stale chat input must be cleared;
+when no menu is open, Escape can open RIFT's options menu before chat delivery.
+For commands that need SavedVariables proof, prefer `-ReloadUiAfterCommand`
+with `-PostReloadDelaySeconds 8`; omit `-ExpectedLastCommand` after reload
+because addon runtime-only command metadata can reset.
 
 ## Safety rules
 

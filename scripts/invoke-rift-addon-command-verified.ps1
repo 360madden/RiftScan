@@ -27,6 +27,9 @@ param(
     [ValidateSet("powershell", "autohotkey-sendtext")]
     [string]$SenderBackend = "powershell",
 
+    [ValidateSet("sendtext", "sendevent")]
+    [string]$SenderTextMode = "sendtext",
+
     [string]$TargetProcessName = "rift_x64",
 
     [int]$TargetProcessId,
@@ -35,7 +38,13 @@ param(
 
     [string]$TargetTitleContains = "RIFT",
 
+    [switch]$SendEscapeBeforeCommand,
+
+    [switch]$OpenChatBeforeCommand,
+
     [switch]$ReloadUiAfterCommand,
+
+    [int]$PostReloadDelaySeconds = 8,
 
     [switch]$SkipSend,
 
@@ -51,6 +60,10 @@ if (-not $CommandText.StartsWith("/", [System.StringComparison]::Ordinal)) {
 
 if (-not (Test-Path -LiteralPath $SavedVariablesRoot)) {
     throw "SavedVariablesRoot was not found: $SavedVariablesRoot"
+}
+
+if ($PostReloadDelaySeconds -lt 0) {
+    throw "PostReloadDelaySeconds must be non-negative."
 }
 
 if ($SenderBackend -eq "autohotkey-sendtext" -and -not $PSBoundParameters.ContainsKey("SenderPath")) {
@@ -166,6 +179,18 @@ if ($DryRun) {
     $sendArguments += "-DryRun"
 }
 
+if ($SendEscapeBeforeCommand) {
+    $sendArguments += "-SendEscapeBeforeCommand"
+}
+
+if ($OpenChatBeforeCommand) {
+    $sendArguments += "-OpenChatBeforeCommand"
+}
+
+if ($SenderBackend -eq "autohotkey-sendtext") {
+    $sendArguments += @("-TextMode", $SenderTextMode)
+}
+
 if (-not $SkipSend) {
     $senderFullPath = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($SenderPath)
     if (-not (Test-Path -LiteralPath $senderFullPath)) {
@@ -194,7 +219,22 @@ if (-not $SkipSend) {
             $reloadArguments += "-DryRun"
         }
 
+        if ($SendEscapeBeforeCommand) {
+            $reloadArguments += "-SendEscapeBeforeCommand"
+        }
+
+        if ($OpenChatBeforeCommand) {
+            $reloadArguments += "-OpenChatBeforeCommand"
+        }
+
+        if ($SenderBackend -eq "autohotkey-sendtext") {
+            $reloadArguments += @("-TextMode", $SenderTextMode)
+        }
+
         $reloadResult = Invoke-JsonCommand -FilePath $senderFullPath -Arguments $reloadArguments
+        if (-not $DryRun -and $reloadResult.exit_code -eq 0 -and $PostReloadDelaySeconds -gt 0) {
+            Start-Sleep -Seconds $PostReloadDelaySeconds
+        }
     }
 }
 
@@ -248,9 +288,13 @@ $result = [pscustomobject]@{
     dry_run = $DryRun.IsPresent
     skip_send = $SkipSend.IsPresent
     command_text = $CommandText
+    send_escape_before_command = $SendEscapeBeforeCommand.IsPresent
+    open_chat_before_command = $OpenChatBeforeCommand.IsPresent
+    post_reload_delay_seconds = if ($ReloadUiAfterCommand) { $PostReloadDelaySeconds } else { $null }
     expected_last_command = $ExpectedLastCommand
     expected_waypoint_has_waypoint = $expectedWaypointHasWaypointValue
     sender_backend = if ($SkipSend) { $null } else { $SenderBackend }
+    sender_text_mode = if ($SenderBackend -eq "autohotkey-sendtext") { $SenderTextMode } else { $null }
     sender_path = if ($SkipSend) { $null } else { $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($SenderPath) }
     send_exit_code = if ($sendResult) { $sendResult.exit_code } else { $null }
     send_stdout = if ($sendResult) { ,[string[]]@($sendResult.stdout) } else { ,[string[]]@() }

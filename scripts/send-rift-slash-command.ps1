@@ -21,6 +21,8 @@ param(
 
     [switch]$SendEscapeBeforeCommand,
 
+    [switch]$OpenChatBeforeCommand,
+
     [switch]$NoEnter,
 
     [int]$FocusDelayMilliseconds = 350,
@@ -391,6 +393,12 @@ if (-not $DryRun) {
         }
     }
 
+    if ($OpenChatBeforeCommand) {
+        Send-VirtualKey -VirtualKey $VK_RETURN
+        Send-VirtualKey -VirtualKey $VK_RETURN -KeyUp
+        Start-Sleep -Milliseconds 50
+    }
+
     Send-UnicodeText -Text $CommandText -DelayMilliseconds $InterCharacterDelayMilliseconds
     if (-not $NoEnter) {
         Send-VirtualKey -VirtualKey $VK_RETURN
@@ -408,6 +416,7 @@ $foregroundAfterSend = Get-ForegroundInfo
     dry_run = $DryRun.IsPresent
     command_text = $CommandText
     enter_sent = -not $NoEnter.IsPresent
+    open_chat_before_command = $OpenChatBeforeCommand.IsPresent
     target_process_id = $target.Process.Id
     target_process_name = $target.Process.ProcessName
     target_window_handle = Format-WindowHandle -Handle $target.WindowHandle
