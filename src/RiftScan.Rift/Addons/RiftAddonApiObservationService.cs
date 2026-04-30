@@ -173,7 +173,11 @@ public sealed class RiftAddonApiObservationService
             {
                 var hasY = TryReadNamedNumber(body, "y", out var y);
                 var rawText = ExtractString(body, "raw", "text", "line") ?? string.Empty;
-                observations.Add(BuildLocObservation(rootPath, file, text, match.Index, "loc_table_xz", x, hasY ? y : null, z, rawText));
+                var apiSource = ExtractString(body, "apiSource", "source") ?? "/loc";
+                var confidence = apiSource.Equals("/loc", StringComparison.OrdinalIgnoreCase)
+                    ? "ingame_loc_output"
+                    : "loc_equivalent_from_api";
+                observations.Add(BuildLocObservation(rootPath, file, text, match.Index, "loc_table_xz", x, hasY ? y : null, z, rawText, apiSource, confidence));
             }
         }
 
@@ -188,7 +192,9 @@ public sealed class RiftAddonApiObservationService
                 ParseNumber(match.Groups["x"].Value),
                 match.Groups["y"].Success ? ParseNumber(match.Groups["y"].Value) : null,
                 ParseNumber(match.Groups["z"].Value),
-                ExtractNearbyString(text, match.Index, "locRaw", "locText") ?? string.Empty));
+                ExtractNearbyString(text, match.Index, "locRaw", "locText") ?? string.Empty,
+                "/loc",
+                "ingame_loc_output"));
         }
     }
 
@@ -290,7 +296,9 @@ public sealed class RiftAddonApiObservationService
         double x,
         double? y,
         double z,
-        string rawText)
+        string rawText,
+        string apiSource,
+        string confidence)
     {
         var sourceAddon = Path.GetFileNameWithoutExtension(file);
         var nearText = Window(text, matchIndex, before: 1600, after: 1600);
@@ -310,12 +318,12 @@ public sealed class RiftAddonApiObservationService
             LineNumber = LineNumber(text, matchIndex),
             FileLastWriteUtc = new DateTimeOffset(File.GetLastWriteTimeUtc(file), TimeSpan.Zero),
             Realtime = realtime,
-            ApiSource = "/loc",
+            ApiSource = apiSource,
             SourceMode = sourceMode,
             ZoneId = zoneId,
             LocationName = locationName,
             CoordinateSpace = "game_loc_xz",
-            ConfidenceLevel = "ingame_loc_output",
+            ConfidenceLevel = confidence,
             LocX = x,
             LocY = y,
             LocZ = z,

@@ -156,6 +156,42 @@ public sealed class RiftAddonApiObservationServiceTests
     }
 
     [Fact]
+    public void Addon_api_observation_scan_preserves_loc_equivalent_source()
+    {
+        using var temp = new TempDirectory();
+        Directory.CreateDirectory(temp.Path);
+        File.WriteAllText(
+            Path.Combine(temp.Path, "ReaderBridgeExport.lua"),
+            """
+            ReaderBridgeExport_State = {
+              current = {
+                loc = {
+                  raw = "/loc-equivalent Tavril Plaza 7331.589844 3053.909912",
+                  source = "Inspect.Unit.Detail.coordX_coordZ",
+                  x = 7331.58984375,
+                  y = 873.35998535156,
+                  z = 3053.9099121094
+                }
+              }
+            }
+            """);
+
+        var result = new RiftAddonApiObservationService().Scan(new RiftAddonApiObservationScanOptions
+        {
+            Path = temp.Path
+        });
+
+        var observation = Assert.Single(result.Observations);
+        Assert.Equal("player_loc", observation.Kind);
+        Assert.Equal("Inspect.Unit.Detail.coordX_coordZ", observation.ApiSource);
+        Assert.Equal("loc_equivalent_from_api", observation.ConfidenceLevel);
+        Assert.Equal(7331.58984375, observation.LocX);
+        Assert.Equal(873.35998535156, observation.LocY);
+        Assert.Equal(3053.9099121094, observation.LocZ);
+        Assert.Equal("/loc-equivalent Tavril Plaza 7331.589844 3053.909912", observation.RawText);
+    }
+
+    [Fact]
     public void Addon_api_observation_scan_can_filter_to_fresh_direct_api_sources()
     {
         using var temp = new TempDirectory();

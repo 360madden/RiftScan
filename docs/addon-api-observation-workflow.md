@@ -53,6 +53,13 @@ it reflects the game's own in-client location/waypoint presentation. Capture it
 as `player_loc` with `coordinate_space = "game_loc_xz"` and retain the raw text
 when available.
 
+If an addon cannot read the built-in slash output directly, it may emit a
+clearly labeled `/loc` equivalent from `Inspect.Unit.Detail.coordX/coordZ`.
+Those observations keep `kind = "player_loc"` but use
+`confidence_level = "loc_equivalent_from_api"` and preserve the explicit source
+in `api_source`. Promote only live slash-captured `/loc` output as
+`confidence_level = "ingame_loc_output"`.
+
 ## Boundary
 
 This workflow does not replace memory proof. It provides semantic anchors for
