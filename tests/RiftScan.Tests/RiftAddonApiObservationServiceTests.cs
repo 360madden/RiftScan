@@ -35,11 +35,16 @@ public sealed class RiftAddonApiObservationServiceTests
             }
             """);
         File.WriteAllText(
-            Path.Combine(temp.Path, "TomTom.lua"),
+            Path.Combine(temp.Path, "ReaderBridgeWaypoint.lua"),
             """
-            TomTomChar = {
-              xpos = 75.0888671875,
-              ypos = 292.11111450195
+            ReaderBridgeExport_State = {
+              current = {
+                sourceMode = "DirectAPI",
+                waypoint = {
+                  x = 75.0888671875,
+                  z = 292.11111450195
+                }
+              }
             }
             """);
         var observationsPath = Path.Combine(temp.Path, "addon-api-observations.jsonl");
@@ -71,16 +76,41 @@ public sealed class RiftAddonApiObservationServiceTests
             observation.CoordinateSpace == "world_xyz" &&
             observation.UnitName == "Atank");
         Assert.Contains(result.Observations, observation =>
-            observation.Kind == "waypoint_or_route_point" &&
-            observation.SourceAddon == "TomTom" &&
-            observation.SourcePattern == "tomtom_char_xpos_ypos" &&
-            observation.CoordinateSpace == "tomtom_2d" &&
+            observation.Kind == "waypoint" &&
+            observation.SourceAddon == "ReaderBridgeWaypoint" &&
+            observation.SourcePattern == "waypoint_table_xz" &&
+            observation.ApiSource == "Inspect.Map.Waypoint.Get" &&
+            observation.CoordinateSpace == "map_xz" &&
             observation.WaypointX == 75.0888671875 &&
             observation.WaypointZ == 292.11111450195);
         Assert.True(File.Exists(observationsPath));
         Assert.True(File.Exists(resultPath));
         Assert.Equal(2, File.ReadLines(observationsPath).Count(line => !string.IsNullOrWhiteSpace(line)));
         Assert.Equal(0, cliExitCode);
+    }
+
+    [Fact]
+    public void Addon_api_observation_scan_ignores_tomtom_saved_variables()
+    {
+        using var temp = new TempDirectory();
+        Directory.CreateDirectory(temp.Path);
+        File.WriteAllText(
+            Path.Combine(temp.Path, "TomTom.lua"),
+            """
+            TomTomChar = {
+              xpos = 75.0888671875,
+              ypos = 292.11111450195
+            }
+            """);
+
+        var result = new RiftAddonApiObservationService().Scan(new RiftAddonApiObservationScanOptions
+        {
+            Path = temp.Path
+        });
+
+        Assert.True(result.Success);
+        Assert.Equal(1, result.FilesScanned);
+        Assert.Equal(0, result.ObservationCount);
     }
 
     [Fact]

@@ -28,8 +28,6 @@ Optional filters:
   context when present.
 - `waypoint`: saved `waypoint = { x = ..., z = ... }` table intended for
   future `Inspect.Map.Waypoint.Get` exports.
-- `waypoint_or_route_point`: TomTom `xpos/ypos` cache; useful for discovery
-  hints, but lower-confidence than direct API exports.
 
 ## Confidence tiers
 
@@ -37,8 +35,13 @@ Optional filters:
   `sourceMode = "DirectAPI"`.
 - `addon_savedvariables_direct`: direct coordinate table from addon state, but
   no explicit DirectAPI marker was found.
-- `addon_route_cache`: route or waypoint cache from addon state; useful for
-  search narrowing, not sufficient for final truth promotion.
+
+## Excluded sources
+
+TomTom SavedVariables are intentionally ignored for RiftScan truth discovery
+until the addon is developed enough to serve as a reliable observation source.
+Use direct addon/API exports such as `Inspect.Unit.Detail`,
+`Inspect.Map.Waypoint.Get`, or captured `/loc` output instead.
 
 ## Boundary
 

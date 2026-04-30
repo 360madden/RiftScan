@@ -13,9 +13,6 @@ public sealed class RiftAddonApiObservationService
         $@"coordX\s*=\s*(?<x>{NumberPattern})\s*,?\s*coordY\s*=\s*(?<y>{NumberPattern})\s*,?\s*coordZ\s*=\s*(?<z>{NumberPattern})",
         RegexOptions.IgnoreCase | RegexOptions.Singleline);
     private static readonly Regex WaypointTableRegex = new(@"waypoint\s*=\s*\{(?<body>.*?)\}", RegexOptions.IgnoreCase | RegexOptions.Singleline);
-    private static readonly Regex TomTomPositionRegex = new(
-        $@"\bxpos\s*=\s*(?<x>{NumberPattern})\s*,?\s*\bypos\s*=\s*(?<z>{NumberPattern})",
-        RegexOptions.IgnoreCase | RegexOptions.Singleline);
     private static readonly Regex ContextKeyRegex = new(@"\b(?<key>player|target|nearbyUnits|nearbyUnit|party|member|unit|waypoint)\s*=\s*\{", RegexOptions.IgnoreCase);
 
     public RiftAddonApiObservationScanResult Scan(RiftAddonApiObservationScanOptions options)
@@ -164,23 +161,6 @@ public sealed class RiftAddonApiObservationService
                 observations.Add(BuildWaypointObservation(rootPath, file, text, match.Index, "waypoint_table_xz", x, z, "addon_savedvariables_direct"));
             }
         }
-
-        var sourceAddon = Path.GetFileNameWithoutExtension(file);
-        if (sourceAddon.Contains("TomTom", StringComparison.OrdinalIgnoreCase) || text.Contains("TomTomChar", StringComparison.OrdinalIgnoreCase))
-        {
-            foreach (Match match in TomTomPositionRegex.Matches(text))
-            {
-                observations.Add(BuildWaypointObservation(
-                    rootPath,
-                    file,
-                    text,
-                    match.Index,
-                    "tomtom_char_xpos_ypos",
-                    ParseNumber(match.Groups["x"].Value),
-                    ParseNumber(match.Groups["z"].Value),
-                    "addon_route_cache"));
-            }
-        }
     }
 
     private static RiftAddonApiObservation BuildWorldCoordinateObservation(
@@ -249,18 +229,12 @@ public sealed class RiftAddonApiObservationService
         var sourceAddon = Path.GetFileNameWithoutExtension(file);
         var nearText = Window(text, matchIndex, before: 1600, after: 1600);
         var sourceMode = ExtractString(nearText, "sourceMode", "mode") ?? ExtractString(text, "sourceMode") ?? string.Empty;
-        var coordinateSpace = sourcePattern.Equals("tomtom_char_xpos_ypos", StringComparison.OrdinalIgnoreCase)
-            ? "tomtom_2d"
-            : "map_xz";
-        var apiSource = sourcePattern.Equals("waypoint_table_xz", StringComparison.OrdinalIgnoreCase)
-            ? "Inspect.Map.Waypoint.Get"
-            : "TomTom SavedVariables";
         var realtime = ExtractNumber(nearText, "generatedAtRealtime", "capturedAt", "realtime")
             ?? ExtractNumber(text, "generatedAtRealtime", "capturedAt", "realtime");
 
         return new()
         {
-            Kind = sourcePattern.Equals("tomtom_char_xpos_ypos", StringComparison.OrdinalIgnoreCase) ? "waypoint_or_route_point" : "waypoint",
+            Kind = "waypoint",
             SourceAddon = sourceAddon,
             SourceFileName = Path.GetFileName(file),
             SourcePathRedacted = RedactPath(Path.GetRelativePath(rootPath, file)),
@@ -268,13 +242,13 @@ public sealed class RiftAddonApiObservationService
             LineNumber = LineNumber(text, matchIndex),
             FileLastWriteUtc = new DateTimeOffset(File.GetLastWriteTimeUtc(file), TimeSpan.Zero),
             Realtime = realtime,
-            ApiSource = apiSource,
+            ApiSource = "Inspect.Map.Waypoint.Get",
             SourceMode = sourceMode,
-            CoordinateSpace = coordinateSpace,
+            CoordinateSpace = "map_xz",
             ConfidenceLevel = confidence,
             WaypointX = x,
             WaypointZ = z,
-            EvidenceSummary = $"kind=waypoint_or_route_point;addon={sourceAddon};pattern={sourcePattern};space={coordinateSpace};x={x:F6};z={z:F6}"
+            EvidenceSummary = $"kind=waypoint;addon={sourceAddon};pattern={sourcePattern};space=map_xz;x={x:F6};z={z:F6}"
         };
     }
 
