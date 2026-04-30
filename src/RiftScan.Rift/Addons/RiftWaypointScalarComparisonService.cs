@@ -41,6 +41,7 @@ public sealed class RiftWaypointScalarComparisonService
         {
             "offline_scalar_result_comparison_only",
             "uses_scalar_hits_output_path_when_present_else_embedded_scalar_hits",
+            "uses_session_snapshot_index_for_missing_region_coverage_when_available",
             "classification_requires_replayable_capture_context"
         };
         var inputs = inputPaths.Select((path, index) => ReadInput(path, index + 1, warnings)).ToArray();
@@ -76,6 +77,10 @@ public sealed class RiftWaypointScalarComparisonService
         var classificationCounts = ranked
             .GroupBy(candidate => candidate.Classification, StringComparer.OrdinalIgnoreCase)
             .ToDictionary(group => group.Key, group => group.Count(), StringComparer.OrdinalIgnoreCase);
+        if (classificationCounts.ContainsKey("not_captured_in_missing_input"))
+        {
+            warnings.Add("one_or_more_comparisons_missing_from_uncaptured_regions");
+        }
 
         return new()
         {
@@ -103,6 +108,7 @@ public sealed class RiftWaypointScalarComparisonService
         var result = JsonSerializer.Deserialize<RiftSessionWaypointScalarMatchResult>(File.ReadAllText(path), SessionJson.Options)
             ?? throw new InvalidOperationException($"Unable to read waypoint scalar match result: {path}");
         var (scalarHits, scalarHitsSourcePath) = ReadScalarHitsForComparison(path, result);
+        var capturedBaseAddressKeys = TryReadCapturedBaseAddressKeys(result.SessionPath);
         var anchorPath = Path.GetFullPath(result.AnchorPath);
         var anchors = LoadAnchors(anchorPath)
             .Select((anchor, index) => string.IsNullOrWhiteSpace(anchor.AnchorId)
@@ -148,7 +154,7 @@ public sealed class RiftWaypointScalarComparisonService
             Warnings = result.Warnings
         };
 
-        return new(inputIndex, path, result, anchors, summary, scalarHits, scalarHitsSourcePath, expectedScalarHitCount);
+        return new(inputIndex, path, result, anchors, summary, scalarHits, scalarHitsSourcePath, expectedScalarHitCount, capturedBaseAddressKeys);
     }
 
     private static (IReadOnlyList<RiftSessionWaypointScalarHit> Hits, string? SourcePath) ReadScalarHitsForComparison(
@@ -183,6 +189,27 @@ public sealed class RiftWaypointScalarComparisonService
 
         var inputDirectory = Path.GetDirectoryName(inputPath);
         return Path.GetFullPath(Path.Combine(inputDirectory ?? Environment.CurrentDirectory, outputPath));
+    }
+
+    private static IReadOnlySet<string>? TryReadCapturedBaseAddressKeys(string sessionPath)
+    {
+        if (string.IsNullOrWhiteSpace(sessionPath))
+        {
+            return null;
+        }
+
+        var indexPath = Path.Combine(Path.GetFullPath(sessionPath), "snapshots", "index.jsonl");
+        if (!File.Exists(indexPath))
+        {
+            return null;
+        }
+
+        return File.ReadLines(indexPath)
+            .Where(line => !string.IsNullOrWhiteSpace(line))
+            .Select(line => JsonSerializer.Deserialize<SnapshotIndexEntry>(line, SessionJson.Options)
+                ?? throw new InvalidOperationException($"Unable to read snapshot index entry from {indexPath}."))
+            .Select(entry => NormalizeHexKey(entry.BaseAddressHex))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
     }
 
     private static IReadOnlyList<RiftAddonWaypointAnchor> LoadAnchors(string anchorPath)
@@ -246,13 +273,15 @@ public sealed class RiftWaypointScalarComparisonService
             var deltaError = observedDelta.HasValue && waypointDelta.HasValue
                 ? Math.Abs(observedDelta.Value - waypointDelta.Value)
                 : (double?)null;
-            var classification = Classify(observations, missingInputIndexes, observedDelta, waypointDelta, deltaError, deltaTolerance);
+            var missingInputSourceBaseNotCaptured = MissingInputSourceBaseNotCaptured(inputs, missingInputIndexes, baseline.Hit.SourceBaseAddressHex);
+            var classification = Classify(observations, missingInputIndexes, missingInputSourceBaseNotCaptured, observedDelta, waypointDelta, deltaError, deltaTolerance);
             var validationStatus = classification switch
             {
                 "tracks_waypoint_candidate" => "candidate_supported_by_waypoint_delta",
                 "missing_after_waypoint_change" => "candidate_rejected_missing_after_waypoint_change",
                 "stable_despite_waypoint_change" => "candidate_rejected_static_against_waypoint_delta",
                 "changes_but_not_waypoint" => "candidate_rejected_delta_mismatch",
+                "not_captured_in_missing_input" => "candidate_unverified_region_not_captured",
                 _ => "candidate_unverified"
             };
 
@@ -275,9 +304,31 @@ public sealed class RiftWaypointScalarComparisonService
                 BestAbsDistance = observations.Min(observation => observation.Hit.AbsDistance),
                 Classification = classification,
                 ValidationStatus = validationStatus,
-                EvidenceSummary = BuildEvidenceSummary(baseline.Hit, observations.Length, missingInputIndexes, observedDelta, waypointDelta, deltaError, classification)
+                EvidenceSummary = BuildEvidenceSummary(baseline.Hit, observations.Length, missingInputIndexes, missingInputSourceBaseNotCaptured, observedDelta, waypointDelta, deltaError, classification)
             };
         }
+    }
+
+    private static bool MissingInputSourceBaseNotCaptured(
+        IReadOnlyList<ComparisonInput> inputs,
+        IReadOnlyList<int> missingInputIndexes,
+        string sourceBaseAddressHex)
+    {
+        if (missingInputIndexes.Count == 0)
+        {
+            return false;
+        }
+
+        var sourceBaseKey = NormalizeHexKey(sourceBaseAddressHex);
+        foreach (var input in inputs.Where(input => missingInputIndexes.Contains(input.InputIndex)))
+        {
+            if (input.CapturedBaseAddressKeys is not null && !input.CapturedBaseAddressKeys.Contains(sourceBaseKey))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static double? InferWaypointDelta(IReadOnlyList<ComparisonInput> inputs, string axis)
@@ -316,6 +367,7 @@ public sealed class RiftWaypointScalarComparisonService
     private static string Classify(
         IReadOnlyList<ScalarObservation> observations,
         IReadOnlyList<int> missingInputIndexes,
+        bool missingInputSourceBaseNotCaptured,
         double? observedDelta,
         double? waypointDelta,
         double? deltaError,
@@ -323,6 +375,11 @@ public sealed class RiftWaypointScalarComparisonService
     {
         if (missingInputIndexes.Count > 0)
         {
+            if (missingInputSourceBaseNotCaptured)
+            {
+                return "not_captured_in_missing_input";
+            }
+
             return waypointDelta.HasValue && Math.Abs(waypointDelta.Value) > deltaTolerance
                 ? "missing_after_waypoint_change"
                 : "missing_in_one_or_more_inputs";
@@ -350,6 +407,7 @@ public sealed class RiftWaypointScalarComparisonService
         RiftSessionWaypointScalarHit baseline,
         int supportCount,
         IReadOnlyList<int> missingInputIndexes,
+        bool missingInputSourceBaseNotCaptured,
         double? observedDelta,
         double? waypointDelta,
         double? deltaError,
@@ -359,7 +417,8 @@ public sealed class RiftWaypointScalarComparisonService
         var observed = observedDelta.HasValue ? observedDelta.Value.ToString("F6", CultureInfo.InvariantCulture) : "null";
         var waypoint = waypointDelta.HasValue ? waypointDelta.Value.ToString("F6", CultureInfo.InvariantCulture) : "null";
         var error = deltaError.HasValue ? deltaError.Value.ToString("F6", CultureInfo.InvariantCulture) : "null";
-        return $"axis={baseline.Axis};source={baseline.SourceBaseAddressHex}+{baseline.SourceOffsetHex};support={supportCount};missing={missing};observed_delta={observed};waypoint_delta={waypoint};delta_error={error};classification={classification}";
+        var missingCoverage = missingInputSourceBaseNotCaptured ? "source_base_not_captured" : "source_base_captured_or_unknown";
+        return $"axis={baseline.Axis};source={baseline.SourceBaseAddressHex}+{baseline.SourceOffsetHex};support={supportCount};missing={missing};missing_coverage={missingCoverage};observed_delta={observed};waypoint_delta={waypoint};delta_error={error};classification={classification}";
     }
 
     private static int ClassificationRank(string classification) =>
@@ -370,11 +429,15 @@ public sealed class RiftWaypointScalarComparisonService
             "stable_despite_waypoint_change" => 2,
             "missing_after_waypoint_change" => 3,
             "missing_in_one_or_more_inputs" => 4,
+            "not_captured_in_missing_input" => 5,
             _ => 5
         };
 
     private static string BuildScalarKey(RiftSessionWaypointScalarHit hit) =>
         string.Join('|', hit.Axis.ToLowerInvariant(), hit.SourceBaseAddressHex.ToUpperInvariant(), hit.SourceOffsetHex.ToUpperInvariant());
+
+    private static string NormalizeHexKey(string value) =>
+        FormatHex(ParseUnsignedHexOrDecimal(value)).ToUpperInvariant();
 
     private static bool IsValidAnchor(RiftAddonWaypointAnchor anchor) =>
         double.IsFinite(anchor.WaypointX) &&
@@ -389,6 +452,8 @@ public sealed class RiftWaypointScalarComparisonService
             : ulong.Parse(trimmed, NumberStyles.Integer, CultureInfo.InvariantCulture);
     }
 
+    private static string FormatHex(ulong value) => $"0x{value:X}";
+
     private sealed record ComparisonInput(
         int InputIndex,
         string InputPath,
@@ -397,7 +462,8 @@ public sealed class RiftWaypointScalarComparisonService
         RiftWaypointScalarComparisonInputSummary Summary,
         IReadOnlyList<RiftSessionWaypointScalarHit> ScalarHits,
         string? ScalarHitsSourcePath,
-        int ExpectedScalarHitCount);
+        int ExpectedScalarHitCount,
+        IReadOnlySet<string>? CapturedBaseAddressKeys);
 
     private sealed record ScalarObservation(int InputIndex, RiftSessionWaypointScalarHit Hit);
 }

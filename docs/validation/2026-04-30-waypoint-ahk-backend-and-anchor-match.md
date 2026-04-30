@@ -207,3 +207,72 @@ Interpretation: the top-hit truncation blind spot is removed for this replay.
 All 200 retained scalar hits from the first waypoint state were available to the
 comparer, and none persisted after the deliberate waypoint-Z change. The earlier
 `waypoint_z` scalar lead remains rejected.
+
+## Distinct waypoint wide-capture and targeted rejection
+
+A third waypoint was set with both axes changed so scalar discovery could avoid
+the earlier "waypoint Z equals player Z" ambiguity:
+
+- command proof:
+  `reports/generated/verified-addon-command-waypoint-test-123-77-allhits-followup-20260430-050649.json`
+- anchor scan:
+  `reports/generated/addon-api-observation-scan-waypoint-test-123-77-allhits-followup-20260430-050649.json`
+- waypoint X/Z: `7360.6196289062`, `3128.0598144531`
+
+A wider low-pressure passive capture was then taken:
+
+- session: `sessions/live-waypoint-123-77-wide128-20260430-0508-passive`
+- regions captured: `128`
+- snapshots captured: `1024`
+- verified: session verifier passed
+- vec3 anchor matcher:
+  `reports/generated/session-waypoint-anchor-matches-live-wide128-123-77-20260430-0508.json`
+- vec3 result: `match_count = 0`, `candidate_count = 0`
+- scalar matcher:
+  `reports/generated/session-waypoint-scalar-matches-live-wide128-123-77-20260430-0508.json`
+- scalar hits:
+  `reports/generated/session-waypoint-scalar-hits-live-wide128-123-77-20260430-0508.jsonl`
+- scalar result: `waypoint_x hits = 16`, `waypoint_z hits = 35`,
+  `pair_candidate_count = 1`
+
+The one scalar pair lead was:
+
+- base: `0x21681060000`
+- X offset: `0x5618`, memory `7359.212890625`
+- Z offset: `0xB3DC`, memory `3125.847900390625`
+- support: `8` snapshots
+- validation status: `waypoint_scalar_pair_supported`
+
+A fourth waypoint changed the anchor by X `+80` and Z `+60`:
+
+- command proof:
+  `reports/generated/verified-addon-command-waypoint-test-203-137-target-region-validation-20260430-050848.json`
+- anchor scan:
+  `reports/generated/addon-api-observation-scan-waypoint-test-203-137-target-region-validation-20260430-050848.json`
+- waypoint X/Z: `7440.6196289062`, `3188.0598144531`
+
+Only the lead base was captured for a cheap follow-up:
+
+- session:
+  `sessions/live-waypoint-203-137-target-21681060000-20260430-0509-passive`
+- base filter: `0x21681060000`
+- snapshots captured: `8`
+- verified: session verifier passed
+- scalar matcher:
+  `reports/generated/session-waypoint-scalar-matches-target-21681060000-203-137-20260430-0509.json`
+- scalar hits:
+  `reports/generated/session-waypoint-scalar-hits-target-21681060000-203-137-20260430-0509.jsonl`
+- result: `scalar_hit_count = 0`, `pair_candidate_count = 0`
+
+The coverage-aware comparison output is:
+
+- `reports/generated/waypoint-scalar-comparison-123-77-vs-203-137-target-coverage-aware-20260430-0510.json`
+- `classification_counts = { missing_after_waypoint_change = 2, not_captured_in_missing_input = 7 }`
+- the two true rejections are the captured lead offsets:
+  `0x21681060000+0x5618` and `0x21681060000+0xB3DC`
+
+Interpretation: the third-waypoint wide capture produced a plausible but false
+scalar pair. The targeted same-process follow-up captured the lead base after a
+known waypoint change and found no matching scalars, so that pair is rejected.
+The comparer now avoids over-rejecting offsets from regions that a targeted
+follow-up did not capture.

@@ -45,6 +45,39 @@ public sealed class RiftWaypointScalarComparisonServiceTests
     }
 
     [Fact]
+    public void Compare_does_not_reject_missing_hit_when_missing_input_did_not_capture_source_base()
+    {
+        using var temp = new TempDirectory();
+        var firstSessionPath = WriteSnapshotIndex(temp.Path, "session-a", "0x60000000");
+        var secondSessionPath = WriteSnapshotIndex(temp.Path, "session-b", "0x70000000");
+        var firstAnchorPath = WriteAnchorScan(temp.Path, "anchor-a.json", waypointX: 120, waypointZ: 300, deltaX: 20, deltaZ: 0);
+        var secondAnchorPath = WriteAnchorScan(temp.Path, "anchor-b.json", waypointX: 160, waypointZ: 360, deltaX: 60, deltaZ: 60);
+        var firstResultPath = WriteScalarResult(
+            temp.Path,
+            "scalar-a.json",
+            firstAnchorPath,
+            "session-a",
+            [
+                BuildHit(axis: "waypoint_z", memoryValue: 300, anchorValue: 300, offsetHex: "0x20")
+            ],
+            sessionPath: firstSessionPath);
+        var secondResultPath = WriteScalarResult(temp.Path, "scalar-b.json", secondAnchorPath, "session-b", [], sessionPath: secondSessionPath);
+
+        var result = new RiftWaypointScalarComparisonService().Compare(new RiftWaypointScalarComparisonOptions
+        {
+            InputPaths = [firstResultPath, secondResultPath],
+            DeltaTolerance = 0.01,
+            Top = 10
+        });
+
+        Assert.Contains("one_or_more_comparisons_missing_from_uncaptured_regions", result.Warnings);
+        var comparison = Assert.Single(result.Comparisons);
+        Assert.Equal("not_captured_in_missing_input", comparison.Classification);
+        Assert.Equal("candidate_unverified_region_not_captured", comparison.ValidationStatus);
+        Assert.Contains("missing_coverage=source_base_not_captured", comparison.EvidenceSummary, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public void Compare_marks_repeated_scalar_hit_tracking_waypoint_delta()
     {
         using var temp = new TempDirectory();
@@ -225,7 +258,8 @@ public sealed class RiftWaypointScalarComparisonServiceTests
         string sessionId,
         IReadOnlyList<RiftSessionWaypointScalarHit> hits,
         bool embedHits = true,
-        bool writeScalarHitsOutput = false)
+        bool writeScalarHitsOutput = false,
+        string? sessionPath = null)
     {
         var path = Path.Combine(directory, fileName);
         var scalarHitsOutputPath = writeScalarHitsOutput
@@ -239,7 +273,7 @@ public sealed class RiftWaypointScalarComparisonServiceTests
         var result = new RiftSessionWaypointScalarMatchResult
         {
             Success = true,
-            SessionPath = Path.Combine(directory, sessionId),
+            SessionPath = sessionPath ?? Path.Combine(directory, sessionId),
             SessionId = sessionId,
             AnchorPath = anchorPath,
             Tolerance = 0.01,
@@ -256,6 +290,25 @@ public sealed class RiftWaypointScalarComparisonServiceTests
         };
         File.WriteAllText(path, JsonSerializer.Serialize(result, SessionJson.Options));
         return path;
+    }
+
+    private static string WriteSnapshotIndex(string directory, string sessionId, params string[] baseAddressHexes)
+    {
+        var sessionPath = Path.Combine(directory, sessionId);
+        Directory.CreateDirectory(Path.Combine(sessionPath, "snapshots"));
+        var entries = baseAddressHexes.Select((baseAddressHex, index) => new SnapshotIndexEntry
+        {
+            SnapshotId = $"snapshot-{index + 1:000001}",
+            RegionId = $"region-{index + 1:000001}",
+            Path = $"snapshots/region-{index + 1:000001}-sample-000001.bin",
+            BaseAddressHex = baseAddressHex,
+            SizeBytes = 4,
+            ChecksumSha256Hex = "fixture"
+        });
+        File.WriteAllText(
+            Path.Combine(sessionPath, "snapshots", "index.jsonl"),
+            string.Join(Environment.NewLine, entries.Select(entry => JsonSerializer.Serialize(entry, SessionJson.Options).ReplaceLineEndings(string.Empty))) + Environment.NewLine);
+        return sessionPath;
     }
 
     private static RiftSessionWaypointScalarHit BuildHit(string axis, double memoryValue, double anchorValue, string offsetHex) =>

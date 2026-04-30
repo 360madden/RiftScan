@@ -117,8 +117,11 @@ The comparer classifies emitted scalar offsets as `tracks_waypoint_candidate`,
 `missing_after_waypoint_change`, `stable_despite_waypoint_change`, or
 `changes_but_not_waypoint`. If an input match JSON has `scalar_hits_output_path`,
 the comparer uses that retained-hit JSONL artifact instead of only the embedded
-top-hit summary. Missing or static offsets after a deliberate waypoint change
-are rejection evidence, not waypoint truth.
+top-hit summary. It also reads each input session's snapshot index when
+available; if a missing input did not capture the source base address, the
+candidate is classified as `not_captured_in_missing_input` instead of being
+rejected. Missing or static offsets after a deliberate waypoint change are
+rejection evidence only when the relevant source region was captured.
 
 For older scan JSON created before `waypoint_anchors` were emitted, the matcher
 can derive the same anchor from saved `current_player` plus `waypoint` or active
