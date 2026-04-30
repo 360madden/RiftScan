@@ -158,6 +158,36 @@ The current best waypoint-info strategy remains API-first:
    offline analyzer anchor;
 5. still require RiftScan memory artifacts before claiming recovered memory truth.
 
+## Cleanup after proof
+
+After preserving the live waypoint proof artifacts, the temporary test waypoint
+was cleared through the addon helper and persisted through another normal
+SavedVariables save path:
+
+```text
+/rbx waypoint-clear
+/rbx export
+/reloadui
+```
+
+Cleanup parser artifacts:
+
+- `C:\RIFT MODDING\Riftscan\reports\generated\addon-api-observation-scan-waypoint-cleared-live-20260430.json`
+- `C:\RIFT MODDING\Riftscan\reports\generated\addon-api-observations-waypoint-cleared-live-20260430.jsonl`
+
+Cleanup result:
+
+- `observation_count = 4`
+- no `kind = waypoint` observation remained.
+- `kind = waypoint_status` remained with:
+  - `waypoint_api_available = true`
+  - `waypoint_set_api_available = true`
+  - `waypoint_clear_api_available = true`
+  - `waypoint_has_waypoint = false`
+  - `waypoint_last_command = waypoint-clear`
+
+The game was not left with the temporary test waypoint active.
+
 ## Remaining risk
 
 The `ReaderBridgeExport` addon source is outside this RiftScan repo. Preserve or
