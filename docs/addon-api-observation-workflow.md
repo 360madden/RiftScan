@@ -100,6 +100,20 @@ Optional scalar-specific cap:
 
 Scalar matcher output is still validation evidence, not final truth. A strong
 result is a repeated X/Z source pair across multiple snapshots or anchors.
+When scalar pair candidates exist, generate the next targeted capture plan
+instead of manually copying base addresses:
+
+```powershell
+riftscan rift plan-waypoint-scalar-followup `
+  reports/generated/session-waypoint-scalar-matches.json `
+  --top-pairs 2 `
+  --out reports/generated/waypoint-scalar-followup-plan.json
+```
+
+The follow-up plan emits unique pair-candidate base addresses plus a bounded
+`capture passive` command template. Change the waypoint before running that
+targeted capture, then rerun `match-waypoint-scalars` and
+`compare-waypoint-scalars`.
 
 Compare scalar results across two or more labeled waypoint states before
 promoting any scalar lead:

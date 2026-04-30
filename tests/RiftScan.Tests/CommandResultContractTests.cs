@@ -638,6 +638,48 @@ public sealed class CommandResultContractTests
             "evidence_summary");
 
     [Fact]
+    public void Rift_waypoint_scalar_followup_plan_result_pins_json_contract_fields() =>
+        AssertJsonPropertySet(
+            new RiftWaypointScalarFollowupPlanResult(),
+            "result_schema_version",
+            "success",
+            "analyzer_id",
+            "analyzer_version",
+            "scalar_match_path",
+            "source_session_id",
+            "source_session_path",
+            "top_pairs",
+            "selected_pair_candidate_count",
+            "base_address_count",
+            "base_addresses",
+            "samples",
+            "interval_ms",
+            "max_regions",
+            "max_bytes_per_region",
+            "max_total_bytes",
+            "recommended_capture_args",
+            "recommended_capture_command_template",
+            "candidate_summaries",
+            "output_path",
+            "warnings",
+            "diagnostics");
+
+    [Fact]
+    public void Rift_waypoint_scalar_followup_candidate_summary_pins_json_contract_fields() =>
+        AssertJsonPropertySet(
+            new RiftWaypointScalarFollowupCandidateSummary(),
+            "candidate_id",
+            "x_source_base_address_hex",
+            "x_source_offset_hex",
+            "z_source_base_address_hex",
+            "z_source_offset_hex",
+            "support_count",
+            "anchor_support_count",
+            "best_distance_total",
+            "validation_status",
+            "recommended_next_action");
+
+    [Fact]
     public void Rift_addon_api_observation_pins_json_contract_fields() =>
         AssertJsonPropertySet(
             new RiftAddonApiObservation(),
