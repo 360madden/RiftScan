@@ -49,6 +49,32 @@ result also emits `waypoint_anchors`. These anchors record the player X/Z,
 waypoint X/Z, delta, and distance as semantic labels for later offline memory
 candidate rejection.
 
+## Offline waypoint-anchor matching
+
+After an addon/API scan emits `waypoint_anchors`, replay them against a stored
+RiftScan session without attaching to RIFT:
+
+```powershell
+riftscan rift match-waypoint-anchors `
+  sessions/<session_id> `
+  --anchors reports/generated/addon-api-observation-scan.json `
+  --tolerance 5 `
+  --top 100 `
+  --out reports/generated/session-waypoint-anchor-matches.json
+```
+
+Optional filters:
+
+- `--region-base 0xADDR`: repeatable, bounds the offline scan to known-good
+  snapshot regions.
+- `--tolerance <units>`: maximum absolute X/Z coordinate and delta mismatch.
+- `--top <n>`: caps emitted candidates and matches for review.
+
+The matcher searches stored snapshot float32 vec3 triples for a player coordinate
+and a waypoint coordinate whose memory delta matches the addon anchor delta. Its
+output is validation evidence only; it narrows candidate regions/offsets but
+does not by itself promote final coordinate truth.
+
 ## Confidence tiers
 
 - `addon_api_direct_savedvariables`: SavedVariables export declares
