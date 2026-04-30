@@ -90,6 +90,78 @@ public sealed class RiftAddonApiObservationServiceTests
     }
 
     [Fact]
+    public void Addon_api_observation_scan_builds_player_waypoint_anchor_from_same_snapshot()
+    {
+        using var temp = new TempDirectory();
+        Directory.CreateDirectory(temp.Path);
+        File.WriteAllText(
+            Path.Combine(temp.Path, "ReaderBridgeExport.lua"),
+            """
+            ReaderBridgeExport_State = {
+              current = {
+                generatedAtRealtime = 116070.96875,
+                sourceMode = "DirectAPI",
+                player = {
+                  id = "u035400012FA2D207",
+                  name = "Atank",
+                  locationName = "Sanctum Watch",
+                  zone = "z487C9102D2EA79BE",
+                  coord = {
+                    x = 7237.6196289062,
+                    y = 873.46997070312,
+                    z = 3051.0598144531
+                  }
+                },
+                waypoint = {
+                  source = "Inspect.Map.Waypoint.Get",
+                  unit = "player",
+                  x = 7257.6196289062,
+                  z = 3051.0598144531
+                },
+                waypointStatus = {
+                  apiAvailable = true,
+                  clearApiAvailable = true,
+                  hasWaypoint = true,
+                  lastCommand = "waypoint-test",
+                  lastUpdateAt = 116062.40625,
+                  setApiAvailable = true,
+                  source = "Inspect.Map.Waypoint.Get",
+                  unit = "player",
+                  updateCount = 1,
+                  x = 7257.6196289062,
+                  z = 3051.0598144531
+                }
+              }
+            }
+            """);
+
+        var result = new RiftAddonApiObservationService().Scan(new RiftAddonApiObservationScanOptions
+        {
+            Path = temp.Path
+        });
+
+        Assert.Equal(3, result.ObservationCount);
+        Assert.Equal(1, result.WaypointAnchorCount);
+        var anchor = Assert.Single(result.WaypointAnchors);
+        Assert.Equal("rift-addon-waypoint-anchor-000001", anchor.AnchorId);
+        Assert.Equal("ReaderBridgeExport", anchor.SourceAddon);
+        Assert.Equal("rift-addon-api-obs-000001", anchor.PlayerObservationId);
+        Assert.Equal("rift-addon-api-obs-000002", anchor.WaypointObservationId);
+        Assert.Equal("rift-addon-api-obs-000003", anchor.WaypointStatusObservationId);
+        Assert.Equal(7237.6196289062, anchor.PlayerX);
+        Assert.Equal(873.46997070312, anchor.PlayerY);
+        Assert.Equal(3051.0598144531, anchor.PlayerZ);
+        Assert.Equal(7257.6196289062, anchor.WaypointX);
+        Assert.Equal(3051.0598144531, anchor.WaypointZ);
+        Assert.Equal(20, anchor.DeltaX, precision: 6);
+        Assert.Equal(0, anchor.DeltaZ, precision: 6);
+        Assert.Equal(20, anchor.HorizontalDistance, precision: 6);
+        Assert.Equal("z487C9102D2EA79BE", anchor.ZoneId);
+        Assert.Equal("Sanctum Watch", anchor.LocationName);
+        Assert.Equal("api_player_to_waypoint_pair", anchor.ConfidenceLevel);
+    }
+
+    [Fact]
     public void Addon_api_observation_scan_ignores_tomtom_saved_variables()
     {
         using var temp = new TempDirectory();

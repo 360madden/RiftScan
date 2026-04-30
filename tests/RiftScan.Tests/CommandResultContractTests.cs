@@ -366,7 +366,36 @@ public sealed class CommandResultContractTests
             "files_scanned",
             "observation_count",
             "observations",
+            "waypoint_anchor_count",
+            "waypoint_anchors",
             "warnings");
+
+    [Fact]
+    public void Rift_addon_waypoint_anchor_pins_json_contract_fields() =>
+        AssertJsonPropertySet(
+            new RiftAddonWaypointAnchor(),
+            "schema_version",
+            "anchor_id",
+            "source_addon",
+            "source_file_name",
+            "source_path_redacted",
+            "file_last_write_utc",
+            "realtime",
+            "player_observation_id",
+            "waypoint_observation_id",
+            "waypoint_status_observation_id",
+            "player_x",
+            "player_y",
+            "player_z",
+            "waypoint_x",
+            "waypoint_z",
+            "delta_x",
+            "delta_z",
+            "horizontal_distance",
+            "zone_id",
+            "location_name",
+            "confidence_level",
+            "evidence_summary");
 
     [Fact]
     public void Rift_addon_api_observation_pins_json_contract_fields() =>

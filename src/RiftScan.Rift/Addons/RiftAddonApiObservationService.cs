@@ -49,6 +49,7 @@ public sealed class RiftAddonApiObservationService
             warnings.Add("no_addon_api_observations_after_filters");
         }
 
+        var waypointAnchors = BuildWaypointAnchors(filtered);
         var fullJsonlOutputPath = WriteJsonLines(options.JsonlOutputPath, filtered);
         return new RiftAddonApiObservationScanResult
         {
@@ -57,10 +58,87 @@ public sealed class RiftAddonApiObservationService
             FilesScanned = files.Length,
             ObservationCount = filtered.Length,
             Observations = filtered,
+            WaypointAnchorCount = waypointAnchors.Length,
+            WaypointAnchors = waypointAnchors,
             Warnings = warnings
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .Order(StringComparer.OrdinalIgnoreCase)
                 .ToArray()
+        };
+    }
+
+    private static RiftAddonWaypointAnchor[] BuildWaypointAnchors(IReadOnlyList<RiftAddonApiObservation> observations) =>
+        observations
+            .GroupBy(
+                observation => $"{observation.SourceAddon}\n{observation.SourcePathRedacted}",
+                observation => observation,
+                StringComparer.OrdinalIgnoreCase)
+            .Select(BuildWaypointAnchor)
+            .OfType<RiftAddonWaypointAnchor>()
+            .Select((anchor, index) => anchor with { AnchorId = $"rift-addon-waypoint-anchor-{index + 1:000000}" })
+            .ToArray();
+
+    private static RiftAddonWaypointAnchor? BuildWaypointAnchor(IEnumerable<RiftAddonApiObservation> group)
+    {
+        var observations = group.ToArray();
+        var player = observations.FirstOrDefault(observation =>
+            observation.Kind.Equals("current_player", StringComparison.OrdinalIgnoreCase) &&
+            observation.CoordX.HasValue &&
+            observation.CoordZ.HasValue);
+        if (player is null)
+        {
+            return null;
+        }
+
+        var waypoint = observations.FirstOrDefault(observation =>
+            observation.Kind.Equals("waypoint", StringComparison.OrdinalIgnoreCase) &&
+            observation.WaypointX.HasValue &&
+            observation.WaypointZ.HasValue);
+        var status = observations.FirstOrDefault(observation =>
+            observation.Kind.Equals("waypoint_status", StringComparison.OrdinalIgnoreCase));
+        var waypointSource = waypoint ?? (status?.WaypointHasWaypoint == true &&
+            status.WaypointX.HasValue &&
+            status.WaypointZ.HasValue
+                ? status
+                : null);
+        if (waypointSource is null)
+        {
+            return null;
+        }
+
+        var playerX = player.CoordX!.Value;
+        var playerZ = player.CoordZ!.Value;
+        var waypointX = waypointSource.WaypointX!.Value;
+        var waypointZ = waypointSource.WaypointZ!.Value;
+        var deltaX = waypointX - playerX;
+        var deltaZ = waypointZ - playerZ;
+        var distance = Math.Sqrt((deltaX * deltaX) + (deltaZ * deltaZ));
+        return new()
+        {
+            SourceAddon = player.SourceAddon,
+            SourceFileName = player.SourceFileName,
+            SourcePathRedacted = player.SourcePathRedacted,
+            FileLastWriteUtc = player.FileLastWriteUtc >= waypointSource.FileLastWriteUtc
+                ? player.FileLastWriteUtc
+                : waypointSource.FileLastWriteUtc,
+            Realtime = waypointSource.Realtime ?? player.Realtime,
+            PlayerObservationId = player.ObservationId,
+            WaypointObservationId = waypoint?.ObservationId ?? string.Empty,
+            WaypointStatusObservationId = status?.ObservationId ?? string.Empty,
+            PlayerX = playerX,
+            PlayerY = player.CoordY,
+            PlayerZ = playerZ,
+            WaypointX = waypointX,
+            WaypointZ = waypointZ,
+            DeltaX = deltaX,
+            DeltaZ = deltaZ,
+            HorizontalDistance = distance,
+            ZoneId = player.ZoneId,
+            LocationName = player.LocationName,
+            ConfidenceLevel = waypoint is null
+                ? "api_player_to_waypoint_status_pair"
+                : "api_player_to_waypoint_pair",
+            EvidenceSummary = $"addon={player.SourceAddon};player_obs={player.ObservationId};waypoint_obs={waypoint?.ObservationId ?? "none"};status_obs={status?.ObservationId ?? "none"};player_x={playerX:F6};player_z={playerZ:F6};waypoint_x={waypointX:F6};waypoint_z={waypointZ:F6};delta_x={deltaX:F6};delta_z={deltaZ:F6};distance={distance:F6}"
         };
     }
 

@@ -43,6 +43,12 @@ diagnostic before assuming failure: `apiAvailable = true` with
 `hasWaypoint = false` means the API is reachable but there is no active player
 waypoint to report.
 
+When the same SavedVariables snapshot contains both a `current_player`
+observation and an active `waypoint`/`waypoint_status` coordinate, the scan
+result also emits `waypoint_anchors`. These anchors record the player X/Z,
+waypoint X/Z, delta, and distance as semantic labels for later offline memory
+candidate rejection.
+
 ## Confidence tiers
 
 - `addon_api_direct_savedvariables`: SavedVariables export declares
