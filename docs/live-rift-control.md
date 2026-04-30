@@ -23,6 +23,21 @@ The allowed helper for bounded slash-command validation is:
   -Focus
 ```
 
+For addon-state proof, prefer the verified wrapper:
+
+```powershell
+.\scripts\invoke-rift-addon-command-verified.ps1 `
+  -CommandText "/rbx waypoint-test 20 0" `
+  -ExpectedLastCommand "waypoint-test" `
+  -ExpectedWaypointHasWaypoint true `
+  -ReloadUiAfterCommand
+```
+
+The wrapper sends the bounded command, rescans `ReaderBridgeExport`
+SavedVariables through `riftscan rift addon-api-observations`, writes JSON/JSONL
+evidence under `reports/generated`, and exits nonzero when the expected addon
+state is not observed.
+
 ## Safety rules
 
 - Verify the target process and window title before sending input.
