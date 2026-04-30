@@ -120,7 +120,7 @@ Parser result:
 
 - `success = true`
 - `files_scanned = 132`
-- `observation_count = 4`
+- `observation_count = 5`
 - waypoint observation:
   - `observation_id = rift-addon-api-obs-000004`
   - `kind = waypoint`
@@ -131,6 +131,21 @@ Parser result:
   - `confidence_level = addon_savedvariables_direct`
   - `waypoint_x = 7257.6196289062`
   - `waypoint_z = 3051.0598144531`
+
+- waypoint-status observation:
+  - `observation_id = rift-addon-api-obs-000005`
+  - `kind = waypoint_status`
+  - `source_pattern = waypoint_status_table`
+  - `api_source = Inspect.Map.Waypoint.Get`
+  - `source_mode = DirectAPI`
+  - `coordinate_space = map_xz_status`
+  - `confidence_level = addon_api_status`
+  - `waypoint_api_available = true`
+  - `waypoint_set_api_available = true`
+  - `waypoint_clear_api_available = true`
+  - `waypoint_has_waypoint = true`
+  - `waypoint_update_count = 1`
+  - `waypoint_last_command = waypoint-test`
 
 ## Conclusion
 

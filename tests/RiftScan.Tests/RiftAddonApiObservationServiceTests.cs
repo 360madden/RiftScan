@@ -114,6 +114,57 @@ public sealed class RiftAddonApiObservationServiceTests
     }
 
     [Fact]
+    public void Addon_api_observation_scan_exports_waypoint_status_without_active_waypoint()
+    {
+        using var temp = new TempDirectory();
+        Directory.CreateDirectory(temp.Path);
+        File.WriteAllText(
+            Path.Combine(temp.Path, "ReaderBridgeExport.lua"),
+            """
+            ReaderBridgeExport_State = {
+              current = {
+                generatedAtRealtime = 104979.671875,
+                sourceMode = "DirectAPI",
+                waypointStatus = {
+                  apiAvailable = true,
+                  clearApiAvailable = true,
+                  hasWaypoint = false,
+                  lastCommand = "waypoint-clear",
+                  lastUpdateAt = 104970.125,
+                  setApiAvailable = true,
+                  source = "Inspect.Map.Waypoint.Get",
+                  unit = "player",
+                  updateCount = 2
+                }
+              }
+            }
+            """);
+
+        var result = new RiftAddonApiObservationService().Scan(new RiftAddonApiObservationScanOptions
+        {
+            Path = temp.Path
+        });
+
+        var observation = Assert.Single(result.Observations);
+        Assert.Equal("waypoint_status", observation.Kind);
+        Assert.Equal("waypoint_status_table", observation.SourcePattern);
+        Assert.Equal("Inspect.Map.Waypoint.Get", observation.ApiSource);
+        Assert.Equal("DirectAPI", observation.SourceMode);
+        Assert.Equal("map_xz_status", observation.CoordinateSpace);
+        Assert.Equal("addon_api_status", observation.ConfidenceLevel);
+        Assert.True(observation.WaypointApiAvailable);
+        Assert.True(observation.WaypointSetApiAvailable);
+        Assert.True(observation.WaypointClearApiAvailable);
+        Assert.False(observation.WaypointHasWaypoint);
+        Assert.Equal(2, observation.WaypointUpdateCount);
+        Assert.Equal(104970.125, observation.WaypointLastUpdateAt);
+        Assert.Equal("waypoint-clear", observation.WaypointLastCommand);
+        Assert.Null(observation.WaypointX);
+        Assert.Null(observation.WaypointZ);
+        Assert.Contains("has_waypoint=false", observation.EvidenceSummary, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public void Addon_api_observation_scan_exports_ingame_loc_output()
     {
         using var temp = new TempDirectory();

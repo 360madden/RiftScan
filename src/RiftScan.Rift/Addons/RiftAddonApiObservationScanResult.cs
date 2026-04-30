@@ -113,6 +113,27 @@ public sealed record RiftAddonApiObservation
     [JsonPropertyName("waypoint_z")]
     public double? WaypointZ { get; init; }
 
+    [JsonPropertyName("waypoint_api_available")]
+    public bool? WaypointApiAvailable { get; init; }
+
+    [JsonPropertyName("waypoint_set_api_available")]
+    public bool? WaypointSetApiAvailable { get; init; }
+
+    [JsonPropertyName("waypoint_clear_api_available")]
+    public bool? WaypointClearApiAvailable { get; init; }
+
+    [JsonPropertyName("waypoint_has_waypoint")]
+    public bool? WaypointHasWaypoint { get; init; }
+
+    [JsonPropertyName("waypoint_update_count")]
+    public int? WaypointUpdateCount { get; init; }
+
+    [JsonPropertyName("waypoint_last_update_at")]
+    public double? WaypointLastUpdateAt { get; init; }
+
+    [JsonPropertyName("waypoint_last_command")]
+    public string WaypointLastCommand { get; init; } = string.Empty;
+
     [JsonPropertyName("loc_x")]
     public double? LocX { get; init; }
 

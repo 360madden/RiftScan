@@ -13,6 +13,7 @@ public sealed class RiftAddonApiObservationService
         $@"coordX\s*=\s*(?<x>{NumberPattern})\s*,?\s*coordY\s*=\s*(?<y>{NumberPattern})\s*,?\s*coordZ\s*=\s*(?<z>{NumberPattern})",
         RegexOptions.IgnoreCase | RegexOptions.Singleline);
     private static readonly Regex WaypointTableRegex = new(@"waypoint\s*=\s*\{(?<body>.*?)\}", RegexOptions.IgnoreCase | RegexOptions.Singleline);
+    private static readonly Regex WaypointStatusStartRegex = new(@"\bwaypointStatus\s*=\s*\{", RegexOptions.IgnoreCase);
     private static readonly Regex LocTableRegex = new(@"\bloc\s*=\s*\{(?<body>.*?)\}", RegexOptions.IgnoreCase | RegexOptions.Singleline);
     private static readonly Regex LocXzRegex = new(
         $@"locX\s*=\s*(?<x>{NumberPattern})\s*,?(?:\s*locY\s*=\s*(?<y>{NumberPattern})\s*,?)?\s*locZ\s*=\s*(?<z>{NumberPattern})",
@@ -166,6 +167,11 @@ public sealed class RiftAddonApiObservationService
             }
         }
 
+        foreach (Match match in WaypointStatusStartRegex.Matches(text))
+        {
+            observations.Add(BuildWaypointStatusObservation(rootPath, file, text, match.Index));
+        }
+
         foreach (Match match in LocTableRegex.Matches(text))
         {
             var body = match.Groups["body"].Value;
@@ -284,6 +290,66 @@ public sealed class RiftAddonApiObservationService
             WaypointX = x,
             WaypointZ = z,
             EvidenceSummary = $"kind=waypoint;addon={sourceAddon};pattern={sourcePattern};space=map_xz;x={x:F6};z={z:F6}"
+        };
+    }
+
+    private static RiftAddonApiObservation BuildWaypointStatusObservation(
+        string rootPath,
+        string file,
+        string text,
+        int matchIndex)
+    {
+        var sourceAddon = Path.GetFileNameWithoutExtension(file);
+        var statusText = Window(text, matchIndex, before: 0, after: 1800);
+        var nearText = Window(text, matchIndex, before: 1600, after: 1800);
+        var sourceMode = ExtractString(nearText, "sourceMode", "mode") ?? ExtractString(text, "sourceMode") ?? string.Empty;
+        var realtime = ExtractNumber(nearText, "generatedAtRealtime", "capturedAt", "realtime")
+            ?? ExtractNumber(text, "generatedAtRealtime", "capturedAt", "realtime");
+        var apiAvailable = ExtractBoolean(statusText, "apiAvailable");
+        var setApiAvailable = ExtractBoolean(statusText, "setApiAvailable");
+        var clearApiAvailable = ExtractBoolean(statusText, "clearApiAvailable");
+        var hasWaypoint = ExtractBoolean(statusText, "hasWaypoint");
+        var updateCount = ExtractNumber(statusText, "updateCount");
+        var lastUpdateAt = ExtractNumber(statusText, "lastUpdateAt");
+        var lastCommand = ExtractString(statusText, "lastCommand") ?? string.Empty;
+        var hasX = TryReadNamedNumber(statusText, "x", out var x);
+        var hasZ = TryReadNamedNumber(statusText, "z", out var z);
+        var apiSource = ExtractString(statusText, "source") ?? "Inspect.Map.Waypoint.Get";
+        var unit = ExtractString(statusText, "unit") ?? string.Empty;
+        var confidence = apiAvailable == false
+            ? "addon_api_status_unavailable"
+            : "addon_api_status";
+        var apiAvailableText = apiAvailable.HasValue ? apiAvailable.Value.ToString().ToLowerInvariant() : "unknown";
+        var hasWaypointText = hasWaypoint.HasValue ? hasWaypoint.Value.ToString().ToLowerInvariant() : "unknown";
+        var updateCountText = updateCount?.ToString(CultureInfo.InvariantCulture) ?? "unknown";
+        var xText = hasX ? x.ToString("F6", CultureInfo.InvariantCulture) : "null";
+        var zText = hasZ ? z.ToString("F6", CultureInfo.InvariantCulture) : "null";
+
+        return new()
+        {
+            Kind = "waypoint_status",
+            SourceAddon = sourceAddon,
+            SourceFileName = Path.GetFileName(file),
+            SourcePathRedacted = RedactPath(Path.GetRelativePath(rootPath, file)),
+            SourcePattern = "waypoint_status_table",
+            LineNumber = LineNumber(text, matchIndex),
+            FileLastWriteUtc = new DateTimeOffset(File.GetLastWriteTimeUtc(file), TimeSpan.Zero),
+            Realtime = realtime,
+            ApiSource = apiSource,
+            SourceMode = sourceMode,
+            UnitId = unit,
+            CoordinateSpace = "map_xz_status",
+            ConfidenceLevel = confidence,
+            WaypointX = hasX ? x : null,
+            WaypointZ = hasZ ? z : null,
+            WaypointApiAvailable = apiAvailable,
+            WaypointSetApiAvailable = setApiAvailable,
+            WaypointClearApiAvailable = clearApiAvailable,
+            WaypointHasWaypoint = hasWaypoint,
+            WaypointUpdateCount = updateCount.HasValue ? Convert.ToInt32(updateCount.Value) : null,
+            WaypointLastUpdateAt = lastUpdateAt,
+            WaypointLastCommand = lastCommand,
+            EvidenceSummary = $"kind=waypoint_status;addon={sourceAddon};api_available={apiAvailableText};has_waypoint={hasWaypointText};update_count={updateCountText};x={xText};z={zText}"
         };
     }
 
@@ -406,6 +472,20 @@ public sealed class RiftAddonApiObservationService
             if (match.Success)
             {
                 return match.Groups["value"].Value;
+            }
+        }
+
+        return null;
+    }
+
+    private static bool? ExtractBoolean(string text, params string[] names)
+    {
+        foreach (var name in names)
+        {
+            var match = Regex.Match(text, $@"\b{name}\s*=\s*(?<value>true|false)", RegexOptions.IgnoreCase);
+            if (match.Success)
+            {
+                return bool.Parse(match.Groups["value"].Value);
             }
         }
 

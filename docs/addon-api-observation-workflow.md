@@ -26,8 +26,11 @@ Optional filters:
   table with `x/y/z`.
 - `target`, `nearby_unit`, `party_member`: classified from nearby saved table
   context when present.
-- `waypoint`: saved `waypoint = { x = ..., z = ... }` table intended for
-  future `Inspect.Map.Waypoint.Get` exports.
+- `waypoint`: saved `waypoint = { x = ..., z = ... }` table exported from
+  `Inspect.Map.Waypoint.Get`.
+- `waypoint_status`: saved `waypointStatus = { ... }` diagnostic table with
+  API availability, active-waypoint state, update count, and last command
+  metadata.
 - `player_loc`: captured `/loc` output for the player's in-game
   waypoint/location coordinate space.
 
@@ -80,8 +83,9 @@ Evidence summary:
 
 - player X/Z: `7237.6196289062`, `3051.0598144531`
 - waypoint X/Z: `7257.6196289062`, `3051.0598144531`
-- parser output: `observation_count = 4`
+- parser output: `observation_count = 5`
 - waypoint observation: `rift-addon-api-obs-000004`
+- waypoint-status observation: `rift-addon-api-obs-000005`
 - proof doc: `docs/validation/2026-04-29-readerbridgeexport-waypoint-api-proof.md`
 
 The test used addon/API helpers only. It did not add game input/window-control
