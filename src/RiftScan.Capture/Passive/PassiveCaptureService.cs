@@ -39,6 +39,11 @@ public sealed class PassiveCaptureService(IProcessMemoryReader processMemoryRead
             throw new InvalidOperationException("No readable committed memory regions matched the passive capture filter or requested region IDs/base addresses.");
         }
 
+        if (options.PreCaptureWaitMilliseconds > 0)
+        {
+            Thread.Sleep(options.PreCaptureWaitMilliseconds);
+        }
+
         PrepareSessionDirectory(sessionPath);
         Directory.CreateDirectory(Path.Combine(sessionPath, "snapshots"));
 
@@ -421,6 +426,7 @@ public sealed class PassiveCaptureService(IProcessMemoryReader processMemoryRead
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(options.MaxBytesPerRegion);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(options.MaxTotalBytes);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(options.WindowsPerRegion);
+        ArgumentOutOfRangeException.ThrowIfNegative(options.PreCaptureWaitMilliseconds);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(options.InterventionWaitMilliseconds);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(options.InterventionPollIntervalMilliseconds);
         if (!string.IsNullOrWhiteSpace(options.StimulusLabel) && !ValidStimulusLabels.Contains(options.StimulusLabel))

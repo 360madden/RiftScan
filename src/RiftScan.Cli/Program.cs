@@ -1982,6 +1982,7 @@ public static class Program
         IReadOnlySet<ulong> baseAddresses = new HashSet<ulong>();
         string? stimulusLabel = null;
         string? stimulusNotes = null;
+        var preCaptureWaitMilliseconds = 0;
         var interventionWaitMilliseconds = 20 * 60 * 1000;
         var interventionPollMilliseconds = 2_000;
 
@@ -2029,6 +2030,9 @@ public static class Program
                 case "--stimulus-note":
                     stimulusNotes = RequireValue(args, ref index, arg);
                     break;
+                case "--pre-capture-wait-ms":
+                    preCaptureWaitMilliseconds = int.Parse(RequireValue(args, ref index, arg));
+                    break;
                 case "--intervention-wait-ms":
                     interventionWaitMilliseconds = int.Parse(RequireValue(args, ref index, arg));
                     break;
@@ -2055,6 +2059,7 @@ public static class Program
             BaseAddresses = baseAddresses,
             StimulusLabel = stimulusLabel,
             StimulusNotes = stimulusNotes,
+            PreCaptureWaitMilliseconds = preCaptureWaitMilliseconds,
             InterventionWaitMilliseconds = interventionWaitMilliseconds,
             InterventionPollIntervalMilliseconds = interventionPollMilliseconds
         };
@@ -2123,6 +2128,7 @@ public static class Program
                     break;
                 case "--stimulus" when allowSessionOutOption:
                 case "--stimulus-note" when allowSessionOutOption:
+                case "--pre-capture-wait-ms" when allowSessionOutOption:
                 case "--intervention-wait-ms" when allowSessionOutOption:
                 case "--intervention-poll-ms" when allowSessionOutOption:
                     _ = RequireValue(args, ref index, arg);
@@ -2168,6 +2174,7 @@ public static class Program
         IReadOnlyList<ulong> windowOffsets = [];
         string? stimulusLabel = null;
         string? stimulusNotes = null;
+        var preCaptureWaitMilliseconds = 0;
         var interventionWaitMilliseconds = 20 * 60 * 1000;
         var interventionPollMilliseconds = 2_000;
 
@@ -2215,6 +2222,9 @@ public static class Program
                 case "--stimulus-note":
                     stimulusNotes = RequireValue(args, ref index, arg);
                     break;
+                case "--pre-capture-wait-ms":
+                    preCaptureWaitMilliseconds = int.Parse(RequireValue(args, ref index, arg));
+                    break;
                 case "--intervention-wait-ms":
                     interventionWaitMilliseconds = int.Parse(RequireValue(args, ref index, arg));
                     break;
@@ -2242,6 +2252,7 @@ public static class Program
             WindowOffsets = windowOffsets,
             StimulusLabel = stimulusLabel,
             StimulusNotes = stimulusNotes,
+            PreCaptureWaitMilliseconds = preCaptureWaitMilliseconds,
             InterventionWaitMilliseconds = interventionWaitMilliseconds,
             InterventionPollIntervalMilliseconds = interventionPollMilliseconds
         };
@@ -3239,10 +3250,10 @@ public static class Program
     }
 
     private static void PrintCapturePassiveUsage() =>
-        Console.WriteLine("riftscan capture passive --process <name> --out sessions/<id> [--dry-run] [--samples 1] [--interval-ms 100] [--max-regions 8] [--max-bytes-per-region 65536] [--max-total-bytes 1048576] [--region-ids ids] [--base-addresses hexes] [--region-output-limit 250|--all-regions] [--stimulus passive_idle]");
+        Console.WriteLine("riftscan capture passive --process <name> --out sessions/<id> [--dry-run] [--samples 1] [--interval-ms 100] [--max-regions 8] [--max-bytes-per-region 65536] [--max-total-bytes 1048576] [--region-ids ids] [--base-addresses hexes] [--region-output-limit 250|--all-regions] [--stimulus passive_idle] [--pre-capture-wait-ms 10000]");
 
     private static void PrintCapturePlanUsage() =>
-        Console.WriteLine("riftscan capture plan <source-session-or-plan-json> --pid <id> [--process <name>] --out sessions/<id> [--top-regions 5] [--windows-per-region 3|--window-offsets 0,0x10000] [--stimulus move_forward] [--intervention-wait-ms 1200000] [--intervention-poll-ms 2000]");
+        Console.WriteLine("riftscan capture plan <source-session-or-plan-json> --pid <id> [--process <name>] --out sessions/<id> [--top-regions 5] [--windows-per-region 3|--window-offsets 0,0x10000] [--stimulus move_forward] [--pre-capture-wait-ms 10000] [--intervention-wait-ms 1200000] [--intervention-poll-ms 2000]");
 
     private static void PrintProcessInventoryUsage() =>
         Console.WriteLine("riftscan process inventory --process <name>|--pid <id> [--max-regions 8] [--max-bytes-per-region 65536] [--max-total-bytes 1048576] [--region-ids ids] [--base-addresses hexes] [--region-output-limit 250|--all-regions] [--include-image-regions] [--json-out reports/generated/process-inventory.json]");

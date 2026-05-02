@@ -32,6 +32,8 @@ public sealed record PassiveCaptureOptions
 
     public string? StimulusNotes { get; init; }
 
+    public int PreCaptureWaitMilliseconds { get; init; }
+
     public int InterventionWaitMilliseconds { get; init; } = 20 * 60 * 1000;
 
     public int InterventionPollIntervalMilliseconds { get; init; } = 2_000;
