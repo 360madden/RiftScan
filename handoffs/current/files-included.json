@@ -1,0 +1,14 @@
+[
+  {
+    "source": "reports/generated/manual-live-test-20260502-122551/error.json",
+    "destination": "handoffs/current/step1_baseline/error.json",
+    "bytes": 386,
+    "reason": "allowlisted_step1_artifact"
+  },
+  {
+    "source": "reports/generated/manual-live-test-20260502-122551/riftreader-read-player-coord-anchor.json",
+    "destination": "handoffs/current/step1_baseline/riftreader-read-player-coord-anchor.json",
+    "bytes": 1921,
+    "reason": "allowlisted_step1_artifact"
+  }
+]

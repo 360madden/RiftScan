@@ -1,0 +1,20 @@
+{
+  "schema_version": "riftscan.local_command_result.v1",
+  "started_utc": "2026-05-02T16:25:50Z",
+  "finished_utc": "2026-05-02T16:26:12Z",
+  "success": false,
+  "returncode": 1,
+  "cwd": "C:\\RIFT MODDING\\Riftscan",
+  "args": [
+    "C:\\RIFT MODDING\\Riftscan\\scripts\\live-test-riftscan.cmd",
+    "-PreflightOnly"
+  ],
+  "executed_args": [
+    "cmd.exe",
+    "/c",
+    "C:\\RIFT MODDING\\Riftscan\\scripts\\live-test-riftscan.cmd",
+    "-PreflightOnly"
+  ],
+  "stdout": "ERROR: The property 'SourceObjectMatch' cannot be found on this object. Verify that the property exists.\nError artifact: C:\\RIFT MODDING\\Riftscan\\reports\\generated\\manual-live-test-20260502-122551\\error.json\n",
+  "stderr": ""
+}
