@@ -1,12 +1,12 @@
 [
   {
     "path": "handoffs/current/coord-recovery/command-result.json",
-    "bytes": 923,
+    "bytes": 54054,
     "reason": "allowlisted_coord_recovery_output"
   },
   {
     "path": "handoffs/current/coord-recovery/coord-recovery-summary.json",
-    "bytes": 838,
+    "bytes": 4751,
     "reason": "allowlisted_coord_recovery_output"
   },
   {
@@ -16,12 +16,17 @@
   },
   {
     "path": "handoffs/current/coord-recovery/RECOVERY_HANDOFF.md",
-    "bytes": 1041,
+    "bytes": 1055,
+    "reason": "allowlisted_coord_recovery_output"
+  },
+  {
+    "path": "handoffs/current/coord-recovery/riftreader-scan-readerbridge-player-coords.json",
+    "bytes": 45716,
     "reason": "allowlisted_coord_recovery_output"
   },
   {
     "path": "handoffs/current/coord-recovery/step-log.jsonl",
-    "bytes": 2161,
+    "bytes": 2203,
     "reason": "allowlisted_coord_recovery_output"
   }
 ]

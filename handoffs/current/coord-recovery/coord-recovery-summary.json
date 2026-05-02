@@ -1,19 +1,180 @@
 {
   "schema_version": "riftscan.coord_recovery_probe_summary.v1",
-  "created_utc": "2026-05-02T17:03:25Z",
-  "status": "command_failed",
+  "created_utc": "2026-05-02T17:14:47Z",
+  "status": "coordinate_candidates_observed",
   "final_truth_claim": false,
   "manual_confirmation_required": true,
   "process_id": 33812,
   "scan": {
-    "command_success": false,
-    "returncode": 1,
+    "command_success": true,
+    "returncode": 0,
     "tolerance": "0.05",
     "scan_context": "96",
     "max_hits": "32",
-    "hit_count": null,
-    "candidate_like_value_count": 0,
-    "candidate_like_values": []
+    "hit_count": 32,
+    "candidate_like_value_count": 32,
+    "candidate_like_values": [
+      {
+        "path": "Hits[0]",
+        "Address": 2156107723344,
+        "AddressHex": "0x1F60208F250"
+      },
+      {
+        "path": "Hits[1]",
+        "Address": 2156133013632,
+        "AddressHex": "0x1F6038AD880"
+      },
+      {
+        "path": "Hits[2]",
+        "Address": 2156140346464,
+        "AddressHex": "0x1F603FABC60"
+      },
+      {
+        "path": "Hits[3]",
+        "Address": 2156140351728,
+        "AddressHex": "0x1F603FAD0F0"
+      },
+      {
+        "path": "Hits[4]",
+        "Address": 2156157235824,
+        "AddressHex": "0x1F604FC7270"
+      },
+      {
+        "path": "Hits[5]",
+        "Address": 2156160310432,
+        "AddressHex": "0x1F6052B5CA0"
+      },
+      {
+        "path": "Hits[6]",
+        "Address": 2156160347920,
+        "AddressHex": "0x1F6052BEF10"
+      },
+      {
+        "path": "Hits[7]",
+        "Address": 2156160349360,
+        "AddressHex": "0x1F6052BF4B0"
+      },
+      {
+        "path": "Hits[8]",
+        "Address": 2156228940480,
+        "AddressHex": "0x1F6094292C0"
+      },
+      {
+        "path": "Hits[9]",
+        "Address": 2156303536688,
+        "AddressHex": "0x1F60DB4D230"
+      },
+      {
+        "path": "Hits[10]",
+        "Address": 2156323600768,
+        "AddressHex": "0x1F60EE6F980"
+      },
+      {
+        "path": "Hits[11]",
+        "Address": 2156323862192,
+        "AddressHex": "0x1F60EEAF6B0"
+      },
+      {
+        "path": "Hits[12]",
+        "Address": 2156362312464,
+        "AddressHex": "0x1F61135AB10"
+      },
+      {
+        "path": "Hits[13]",
+        "Address": 2156550735728,
+        "AddressHex": "0x1F61C70C770"
+      },
+      {
+        "path": "Hits[14]",
+        "Address": 2156616221488,
+        "AddressHex": "0x1F620580330"
+      },
+      {
+        "path": "Hits[15]",
+        "Address": 2156969862088,
+        "AddressHex": "0x1F6356C23C8"
+      },
+      {
+        "path": "Hits[16]",
+        "Address": 2156973073376,
+        "AddressHex": "0x1F6359D23E0"
+      },
+      {
+        "path": "Hits[17]",
+        "Address": 2157010754960,
+        "AddressHex": "0x1F637DC1D90"
+      },
+      {
+        "path": "Hits[18]",
+        "Address": 2157025378296,
+        "AddressHex": "0x1F638BB3FF8"
+      },
+      {
+        "path": "Hits[19]",
+        "Address": 2157027334160,
+        "AddressHex": "0x1F638D91810"
+      },
+      {
+        "path": "Hits[20]",
+        "Address": 2157163212328,
+        "AddressHex": "0x1F640F26E28"
+      },
+      {
+        "path": "Hits[21]",
+        "Address": 2157341782064,
+        "AddressHex": "0x1F64B973030"
+      },
+      {
+        "path": "Hits[22]",
+        "Address": 2157724004616,
+        "AddressHex": "0x1F6625F7108"
+      },
+      {
+        "path": "Hits[23]",
+        "Address": 2157724004680,
+        "AddressHex": "0x1F6625F7148"
+      },
+      {
+        "path": "Hits[24]",
+        "Address": 2157724004760,
+        "AddressHex": "0x1F6625F7198"
+      },
+      {
+        "path": "Hits[25]",
+        "Address": 2157752611872,
+        "AddressHex": "0x1F66413F420"
+      },
+      {
+        "path": "Hits[26]",
+        "Address": 2157755674048,
+        "AddressHex": "0x1F66442ADC0"
+      },
+      {
+        "path": "Hits[27]",
+        "Address": 2157755923344,
+        "AddressHex": "0x1F664467B90"
+      },
+      {
+        "path": "Hits[28]",
+        "Address": 2157758152512,
+        "AddressHex": "0x1F664687F40"
+      },
+      {
+        "path": "Hits[29]",
+        "Address": 2157759227024,
+        "AddressHex": "0x1F66478E490"
+      },
+      {
+        "path": "Hits[30]",
+        "Address": 2157759246672,
+        "AddressHex": "0x1F664793150"
+      },
+      {
+        "path": "Hits[31]",
+        "Address": 2157802604512,
+        "AddressHex": "0x1F6670EC7E0"
+      }
+    ]
   },
   "interpretation": [
     "This is fresh coordinate candidate discovery only.",

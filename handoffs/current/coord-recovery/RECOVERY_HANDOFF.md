@@ -17,12 +17,12 @@ This does not claim recovered coordinate truth.
 
 ## Result
 
-- Status: `command_failed`
+- Status: `coordinate_candidates_observed`
 - Process ID: `33812`
-- Command success: `False`
-- Return code: `1`
-- Hit count: `None`
-- Candidate-like value count: `0`
+- Command success: `True`
+- Return code: `0`
+- Hit count: `32`
+- Candidate-like value count: `32`
 
 ## Files
 
