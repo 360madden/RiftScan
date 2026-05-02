@@ -1,0 +1,39 @@
+{
+  "schema_version": "riftscan.command_result.v1",
+  "started_utc": "2026-05-02T16:54:33Z",
+  "finished_utc": "2026-05-02T16:55:13Z",
+  "elapsed_ms": 40235,
+  "success": false,
+  "returncode": 1,
+  "cwd": "C:\\RIFT MODDING\\Riftscan",
+  "args": [
+    "C:\\RIFT MODDING\\RiftReader\\scripts\\run-reader.cmd",
+    "--pid",
+    "33812",
+    "--scan-readerbridge-player-coords",
+    "--scan-tolerance",
+    "0.05",
+    "--scan-context",
+    "96",
+    "--max-hits",
+    "32",
+    "--json"
+  ],
+  "executed_args": [
+    "cmd.exe",
+    "/c",
+    "C:\\RIFT MODDING\\RiftReader\\scripts\\run-reader.cmd",
+    "--pid",
+    "33812",
+    "--scan-readerbridge-player-coords",
+    "--scan-tolerance",
+    "0.05",
+    "--scan-context",
+    "96",
+    "--max-hits",
+    "32",
+    "--json"
+  ],
+  "stdout": "",
+  "stderr": "Unable to resolve current player coordinates from any bootstrap snapshot.\n"
+}

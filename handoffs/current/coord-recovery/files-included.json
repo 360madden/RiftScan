@@ -1,0 +1,27 @@
+[
+  {
+    "path": "handoffs/current/coord-recovery/command-result.json",
+    "bytes": 923,
+    "reason": "allowlisted_coord_recovery_output"
+  },
+  {
+    "path": "handoffs/current/coord-recovery/coord-recovery-summary.json",
+    "bytes": 838,
+    "reason": "allowlisted_coord_recovery_output"
+  },
+  {
+    "path": "handoffs/current/coord-recovery/process-info.json",
+    "bytes": 499,
+    "reason": "allowlisted_coord_recovery_output"
+  },
+  {
+    "path": "handoffs/current/coord-recovery/RECOVERY_HANDOFF.md",
+    "bytes": 1041,
+    "reason": "allowlisted_coord_recovery_output"
+  },
+  {
+    "path": "handoffs/current/coord-recovery/step-log.jsonl",
+    "bytes": 2161,
+    "reason": "allowlisted_coord_recovery_output"
+  }
+]

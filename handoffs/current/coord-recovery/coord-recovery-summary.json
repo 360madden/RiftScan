@@ -1,0 +1,24 @@
+{
+  "schema_version": "riftscan.coord_recovery_probe_summary.v1",
+  "created_utc": "2026-05-02T16:55:13Z",
+  "status": "command_failed",
+  "final_truth_claim": false,
+  "manual_confirmation_required": true,
+  "process_id": 33812,
+  "scan": {
+    "command_success": false,
+    "returncode": 1,
+    "tolerance": "0.05",
+    "scan_context": "96",
+    "max_hits": "32",
+    "hit_count": null,
+    "candidate_like_value_count": 0,
+    "candidate_like_values": []
+  },
+  "interpretation": [
+    "This is fresh coordinate candidate discovery only.",
+    "Hits, if present, are coordinate candidates, not recovered coordinate truth.",
+    "Old coord anchors are not required and are not trusted by this probe.",
+    "RiftReader is called only as an external command-line tool; this script does not modify RiftReader."
+  ]
+}
