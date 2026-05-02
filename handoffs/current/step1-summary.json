@@ -1,10 +1,11 @@
 {
   "schema_version": "riftscan.step1_baseline_handoff.v1",
-  "created_utc": "2026-05-02T16:26:12Z",
+  "created_utc": "2026-05-02T16:44:30Z",
   "step": 1,
   "label": "baseline_standing",
   "stimulus": "passive_idle",
   "movement_attempted": false,
+  "log_path": "handoffs/current/step1-log.jsonl",
   "preflight_command": ".\\scripts\\live-test-riftscan.cmd -PreflightOnly",
   "capture_command": ".\\scripts\\live-test-riftscan.cmd -Stimulus passive_idle -PreCaptureWaitMilliseconds 0",
   "preflight_success": false,
@@ -12,7 +13,7 @@
   "capture_success": null,
   "verify_success": null,
   "analyze_success": null,
-  "run_directory": "reports/generated/manual-live-test-20260502-122551",
+  "run_directory": "reports/generated/manual-live-test-20260502-124424",
   "session_directory": null,
   "delta_interpretation": null,
   "run_summary_status": null,
@@ -20,6 +21,6 @@
     "This is Step 1 only: standing baseline capture.",
     "No movement was attempted by this script.",
     "No primary movement delta is acceptable for this baseline step.",
-    "Raw session snapshot binaries are intentionally excluded from this handoff."
+    "See step1-log.jsonl for timestamped diagnostic events."
   ]
 }

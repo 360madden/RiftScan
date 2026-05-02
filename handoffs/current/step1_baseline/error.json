@@ -1,7 +1,7 @@
 ﻿{
     "schema_version":  "riftscan.manual_live_wrapper_error.v1",
-    "created_utc":  "2026-05-02T16:26:12.3167697Z",
+    "created_utc":  "2026-05-02T16:44:29.9385162Z",
     "status":  "error",
     "message":  "The property \u0027SourceObjectMatch\u0027 cannot be found on this object. Verify that the property exists.",
-    "run_directory":  "C:\\RIFT MODDING\\Riftscan\\reports\\generated\\manual-live-test-20260502-122551"
+    "run_directory":  "C:\\RIFT MODDING\\Riftscan\\reports\\generated\\manual-live-test-20260502-124424"
 }

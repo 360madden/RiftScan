@@ -22,7 +22,7 @@ Capture:
 
 ## Source run
 
-- Run directory: `reports/generated/manual-live-test-20260502-122551`
+- Run directory: `reports/generated/manual-live-test-20260502-124424`
 - Session directory: `None`
 
 ## Result
@@ -33,16 +33,15 @@ Capture:
 - Analyze success: `None`
 - Delta interpretation: `None`
 
+## Diagnostics
+
+- Timestamped log: `handoffs/current/step1-log.jsonl`
+
 ## Interpretation
 
 For Step 1, this is a baseline capture at the player's current standing location.
 
-Expected result:
-
-- The session should verify.
-- Analysis should complete.
-- The primary coordinate triplet may stay stable.
-- `stimulus_not_observed_or_no_primary_triplet_delta` is not automatically a failure for this baseline step.
+For this baseline step, no primary movement delta is not automatically a failure.
 
 ## Files included
 
@@ -51,5 +50,3 @@ See `files-included.json`.
 ## Files excluded
 
 See `files-excluded.json`.
-
-Raw memory snapshot binaries are intentionally excluded from the handoff.
