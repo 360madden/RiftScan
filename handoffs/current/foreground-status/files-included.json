@@ -1,0 +1,22 @@
+[
+  {
+    "path": "handoffs/current/foreground-status/command-result.json",
+    "bytes": 3181
+  },
+  {
+    "path": "handoffs/current/foreground-status/foreground-status-summary.json",
+    "bytes": 665
+  },
+  {
+    "path": "handoffs/current/foreground-status/foreground-status.json",
+    "bytes": 4
+  },
+  {
+    "path": "handoffs/current/foreground-status/FOREGROUND_STATUS_HANDOFF.md",
+    "bytes": 547
+  },
+  {
+    "path": "handoffs/current/foreground-status/step-log.jsonl",
+    "bytes": 3282
+  }
+]

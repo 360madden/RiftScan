@@ -1,0 +1,29 @@
+{
+  "schema_version": "riftscan.command_result.v1",
+  "started_utc": "2026-05-02T17:31:44Z",
+  "finished_utc": "2026-05-02T17:31:44Z",
+  "elapsed_ms": 325,
+  "success": true,
+  "returncode": 0,
+  "cwd": "C:\\RIFT MODDING\\Riftscan",
+  "args": [
+    "powershell",
+    "-NoProfile",
+    "-ExecutionPolicy",
+    "Bypass",
+    "-Command",
+    "\nAdd-Type @\"\nusing System;\nusing System.Runtime.InteropServices;\npublic static class ForegroundProbe {\n    [DllImport(\"user32.dll\")] public static extern IntPtr GetForegroundWindow();\n    [DllImport(\"user32.dll\")] public static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint processId);\n}\n\"@\n$foregroundHwnd = [ForegroundProbe]::GetForegroundWindow()\n[uint32]$foregroundPid = 0\n[void][ForegroundProbe]::GetWindowThreadProcessId($foregroundHwnd, [ref]$foregroundPid)\n$foregroundProcess = $null\nif ($foregroundPid -gt 0) {\n    $foregroundProcess = Get-Process -Id ([int]$foregroundPid) -ErrorAction SilentlyContinue | Select-Object Id,ProcessName,Path,MainWindowTitle,StartTime\n}\n$riftProcesses = @(Get-Process -Name 'rift_x64' -ErrorAction SilentlyContinue | Select-Object Id,ProcessName,Path,MainWindowTitle,StartTime)\n$result = [ordered]@{\n    foreground_hwnd = ('0x{0:X}' -f $foregroundHwnd.ToInt64())\n    foreground_pid = [int]$foregroundPid\n    foreground_process = $foregroundProcess\n    rift_processes = $riftProcesses\n    rift_process_count = $riftProcesses.Count\n    rift_foreground = $false\n}\nforeach ($proc in $riftProcesses) {\n    if ($proc.Id -eq [int]$foregroundPid) {\n        $result.rift_foreground = $true\n    }\n}\n$result | ConvertTo-Json -Depth 6\n"
+  ],
+  "executed_args": [
+    "cmd.exe",
+    "/c",
+    "powershell",
+    "-NoProfile",
+    "-ExecutionPolicy",
+    "Bypass",
+    "-Command",
+    "\nAdd-Type @\"\nusing System;\nusing System.Runtime.InteropServices;\npublic static class ForegroundProbe {\n    [DllImport(\"user32.dll\")] public static extern IntPtr GetForegroundWindow();\n    [DllImport(\"user32.dll\")] public static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint processId);\n}\n\"@\n$foregroundHwnd = [ForegroundProbe]::GetForegroundWindow()\n[uint32]$foregroundPid = 0\n[void][ForegroundProbe]::GetWindowThreadProcessId($foregroundHwnd, [ref]$foregroundPid)\n$foregroundProcess = $null\nif ($foregroundPid -gt 0) {\n    $foregroundProcess = Get-Process -Id ([int]$foregroundPid) -ErrorAction SilentlyContinue | Select-Object Id,ProcessName,Path,MainWindowTitle,StartTime\n}\n$riftProcesses = @(Get-Process -Name 'rift_x64' -ErrorAction SilentlyContinue | Select-Object Id,ProcessName,Path,MainWindowTitle,StartTime)\n$result = [ordered]@{\n    foreground_hwnd = ('0x{0:X}' -f $foregroundHwnd.ToInt64())\n    foreground_pid = [int]$foregroundPid\n    foreground_process = $foregroundProcess\n    rift_processes = $riftProcesses\n    rift_process_count = $riftProcesses.Count\n    rift_foreground = $false\n}\nforeach ($proc in $riftProcesses) {\n    if ($proc.Id -eq [int]$foregroundPid) {\n        $result.rift_foreground = $true\n    }\n}\n$result | ConvertTo-Json -Depth 6\n"
+  ],
+  "stdout": "",
+  "stderr": ""
+}

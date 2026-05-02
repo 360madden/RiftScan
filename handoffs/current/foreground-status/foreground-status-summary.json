@@ -1,0 +1,21 @@
+{
+  "schema_version": "riftscan.foreground_status_probe_summary.v1",
+  "created_utc": "2026-05-02T17:31:44Z",
+  "status": "status_json_unparsed",
+  "read_only": true,
+  "changed_foreground": false,
+  "sent_input": false,
+  "clicked_mouse": false,
+  "command_success": true,
+  "returncode": 0,
+  "foreground_pid": null,
+  "rift_process_count": null,
+  "rift_foreground": null,
+  "log_path": "handoffs/current/foreground-status/step-log.jsonl",
+  "notes": [
+    "This probe is read-only.",
+    "It does not call SetForegroundWindow.",
+    "It does not send keyboard or mouse input.",
+    "It only reports whether RIFT is already foreground."
+  ]
+}
