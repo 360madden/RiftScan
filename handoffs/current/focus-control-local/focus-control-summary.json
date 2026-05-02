@@ -1,0 +1,24 @@
+{
+  "schema_version": "riftscan.local_focus_control_summary.v1",
+  "created_utc": "2026-05-02T18:10:21Z",
+  "status": "foreground_not_verified",
+  "process": {
+    "Id": 33812,
+    "ProcessName": "rift_x64",
+    "Path": "C:\\Program Files (x86)\\Glyph\\Games\\RIFT\\Live\\rift_x64.exe",
+    "MainWindowTitle": "RIFT",
+    "StartTime": "/Date(1777737693180)/"
+  },
+  "selected_window": null,
+  "focus": {
+    "success": false,
+    "reason": "no_visible_window_for_pid",
+    "attempts": []
+  },
+  "notes": [
+    "This local probe uses Win32 foreground APIs.",
+    "It does not click the mouse.",
+    "It does not send keyboard input.",
+    "It does not run /reloadui."
+  ]
+}

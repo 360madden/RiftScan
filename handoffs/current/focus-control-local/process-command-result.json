@@ -1,0 +1,17 @@
+{
+  "started_utc": "2026-05-02T18:10:20Z",
+  "finished_utc": "2026-05-02T18:10:21Z",
+  "elapsed_ms": 559,
+  "success": true,
+  "returncode": 0,
+  "args": [
+    "powershell",
+    "-NoProfile",
+    "-ExecutionPolicy",
+    "Bypass",
+    "-Command",
+    "$items = @(Get-Process -Name 'rift_x64' -ErrorAction SilentlyContinue | Select-Object Id,ProcessName,Path,MainWindowTitle,StartTime); $items | ConvertTo-Json -Depth 4"
+  ],
+  "stdout": "{\n    \"Id\":  33812,\n    \"ProcessName\":  \"rift_x64\",\n    \"Path\":  \"C:\\\\Program Files (x86)\\\\Glyph\\\\Games\\\\RIFT\\\\Live\\\\rift_x64.exe\",\n    \"MainWindowTitle\":  \"RIFT\",\n    \"StartTime\":  \"\\/Date(1777737693180)\\/\"\n}\n",
+  "stderr": ""
+}

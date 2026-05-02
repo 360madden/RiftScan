@@ -1,0 +1,5 @@
+{"timestamp_utc": "2026-05-02T18:10:20Z", "event": "script_start", "script": "C:\\RIFT MODDING\\Riftscan\\rift_focus_local.py", "repo_root": "C:\\RIFT MODDING\\Riftscan", "process_name": "rift_x64", "explicit_pid": 0, "retries": 3, "settle_ms": 400}
+{"timestamp_utc": "2026-05-02T18:10:20Z", "event": "powershell_start", "command": "$items = @(Get-Process -Name 'rift_x64' -ErrorAction SilentlyContinue | Select-Object Id,ProcessName,Path,MainWindowTitle,StartTime); $items | ConvertTo-Json -Depth 4"}
+{"timestamp_utc": "2026-05-02T18:10:21Z", "event": "powershell_finish", "success": true, "returncode": 0, "elapsed_ms": 559, "stdout_length": 210, "stderr_length": 0}
+{"timestamp_utc": "2026-05-02T18:10:21Z", "event": "window_enumeration_failed", "error_type": "AttributeError", "error": "module 'ctypes.wintypes' has no attribute 'WNDENUMPROC'"}
+{"timestamp_utc": "2026-05-02T18:10:21Z", "event": "script_finish", "success": false, "status": "foreground_not_verified"}
