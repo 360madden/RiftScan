@@ -1,6 +1,6 @@
 {
   "schema_version": "riftscan.coord_recovery_probe_summary.v1",
-  "created_utc": "2026-05-02T16:55:13Z",
+  "created_utc": "2026-05-02T17:03:25Z",
   "status": "command_failed",
   "final_truth_claim": false,
   "manual_confirmation_required": true,

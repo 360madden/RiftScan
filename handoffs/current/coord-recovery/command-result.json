@@ -1,8 +1,8 @@
 {
   "schema_version": "riftscan.command_result.v1",
-  "started_utc": "2026-05-02T16:54:33Z",
-  "finished_utc": "2026-05-02T16:55:13Z",
-  "elapsed_ms": 40235,
+  "started_utc": "2026-05-02T17:03:01Z",
+  "finished_utc": "2026-05-02T17:03:25Z",
+  "elapsed_ms": 23872,
   "success": false,
   "returncode": 1,
   "cwd": "C:\\RIFT MODDING\\Riftscan",
