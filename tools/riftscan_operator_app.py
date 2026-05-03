@@ -1,10 +1,12 @@
-# Version: riftscan-operator-app-v3.4
-# Purpose: Windows Tkinter helper app for RiftScan operator workflow: run focus preflight, run full live preflight gate, create focus-gated session dry-run manifests, create metadata-only focus-gated capture plans, run focus-gated timed capture scaffolds, validate handoffs, write compact AI-ready reports, clean known junk, and safely commit/push allowlisted files, including ignored artifact paths when needed.
-# Total character count: 49599
+# Version: riftscan-operator-app-v3.5
+# Purpose: Windows Tkinter helper app for RiftScan operator workflow: run focus preflight, run full live preflight gate, create focus-gated session dry-run manifests, create metadata-only focus-gated capture plans, run focus-gated timed capture scaffolds, run the focus-gated window/process metadata collector, validate handoffs, write compact AI-ready reports, clean known junk, and safely commit/push allowlisted files, including ignored artifact paths when needed.
+# Total character count: 74902
 
 from __future__ import annotations
 
+import ctypes
 import datetime as dt
+from ctypes import wintypes
 import json
 import os
 import shutil
@@ -17,7 +19,7 @@ from tkinter import messagebox, scrolledtext
 from typing import Any
 
 
-APP_VERSION = "riftscan-operator-app-v3.4"
+APP_VERSION = "riftscan-operator-app-v3.5"
 REPO_ROOT = Path(__file__).resolve().parents[1]
 FOCUS_SCRIPT = REPO_ROOT / "scripts" / "run-rift-focus-control.cmd"
 HANDOFF_DIR = REPO_ROOT / "handoffs" / "current" / "focus-control-local"
@@ -32,6 +34,9 @@ CAPTURE_PLAN_ROOT = REPO_ROOT / "plans" / "focus-gated-capture-plans"
 LATEST_CAPTURE_PLAN = CAPTURE_PLAN_ROOT / "LATEST_CAPTURE_PLAN.txt"
 CAPTURE_SESSION_ROOT = REPO_ROOT / "sessions" / "focus-gated-captures"
 LATEST_CAPTURE_SESSION = CAPTURE_SESSION_ROOT / "LATEST_CAPTURE_SESSION.txt"
+LOG_SCHEMA_VERSION = "riftscan.capture_log.v1"
+WINDOW_PROCESS_COLLECTOR_SCHEMA_VERSION = "riftscan.window_process_metadata_collector.v1"
+DEFAULT_WINDOW_PROCESS_SAMPLE_INTERVAL_MS = 500
 
 ALLOWLIST = [
     "handoffs/current/focus-control-local",
@@ -65,6 +70,7 @@ JUNK_LITERAL = [
     "RIFTSCAN_apply_focus_gated_capture_scaffold_patch.py",
     "RIFTSCAN_apply_operator_v34_hardening_patch.py",
     "RIFTSCAN_apply_operator_v34_hardening_patch_v11.py",
+    "RIFTSCAN_apply_operator_v35_window_process_collector_patch.py",
     "payload",
     "rift_focus_local_simple_v2.zip",
 ]
@@ -311,6 +317,13 @@ def latest_capture_session_summary() -> dict[str, Any]:
             "window_hwnd_hex": full_live_preflight.get("window_hwnd_hex"),
             "window_title": full_live_preflight.get("window_title"),
             "capture_log": files.get("capture_log"),
+            "collector_samples": files.get("collector_samples"),
+            "collector_summary": files.get("collector_summary"),
+            "memory_read_started": manifest.get("memory_read_started"),
+            "input_sent": manifest.get("input_sent"),
+            "reloadui_sent": manifest.get("reloadui_sent"),
+            "sample_count": (manifest.get("collector_summary") or {}).get("sample_count"),
+            "error_count": (manifest.get("collector_summary") or {}).get("error_count"),
         },
     }
 
@@ -328,6 +341,627 @@ def bounded_duration_seconds(value: Any, default: int = 30) -> int:
     except (TypeError, ValueError):
         return default
     return max(1, min(seconds, 300))
+
+
+def parse_int(value: Any, default: int = 0) -> int:
+    try:
+        if isinstance(value, str) and value.lower().startswith("0x"):
+            return int(value, 16)
+        return int(value)
+    except (TypeError, ValueError):
+        return default
+
+
+def hwnd_to_hex(hwnd: Any) -> str:
+    return f"0x{parse_int(hwnd):X}"
+
+
+def window_pid(hwnd: int) -> int:
+    if not hwnd:
+        return 0
+    pid = wintypes.DWORD(0)
+    try:
+        ctypes.windll.user32.GetWindowThreadProcessId(wintypes.HWND(hwnd), ctypes.byref(pid))
+        return int(pid.value)
+    except Exception:
+        return 0
+
+
+def window_title(hwnd: int) -> str:
+    if not hwnd:
+        return ""
+    try:
+        user32 = ctypes.windll.user32
+        length = int(user32.GetWindowTextLengthW(wintypes.HWND(hwnd)))
+        buffer = ctypes.create_unicode_buffer(max(1, length + 1))
+        user32.GetWindowTextW(wintypes.HWND(hwnd), buffer, len(buffer))
+        return buffer.value
+    except Exception:
+        return ""
+
+
+def rect_to_dict(rect: Any) -> dict[str, int]:
+    left = int(rect.left)
+    top = int(rect.top)
+    right = int(rect.right)
+    bottom = int(rect.bottom)
+    return {
+        "left": left,
+        "top": top,
+        "right": right,
+        "bottom": bottom,
+        "width": max(0, right - left),
+        "height": max(0, bottom - top),
+    }
+
+
+def window_rect(hwnd: int) -> dict[str, Any]:
+    if not hwnd:
+        return {"available": False}
+    rect = wintypes.RECT()
+    try:
+        ok = bool(ctypes.windll.user32.GetWindowRect(wintypes.HWND(hwnd), ctypes.byref(rect)))
+        return {"available": ok, "rect": rect_to_dict(rect) if ok else None}
+    except Exception as exc:
+        return {"available": False, "error": f"{type(exc).__name__}: {exc}"}
+
+
+def client_rect(hwnd: int) -> dict[str, Any]:
+    if not hwnd:
+        return {"available": False}
+    rect = wintypes.RECT()
+    try:
+        ok = bool(ctypes.windll.user32.GetClientRect(wintypes.HWND(hwnd), ctypes.byref(rect)))
+        return {"available": ok, "rect": rect_to_dict(rect) if ok else None}
+    except Exception as exc:
+        return {"available": False, "error": f"{type(exc).__name__}: {exc}"}
+
+
+def is_window(hwnd: int) -> bool:
+    if not hwnd:
+        return False
+    try:
+        return bool(ctypes.windll.user32.IsWindow(wintypes.HWND(hwnd)))
+    except Exception:
+        return False
+
+
+def is_window_visible(hwnd: int) -> bool:
+    if not hwnd:
+        return False
+    try:
+        return bool(ctypes.windll.user32.IsWindowVisible(wintypes.HWND(hwnd)))
+    except Exception:
+        return False
+
+
+def is_process_alive(pid: Any) -> bool:
+    pid_int = parse_int(pid)
+    if pid_int <= 0:
+        return False
+
+    process_query_limited_information = 0x1000
+    still_active = 259
+
+    try:
+        kernel32 = ctypes.windll.kernel32
+        handle = kernel32.OpenProcess(process_query_limited_information, False, pid_int)
+        if not handle:
+            return False
+        try:
+            exit_code = wintypes.DWORD(0)
+            ok = bool(kernel32.GetExitCodeProcess(handle, ctypes.byref(exit_code)))
+            return ok and int(exit_code.value) == still_active
+        finally:
+            kernel32.CloseHandle(handle)
+    except Exception:
+        return False
+
+
+def target_identity_from_summary(summary: dict[str, Any]) -> dict[str, Any]:
+    process = summary.get("process") or {}
+    selected = summary.get("selected_window") or {}
+    hwnd = parse_int(selected.get("hwnd") or selected.get("hwnd_hex"))
+    return {
+        "process_name": process.get("ProcessName") or process.get("Name") or "rift_x64",
+        "pid": parse_int(process.get("Id")),
+        "hwnd": hwnd,
+        "hwnd_hex": selected.get("hwnd_hex") or hwnd_to_hex(hwnd),
+        "title": selected.get("title") or process.get("MainWindowTitle") or "RIFT",
+    }
+
+
+def collector_state(
+    name: str,
+    *,
+    real_capture_started: bool,
+    memory_read_started: bool = False,
+    input_sent: bool = False,
+    reloadui_sent: bool = False,
+) -> dict[str, Any]:
+    return {
+        "name": name,
+        "real_capture_started": real_capture_started,
+        "memory_read_started": memory_read_started,
+        "input_sent": input_sent,
+        "reloadui_sent": reloadui_sent,
+    }
+
+
+def make_capture_event(
+    event_index: int,
+    *,
+    phase: str,
+    event: str,
+    session_id: str,
+    start_monotonic: float,
+    target_identity: dict[str, Any],
+    collector: dict[str, Any],
+    extra: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    payload: dict[str, Any] = {
+        "event_index": event_index,
+        "utc": utc_now(),
+        "monotonic_elapsed_seconds": round(max(0.0, time.monotonic() - start_monotonic), 3),
+        "phase": phase,
+        "event": event,
+        "session_id": session_id,
+        "app_version": APP_VERSION,
+        "log_schema_version": LOG_SCHEMA_VERSION,
+        "target_identity": target_identity,
+        "collector": collector,
+    }
+    if extra:
+        payload.update(extra)
+    return payload
+
+
+def collect_window_process_metadata_sample(target_identity: dict[str, Any]) -> dict[str, Any]:
+    rift_hwnd = parse_int(target_identity.get("hwnd"))
+    rift_pid = parse_int(target_identity.get("pid"))
+
+    try:
+        foreground_hwnd = int(ctypes.windll.user32.GetForegroundWindow())
+    except Exception:
+        foreground_hwnd = 0
+
+    foreground_pid = window_pid(foreground_hwnd)
+    foreground = {
+        "hwnd": foreground_hwnd,
+        "hwnd_hex": hwnd_to_hex(foreground_hwnd),
+        "pid": foreground_pid,
+        "title": window_title(foreground_hwnd),
+        "is_window": is_window(foreground_hwnd),
+        "is_visible": is_window_visible(foreground_hwnd),
+        "window_rect": window_rect(foreground_hwnd),
+        "client_rect": client_rect(foreground_hwnd),
+    }
+
+    rift_window = {
+        "hwnd": rift_hwnd,
+        "hwnd_hex": hwnd_to_hex(rift_hwnd),
+        "pid": rift_pid,
+        "process_name": target_identity.get("process_name"),
+        "title": window_title(rift_hwnd) or target_identity.get("title"),
+        "is_window": is_window(rift_hwnd),
+        "is_visible": is_window_visible(rift_hwnd),
+        "window_rect": window_rect(rift_hwnd),
+        "client_rect": client_rect(rift_hwnd),
+        "process_alive": is_process_alive(rift_pid),
+    }
+
+    focus_verified = (
+        foreground_hwnd != 0
+        and rift_hwnd != 0
+        and foreground_hwnd == rift_hwnd
+        and foreground_pid == rift_pid
+    )
+
+    return {
+        "foreground": foreground,
+        "rift_window": rift_window,
+        "focus_verified": focus_verified,
+        "foreground_matches_rift_hwnd": foreground_hwnd == rift_hwnd and rift_hwnd != 0,
+        "foreground_matches_rift_pid": foreground_pid == rift_pid and rift_pid != 0,
+    }
+
+
+def write_json(path: Path, value: Any) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json_block(value) + "\n", encoding="utf-8")
+
+
+def run_focus_gated_window_process_metadata_collector(gate: dict[str, Any]) -> dict[str, Path]:
+    if not gate.get("pass_gate"):
+        raise RuntimeError("Cannot run window/process metadata collector because full live preflight did not pass.")
+
+    plan_summary = latest_capture_plan_summary()
+    if plan_summary.get("status") != "present":
+        raise RuntimeError("Cannot run window/process metadata collector because no latest focus-gated capture plan exists.")
+
+    plan_manifest = plan_summary.get("manifest") or {}
+    if plan_manifest.get("metadata_only") is not True:
+        raise RuntimeError("Latest capture plan manifest is invalid: metadata_only is not true.")
+
+    duration_seconds = bounded_duration_seconds(plan_manifest.get("duration_target_seconds"), default=30)
+    sample_interval_ms = DEFAULT_WINDOW_PROCESS_SAMPLE_INTERVAL_MS
+    sample_interval_seconds = sample_interval_ms / 1000.0
+
+    summary_before = gate.get("summary") or {}
+    windows_before = gate.get("windows") or {}
+    target_identity = target_identity_from_summary(summary_before)
+    collector = collector_state(
+        "window_process_metadata",
+        real_capture_started=True,
+        memory_read_started=False,
+        input_sent=False,
+        reloadui_sent=False,
+    )
+
+    session_id = f"{safe_timestamp()}_window_process_metadata_collector"
+    session_dir = CAPTURE_SESSION_ROOT / session_id
+    session_dir.mkdir(parents=True, exist_ok=False)
+
+    manifest_path = session_dir / "capture-session-manifest.json"
+    capture_log_path = session_dir / "capture-log.jsonl"
+    focus_before_path = session_dir / "focus-summary-before.json"
+    focus_after_path = session_dir / "focus-summary-after.json"
+    operator_report_copy = session_dir / "operator-report.md"
+    handoff_path = session_dir / "CAPTURE_SESSION_HANDOFF.md"
+
+    collector_manifest_path = session_dir / "collector-manifest.json"
+    collector_samples_path = session_dir / "collector-samples.jsonl"
+    collector_summary_path = session_dir / "collector-summary.json"
+    collector_errors_path = session_dir / "collector-errors.jsonl"
+
+    write_json(focus_before_path, summary_before)
+
+    started_utc = utc_now()
+    start_monotonic = time.monotonic()
+    log_index = 0
+    sample_index = 0
+    error_index = 0
+
+    def log_event(phase: str, event_name: str, extra: dict[str, Any] | None = None) -> None:
+        nonlocal log_index
+        log_index += 1
+        append_jsonl(
+            capture_log_path,
+            make_capture_event(
+                log_index,
+                phase=phase,
+                event=event_name,
+                session_id=session_id,
+                start_monotonic=start_monotonic,
+                target_identity=target_identity,
+                collector=collector,
+                extra=extra,
+            ),
+        )
+
+    def sample_event(extra: dict[str, Any]) -> None:
+        nonlocal sample_index
+        sample_index += 1
+        append_jsonl(
+            collector_samples_path,
+            make_capture_event(
+                sample_index,
+                phase="collector_sample",
+                event="window_process_metadata_sample",
+                session_id=session_id,
+                start_monotonic=start_monotonic,
+                target_identity=target_identity,
+                collector=collector,
+                extra={"sample_index": sample_index, **extra},
+            ),
+        )
+
+    def error_event(extra: dict[str, Any]) -> None:
+        nonlocal error_index
+        error_index += 1
+        append_jsonl(
+            collector_errors_path,
+            make_capture_event(
+                error_index,
+                phase="collector_error",
+                event="window_process_metadata_error",
+                session_id=session_id,
+                start_monotonic=start_monotonic,
+                target_identity=target_identity,
+                collector=collector,
+                extra={"error_index": error_index, **extra},
+            ),
+        )
+
+    files = {
+        "capture_session_manifest": rel(manifest_path),
+        "capture_log": rel(capture_log_path),
+        "focus_summary_before": rel(focus_before_path),
+        "focus_summary_after": rel(focus_after_path),
+        "operator_report": rel(operator_report_copy),
+        "handoff": rel(handoff_path),
+        "collector_manifest": rel(collector_manifest_path),
+        "collector_samples": rel(collector_samples_path),
+        "collector_summary": rel(collector_summary_path),
+        "collector_errors": rel(collector_errors_path),
+    }
+
+    collector_manifest = {
+        "schema_version": WINDOW_PROCESS_COLLECTOR_SCHEMA_VERSION,
+        "created_utc": started_utc,
+        "app_version": APP_VERSION,
+        "session_id": session_id,
+        "collector": collector,
+        "target_identity": target_identity,
+        "duration_target_seconds": duration_seconds,
+        "sample_interval_ms": sample_interval_ms,
+        "output_files": files,
+        "guardrails": [
+            "OS/window/process metadata only.",
+            "No process memory read.",
+            "No keyboard input sent.",
+            "No mouse input sent.",
+            "No /reloadui sent.",
+        ],
+    }
+    write_json(collector_manifest_path, collector_manifest)
+
+    manifest = {
+        "schema_version": "riftscan.focus_gated_window_process_metadata_session.v1",
+        "created_utc": started_utc,
+        "app_version": APP_VERSION,
+        "session_id": session_id,
+        "status": "window_process_metadata_collector_running",
+        "capture_mode": "window_process_metadata",
+        "scaffold_only": False,
+        "metadata_collector_started": True,
+        "metadata_collector_completed": False,
+        "real_capture_started": True,
+        "real_capture_completed": False,
+        "memory_read_started": False,
+        "memory_read_completed": False,
+        "input_sent": False,
+        "reloadui_sent": False,
+        "duration_target_seconds": duration_seconds,
+        "sample_interval_ms": sample_interval_ms,
+        "stimulus_name": plan_manifest.get("stimulus_name", "none_metadata_only"),
+        "source_capture_plan": plan_summary,
+        "full_live_preflight": {
+            "status": "PASS",
+            "focus_status": summary_before.get("status"),
+            "process_id": target_identity.get("pid"),
+            "process_name": target_identity.get("process_name"),
+            "window_hwnd": target_identity.get("hwnd"),
+            "window_hwnd_hex": target_identity.get("hwnd_hex"),
+            "window_title": target_identity.get("title"),
+            "windows_count": len(windows_before.get("windows") or []),
+        },
+        "files": files,
+        "guardrails": [
+            "Window/process metadata collector only.",
+            "No process memory read.",
+            "No movement/input sent.",
+            "No /reloadui sent.",
+        ],
+    }
+    write_json(manifest_path, manifest)
+
+    log_event(
+        "collector_start",
+        "window_process_metadata_collector_started",
+        {
+            "duration_target_seconds": duration_seconds,
+            "sample_interval_ms": sample_interval_ms,
+            "source_capture_plan": plan_summary.get("latest_plan"),
+        },
+    )
+
+    next_sample = start_monotonic
+    next_heartbeat = start_monotonic + 5.0
+    first_sample_utc: str | None = None
+    last_sample_utc: str | None = None
+    focus_verified_count = 0
+    focus_lost_count = 0
+    rift_process_alive_count = 0
+    rift_process_dead_count = 0
+
+    while True:
+        now = time.monotonic()
+        elapsed = now - start_monotonic
+        if elapsed >= duration_seconds:
+            break
+
+        if now >= next_sample:
+            try:
+                sample = collect_window_process_metadata_sample(target_identity)
+                if sample.get("focus_verified"):
+                    focus_verified_count += 1
+                else:
+                    focus_lost_count += 1
+
+                rift_alive = bool((sample.get("rift_window") or {}).get("process_alive"))
+                if rift_alive:
+                    rift_process_alive_count += 1
+                else:
+                    rift_process_dead_count += 1
+
+                sample_utc = utc_now()
+                first_sample_utc = first_sample_utc or sample_utc
+                last_sample_utc = sample_utc
+
+                sample_event({
+                    "utc": sample_utc,
+                    "data": sample,
+                })
+            except Exception as exc:
+                error_event({
+                    "error_type": type(exc).__name__,
+                    "error_message": str(exc),
+                })
+
+            next_sample += sample_interval_seconds
+
+        if now >= next_heartbeat:
+            log_event(
+                "collector_window",
+                "window_process_metadata_collector_heartbeat",
+                {
+                    "elapsed_seconds": round(elapsed, 3),
+                    "remaining_seconds": max(0, round(duration_seconds - elapsed, 3)),
+                    "samples_written": sample_index,
+                    "errors_written": error_index,
+                },
+            )
+            next_heartbeat += 5.0
+
+        sleep_until = min(next_sample, next_heartbeat, start_monotonic + duration_seconds)
+        time.sleep(max(0.01, min(0.1, sleep_until - time.monotonic())))
+
+    elapsed_seconds = round(time.monotonic() - start_monotonic, 3)
+    log_event(
+        "collector_window",
+        "window_process_metadata_collector_window_elapsed",
+        {
+            "elapsed_seconds": elapsed_seconds,
+            "samples_written": sample_index,
+            "errors_written": error_index,
+        },
+    )
+
+    after_code, after_out, after_err = run_command(["cmd", "/c", str(FOCUS_SCRIPT)], timeout=90)
+    summary_after = load_json(FOCUS_SUMMARY)
+    write_json(focus_after_path, summary_after)
+
+    completed_utc = utc_now()
+    final_status = "window_process_metadata_collector_completed" if after_code == 0 else "window_process_metadata_collector_completed_with_focus_after_failure"
+
+    collector_summary = {
+        "schema_version": "riftscan.window_process_metadata_collector_summary.v1",
+        "created_utc": completed_utc,
+        "session_id": session_id,
+        "status": final_status,
+        "duration_target_seconds": duration_seconds,
+        "elapsed_seconds": elapsed_seconds,
+        "sample_interval_ms": sample_interval_ms,
+        "sample_count": sample_index,
+        "error_count": error_index,
+        "first_sample_utc": first_sample_utc,
+        "last_sample_utc": last_sample_utc,
+        "focus_verified_count": focus_verified_count,
+        "focus_lost_count": focus_lost_count,
+        "rift_process_alive_count": rift_process_alive_count,
+        "rift_process_dead_count": rift_process_dead_count,
+        "focus_after_status": summary_after.get("status"),
+        "memory_read_started": False,
+        "input_sent": False,
+        "reloadui_sent": False,
+    }
+    write_json(collector_summary_path, collector_summary)
+
+    log_event(
+        "collector_complete",
+        "window_process_metadata_collector_completed",
+        {
+            "status": final_status,
+            "completed_utc": completed_utc,
+            "elapsed_seconds": elapsed_seconds,
+            "samples_written": sample_index,
+            "errors_written": error_index,
+            "focus_after_exit_code": after_code,
+            "focus_after_status": summary_after.get("status"),
+            "artifacts": files,
+        },
+    )
+
+    manifest.update({
+        "completed_utc": completed_utc,
+        "status": final_status,
+        "metadata_collector_completed": True,
+        "real_capture_completed": True,
+        "elapsed_seconds": elapsed_seconds,
+        "collector_summary": collector_summary,
+        "focus_after": {
+            "command_exit_code": after_code,
+            "stdout": after_out.strip(),
+            "stderr": after_err.strip(),
+            "focus_status": summary_after.get("status"),
+        },
+        "next_expected_step": "Review OS/window/process metadata samples, then decide whether to add RiftReader external collector integration.",
+    })
+    write_json(manifest_path, manifest)
+
+    LATEST_CAPTURE_SESSION.parent.mkdir(parents=True, exist_ok=True)
+    LATEST_CAPTURE_SESSION.write_text(rel(session_dir) + "\n", encoding="utf-8")
+
+    report_path = write_operator_report()
+    operator_report_copy.write_text(read_text(report_path), encoding="utf-8")
+
+    handoff_lines = [
+        "# Focus-Gated Window/Process Metadata Collector",
+        "",
+        f"Session ID: `{session_id}`",
+        f"Created UTC: `{started_utc}`",
+        f"Completed UTC: `{completed_utc}`",
+        f"Status: `{final_status}`",
+        f"Duration target seconds: `{duration_seconds}`",
+        f"Sample interval ms: `{sample_interval_ms}`",
+        f"Samples written: `{sample_index}`",
+        f"Errors written: `{error_index}`",
+        "",
+        "## Result",
+        "",
+        "The operator app ran the first focus-gated metadata collector. It sampled OS/window/process/focus metadata only.",
+        "",
+        "```text",
+        f"Focus before: {summary_before.get('status')}",
+        f"Focus after: {summary_after.get('status')}",
+        f"PID: {target_identity.get('pid')}",
+        f"HWND: {target_identity.get('hwnd_hex')}",
+        f"Title: {target_identity.get('title')}",
+        f"Focus verified samples: {focus_verified_count}",
+        f"Focus lost samples: {focus_lost_count}",
+        "```",
+        "",
+        "## Files",
+        "",
+        "```text",
+        rel(manifest_path),
+        rel(capture_log_path),
+        rel(collector_manifest_path),
+        rel(collector_samples_path),
+        rel(collector_summary_path),
+        rel(collector_errors_path),
+        rel(focus_before_path),
+        rel(focus_after_path),
+        rel(operator_report_copy),
+        "```",
+        "",
+        "## Guardrails",
+        "",
+        "- OS/window/process metadata only.",
+        "- No process memory read.",
+        "- No movement/input sent.",
+        "- No /reloadui sent.",
+        "",
+        "## Next Expected Step",
+        "",
+        "Review OS/window/process metadata samples, then decide whether to add RiftReader external collector integration.",
+    ]
+    handoff_path.write_text("\n".join(handoff_lines) + "\n", encoding="utf-8")
+
+    return {
+        "session_dir": session_dir,
+        "manifest_path": manifest_path,
+        "capture_log_path": capture_log_path,
+        "collector_manifest_path": collector_manifest_path,
+        "collector_samples_path": collector_samples_path,
+        "collector_summary_path": collector_summary_path,
+        "collector_errors_path": collector_errors_path,
+        "focus_before_path": focus_before_path,
+        "focus_after_path": focus_after_path,
+        "handoff_path": handoff_path,
+        "operator_report_path": report_path,
+    }
 
 
 def write_operator_report() -> Path:
@@ -953,6 +1587,7 @@ class RiftScanOperatorApp(tk.Tk):
             ("Run Full Live Preflight", self.run_full_live_preflight),
             ("Run Focus-Gated Session Dry Run", self.run_focus_gated_session_dry_run),
             ("Create Focus-Gated Capture Plan", self.create_focus_gated_capture_plan_clicked),
+            ("Run Window/Process Metadata Collector", self.run_window_process_metadata_collector),
             ("Run Focus-Gated Capture Scaffold", self.run_focus_gated_capture_scaffold_clicked),
             ("Run Focus Preflight", self.run_focus_preflight),
             ("Write AI Report", self.write_report_clicked),
@@ -1237,6 +1872,57 @@ class RiftScanOperatorApp(tk.Tk):
 
         self.run_async("focus-gated capture scaffold", task)
 
+
+
+    def run_window_process_metadata_collector(self) -> None:
+        def task() -> str:
+            gate = run_full_live_preflight_gate()
+            summary = gate["summary"]
+            self.after(0, lambda: self.focus_var.set(f"Focus: {focus_line(summary)}"))
+
+            report_path = write_operator_report()
+
+            if not gate["pass_gate"]:
+                lines = [
+                    "\n=== WINDOW/PROCESS METADATA COLLECTOR ===",
+                    "WINDOW/PROCESS METADATA COLLECTOR: FAIL",
+                    "Collector did not run because the full live preflight gate failed.",
+                ]
+                lines.extend(f"- {issue}" for issue in gate["issues"])
+                lines.append(f"Operator report: {rel(report_path)}")
+                return "\n".join(lines)
+
+            artifacts = run_focus_gated_window_process_metadata_collector(gate)
+            summary_path = artifacts["collector_summary_path"]
+            collector_summary = load_json(summary_path)
+
+            selected = summary.get("selected_window") or {}
+            process = summary.get("process") or {}
+
+            lines = [
+                "\n=== WINDOW/PROCESS METADATA COLLECTOR ===",
+                "WINDOW/PROCESS METADATA COLLECTOR: PASS",
+                "Collected OS/window/process/focus metadata only.",
+                f"Session: {rel(artifacts['session_dir'])}",
+                f"Manifest: {rel(artifacts['manifest_path'])}",
+                f"Capture log: {rel(artifacts['capture_log_path'])}",
+                f"Collector samples: {rel(artifacts['collector_samples_path'])}",
+                f"Collector summary: {rel(summary_path)}",
+                f"Collector errors: {rel(artifacts['collector_errors_path'])}",
+                f"Handoff: {rel(artifacts['handoff_path'])}",
+                f"Focus: {summary.get('status', 'unknown')}",
+                f"PID: {process.get('Id', 'n/a')}",
+                f"HWND: {selected.get('hwnd_hex', 'n/a')}",
+                f"Title: {selected.get('title', 'n/a')}",
+                f"Samples: {collector_summary.get('sample_count', 'n/a')}",
+                f"Errors: {collector_summary.get('error_count', 'n/a')}",
+                f"Operator report: {rel(artifacts['operator_report_path'])}",
+                "",
+                "No process memory read, movement, input, or /reloadui was run.",
+            ]
+            return "\n".join(lines)
+
+        self.run_async("window/process metadata collector", task)
 
     def write_report_clicked(self) -> None:
         path = write_operator_report()

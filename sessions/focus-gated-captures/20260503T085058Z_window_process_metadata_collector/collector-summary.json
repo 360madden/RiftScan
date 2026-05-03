@@ -1,0 +1,21 @@
+{
+  "schema_version": "riftscan.window_process_metadata_collector_summary.v1",
+  "created_utc": "2026-05-03T08:51:29Z",
+  "session_id": "20260503T085058Z_window_process_metadata_collector",
+  "status": "window_process_metadata_collector_completed",
+  "duration_target_seconds": 30,
+  "elapsed_seconds": 30.0,
+  "sample_interval_ms": 500,
+  "sample_count": 60,
+  "error_count": 0,
+  "first_sample_utc": "2026-05-03T08:50:58Z",
+  "last_sample_utc": "2026-05-03T08:51:28Z",
+  "focus_verified_count": 60,
+  "focus_lost_count": 0,
+  "rift_process_alive_count": 60,
+  "rift_process_dead_count": 0,
+  "focus_after_status": "foreground_verified",
+  "memory_read_started": false,
+  "input_sent": false,
+  "reloadui_sent": false
+}

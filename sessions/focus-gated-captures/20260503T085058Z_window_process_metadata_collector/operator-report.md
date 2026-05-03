@@ -1,6 +1,6 @@
 # RiftScan Operator Handoff
 
-Created UTC: `2026-05-03T08:51:56Z`
+Created UTC: `2026-05-03T08:51:29Z`
 App version: `riftscan-operator-app-v3.5`
 Repo root: `C:\RIFT MODDING\Riftscan`
 
@@ -23,6 +23,7 @@ Exit code: `0`
  M handoffs/current/operator/RIFTSCAN_OPERATOR_HANDOFF.md
  M sessions/focus-gated-captures/LATEST_CAPTURE_SESSION.txt
  M tools/riftscan_operator_app.py
+?? tools/riftscan_operator_app.py.bak-20260503T085009Z
 
 ```
 
