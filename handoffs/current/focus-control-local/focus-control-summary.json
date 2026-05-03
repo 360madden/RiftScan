@@ -1,19 +1,34 @@
 {
   "schema_version": "riftscan.local_focus_control_summary.v1",
-  "created_utc": "2026-05-02T18:10:21Z",
-  "status": "foreground_not_verified",
+  "created_utc": "2026-05-03T00:20:47Z",
+  "status": "foreground_verified",
   "process": {
-    "Id": 33812,
+    "Id": 29420,
     "ProcessName": "rift_x64",
     "Path": "C:\\Program Files (x86)\\Glyph\\Games\\RIFT\\Live\\rift_x64.exe",
     "MainWindowTitle": "RIFT",
-    "StartTime": "/Date(1777737693180)/"
+    "StartTime": "/Date(1777764916054)/"
   },
-  "selected_window": null,
+  "selected_window": {
+    "hwnd": 5115714,
+    "hwnd_hex": "0x4E0F42",
+    "pid": 29420,
+    "title": "RIFT"
+  },
   "focus": {
-    "success": false,
-    "reason": "no_visible_window_for_pid",
-    "attempts": []
+    "success": true,
+    "attempts": [
+      {
+        "attempt": 1,
+        "restore_ok": true,
+        "set_foreground_ok": true,
+        "foreground_hwnd": 5115714,
+        "foreground_hwnd_hex": "0x4E0F42",
+        "foreground_pid": 29420,
+        "foreground_title": "RIFT",
+        "verified": true
+      }
+    ]
   },
   "notes": [
     "This local probe uses Win32 foreground APIs.",

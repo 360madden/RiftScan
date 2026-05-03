@@ -1,5 +1,15 @@
 {
-  "success": false,
-  "reason": "no_visible_window_for_pid",
-  "attempts": []
+  "success": true,
+  "attempts": [
+    {
+      "attempt": 1,
+      "restore_ok": true,
+      "set_foreground_ok": true,
+      "foreground_hwnd": 5115714,
+      "foreground_hwnd_hex": "0x4E0F42",
+      "foreground_pid": 29420,
+      "foreground_title": "RIFT",
+      "verified": true
+    }
+  ]
 }

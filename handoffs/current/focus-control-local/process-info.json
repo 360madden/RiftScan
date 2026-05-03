@@ -1,19 +1,19 @@
 {
   "processes": [
     {
-      "Id": 33812,
+      "Id": 29420,
       "ProcessName": "rift_x64",
       "Path": "C:\\Program Files (x86)\\Glyph\\Games\\RIFT\\Live\\rift_x64.exe",
       "MainWindowTitle": "RIFT",
-      "StartTime": "/Date(1777737693180)/"
+      "StartTime": "/Date(1777764916054)/"
     }
   ],
   "selected": {
-    "Id": 33812,
+    "Id": 29420,
     "ProcessName": "rift_x64",
     "Path": "C:\\Program Files (x86)\\Glyph\\Games\\RIFT\\Live\\rift_x64.exe",
     "MainWindowTitle": "RIFT",
-    "StartTime": "/Date(1777737693180)/"
+    "StartTime": "/Date(1777764916054)/"
   },
   "issues": []
 }
