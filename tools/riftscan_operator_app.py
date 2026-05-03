@@ -1,6 +1,6 @@
-# Version: riftscan-operator-app-v3.7
-# Purpose: Windows Tkinter helper app for RiftScan operator workflow: run focus preflight, run full live preflight gate, create focus-gated capture plans, run the focus-gated window/process metadata collector, analyze latest collector sessions, validate collector artifacts, write compact AI-ready reports, clean known junk, safely commit/push allowlisted files, and provide tabbed/wrapped controls with lightweight status highlighting.
-# Total character count: 101692
+# Version: riftscan-operator-app-v3.8
+# Purpose: Windows Tkinter helper app for RiftScan operator workflow: run focus preflight, run full live preflight gate, create focus-gated capture plans, run the focus-gated window/process metadata collector, analyze and compare collector sessions, validate collector artifacts, write compact AI-ready reports, clean known junk, safely commit/push allowlisted files, and provide tabbed/wrapped controls with lightweight status highlighting.
+# Total character count: 120550
 
 from __future__ import annotations
 
@@ -20,7 +20,7 @@ from tkinter import messagebox, scrolledtext, ttk
 from typing import Any
 
 
-APP_VERSION = "riftscan-operator-app-v3.7"
+APP_VERSION = "riftscan-operator-app-v3.8"
 REPO_ROOT = Path(__file__).resolve().parents[1]
 FOCUS_SCRIPT = REPO_ROOT / "scripts" / "run-rift-focus-control.cmd"
 HANDOFF_DIR = REPO_ROOT / "handoffs" / "current" / "focus-control-local"
@@ -38,6 +38,7 @@ LATEST_CAPTURE_SESSION = CAPTURE_SESSION_ROOT / "LATEST_CAPTURE_SESSION.txt"
 LOG_SCHEMA_VERSION = "riftscan.capture_log.v1"
 WINDOW_PROCESS_COLLECTOR_SCHEMA_VERSION = "riftscan.window_process_metadata_collector.v1"
 ANALYSIS_SCHEMA_VERSION = "riftscan.window_process_analysis.v1"
+COMPARISON_SCHEMA_VERSION = "riftscan.window_process_comparison.v1"
 DEFAULT_WINDOW_PROCESS_SAMPLE_INTERVAL_MS = 500
 
 ALLOWLIST = [
@@ -80,6 +81,7 @@ JUNK_LITERAL = [
     "RIFTSCAN_apply_operator_v361_ui_hotfix_patch_v11.py",
     "RIFTSCAN_apply_operator_v362_ui_import_hotfix_patch.py",
     "RIFTSCAN_apply_operator_v37_analyze_latest_session_patch_checked.py",
+    "RIFTSCAN_apply_operator_v38_compare_sessions_patch_checked.py",
     "payload",
     "rift_focus_local_simple_v2.zip",
 ]
@@ -337,6 +339,8 @@ def latest_capture_session_summary() -> dict[str, Any]:
             "missing_artifacts": (manifest.get("artifact_contract") or {}).get("missing_artifacts"),
             "analysis_status": (latest_window_process_analysis_summary().get("summary") or {}).get("status"),
             "analysis_anomaly_count": (latest_window_process_analysis_summary().get("summary") or {}).get("anomaly_count"),
+            "comparison_status": (latest_window_process_comparison_summary().get("summary") or {}).get("status"),
+            "comparison_difference_count": (latest_window_process_comparison_summary().get("summary") or {}).get("difference_count"),
         },
     }
 
@@ -1408,6 +1412,356 @@ def analyze_latest_window_process_session() -> dict[str, Path]:
     }
 
 
+def latest_window_process_comparison_summary() -> dict[str, Any]:
+    if not LATEST_CAPTURE_SESSION.exists():
+        return {"status": "none"}
+
+    session_rel = LATEST_CAPTURE_SESSION.read_text(encoding="utf-8", errors="replace").strip()
+    if not session_rel:
+        return {"status": "none", "reason": "latest capture session pointer is empty"}
+
+    session_dir = REPO_ROOT / session_rel
+    comparison_path = session_dir / "comparison" / "window-process-comparison.json"
+    handoff_path = session_dir / "comparison" / "WINDOW_PROCESS_COMPARISON.md"
+
+    if not comparison_path.exists():
+        return {
+            "status": "none",
+            "latest_session": session_rel,
+            "reason": "comparison has not been generated for latest session",
+            "expected_comparison_path": rel(comparison_path),
+        }
+
+    comparison = load_json(comparison_path)
+    summary = comparison.get("summary") if isinstance(comparison, dict) else None
+    return {
+        "status": "present",
+        "latest_session": session_rel,
+        "comparison_path": rel(comparison_path),
+        "handoff_path": rel(handoff_path),
+        "summary": summary or comparison,
+    }
+
+
+def list_window_process_session_dirs() -> list[Path]:
+    if not CAPTURE_SESSION_ROOT.exists():
+        return []
+
+    sessions: list[Path] = []
+    for path in CAPTURE_SESSION_ROOT.iterdir():
+        if not path.is_dir():
+            continue
+        if not path.name.endswith("_window_process_metadata_collector"):
+            continue
+        if not (path / "capture-session-manifest.json").exists():
+            continue
+        if not (path / "collector-summary.json").exists():
+            continue
+        sessions.append(path)
+
+    return sorted(sessions, key=lambda item: item.name)
+
+
+def load_window_process_analysis_for_session(session_dir: Path) -> dict[str, Any]:
+    analysis_path = session_dir / "analysis" / "window-process-analysis.json"
+    if not analysis_path.exists():
+        return {
+            "status": "missing",
+            "analysis_path": rel(analysis_path),
+            "summary": None,
+        }
+
+    analysis = load_json(analysis_path)
+    summary = analysis.get("summary") if isinstance(analysis, dict) else None
+    return {
+        "status": "present",
+        "analysis_path": rel(analysis_path),
+        "summary": summary or analysis,
+    }
+
+
+def summarize_window_process_session_for_comparison(session_dir: Path) -> dict[str, Any]:
+    manifest_path = session_dir / "capture-session-manifest.json"
+    collector_summary_path = session_dir / "collector-summary.json"
+    collector_samples_path = session_dir / "collector-samples.jsonl"
+
+    manifest = load_json(manifest_path)
+    collector_summary = load_json(collector_summary_path)
+    samples, sample_parse_errors = read_jsonl(collector_samples_path)
+    analysis = load_window_process_analysis_for_session(session_dir)
+
+    foreground_hwnds: list[Any] = []
+    foreground_pids: list[Any] = []
+    rift_hwnds: list[Any] = []
+    rift_pids: list[Any] = []
+    rift_titles: list[Any] = []
+    rift_window_rects: list[Any] = []
+    rift_client_rects: list[Any] = []
+    monotonic_values: list[float] = []
+    focus_lost_count = 0
+    rift_process_dead_count = 0
+
+    for sample in samples:
+        data = sample.get("data") or {}
+        foreground = data.get("foreground") or {}
+        rift_window = data.get("rift_window") or {}
+
+        if data.get("focus_verified") is not True:
+            focus_lost_count += 1
+        if rift_window.get("process_alive") is not True:
+            rift_process_dead_count += 1
+
+        foreground_hwnds.append(foreground.get("hwnd_hex") or foreground.get("hwnd"))
+        foreground_pids.append(foreground.get("pid"))
+        rift_hwnds.append(rift_window.get("hwnd_hex") or rift_window.get("hwnd"))
+        rift_pids.append(rift_window.get("pid"))
+        rift_titles.append(rift_window.get("title"))
+        rift_window_rects.append(rect_signature(rift_window.get("window_rect")))
+        rift_client_rects.append(rect_signature(rift_window.get("client_rect")))
+
+        try:
+            monotonic_values.append(float(sample.get("monotonic_elapsed_seconds")))
+        except (TypeError, ValueError):
+            pass
+
+    interval_deltas: list[float] = []
+    if len(monotonic_values) >= 2:
+        interval_deltas = [
+            round(monotonic_values[index] - monotonic_values[index - 1], 3)
+            for index in range(1, len(monotonic_values))
+        ]
+
+    sample_interval_ms = collector_summary.get("sample_interval_ms") or manifest.get("sample_interval_ms") or DEFAULT_WINDOW_PROCESS_SAMPLE_INTERVAL_MS
+    expected_interval = float(sample_interval_ms) / 1000.0
+    max_abs_interval_drift = max((abs(delta - expected_interval) for delta in interval_deltas), default=0.0)
+
+    analysis_summary = analysis.get("summary") or {}
+    artifact_contract = manifest.get("artifact_contract") or collector_summary.get("artifact_contract") or {}
+
+    return {
+        "session_dir": rel(session_dir),
+        "session_name": session_dir.name,
+        "manifest_status": manifest.get("status"),
+        "manifest_app_version": manifest.get("app_version"),
+        "collector_summary_status": collector_summary.get("status"),
+        "sample_count_declared": collector_summary.get("sample_count"),
+        "sample_count_actual": len(samples),
+        "error_count": collector_summary.get("error_count"),
+        "focus_verified_count": collector_summary.get("focus_verified_count"),
+        "focus_lost_count": collector_summary.get("focus_lost_count", focus_lost_count),
+        "rift_process_alive_count": collector_summary.get("rift_process_alive_count"),
+        "rift_process_dead_count": collector_summary.get("rift_process_dead_count", rift_process_dead_count),
+        "focus_after_status": collector_summary.get("focus_after_status"),
+        "artifact_contract_status": artifact_contract.get("status"),
+        "analysis_status": analysis_summary.get("status"),
+        "analysis_anomaly_count": analysis_summary.get("anomaly_count"),
+        "analysis_warning_count": analysis_summary.get("warning_count"),
+        "analysis_error_count": analysis_summary.get("error_count"),
+        "sample_parse_error_count": len(sample_parse_errors),
+        "unique_foreground_hwnds": unique_values([value for value in foreground_hwnds if value is not None]),
+        "unique_foreground_pids": unique_values([value for value in foreground_pids if value is not None]),
+        "unique_rift_hwnds": unique_values([value for value in rift_hwnds if value is not None]),
+        "unique_rift_pids": unique_values([value for value in rift_pids if value is not None]),
+        "unique_rift_titles": unique_values([value for value in rift_titles if value is not None]),
+        "unique_rift_window_rects": unique_values([value for value in rift_window_rects if value is not None]),
+        "unique_rift_client_rects": unique_values([value for value in rift_client_rects if value is not None]),
+        "sample_interval_seconds": {
+            "expected": expected_interval,
+            "min": min(interval_deltas) if interval_deltas else None,
+            "max": max(interval_deltas) if interval_deltas else None,
+            "avg": round(sum(interval_deltas) / len(interval_deltas), 3) if interval_deltas else None,
+            "max_abs_drift": round(max_abs_interval_drift, 3),
+        },
+    }
+
+
+def compare_latest_window_process_sessions() -> dict[str, Path]:
+    session_dirs = list_window_process_session_dirs()
+    if len(session_dirs) < 2:
+        raise RuntimeError("Need at least two window/process metadata collector sessions to compare.")
+
+    latest_rel = LATEST_CAPTURE_SESSION.read_text(encoding="utf-8", errors="replace").strip() if LATEST_CAPTURE_SESSION.exists() else ""
+    latest_dir = REPO_ROOT / latest_rel if latest_rel else session_dirs[-1]
+    if latest_dir not in session_dirs:
+        latest_dir = session_dirs[-1]
+
+    latest_index = session_dirs.index(latest_dir)
+    if latest_index <= 0:
+        raise RuntimeError("Latest session has no previous window/process session to compare against.")
+
+    previous_dir = session_dirs[latest_index - 1]
+
+    latest = summarize_window_process_session_for_comparison(latest_dir)
+    previous = summarize_window_process_session_for_comparison(previous_dir)
+
+    differences: list[dict[str, Any]] = []
+
+    def add_difference(kind: str, severity: str, message: str, previous_value: Any, latest_value: Any) -> None:
+        differences.append({
+            "kind": kind,
+            "severity": severity,
+            "message": message,
+            "previous": previous_value,
+            "latest": latest_value,
+        })
+
+    def compare_field(field: str, severity: str = "warning", message: str | None = None) -> None:
+        previous_value = previous.get(field)
+        latest_value = latest.get(field)
+        if previous_value != latest_value:
+            add_difference(
+                field,
+                severity,
+                message or f"{field} changed between sessions.",
+                previous_value,
+                latest_value,
+            )
+
+    compare_field("sample_count_declared", "warning")
+    compare_field("sample_count_actual", "warning")
+    compare_field("artifact_contract_status", "error", "Artifact contract status changed.")
+    compare_field("analysis_status", "error", "Analysis status changed.")
+    compare_field("analysis_anomaly_count", "warning", "Analysis anomaly count changed.")
+    compare_field("unique_foreground_hwnds", "warning", "Foreground HWND set changed.")
+    compare_field("unique_foreground_pids", "warning", "Foreground PID set changed.")
+    compare_field("unique_rift_hwnds", "warning", "RIFT HWND set changed.")
+    compare_field("unique_rift_pids", "warning", "RIFT PID set changed.")
+    compare_field("unique_rift_titles", "warning", "RIFT window title set changed.")
+    compare_field("unique_rift_window_rects", "warning", "RIFT window rect changed.")
+    compare_field("unique_rift_client_rects", "warning", "RIFT client rect changed.")
+
+    previous_focus_lost = parse_int(previous.get("focus_lost_count"))
+    latest_focus_lost = parse_int(latest.get("focus_lost_count"))
+    if latest_focus_lost > previous_focus_lost:
+        add_difference("focus_lost_regression", "error", "Focus lost count increased.", previous_focus_lost, latest_focus_lost)
+    elif latest_focus_lost != previous_focus_lost:
+        add_difference("focus_lost_changed", "warning", "Focus lost count changed.", previous_focus_lost, latest_focus_lost)
+
+    previous_dead = parse_int(previous.get("rift_process_dead_count"))
+    latest_dead = parse_int(latest.get("rift_process_dead_count"))
+    if latest_dead > previous_dead:
+        add_difference("rift_process_dead_regression", "error", "RIFT process dead sample count increased.", previous_dead, latest_dead)
+    elif latest_dead != previous_dead:
+        add_difference("rift_process_dead_changed", "warning", "RIFT process dead sample count changed.", previous_dead, latest_dead)
+
+    previous_errors = parse_int(previous.get("error_count"))
+    latest_errors = parse_int(latest.get("error_count"))
+    if latest_errors > previous_errors:
+        add_difference("collector_error_regression", "error", "Collector error count increased.", previous_errors, latest_errors)
+    elif latest_errors != previous_errors:
+        add_difference("collector_error_changed", "warning", "Collector error count changed.", previous_errors, latest_errors)
+
+    previous_drift = float((previous.get("sample_interval_seconds") or {}).get("max_abs_drift") or 0.0)
+    latest_drift = float((latest.get("sample_interval_seconds") or {}).get("max_abs_drift") or 0.0)
+    if latest_drift - previous_drift > 0.05:
+        add_difference("interval_drift_regression", "warning", "Sample interval max drift worsened by more than 50 ms.", previous_drift, latest_drift)
+
+    if latest.get("artifact_contract_status") != "PASS":
+        add_difference("latest_artifact_contract_not_pass", "error", "Latest artifact contract is not PASS.", "PASS", latest.get("artifact_contract_status"))
+
+    if latest.get("analysis_status") == "FAIL":
+        add_difference("latest_analysis_failed", "error", "Latest analysis status is FAIL.", previous.get("analysis_status"), latest.get("analysis_status"))
+
+    comparison_dir = latest_dir / "comparison"
+    comparison_dir.mkdir(parents=True, exist_ok=True)
+
+    comparison_path = comparison_dir / "window-process-comparison.json"
+    differences_path = comparison_dir / "window-process-comparison-differences.jsonl"
+    handoff_path = comparison_dir / "WINDOW_PROCESS_COMPARISON.md"
+
+    summary = {
+        "status": "PASS" if not any(item.get("severity") == "error" for item in differences) else "FAIL",
+        "difference_count": len(differences),
+        "warning_count": sum(1 for item in differences if item.get("severity") == "warning"),
+        "error_count": sum(1 for item in differences if item.get("severity") == "error"),
+        "previous_session": previous.get("session_dir"),
+        "latest_session": latest.get("session_dir"),
+        "previous_analysis_status": previous.get("analysis_status"),
+        "latest_analysis_status": latest.get("analysis_status"),
+        "previous_sample_count": previous.get("sample_count_actual"),
+        "latest_sample_count": latest.get("sample_count_actual"),
+        "previous_focus_lost_count": previous.get("focus_lost_count"),
+        "latest_focus_lost_count": latest.get("focus_lost_count"),
+        "previous_artifact_contract_status": previous.get("artifact_contract_status"),
+        "latest_artifact_contract_status": latest.get("artifact_contract_status"),
+    }
+
+    comparison = {
+        "schema_version": COMPARISON_SCHEMA_VERSION,
+        "created_utc": utc_now(),
+        "app_version": APP_VERSION,
+        "summary": summary,
+        "previous": previous,
+        "latest": latest,
+        "differences": differences,
+        "outputs": {
+            "comparison_json": rel(comparison_path),
+            "differences_jsonl": rel(differences_path),
+            "handoff": rel(handoff_path),
+        },
+        "notes": [
+            "This comparison is offline-only.",
+            "It does not run capture, read process memory, send input, change focus, or run /reloadui.",
+        ],
+    }
+
+    write_json(comparison_path, comparison)
+
+    with differences_path.open("w", encoding="utf-8") as handle:
+        for difference in differences:
+            handle.write(json.dumps(difference, ensure_ascii=False, sort_keys=True) + "\n")
+
+    handoff_lines = [
+        "# Window/Process Metadata Session Comparison",
+        "",
+        f"Created UTC: `{comparison['created_utc']}`",
+        f"App version: `{APP_VERSION}`",
+        f"Status: `{summary['status']}`",
+        f"Previous session: `{summary['previous_session']}`",
+        f"Latest session: `{summary['latest_session']}`",
+        f"Differences: `{summary['difference_count']}`",
+        f"Errors: `{summary['error_count']}`",
+        f"Warnings: `{summary['warning_count']}`",
+        "",
+        "## Key Deltas",
+        "",
+        f"- Sample count: `{summary['previous_sample_count']}` -> `{summary['latest_sample_count']}`",
+        f"- Focus lost count: `{summary['previous_focus_lost_count']}` -> `{summary['latest_focus_lost_count']}`",
+        f"- Artifact contract: `{summary['previous_artifact_contract_status']}` -> `{summary['latest_artifact_contract_status']}`",
+        f"- Analysis status: `{summary['previous_analysis_status']}` -> `{summary['latest_analysis_status']}`",
+        "",
+        "## Files",
+        "",
+        "```text",
+        rel(comparison_path),
+        rel(differences_path),
+        rel(handoff_path),
+        "```",
+        "",
+        "## Notes",
+        "",
+        "This comparison is offline-only. It does not run capture, read process memory, send input, change focus, or run /reloadui.",
+    ]
+
+    if differences:
+        handoff_lines.extend(["", "## Differences", ""])
+        for difference in differences[:30]:
+            handoff_lines.append(
+                f"- `{difference.get('severity')}` `{difference.get('kind')}` — "
+                f"{difference.get('message')} Previous=`{difference.get('previous')}` Latest=`{difference.get('latest')}`"
+            )
+
+    handoff_path.write_text("\n".join(handoff_lines) + "\n", encoding="utf-8")
+
+    return {
+        "latest_session_dir": latest_dir,
+        "previous_session_dir": previous_dir,
+        "comparison_path": comparison_path,
+        "differences_path": differences_path,
+        "handoff_path": handoff_path,
+    }
+
+
 def write_operator_report() -> Path:
     OPERATOR_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -1421,6 +1775,7 @@ def write_operator_report() -> Path:
     capture_plan = latest_capture_plan_summary()
     capture_session = latest_capture_session_summary()
     window_process_analysis = latest_window_process_analysis_summary()
+    window_process_comparison = latest_window_process_comparison_summary()
 
     focus_ok = summary.get("status") == "foreground_verified"
     full_ok, validation_issues = validate_full_live_preflight(summary, windows)
@@ -1497,6 +1852,12 @@ Exit code: `{log_code}`
 
 ```json
 {json_block(window_process_analysis)}
+```
+
+## Latest Window/Process Comparison
+
+```json
+{json_block(window_process_comparison)}
 ```
 
 ## Focus Log Tail
@@ -2051,6 +2412,7 @@ class RiftScanOperatorApp(tk.Tk):
                 ("Refresh Status", self.refresh_status),
                 ("Run Window/Process Metadata Collector", self.run_window_process_metadata_collector),
                 ("Analyze Latest Session", self.analyze_latest_session_clicked),
+                ("Compare Sessions", self.compare_sessions_clicked),
                 ("Open Report", self.open_report_clicked),
             ],
             columns=3,
@@ -2573,6 +2935,35 @@ class RiftScanOperatorApp(tk.Tk):
             return "\n".join(lines)
 
         self.run_async("analyze latest session", task)
+
+
+    def compare_sessions_clicked(self) -> None:
+        def task() -> str:
+            artifacts = compare_latest_window_process_sessions()
+            comparison = load_json(artifacts["comparison_path"])
+            summary = comparison.get("summary") or {}
+            report_path = write_operator_report()
+
+            lines = [
+                "\n=== COMPARE SESSIONS ===",
+                f"COMPARE SESSIONS: {summary.get('status', 'UNKNOWN')}",
+                f"Previous: {rel(artifacts['previous_session_dir'])}",
+                f"Latest: {rel(artifacts['latest_session_dir'])}",
+                f"Comparison: {rel(artifacts['comparison_path'])}",
+                f"Differences: {rel(artifacts['differences_path'])}",
+                f"Handoff: {rel(artifacts['handoff_path'])}",
+                f"Difference count: {summary.get('difference_count', 'n/a')}",
+                f"Errors: {summary.get('error_count', 'n/a')}",
+                f"Warnings: {summary.get('warning_count', 'n/a')}",
+                f"Artifact contract: {summary.get('previous_artifact_contract_status', 'n/a')} -> {summary.get('latest_artifact_contract_status', 'n/a')}",
+                f"Analysis status: {summary.get('previous_analysis_status', 'n/a')} -> {summary.get('latest_analysis_status', 'n/a')}",
+                f"Operator report: {rel(report_path)}",
+                "",
+                "Offline comparison only. No capture, memory read, input, focus change, or /reloadui was run.",
+            ]
+            return "\n".join(lines)
+
+        self.run_async("compare sessions", task)
 
     def write_report_clicked(self) -> None:
         path = write_operator_report()

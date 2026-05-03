@@ -1,0 +1,164 @@
+{
+  "schema_version": "riftscan.window_process_comparison.v1",
+  "created_utc": "2026-05-03T15:11:10Z",
+  "app_version": "riftscan-operator-app-v3.8",
+  "summary": {
+    "status": "FAIL",
+    "difference_count": 2,
+    "warning_count": 1,
+    "error_count": 1,
+    "previous_session": "sessions/focus-gated-captures/20260503T085611Z_window_process_metadata_collector",
+    "latest_session": "sessions/focus-gated-captures/20260503T091644Z_window_process_metadata_collector",
+    "previous_analysis_status": null,
+    "latest_analysis_status": "PASS",
+    "previous_sample_count": 60,
+    "latest_sample_count": 60,
+    "previous_focus_lost_count": 0,
+    "latest_focus_lost_count": 0,
+    "previous_artifact_contract_status": "PASS",
+    "latest_artifact_contract_status": "PASS"
+  },
+  "previous": {
+    "session_dir": "sessions/focus-gated-captures/20260503T085611Z_window_process_metadata_collector",
+    "session_name": "20260503T085611Z_window_process_metadata_collector",
+    "manifest_status": "window_process_metadata_collector_completed",
+    "manifest_app_version": "riftscan-operator-app-v3.5.1",
+    "collector_summary_status": "window_process_metadata_collector_completed",
+    "sample_count_declared": 60,
+    "sample_count_actual": 60,
+    "error_count": 0,
+    "focus_verified_count": 60,
+    "focus_lost_count": 0,
+    "rift_process_alive_count": 60,
+    "rift_process_dead_count": 0,
+    "focus_after_status": "foreground_verified",
+    "artifact_contract_status": "PASS",
+    "analysis_status": null,
+    "analysis_anomaly_count": null,
+    "analysis_warning_count": null,
+    "analysis_error_count": null,
+    "sample_parse_error_count": 0,
+    "unique_foreground_hwnds": [
+      "0x4E0F42"
+    ],
+    "unique_foreground_pids": [
+      29420
+    ],
+    "unique_rift_hwnds": [
+      "0x4E0F42"
+    ],
+    "unique_rift_pids": [
+      29420
+    ],
+    "unique_rift_titles": [
+      "RIFT"
+    ],
+    "unique_rift_window_rects": [
+      [
+        2,
+        10,
+        657,
+        408
+      ]
+    ],
+    "unique_rift_client_rects": [
+      [
+        0,
+        0,
+        639,
+        359
+      ]
+    ],
+    "sample_interval_seconds": {
+      "expected": 0.5,
+      "min": 0.498,
+      "max": 0.501,
+      "avg": 0.5,
+      "max_abs_drift": 0.002
+    }
+  },
+  "latest": {
+    "session_dir": "sessions/focus-gated-captures/20260503T091644Z_window_process_metadata_collector",
+    "session_name": "20260503T091644Z_window_process_metadata_collector",
+    "manifest_status": "window_process_metadata_collector_completed",
+    "manifest_app_version": "riftscan-operator-app-v3.6.2",
+    "collector_summary_status": "window_process_metadata_collector_completed",
+    "sample_count_declared": 60,
+    "sample_count_actual": 60,
+    "error_count": 0,
+    "focus_verified_count": 60,
+    "focus_lost_count": 0,
+    "rift_process_alive_count": 60,
+    "rift_process_dead_count": 0,
+    "focus_after_status": "foreground_verified",
+    "artifact_contract_status": "PASS",
+    "analysis_status": "PASS",
+    "analysis_anomaly_count": 0,
+    "analysis_warning_count": 0,
+    "analysis_error_count": 0,
+    "sample_parse_error_count": 0,
+    "unique_foreground_hwnds": [
+      "0x4E0F42"
+    ],
+    "unique_foreground_pids": [
+      29420
+    ],
+    "unique_rift_hwnds": [
+      "0x4E0F42"
+    ],
+    "unique_rift_pids": [
+      29420
+    ],
+    "unique_rift_titles": [
+      "RIFT"
+    ],
+    "unique_rift_window_rects": [
+      [
+        2,
+        10,
+        657,
+        408
+      ]
+    ],
+    "unique_rift_client_rects": [
+      [
+        0,
+        0,
+        639,
+        359
+      ]
+    ],
+    "sample_interval_seconds": {
+      "expected": 0.5,
+      "min": 0.497,
+      "max": 0.501,
+      "avg": 0.5,
+      "max_abs_drift": 0.003
+    }
+  },
+  "differences": [
+    {
+      "kind": "analysis_status",
+      "severity": "error",
+      "message": "Analysis status changed.",
+      "previous": null,
+      "latest": "PASS"
+    },
+    {
+      "kind": "analysis_anomaly_count",
+      "severity": "warning",
+      "message": "Analysis anomaly count changed.",
+      "previous": null,
+      "latest": 0
+    }
+  ],
+  "outputs": {
+    "comparison_json": "sessions/focus-gated-captures/20260503T091644Z_window_process_metadata_collector/comparison/window-process-comparison.json",
+    "differences_jsonl": "sessions/focus-gated-captures/20260503T091644Z_window_process_metadata_collector/comparison/window-process-comparison-differences.jsonl",
+    "handoff": "sessions/focus-gated-captures/20260503T091644Z_window_process_metadata_collector/comparison/WINDOW_PROCESS_COMPARISON.md"
+  },
+  "notes": [
+    "This comparison is offline-only.",
+    "It does not run capture, read process memory, send input, change focus, or run /reloadui."
+  ]
+}

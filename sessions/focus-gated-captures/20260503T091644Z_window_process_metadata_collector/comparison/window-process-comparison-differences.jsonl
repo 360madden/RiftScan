@@ -1,0 +1,2 @@
+{"kind": "analysis_status", "latest": "PASS", "message": "Analysis status changed.", "previous": null, "severity": "error"}
+{"kind": "analysis_anomaly_count", "latest": 0, "message": "Analysis anomaly count changed.", "previous": null, "severity": "warning"}

@@ -1,7 +1,7 @@
 # RiftScan Operator Handoff
 
-Created UTC: `2026-05-03T10:04:30Z`
-App version: `riftscan-operator-app-v3.7`
+Created UTC: `2026-05-03T15:11:31Z`
+App version: `riftscan-operator-app-v3.8`
 Repo root: `C:\RIFT MODDING\Riftscan`
 
 ## Operator Assessment
@@ -27,11 +27,11 @@ Exit code: `0`
 Exit code: `0`
 
 ```text
+71713d9 Update RiftScan operator handoff
 3f50c61 Update RiftScan operator handoff
 def3614 Update RiftScan operator handoff
 a765f2a Update RiftScan operator handoff
 6b07aee Update RiftScan operator handoff
-abceebc Update RiftScan operator handoff
 
 ```
 
@@ -251,7 +251,9 @@ abceebc Update RiftScan operator handoff
     "artifact_contract_status": "PASS",
     "missing_artifacts": [],
     "analysis_status": "PASS",
-    "analysis_anomaly_count": 0
+    "analysis_anomaly_count": 0,
+    "comparison_status": "FAIL",
+    "comparison_difference_count": 2
   }
 }
 ```
@@ -315,6 +317,33 @@ abceebc Update RiftScan operator handoff
       "max_abs_drift": 0.003
     },
     "artifact_contract_status": "PASS"
+  }
+}
+```
+
+## Latest Window/Process Comparison
+
+```json
+{
+  "status": "present",
+  "latest_session": "sessions/focus-gated-captures/20260503T091644Z_window_process_metadata_collector",
+  "comparison_path": "sessions/focus-gated-captures/20260503T091644Z_window_process_metadata_collector/comparison/window-process-comparison.json",
+  "handoff_path": "sessions/focus-gated-captures/20260503T091644Z_window_process_metadata_collector/comparison/WINDOW_PROCESS_COMPARISON.md",
+  "summary": {
+    "status": "FAIL",
+    "difference_count": 2,
+    "warning_count": 1,
+    "error_count": 1,
+    "previous_session": "sessions/focus-gated-captures/20260503T085611Z_window_process_metadata_collector",
+    "latest_session": "sessions/focus-gated-captures/20260503T091644Z_window_process_metadata_collector",
+    "previous_analysis_status": null,
+    "latest_analysis_status": "PASS",
+    "previous_sample_count": 60,
+    "latest_sample_count": 60,
+    "previous_focus_lost_count": 0,
+    "latest_focus_lost_count": 0,
+    "previous_artifact_contract_status": "PASS",
+    "latest_artifact_contract_status": "PASS"
   }
 }
 ```
