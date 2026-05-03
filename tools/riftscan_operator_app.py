@@ -1,6 +1,6 @@
-# Version: riftscan-operator-app-v1
-# Purpose: Windows Tkinter helper app for RiftScan operator workflow: run focus preflight, validate handoffs, write AI-ready reports, clean known junk, and safely commit/push allowlisted files.
-# Total character count: 12735
+# Version: riftscan-operator-app-v2
+# Purpose: Windows Tkinter helper app for RiftScan operator workflow: run focus preflight, run full live preflight gate, validate handoffs, write AI-ready reports, clean known junk, and safely commit/push allowlisted files.
+# Total character count: 17128
 
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ from tkinter import messagebox, scrolledtext
 from typing import Any
 
 
-APP_VERSION = "riftscan-operator-app-v1"
+APP_VERSION = "riftscan-operator-app-v2"
 REPO_ROOT = Path(__file__).resolve().parents[1]
 FOCUS_SCRIPT = REPO_ROOT / "scripts" / "run-rift-focus-control.cmd"
 HANDOFF_DIR = REPO_ROOT / "handoffs" / "current" / "focus-control-local"
@@ -116,6 +116,30 @@ def focus_line(summary: dict[str, Any]) -> str:
     return f"status={status} pid={pid} hwnd={hwnd} title={title}"
 
 
+def validate_full_live_preflight(summary: dict[str, Any], windows: dict[str, Any]) -> tuple[bool, list[str]]:
+    issues: list[str] = []
+
+    if summary.get("_missing"):
+        issues.append(f"{summary['_missing']} is missing.")
+    if summary.get("_error"):
+        issues.append(f"{summary.get('_path', rel(FOCUS_SUMMARY))} failed to parse: {summary['_error']}")
+    if windows.get("_missing"):
+        issues.append(f"{windows['_missing']} is missing.")
+    if windows.get("_error"):
+        issues.append(f"{windows.get('_path', rel(WINDOWS_JSON))} failed to parse: {windows['_error']}")
+
+    if summary.get("status") != "foreground_verified":
+        issues.append("Focus status is not foreground_verified.")
+    if not summary.get("selected_window"):
+        issues.append("selected_window is missing or null.")
+
+    window_entries = windows.get("windows")
+    if not isinstance(window_entries, list) or not window_entries:
+        issues.append("windows.json has no window entries.")
+
+    return not issues, issues
+
+
 def write_operator_report() -> Path:
     OPERATOR_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -127,16 +151,13 @@ def write_operator_report() -> Path:
     log_tail = tail_text(FOCUS_LOG, 60)
 
     focus_ok = summary.get("status") == "foreground_verified"
-    issues: list[str] = []
+    full_ok, validation_issues = validate_full_live_preflight(summary, windows)
+    issues: list[str] = [f"- {issue}" for issue in validation_issues]
 
-    if not focus_ok:
-        issues.append("- Focus preflight is not verified.")
-    if not summary.get("selected_window"):
-        issues.append("- selected_window is missing or null.")
-    if not windows.get("windows"):
-        issues.append("- windows.json has no window entries.")
     if status_code != 0:
         issues.append("- git status command failed.")
+    if log_code != 0:
+        issues.append("- git log command failed.")
     if not issues:
         issues.append("- No blocking operator issues detected.")
 
@@ -148,6 +169,7 @@ Repo root: `{REPO_ROOT}`
 
 ## Operator Assessment
 
+Full live preflight gate: `{"PASS" if full_ok and status_code == 0 and log_code == 0 else "FAIL"}`
 Focus preflight: `{"PASS" if focus_ok else "FAIL"}`
 Summary: `{focus_line(summary)}`
 
@@ -195,6 +217,8 @@ Review this RiftScan operator handoff. Tell me the next safest practical step, a
 
 ## Guardrails
 
+- The full live preflight is conservative: focus + validation + report only.
+- The full live preflight does not run movement, input, capture, memory scans, or `/reloadui`.
 - The helper stages only explicit allowlisted paths.
 - The helper never runs `git add .`.
 - Known junk cleanup uses literal paths/globs from the helper configuration.
@@ -248,6 +272,7 @@ class RiftScanOperatorApp(tk.Tk):
 
         buttons = [
             ("Refresh Status", self.refresh_status),
+            ("Run Full Live Preflight", self.run_full_live_preflight),
             ("Run Focus Preflight", self.run_focus_preflight),
             ("Write AI Report", self.write_report_clicked),
             ("Clean Known Junk", self.clean_junk_clicked),
@@ -328,6 +353,80 @@ class RiftScanOperatorApp(tk.Tk):
             return "\n".join(line for line in lines if line)
 
         self.run_async("focus preflight", task)
+
+    def run_full_live_preflight(self) -> None:
+        def task() -> str:
+            focus_code = 1
+            focus_out = ""
+            focus_err = ""
+
+            if FOCUS_SCRIPT.exists():
+                focus_code, focus_out, focus_err = run_command(["cmd", "/c", str(FOCUS_SCRIPT)], timeout=90)
+
+            summary = load_json(FOCUS_SUMMARY)
+            windows = load_json(WINDOWS_JSON)
+            valid, issues = validate_full_live_preflight(summary, windows)
+
+            if not FOCUS_SCRIPT.exists():
+                issues.append(f"Missing {rel(FOCUS_SCRIPT)}.")
+            elif focus_code != 0:
+                issues.append(f"Focus-control script exited with code {focus_code}.")
+
+            git_status_code, git_status, git_status_err = run_command(["git", "status", "--short"], timeout=30)
+            git_log_code, git_log, git_log_err = run_command(["git", "log", "--oneline", "-5"], timeout=30)
+
+            if git_status_code != 0:
+                issues.append("git status --short failed.")
+            if git_log_code != 0:
+                issues.append("git log --oneline -5 failed.")
+
+            report_path = write_operator_report()
+            self.after(0, lambda: self.focus_var.set(f"Focus: {focus_line(summary)}"))
+
+            process = summary.get("process") or {}
+            selected = summary.get("selected_window") or {}
+            pid = process.get("Id", "n/a")
+            hwnd = selected.get("hwnd_hex", "n/a")
+            title = selected.get("title", "n/a")
+
+            pass_gate = valid and focus_code == 0 and git_status_code == 0 and git_log_code == 0 and not issues
+
+            lines = ["\n=== FULL LIVE PREFLIGHT ==="]
+            if pass_gate:
+                lines.extend(
+                    [
+                        "FULL LIVE PREFLIGHT: PASS",
+                        f"Focus: {summary.get('status', 'unknown')}",
+                        f"PID: {pid}",
+                        f"HWND: {hwnd}",
+                        f"Title: {title}",
+                        f"Operator report: {rel(report_path)}",
+                    ]
+                )
+            else:
+                lines.append("FULL LIVE PREFLIGHT: FAIL")
+                lines.extend(f"- {issue}" for issue in issues)
+                lines.append(f"Operator report: {rel(report_path)}")
+
+            lines.extend(
+                [
+                    "",
+                    "Focus-control stdout:",
+                    focus_out.strip() or "[empty]",
+                    "",
+                    "Focus-control stderr:",
+                    focus_err.strip() or "[empty]",
+                    "",
+                    "git status --short:",
+                    git_status.strip() if git_status_code == 0 and git_status.strip() else ("[clean]" if git_status_code == 0 else git_status_err.strip()),
+                    "",
+                    "git log --oneline -5:",
+                    git_log.strip() if git_log_code == 0 else git_log_err.strip(),
+                ]
+            )
+            return "\n".join(lines)
+
+        self.run_async("full live preflight", task)
 
     def write_report_clicked(self) -> None:
         path = write_operator_report()
