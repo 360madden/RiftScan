@@ -1,6 +1,6 @@
-# Version: riftscan-operator-app-v3.1
-# Purpose: Windows Tkinter helper app for RiftScan operator workflow: run focus preflight, run full live preflight gate, create focus-gated session dry-run manifests, validate handoffs, write AI-ready reports, clean known junk, and safely commit/push allowlisted files, including force-adding the ignored dry-run session path.
-# Total character count: 24636
+# Version: riftscan-operator-app-v3.2
+# Purpose: Windows Tkinter helper app for RiftScan operator workflow: run focus preflight, run full live preflight gate, create focus-gated session dry-run manifests, create metadata-only focus-gated capture plans, validate handoffs, write AI-ready reports, clean known junk, and safely commit/push allowlisted files, including ignored artifact paths when needed.
+# Total character count: 34113
 
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ from tkinter import messagebox, scrolledtext
 from typing import Any
 
 
-APP_VERSION = "riftscan-operator-app-v3.1"
+APP_VERSION = "riftscan-operator-app-v3.2"
 REPO_ROOT = Path(__file__).resolve().parents[1]
 FOCUS_SCRIPT = REPO_ROOT / "scripts" / "run-rift-focus-control.cmd"
 HANDOFF_DIR = REPO_ROOT / "handoffs" / "current" / "focus-control-local"
@@ -27,6 +27,8 @@ WINDOWS_JSON = HANDOFF_DIR / "windows.json"
 FOCUS_LOG = HANDOFF_DIR / "focus-control-log.jsonl"
 DRY_RUN_ROOT = REPO_ROOT / "sessions" / "focus-gated-dry-runs"
 LATEST_DRY_RUN = DRY_RUN_ROOT / "LATEST_DRY_RUN.txt"
+CAPTURE_PLAN_ROOT = REPO_ROOT / "plans" / "focus-gated-capture-plans"
+LATEST_CAPTURE_PLAN = CAPTURE_PLAN_ROOT / "LATEST_CAPTURE_PLAN.txt"
 
 ALLOWLIST = [
     "handoffs/current/focus-control-local",
@@ -35,6 +37,7 @@ ALLOWLIST = [
     "scripts/riftscan-operator-app.cmd",
     "tools/rift_focus_control.py",
     "tools/riftscan_operator_app.py",
+    "plans/focus-gated-capture-plans",
 ]
 
 FORCE_ADD_ALLOWLIST = [
@@ -49,6 +52,11 @@ JUNK_LITERAL = [
     "README.txt",
     "README_INSTALL.md",
     "install-riftscan-operator-app.cmd",
+    "README_INSTALL_v3.md",
+    "README_INSTALL_v31.md",
+    "install-riftscan-operator-app-v3.cmd",
+    "install-riftscan-operator-app-v31.cmd",
+    "RiftScan_Operator_App_v31_Dry_Run_Commit_Hotfix.zip",
     "payload",
     "rift_focus_local_simple_v2.zip",
 ]
@@ -94,6 +102,11 @@ def run_command(args: list[str], timeout: int = 90) -> tuple[int, str, str]:
         return 124, out, f"{err}\nTIMEOUT after {timeout} seconds"
     except Exception as exc:
         return 1, "", f"{type(exc).__name__}: {exc}"
+
+
+def is_git_ignored(repo_relative_path: str) -> bool:
+    code, _, _ = run_command(["git", "check-ignore", "-q", "--", repo_relative_path], timeout=30)
+    return code == 0
 
 
 def read_text(path: Path) -> str:
@@ -145,6 +158,11 @@ def validate_full_live_preflight(summary: dict[str, Any], windows: dict[str, Any
         issues.append("Focus status is not foreground_verified.")
     if not summary.get("selected_window"):
         issues.append("selected_window is missing or null.")
+
+    process = summary.get("process") or {}
+    process_name = process.get("ProcessName") or process.get("Name")
+    if process_name not in {"rift_x64", "rift_x64.exe"}:
+        issues.append("RIFT process name is not rift_x64.")
 
     window_entries = windows.get("windows")
     if not isinstance(window_entries, list) or not window_entries:
@@ -215,6 +233,25 @@ def latest_dry_run_summary() -> dict[str, Any]:
     }
 
 
+def latest_capture_plan_summary() -> dict[str, Any]:
+    if not LATEST_CAPTURE_PLAN.exists():
+        return {"status": "none"}
+    plan_rel = LATEST_CAPTURE_PLAN.read_text(encoding="utf-8", errors="replace").strip()
+    if not plan_rel:
+        return {"status": "none", "reason": "latest pointer is empty"}
+    plan_dir = REPO_ROOT / plan_rel
+    manifest_path = plan_dir / "capture-plan.json"
+    handoff_path = plan_dir / "CAPTURE_PLAN_HANDOFF.md"
+    manifest = load_json(manifest_path)
+    return {
+        "status": "present",
+        "latest_plan": plan_rel,
+        "manifest_path": rel(manifest_path),
+        "handoff_path": rel(handoff_path),
+        "manifest": manifest,
+    }
+
+
 def write_operator_report() -> Path:
     OPERATOR_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -225,6 +262,7 @@ def write_operator_report() -> Path:
     windows = load_json(WINDOWS_JSON)
     log_tail = tail_text(FOCUS_LOG, 60)
     dry_run = latest_dry_run_summary()
+    capture_plan = latest_capture_plan_summary()
 
     focus_ok = summary.get("status") == "foreground_verified"
     full_ok, validation_issues = validate_full_live_preflight(summary, windows)
@@ -285,6 +323,12 @@ Exit code: `{log_code}`
 {json_block(dry_run)}
 ```
 
+## Latest Focus-Gated Capture Plan
+
+```json
+{json_block(capture_plan)}
+```
+
 ## Focus Log Tail
 
 ```jsonl
@@ -301,7 +345,14 @@ Review this RiftScan operator handoff. Tell me the next safest practical step, a
 
 - The full live preflight is conservative: focus + validation + report only.
 - The focus-gated session dry run creates session metadata only.
-- The helper stages only explicit allowlisted paths; ignored dry-run session paths are force-added explicitly.
+- The focus-gated capture plan is metadata only.
+- No capture started.
+- No live test sequence started.
+- No local data collection sequence started.
+- No movement/input sent.
+- No memory scan/read started.
+- No `/reloadui` sent.
+- The helper stages only explicit allowlisted paths; ignored allowlisted artifact paths are force-added explicitly when needed.
 - The helper never runs `git add .`.
 - Known junk cleanup uses literal paths/globs from the helper configuration.
 """
@@ -399,6 +450,162 @@ Use this metadata-only session structure as the staging contract before wiring t
     return session_dir, manifest_path, handoff_path
 
 
+def create_focus_gated_capture_plan(gate: dict[str, Any]) -> tuple[Path, Path, Path]:
+    if not gate.get("pass_gate"):
+        raise RuntimeError("Cannot create capture plan because full live preflight did not pass.")
+
+    summary = gate.get("summary") or {}
+    windows = gate.get("windows") or {}
+    process = summary.get("process") or {}
+    selected = summary.get("selected_window") or {}
+
+    plan_id = f"{safe_timestamp()}_focus_gated_capture_plan"
+    plan_dir = CAPTURE_PLAN_ROOT / plan_id
+    plan_dir.mkdir(parents=True, exist_ok=False)
+
+    expected_files = [
+        "capture-session-manifest.json",
+        "capture-log.jsonl",
+        "focus-summary-before.json",
+        "focus-summary-after.json",
+        "operator-report.md",
+    ]
+
+    preflight_requirements = [
+        "Full live preflight gate PASS",
+        "Focus status == foreground_verified",
+        "selected_window exists",
+        "windows.json has at least one window",
+        "RIFT process name == rift_x64",
+        "Operator app is the controlling workflow",
+        "No uncommitted tool-code changes unless intentionally testing new tool code",
+    ]
+
+    abort_conditions = [
+        "Focus preflight fails",
+        "RIFT process missing",
+        "RIFT HWND missing",
+        "Foreground HWND does not belong to RIFT",
+        "Git state cannot be read",
+        "Operator cancels",
+        "Any planned capture file path already exists unexpectedly",
+        "Any live-capture command would be required at this stage",
+    ]
+
+    manifest = {
+        "schema_version": "riftscan.focus_gated_capture_plan.v1",
+        "created_utc": utc_now(),
+        "app_version": APP_VERSION,
+        "plan_id": plan_id,
+        "status": "capture_plan_created",
+        "metadata_only": True,
+        "capture_started": False,
+        "capture_completed": False,
+        "capture_type": "focus_gated_manual_observation",
+        "duration_target_seconds": 30,
+        "stimulus_name": "none_metadata_only",
+        "expected_files": expected_files,
+        "preflight_requirements": preflight_requirements,
+        "abort_conditions": abort_conditions,
+        "operator_notes": (
+            "Metadata-only plan generated by RiftScan Operator. This does not start capture. "
+            "Use as staging contract before implementing real focus-gated capture."
+        ),
+        "full_live_preflight": {
+            "status": "PASS",
+            "focus_status": summary.get("status"),
+            "process_id": process.get("Id"),
+            "process_name": process.get("ProcessName") or process.get("Name"),
+            "window_hwnd": selected.get("hwnd"),
+            "window_hwnd_hex": selected.get("hwnd_hex"),
+            "window_title": selected.get("title"),
+            "windows_count": len(windows.get("windows") or []),
+        },
+        "source_artifacts": {
+            "focus_summary": rel(FOCUS_SUMMARY),
+            "windows_json": rel(WINDOWS_JSON),
+            "focus_log": rel(FOCUS_LOG),
+            "operator_report": rel(REPORT_PATH),
+            "latest_dry_run_pointer": rel(LATEST_DRY_RUN),
+        },
+        "guardrails": [
+            "Metadata only.",
+            "No capture started.",
+            "No live test sequence started.",
+            "No local data collection sequence started.",
+            "No movement/input sent.",
+            "No memory scan/read started.",
+            "No /reloadui sent.",
+        ],
+        "next_expected_step": (
+            "Use this capture plan as the staging contract before implementing real focus-gated capture."
+        ),
+    }
+
+    manifest_path = plan_dir / "capture-plan.json"
+    manifest_path.write_text(json_block(manifest) + "\n", encoding="utf-8")
+
+    handoff = f"""# Focus-Gated Capture Plan
+
+Plan ID: `{plan_id}`
+Created UTC: `{manifest["created_utc"]}`
+Status: `{manifest["status"]}`
+Metadata only: `{manifest["metadata_only"]}`
+
+## Result
+
+The operator app created this metadata-only capture plan after the full live preflight gate passed.
+
+```text
+FULL LIVE PREFLIGHT: PASS
+Focus: {summary.get("status")}
+PID: {process.get("Id")}
+HWND: {selected.get("hwnd_hex")}
+Title: {selected.get("title")}
+```
+
+## Planned Capture Contract
+
+```json
+{json_block({
+    "capture_type": manifest["capture_type"],
+    "duration_target_seconds": manifest["duration_target_seconds"],
+    "stimulus_name": manifest["stimulus_name"],
+    "expected_files": expected_files,
+    "preflight_requirements": preflight_requirements,
+    "abort_conditions": abort_conditions,
+})}
+```
+
+## Guardrails
+
+- Metadata only.
+- No capture started.
+- No live test sequence started.
+- No local data collection sequence started.
+- No movement/input sent.
+- No memory scan/read started.
+- No /reloadui sent.
+
+## Manifest
+
+```text
+{rel(manifest_path)}
+```
+
+## Next Expected Step
+
+Use this capture plan as the staging contract before implementing real focus-gated capture.
+"""
+    handoff_path = plan_dir / "CAPTURE_PLAN_HANDOFF.md"
+    handoff_path.write_text(handoff, encoding="utf-8")
+
+    LATEST_CAPTURE_PLAN.parent.mkdir(parents=True, exist_ok=True)
+    LATEST_CAPTURE_PLAN.write_text(rel(plan_dir) + "\n", encoding="utf-8")
+
+    return plan_dir, manifest_path, handoff_path
+
+
 def clean_known_junk() -> list[str]:
     removed: list[str] = []
 
@@ -446,6 +653,7 @@ class RiftScanOperatorApp(tk.Tk):
             ("Refresh Status", self.refresh_status),
             ("Run Full Live Preflight", self.run_full_live_preflight),
             ("Run Focus-Gated Session Dry Run", self.run_focus_gated_session_dry_run),
+            ("Create Focus-Gated Capture Plan", self.create_focus_gated_capture_plan_clicked),
             ("Run Focus Preflight", self.run_focus_preflight),
             ("Write AI Report", self.write_report_clicked),
             ("Clean Known Junk", self.clean_junk_clicked),
@@ -622,6 +830,50 @@ class RiftScanOperatorApp(tk.Tk):
 
         self.run_async("focus-gated session dry run", task)
 
+
+    def create_focus_gated_capture_plan_clicked(self) -> None:
+        def task() -> str:
+            gate = run_full_live_preflight_gate()
+            summary = gate["summary"]
+            self.after(0, lambda: self.focus_var.set(f"Focus: {focus_line(summary)}"))
+
+            report_path = write_operator_report()
+
+            if not gate["pass_gate"]:
+                lines = [
+                    "\n=== FOCUS-GATED CAPTURE PLAN ===",
+                    "FOCUS-GATED CAPTURE PLAN: FAIL",
+                    "Capture plan was not created because the full live preflight gate failed.",
+                ]
+                lines.extend(f"- {issue}" for issue in gate["issues"])
+                lines.append(f"Operator report: {rel(report_path)}")
+                return "\n".join(lines)
+
+            plan_dir, manifest_path, handoff_path = create_focus_gated_capture_plan(gate)
+            report_path = write_operator_report()
+
+            selected = summary.get("selected_window") or {}
+            process = summary.get("process") or {}
+
+            lines = [
+                "\n=== FOCUS-GATED CAPTURE PLAN ===",
+                "FOCUS-GATED CAPTURE PLAN: PASS",
+                "Created metadata-only capture plan.",
+                f"Plan: {rel(plan_dir)}",
+                f"Manifest: {rel(manifest_path)}",
+                f"Handoff: {rel(handoff_path)}",
+                f"Focus: {summary.get('status', 'unknown')}",
+                f"PID: {process.get('Id', 'n/a')}",
+                f"HWND: {selected.get('hwnd_hex', 'n/a')}",
+                f"Title: {selected.get('title', 'n/a')}",
+                f"Operator report: {rel(report_path)}",
+                "",
+                "No capture, movement, input, memory scan, or /reloadui was run.",
+            ]
+            return "\n".join(lines)
+
+        self.run_async("focus-gated capture plan", task)
+
     def write_report_clicked(self) -> None:
         path = write_operator_report()
         self.append(f"\nWrote operator report: {rel(path)}")
@@ -647,16 +899,27 @@ class RiftScanOperatorApp(tk.Tk):
 
         def task() -> str:
             write_operator_report()
-            existing = [path for path in ALLOWLIST if (REPO_ROOT / path).exists()]
+            allowlisted_existing = [path for path in ALLOWLIST if (REPO_ROOT / path).exists()]
             force_existing = [path for path in FORCE_ADD_ALLOWLIST if (REPO_ROOT / path).exists()]
+            regular_existing: list[str] = []
 
-            if not existing and not force_existing:
+            for path in allowlisted_existing:
+                if path in force_existing:
+                    continue
+                if is_git_ignored(path):
+                    force_existing.append(path)
+                else:
+                    regular_existing.append(path)
+
+            force_existing = list(dict.fromkeys(force_existing))
+
+            if not regular_existing and not force_existing:
                 return "No allowlisted paths exist to stage."
 
             add_outputs: list[str] = []
 
-            if existing:
-                add_code, add_out, add_err = run_command(["git", "add", "--", *existing], timeout=60)
+            if regular_existing:
+                add_code, add_out, add_err = run_command(["git", "add", "--", *regular_existing], timeout=60)
                 add_outputs.extend([add_out.strip(), add_err.strip()])
                 if add_code != 0:
                     return f"git add failed:\n{add_out}\n{add_err}"
