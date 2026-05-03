@@ -1,6 +1,6 @@
 # RiftScan Operator Handoff
 
-Created UTC: `2026-05-03T08:26:04Z`
+Created UTC: `2026-05-03T08:25:49Z`
 App version: `riftscan-operator-app-v3.3`
 Repo root: `C:\RIFT MODDING\Riftscan`
 
@@ -22,6 +22,7 @@ Exit code: `0`
  M handoffs/current/focus-control-local/process-command-result.json
  M handoffs/current/operator/RIFTSCAN_OPERATOR_HANDOFF.md
  M tools/riftscan_operator_app.py
+?? tools/riftscan_operator_app.py.bak-20260503T082323Z
 
 ```
 
@@ -221,14 +222,14 @@ dbf13dd Update RiftScan operator handoff
 ```json
 {
   "status": "present",
-  "latest_session": "sessions/focus-gated-captures/20260503T082517Z_focus_gated_capture_scaffold",
-  "manifest_path": "sessions/focus-gated-captures/20260503T082517Z_focus_gated_capture_scaffold/capture-session-manifest.json",
-  "handoff_path": "sessions/focus-gated-captures/20260503T082517Z_focus_gated_capture_scaffold/CAPTURE_SESSION_HANDOFF.md",
+  "latest_session": "sessions/focus-gated-captures/20260503T082421Z_focus_gated_capture_scaffold",
+  "manifest_path": "sessions/focus-gated-captures/20260503T082421Z_focus_gated_capture_scaffold/capture-session-manifest.json",
+  "handoff_path": "sessions/focus-gated-captures/20260503T082421Z_focus_gated_capture_scaffold/CAPTURE_SESSION_HANDOFF.md",
   "manifest": {
     "schema_version": "riftscan.focus_gated_capture_session_scaffold.v1",
-    "created_utc": "2026-05-03T08:25:17Z",
+    "created_utc": "2026-05-03T08:24:21Z",
     "app_version": "riftscan-operator-app-v3.3",
-    "session_id": "20260503T082517Z_focus_gated_capture_scaffold",
+    "session_id": "20260503T082421Z_focus_gated_capture_scaffold",
     "status": "capture_scaffold_completed",
     "scaffold_only": true,
     "capture_started": true,
@@ -320,12 +321,12 @@ dbf13dd Update RiftScan operator handoff
       "windows_count": 1
     },
     "files": {
-      "capture_session_manifest": "sessions/focus-gated-captures/20260503T082517Z_focus_gated_capture_scaffold/capture-session-manifest.json",
-      "capture_log": "sessions/focus-gated-captures/20260503T082517Z_focus_gated_capture_scaffold/capture-log.jsonl",
-      "focus_summary_before": "sessions/focus-gated-captures/20260503T082517Z_focus_gated_capture_scaffold/focus-summary-before.json",
-      "focus_summary_after": "sessions/focus-gated-captures/20260503T082517Z_focus_gated_capture_scaffold/focus-summary-after.json",
-      "operator_report": "sessions/focus-gated-captures/20260503T082517Z_focus_gated_capture_scaffold/operator-report.md",
-      "handoff": "sessions/focus-gated-captures/20260503T082517Z_focus_gated_capture_scaffold/CAPTURE_SESSION_HANDOFF.md"
+      "capture_session_manifest": "sessions/focus-gated-captures/20260503T082421Z_focus_gated_capture_scaffold/capture-session-manifest.json",
+      "capture_log": "sessions/focus-gated-captures/20260503T082421Z_focus_gated_capture_scaffold/capture-log.jsonl",
+      "focus_summary_before": "sessions/focus-gated-captures/20260503T082421Z_focus_gated_capture_scaffold/focus-summary-before.json",
+      "focus_summary_after": "sessions/focus-gated-captures/20260503T082421Z_focus_gated_capture_scaffold/focus-summary-after.json",
+      "operator_report": "sessions/focus-gated-captures/20260503T082421Z_focus_gated_capture_scaffold/operator-report.md",
+      "handoff": "sessions/focus-gated-captures/20260503T082421Z_focus_gated_capture_scaffold/CAPTURE_SESSION_HANDOFF.md"
     },
     "guardrails": [
       "Timed capture scaffold only.",
@@ -334,8 +335,8 @@ dbf13dd Update RiftScan operator handoff
       "No memory scan/read started.",
       "No /reloadui sent."
     ],
-    "completed_utc": "2026-05-03T08:25:48Z",
-    "elapsed_seconds": 31.121,
+    "completed_utc": "2026-05-03T08:24:52Z",
+    "elapsed_seconds": 31.132,
     "focus_after": {
       "command_exit_code": 0,
       "stdout": "Focus control handoff written to C:\\RIFT MODDING\\Riftscan\\handoffs\\current\\focus-control-local",

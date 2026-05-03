@@ -1,6 +1,6 @@
-# Version: riftscan-operator-app-v3.2
-# Purpose: Windows Tkinter helper app for RiftScan operator workflow: run focus preflight, run full live preflight gate, create focus-gated session dry-run manifests, create metadata-only focus-gated capture plans, validate handoffs, write AI-ready reports, clean known junk, and safely commit/push allowlisted files, including ignored artifact paths when needed.
-# Total character count: 34113
+# Version: riftscan-operator-app-v3.3
+# Purpose: Windows Tkinter helper app for RiftScan operator workflow: run focus preflight, run full live preflight gate, create focus-gated session dry-run manifests, create metadata-only focus-gated capture plans, run focus-gated timed capture scaffolds, validate handoffs, write AI-ready reports, clean known junk, and safely commit/push allowlisted files, including ignored artifact paths when needed.
+# Total character count: 46678
 
 from __future__ import annotations
 
@@ -10,13 +10,14 @@ import os
 import shutil
 import subprocess
 import threading
+import time
 import tkinter as tk
 from pathlib import Path
 from tkinter import messagebox, scrolledtext
 from typing import Any
 
 
-APP_VERSION = "riftscan-operator-app-v3.2"
+APP_VERSION = "riftscan-operator-app-v3.3"
 REPO_ROOT = Path(__file__).resolve().parents[1]
 FOCUS_SCRIPT = REPO_ROOT / "scripts" / "run-rift-focus-control.cmd"
 HANDOFF_DIR = REPO_ROOT / "handoffs" / "current" / "focus-control-local"
@@ -29,6 +30,8 @@ DRY_RUN_ROOT = REPO_ROOT / "sessions" / "focus-gated-dry-runs"
 LATEST_DRY_RUN = DRY_RUN_ROOT / "LATEST_DRY_RUN.txt"
 CAPTURE_PLAN_ROOT = REPO_ROOT / "plans" / "focus-gated-capture-plans"
 LATEST_CAPTURE_PLAN = CAPTURE_PLAN_ROOT / "LATEST_CAPTURE_PLAN.txt"
+CAPTURE_SESSION_ROOT = REPO_ROOT / "sessions" / "focus-gated-captures"
+LATEST_CAPTURE_SESSION = CAPTURE_SESSION_ROOT / "LATEST_CAPTURE_SESSION.txt"
 
 ALLOWLIST = [
     "handoffs/current/focus-control-local",
@@ -42,6 +45,7 @@ ALLOWLIST = [
 
 FORCE_ADD_ALLOWLIST = [
     "sessions/focus-gated-dry-runs",
+    "sessions/focus-gated-captures",
 ]
 
 JUNK_LITERAL = [
@@ -57,6 +61,8 @@ JUNK_LITERAL = [
     "install-riftscan-operator-app-v3.cmd",
     "install-riftscan-operator-app-v31.cmd",
     "RiftScan_Operator_App_v31_Dry_Run_Commit_Hotfix.zip",
+    "RIFTSCAN_apply_focus_gated_capture_plan_patch.py",
+    "RIFTSCAN_apply_focus_gated_capture_scaffold_patch.py",
     "payload",
     "rift_focus_local_simple_v2.zip",
 ]
@@ -66,6 +72,8 @@ JUNK_GLOBS = [
     "tools/__pycache__",
     "scripts/__pycache__",
     "*.bak-*",
+    "tools/*.bak-*",
+    "scripts/*.bak-*",
     "*.repair-bak-*",
 ]
 
@@ -252,6 +260,40 @@ def latest_capture_plan_summary() -> dict[str, Any]:
     }
 
 
+def latest_capture_session_summary() -> dict[str, Any]:
+    if not LATEST_CAPTURE_SESSION.exists():
+        return {"status": "none"}
+    session_rel = LATEST_CAPTURE_SESSION.read_text(encoding="utf-8", errors="replace").strip()
+    if not session_rel:
+        return {"status": "none", "reason": "latest pointer is empty"}
+    session_dir = REPO_ROOT / session_rel
+    manifest_path = session_dir / "capture-session-manifest.json"
+    handoff_path = session_dir / "CAPTURE_SESSION_HANDOFF.md"
+    manifest = load_json(manifest_path)
+    return {
+        "status": "present",
+        "latest_session": session_rel,
+        "manifest_path": rel(manifest_path),
+        "handoff_path": rel(handoff_path),
+        "manifest": manifest,
+    }
+
+
+def append_jsonl(path: Path, event: dict[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    line = json.dumps(event, ensure_ascii=False, sort_keys=True)
+    with path.open("a", encoding="utf-8") as handle:
+        handle.write(line + "\n")
+
+
+def bounded_duration_seconds(value: Any, default: int = 30) -> int:
+    try:
+        seconds = int(value)
+    except (TypeError, ValueError):
+        return default
+    return max(1, min(seconds, 300))
+
+
 def write_operator_report() -> Path:
     OPERATOR_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -263,6 +305,7 @@ def write_operator_report() -> Path:
     log_tail = tail_text(FOCUS_LOG, 60)
     dry_run = latest_dry_run_summary()
     capture_plan = latest_capture_plan_summary()
+    capture_session = latest_capture_session_summary()
 
     focus_ok = summary.get("status") == "foreground_verified"
     full_ok, validation_issues = validate_full_live_preflight(summary, windows)
@@ -329,6 +372,12 @@ Exit code: `{log_code}`
 {json_block(capture_plan)}
 ```
 
+## Latest Focus-Gated Capture Session
+
+```json
+{json_block(capture_session)}
+```
+
 ## Focus Log Tail
 
 ```jsonl
@@ -346,9 +395,7 @@ Review this RiftScan operator handoff. Tell me the next safest practical step, a
 - The full live preflight is conservative: focus + validation + report only.
 - The focus-gated session dry run creates session metadata only.
 - The focus-gated capture plan is metadata only.
-- No capture started.
-- No live test sequence started.
-- No local data collection sequence started.
+- The focus-gated capture scaffold may open a timed session, but records focus metadata/log structure only.
 - No movement/input sent.
 - No memory scan/read started.
 - No `/reloadui` sent.
@@ -606,6 +653,206 @@ Use this capture plan as the staging contract before implementing real focus-gat
     return plan_dir, manifest_path, handoff_path
 
 
+def run_focus_gated_capture_scaffold(gate: dict[str, Any]) -> tuple[Path, Path, Path, Path, Path, Path]:
+    if not gate.get("pass_gate"):
+        raise RuntimeError("Cannot run capture scaffold because full live preflight did not pass.")
+
+    plan_summary = latest_capture_plan_summary()
+    if plan_summary.get("status") != "present":
+        raise RuntimeError("Cannot run capture scaffold because no latest focus-gated capture plan exists.")
+
+    plan_manifest = plan_summary.get("manifest") or {}
+    if plan_manifest.get("metadata_only") is not True:
+        raise RuntimeError("Latest capture plan manifest is invalid: metadata_only is not true.")
+    if plan_manifest.get("capture_started") is not False:
+        raise RuntimeError("Latest capture plan manifest is invalid: capture_started is not false.")
+    if plan_manifest.get("capture_completed") is not False:
+        raise RuntimeError("Latest capture plan manifest is invalid: capture_completed is not false.")
+
+    duration_seconds = bounded_duration_seconds(plan_manifest.get("duration_target_seconds"), default=30)
+    summary_before = gate.get("summary") or {}
+    windows_before = gate.get("windows") or {}
+    process = summary_before.get("process") or {}
+    selected = summary_before.get("selected_window") or {}
+
+    session_id = f"{safe_timestamp()}_focus_gated_capture_scaffold"
+    session_dir = CAPTURE_SESSION_ROOT / session_id
+    session_dir.mkdir(parents=True, exist_ok=False)
+
+    manifest_path = session_dir / "capture-session-manifest.json"
+    log_path = session_dir / "capture-log.jsonl"
+    focus_before_path = session_dir / "focus-summary-before.json"
+    focus_after_path = session_dir / "focus-summary-after.json"
+    operator_report_copy = session_dir / "operator-report.md"
+    handoff_path = session_dir / "CAPTURE_SESSION_HANDOFF.md"
+
+    focus_before_path.write_text(json_block(summary_before) + "\n", encoding="utf-8")
+
+    started_utc = utc_now()
+    append_jsonl(log_path, {
+        "event": "capture_scaffold_started",
+        "utc": started_utc,
+        "session_id": session_id,
+        "duration_target_seconds": duration_seconds,
+        "focus_status": summary_before.get("status"),
+        "pid": process.get("Id"),
+        "hwnd_hex": selected.get("hwnd_hex"),
+        "plan": plan_summary.get("latest_plan"),
+        "guardrail": "focus metadata/log structure only; no movement/input/memory scan/read/reloadui",
+    })
+
+    interim_manifest = {
+        "schema_version": "riftscan.focus_gated_capture_session_scaffold.v1",
+        "created_utc": started_utc,
+        "app_version": APP_VERSION,
+        "session_id": session_id,
+        "status": "capture_scaffold_running",
+        "scaffold_only": True,
+        "capture_started": True,
+        "capture_completed": False,
+        "capture_mode": "focus_metadata_only_scaffold",
+        "duration_target_seconds": duration_seconds,
+        "stimulus_name": plan_manifest.get("stimulus_name", "none_metadata_only"),
+        "source_capture_plan": plan_summary,
+        "full_live_preflight": {
+            "status": "PASS",
+            "focus_status": summary_before.get("status"),
+            "process_id": process.get("Id"),
+            "process_name": process.get("ProcessName") or process.get("Name"),
+            "window_hwnd": selected.get("hwnd"),
+            "window_hwnd_hex": selected.get("hwnd_hex"),
+            "window_title": selected.get("title"),
+            "windows_count": len(windows_before.get("windows") or []),
+        },
+        "files": {
+            "capture_session_manifest": rel(manifest_path),
+            "capture_log": rel(log_path),
+            "focus_summary_before": rel(focus_before_path),
+            "focus_summary_after": rel(focus_after_path),
+            "operator_report": rel(operator_report_copy),
+            "handoff": rel(handoff_path),
+        },
+        "guardrails": [
+            "Timed capture scaffold only.",
+            "Focus metadata/log structure only.",
+            "No movement/input sent.",
+            "No memory scan/read started.",
+            "No /reloadui sent.",
+        ],
+    }
+    manifest_path.write_text(json_block(interim_manifest) + "\n", encoding="utf-8")
+
+    start_monotonic = time.monotonic()
+    next_heartbeat = 5
+    while True:
+        elapsed = time.monotonic() - start_monotonic
+        if elapsed >= duration_seconds:
+            break
+        if elapsed >= next_heartbeat:
+            append_jsonl(log_path, {
+                "event": "capture_scaffold_heartbeat",
+                "utc": utc_now(),
+                "session_id": session_id,
+                "elapsed_seconds": round(elapsed, 3),
+                "remaining_seconds": max(0, round(duration_seconds - elapsed, 3)),
+            })
+            next_heartbeat += 5
+        time.sleep(0.25)
+
+    append_jsonl(log_path, {
+        "event": "capture_scaffold_window_elapsed",
+        "utc": utc_now(),
+        "session_id": session_id,
+        "elapsed_seconds": round(time.monotonic() - start_monotonic, 3),
+    })
+
+    after_code, after_out, after_err = run_command(["cmd", "/c", str(FOCUS_SCRIPT)], timeout=90)
+    summary_after = load_json(FOCUS_SUMMARY)
+    focus_after_path.write_text(json_block(summary_after) + "\n", encoding="utf-8")
+
+    completed_utc = utc_now()
+    final_status = "capture_scaffold_completed" if after_code == 0 else "capture_scaffold_completed_with_focus_after_failure"
+
+    append_jsonl(log_path, {
+        "event": "capture_scaffold_completed",
+        "utc": completed_utc,
+        "session_id": session_id,
+        "status": final_status,
+        "focus_after_exit_code": after_code,
+        "focus_after_status": summary_after.get("status"),
+    })
+
+    final_manifest = dict(interim_manifest)
+    final_manifest.update({
+        "completed_utc": completed_utc,
+        "status": final_status,
+        "capture_completed": True,
+        "elapsed_seconds": round(time.monotonic() - start_monotonic, 3),
+        "focus_after": {
+            "command_exit_code": after_code,
+            "stdout": after_out.strip(),
+            "stderr": after_err.strip(),
+            "focus_status": summary_after.get("status"),
+        },
+        "next_expected_step": "Review scaffold artifacts, then wire the first real collector behind this same focus gate.",
+    })
+    manifest_path.write_text(json_block(final_manifest) + "\n", encoding="utf-8")
+
+    report_path = write_operator_report()
+    operator_report_copy.write_text(read_text(report_path), encoding="utf-8")
+
+    handoff_lines = [
+        "# Focus-Gated Capture Session Scaffold",
+        "",
+        f"Session ID: `{session_id}`",
+        f"Created UTC: `{started_utc}`",
+        f"Completed UTC: `{completed_utc}`",
+        f"Status: `{final_status}`",
+        f"Duration target seconds: `{duration_seconds}`",
+        "",
+        "## Result",
+        "",
+        "The operator app opened and closed a timed focus-gated capture scaffold. This is the first capture-session wiring layer, but it records focus metadata/log structure only.",
+        "",
+        "```text",
+        f"Focus before: {summary_before.get('status')}",
+        f"Focus after: {summary_after.get('status')}",
+        f"PID: {process.get('Id')}",
+        f"HWND: {selected.get('hwnd_hex')}",
+        f"Title: {selected.get('title')}",
+        "```",
+        "",
+        "## Files",
+        "",
+        "```text",
+        rel(manifest_path),
+        rel(log_path),
+        rel(focus_before_path),
+        rel(focus_after_path),
+        rel(operator_report_copy),
+        "```",
+        "",
+        "## Guardrails",
+        "",
+        "- Timed capture scaffold only.",
+        "- Focus metadata/log structure only.",
+        "- No movement/input sent.",
+        "- No memory scan/read started.",
+        "- No /reloadui sent.",
+        "",
+        "## Next Expected Step",
+        "",
+        "Review scaffold artifacts, then wire the first real collector behind this same focus gate.",
+        "",
+    ]
+    handoff_path.write_text("\n".join(handoff_lines), encoding="utf-8")
+
+    LATEST_CAPTURE_SESSION.parent.mkdir(parents=True, exist_ok=True)
+    LATEST_CAPTURE_SESSION.write_text(rel(session_dir) + "\n", encoding="utf-8")
+
+    return session_dir, manifest_path, log_path, focus_before_path, focus_after_path, handoff_path
+
+
 def clean_known_junk() -> list[str]:
     removed: list[str] = []
 
@@ -654,6 +901,7 @@ class RiftScanOperatorApp(tk.Tk):
             ("Run Full Live Preflight", self.run_full_live_preflight),
             ("Run Focus-Gated Session Dry Run", self.run_focus_gated_session_dry_run),
             ("Create Focus-Gated Capture Plan", self.create_focus_gated_capture_plan_clicked),
+            ("Run Focus-Gated Capture Scaffold", self.run_focus_gated_capture_scaffold_clicked),
             ("Run Focus Preflight", self.run_focus_preflight),
             ("Write AI Report", self.write_report_clicked),
             ("Clean Known Junk", self.clean_junk_clicked),
@@ -873,6 +1121,60 @@ class RiftScanOperatorApp(tk.Tk):
             return "\n".join(lines)
 
         self.run_async("focus-gated capture plan", task)
+
+
+    def run_focus_gated_capture_scaffold_clicked(self) -> None:
+        def task() -> str:
+            gate = run_full_live_preflight_gate()
+            summary = gate["summary"]
+            self.after(0, lambda: self.focus_var.set(f"Focus: {focus_line(summary)}"))
+
+            report_path = write_operator_report()
+
+            if not gate["pass_gate"]:
+                lines = [
+                    "\n=== FOCUS-GATED CAPTURE SCAFFOLD ===",
+                    "FOCUS-GATED CAPTURE SCAFFOLD: FAIL",
+                    "Capture scaffold was not created because the full live preflight gate failed.",
+                ]
+                lines.extend(f"- {issue}" for issue in gate["issues"])
+                lines.append(f"Operator report: {rel(report_path)}")
+                return "\n".join(lines)
+
+            try:
+                session_dir, manifest_path, log_path, focus_before_path, focus_after_path, handoff_path = run_focus_gated_capture_scaffold(gate)
+            except Exception as exc:
+                report_path = write_operator_report()
+                return "\n".join([
+                    "\n=== FOCUS-GATED CAPTURE SCAFFOLD ===",
+                    "FOCUS-GATED CAPTURE SCAFFOLD: FAIL",
+                    f"- {type(exc).__name__}: {exc}",
+                    f"Operator report: {rel(report_path)}",
+                ])
+
+            report_path = write_operator_report()
+            summary_after = load_json(FOCUS_SUMMARY)
+            self.after(0, lambda: self.focus_var.set(f"Focus: {focus_line(summary_after)}"))
+
+            lines = [
+                "\n=== FOCUS-GATED CAPTURE SCAFFOLD ===",
+                "FOCUS-GATED CAPTURE SCAFFOLD: PASS",
+                "Created timed focus-gated capture scaffold.",
+                f"Session: {rel(session_dir)}",
+                f"Manifest: {rel(manifest_path)}",
+                f"Log: {rel(log_path)}",
+                f"Focus before: {rel(focus_before_path)}",
+                f"Focus after: {rel(focus_after_path)}",
+                f"Handoff: {rel(handoff_path)}",
+                f"Operator report: {rel(report_path)}",
+                "",
+                "This opened and closed a timed capture window, but recorded focus metadata/log structure only.",
+                "No movement, input, memory scan/read, or /reloadui was run.",
+            ]
+            return "\n".join(lines)
+
+        self.run_async("focus-gated capture scaffold", task)
+
 
     def write_report_clicked(self) -> None:
         path = write_operator_report()
