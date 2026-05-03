@@ -1,6 +1,6 @@
-# Version: riftscan-operator-app-v3.5
-# Purpose: Windows Tkinter helper app for RiftScan operator workflow: run focus preflight, run full live preflight gate, create focus-gated session dry-run manifests, create metadata-only focus-gated capture plans, run focus-gated timed capture scaffolds, run the focus-gated window/process metadata collector, validate handoffs, write compact AI-ready reports, clean known junk, and safely commit/push allowlisted files, including ignored artifact paths when needed.
-# Total character count: 74902
+# Version: riftscan-operator-app-v3.5.1
+# Purpose: Windows Tkinter helper app for RiftScan operator workflow: run focus preflight, run full live preflight gate, create focus-gated session dry-run manifests, create metadata-only focus-gated capture plans, run focus-gated timed capture scaffolds, run the focus-gated window/process metadata collector, validate declared collector artifacts, validate handoffs, write compact AI-ready reports, clean known junk, and safely commit/push allowlisted files, including ignored artifact paths when needed.
+# Total character count: 77333
 
 from __future__ import annotations
 
@@ -19,7 +19,7 @@ from tkinter import messagebox, scrolledtext
 from typing import Any
 
 
-APP_VERSION = "riftscan-operator-app-v3.5"
+APP_VERSION = "riftscan-operator-app-v3.5.1"
 REPO_ROOT = Path(__file__).resolve().parents[1]
 FOCUS_SCRIPT = REPO_ROOT / "scripts" / "run-rift-focus-control.cmd"
 HANDOFF_DIR = REPO_ROOT / "handoffs" / "current" / "focus-control-local"
@@ -71,6 +71,7 @@ JUNK_LITERAL = [
     "RIFTSCAN_apply_operator_v34_hardening_patch.py",
     "RIFTSCAN_apply_operator_v34_hardening_patch_v11.py",
     "RIFTSCAN_apply_operator_v35_window_process_collector_patch.py",
+    "RIFTSCAN_apply_operator_v351_artifact_contract_patch.py",
     "payload",
     "rift_focus_local_simple_v2.zip",
 ]
@@ -324,6 +325,8 @@ def latest_capture_session_summary() -> dict[str, Any]:
             "reloadui_sent": manifest.get("reloadui_sent"),
             "sample_count": (manifest.get("collector_summary") or {}).get("sample_count"),
             "error_count": (manifest.get("collector_summary") or {}).get("error_count"),
+            "artifact_contract_status": (manifest.get("artifact_contract") or {}).get("status"),
+            "missing_artifacts": (manifest.get("artifact_contract") or {}).get("missing_artifacts"),
         },
     }
 
@@ -614,6 +617,16 @@ def run_focus_gated_window_process_metadata_collector(gate: dict[str, Any]) -> d
     collector_summary_path = session_dir / "collector-summary.json"
     collector_errors_path = session_dir / "collector-errors.jsonl"
 
+    for declared_artifact_file in (
+        capture_log_path,
+        collector_samples_path,
+        collector_errors_path,
+        operator_report_copy,
+        handoff_path,
+    ):
+        declared_artifact_file.parent.mkdir(parents=True, exist_ok=True)
+        declared_artifact_file.touch(exist_ok=True)
+
     write_json(focus_before_path, summary_before)
 
     started_utc = utc_now()
@@ -892,6 +905,44 @@ def run_focus_gated_window_process_metadata_collector(gate: dict[str, Any]) -> d
 
     LATEST_CAPTURE_SESSION.parent.mkdir(parents=True, exist_ok=True)
     LATEST_CAPTURE_SESSION.write_text(rel(session_dir) + "\n", encoding="utf-8")
+
+    declared_artifact_paths = {
+        "capture_session_manifest": manifest_path,
+        "capture_log": capture_log_path,
+        "focus_summary_before": focus_before_path,
+        "focus_summary_after": focus_after_path,
+        "operator_report": operator_report_copy,
+        "handoff": handoff_path,
+        "collector_manifest": collector_manifest_path,
+        "collector_samples": collector_samples_path,
+        "collector_summary": collector_summary_path,
+        "collector_errors": collector_errors_path,
+    }
+    missing_artifacts = [rel(path) for path in declared_artifact_paths.values() if not path.exists()]
+    artifact_contract = {
+        "schema_version": "riftscan.artifact_contract.v1",
+        "status": "FAIL" if missing_artifacts else "PASS",
+        "declared_count": len(declared_artifact_paths),
+        "existing_count": len(declared_artifact_paths) - len(missing_artifacts),
+        "missing_artifacts": missing_artifacts,
+    }
+    collector_summary["artifact_contract"] = artifact_contract
+    manifest["artifact_contract"] = artifact_contract
+    if missing_artifacts:
+        warning_status = "window_process_metadata_collector_completed_with_artifact_warning"
+        collector_summary["status"] = warning_status
+        manifest["status"] = warning_status
+        log_event(
+            "collector_finalize",
+            "window_process_metadata_artifact_contract_warning",
+            {
+                "status": warning_status,
+                "missing_artifacts": missing_artifacts,
+                "artifact_contract": artifact_contract,
+            },
+        )
+    write_json(collector_summary_path, collector_summary)
+    write_json(manifest_path, manifest)
 
     report_path = write_operator_report()
     operator_report_copy.write_text(read_text(report_path), encoding="utf-8")
@@ -1916,6 +1967,7 @@ class RiftScanOperatorApp(tk.Tk):
                 f"Title: {selected.get('title', 'n/a')}",
                 f"Samples: {collector_summary.get('sample_count', 'n/a')}",
                 f"Errors: {collector_summary.get('error_count', 'n/a')}",
+                f"Artifact contract: {(collector_summary.get('artifact_contract') or {}).get('status', 'n/a')}",
                 f"Operator report: {rel(artifacts['operator_report_path'])}",
                 "",
                 "No process memory read, movement, input, or /reloadui was run.",
