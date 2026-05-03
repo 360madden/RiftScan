@@ -1,0 +1,33 @@
+{
+  "schema_version": "riftscan.patch_runner_log.v1",
+  "runner_version": "riftscan-patch-runner-v3.9-alpha1",
+  "run_id": "patch_runner_20260503T175439Z",
+  "started_utc": "2026-05-03T17:54:39Z",
+  "completed_utc": "2026-05-03T17:54:39Z",
+  "status": "fail_no_pending_manifest",
+  "exit_code": 2,
+  "repo_root": "C:\\RIFT MODDING\\Riftscan",
+  "manifest_path": "patches/pending/PATCH_MANIFEST.json",
+  "log_root": "handoffs/current/patch-runner",
+  "log_file": "handoffs/current/patch-runner/patch-runner-log.jsonl",
+  "summary_file": "handoffs/current/patch-runner/patch-runner-summary.json",
+  "output_file": "handoffs/current/patch-runner/patch-runner-output.txt",
+  "patch_applied": false,
+  "auto_commit": false,
+  "auto_push": false,
+  "operator_app_behavior_changed": false,
+  "blockers": [
+    "No pending patch manifest exists at patches/pending/PATCH_MANIFEST.json."
+  ],
+  "manifest": null,
+  "git_status": {
+    "command": "git status --short",
+    "exit_code": 0,
+    "output": " M patches/apply-latest.cmd\r\n?? handoffs/current/patch-runner/\r\n?? patches/apply-latest.ps1\r\n?? patches/pending/"
+  },
+  "details": {
+    "expected_manifest": "patches/pending/PATCH_MANIFEST.json",
+    "example_manifest": "patches/pending/PATCH_MANIFEST.example.json",
+    "next_action": "Create or copy a reviewed PATCH_MANIFEST.json before running the patch runner."
+  }
+}

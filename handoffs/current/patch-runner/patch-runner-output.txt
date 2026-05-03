@@ -1,0 +1,12 @@
+RIFTSCAN PATCH RUNNER: FAIL_NO_PENDING_MANIFEST
+Runner: riftscan-patch-runner-v3.9-alpha1
+Run ID: patch_runner_20260503T175439Z
+Manifest: patches/pending/PATCH_MANIFEST.json
+Log: handoffs/current/patch-runner/patch-runner-log.jsonl
+Summary: handoffs/current/patch-runner/patch-runner-summary.json
+Patch applied: false
+Auto-commit: false
+Auto-push: false
+
+Blockers:
+- No pending patch manifest exists at patches/pending/PATCH_MANIFEST.json.
