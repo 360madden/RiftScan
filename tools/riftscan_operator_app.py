@@ -1,6 +1,6 @@
-# Version: riftscan-operator-app-v3.6.2
-# Purpose: Windows Tkinter helper app for RiftScan operator workflow: run focus preflight, run full live preflight gate, create focus-gated capture plans, run the focus-gated window/process metadata collector, validate collector artifacts, write compact AI-ready reports, clean known junk, safely commit/push allowlisted files, and provide tabbed/wrapped controls with lightweight status highlighting.
-# Total character count: 82739
+# Version: riftscan-operator-app-v3.7
+# Purpose: Windows Tkinter helper app for RiftScan operator workflow: run focus preflight, run full live preflight gate, create focus-gated capture plans, run the focus-gated window/process metadata collector, analyze latest collector sessions, validate collector artifacts, write compact AI-ready reports, clean known junk, safely commit/push allowlisted files, and provide tabbed/wrapped controls with lightweight status highlighting.
+# Total character count: 101692
 
 from __future__ import annotations
 
@@ -20,7 +20,7 @@ from tkinter import messagebox, scrolledtext, ttk
 from typing import Any
 
 
-APP_VERSION = "riftscan-operator-app-v3.6.2"
+APP_VERSION = "riftscan-operator-app-v3.7"
 REPO_ROOT = Path(__file__).resolve().parents[1]
 FOCUS_SCRIPT = REPO_ROOT / "scripts" / "run-rift-focus-control.cmd"
 HANDOFF_DIR = REPO_ROOT / "handoffs" / "current" / "focus-control-local"
@@ -37,6 +37,7 @@ CAPTURE_SESSION_ROOT = REPO_ROOT / "sessions" / "focus-gated-captures"
 LATEST_CAPTURE_SESSION = CAPTURE_SESSION_ROOT / "LATEST_CAPTURE_SESSION.txt"
 LOG_SCHEMA_VERSION = "riftscan.capture_log.v1"
 WINDOW_PROCESS_COLLECTOR_SCHEMA_VERSION = "riftscan.window_process_metadata_collector.v1"
+ANALYSIS_SCHEMA_VERSION = "riftscan.window_process_analysis.v1"
 DEFAULT_WINDOW_PROCESS_SAMPLE_INTERVAL_MS = 500
 
 ALLOWLIST = [
@@ -78,6 +79,7 @@ JUNK_LITERAL = [
     "RIFTSCAN_apply_operator_v361_ui_hotfix_patch.py",
     "RIFTSCAN_apply_operator_v361_ui_hotfix_patch_v11.py",
     "RIFTSCAN_apply_operator_v362_ui_import_hotfix_patch.py",
+    "RIFTSCAN_apply_operator_v37_analyze_latest_session_patch_checked.py",
     "payload",
     "rift_focus_local_simple_v2.zip",
 ]
@@ -333,6 +335,8 @@ def latest_capture_session_summary() -> dict[str, Any]:
             "error_count": (manifest.get("collector_summary") or {}).get("error_count"),
             "artifact_contract_status": (manifest.get("artifact_contract") or {}).get("status"),
             "missing_artifacts": (manifest.get("artifact_contract") or {}).get("missing_artifacts"),
+            "analysis_status": (latest_window_process_analysis_summary().get("summary") or {}).get("status"),
+            "analysis_anomaly_count": (latest_window_process_analysis_summary().get("summary") or {}).get("anomaly_count"),
         },
     }
 
@@ -1021,6 +1025,389 @@ def run_focus_gated_window_process_metadata_collector(gate: dict[str, Any]) -> d
     }
 
 
+def read_jsonl(path: Path) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    records: list[dict[str, Any]] = []
+    errors: list[dict[str, Any]] = []
+
+    if not path.exists():
+        errors.append({
+            "line": 0,
+            "error_type": "missing_file",
+            "error_message": f"{rel(path)} is missing.",
+        })
+        return records, errors
+
+    for line_number, raw_line in enumerate(path.read_text(encoding="utf-8", errors="replace").splitlines(), start=1):
+        line = raw_line.strip()
+        if not line:
+            continue
+
+        try:
+            value = json.loads(line)
+        except Exception as exc:
+            errors.append({
+                "line": line_number,
+                "error_type": type(exc).__name__,
+                "error_message": str(exc),
+                "raw": raw_line[:500],
+            })
+            continue
+
+        if isinstance(value, dict):
+            records.append(value)
+        else:
+            errors.append({
+                "line": line_number,
+                "error_type": "invalid_record_type",
+                "error_message": f"Expected JSON object, got {type(value).__name__}.",
+            })
+
+    return records, errors
+
+
+def latest_window_process_analysis_summary() -> dict[str, Any]:
+    if not LATEST_CAPTURE_SESSION.exists():
+        return {"status": "none"}
+
+    session_rel = LATEST_CAPTURE_SESSION.read_text(encoding="utf-8", errors="replace").strip()
+    if not session_rel:
+        return {"status": "none", "reason": "latest capture session pointer is empty"}
+
+    session_dir = REPO_ROOT / session_rel
+    analysis_path = session_dir / "analysis" / "window-process-analysis.json"
+    handoff_path = session_dir / "analysis" / "WINDOW_PROCESS_ANALYSIS.md"
+
+    if not analysis_path.exists():
+        return {
+            "status": "none",
+            "latest_session": session_rel,
+            "reason": "analysis has not been generated for latest session",
+            "expected_analysis_path": rel(analysis_path),
+        }
+
+    analysis = load_json(analysis_path)
+    summary = analysis.get("summary") if isinstance(analysis, dict) else None
+    return {
+        "status": "present",
+        "latest_session": session_rel,
+        "analysis_path": rel(analysis_path),
+        "handoff_path": rel(handoff_path),
+        "summary": summary or analysis,
+    }
+
+
+def rect_signature(value: Any) -> tuple[Any, Any, Any, Any] | None:
+    if not isinstance(value, dict):
+        return None
+    rect = value.get("rect")
+    if not isinstance(rect, dict):
+        return None
+    return (
+        rect.get("left"),
+        rect.get("top"),
+        rect.get("right"),
+        rect.get("bottom"),
+    )
+
+
+def unique_values(values: list[Any]) -> list[Any]:
+    result: list[Any] = []
+    for value in values:
+        if value not in result:
+            result.append(value)
+    return result
+
+
+def analyze_latest_window_process_session() -> dict[str, Path]:
+    if not LATEST_CAPTURE_SESSION.exists():
+        raise RuntimeError(f"Missing latest capture session pointer: {rel(LATEST_CAPTURE_SESSION)}")
+
+    session_rel = LATEST_CAPTURE_SESSION.read_text(encoding="utf-8", errors="replace").strip()
+    if not session_rel:
+        raise RuntimeError(f"Latest capture session pointer is empty: {rel(LATEST_CAPTURE_SESSION)}")
+
+    session_dir = REPO_ROOT / session_rel
+    if not session_dir.exists():
+        raise RuntimeError(f"Latest capture session directory does not exist: {rel(session_dir)}")
+
+    manifest_path = session_dir / "capture-session-manifest.json"
+    collector_summary_path = session_dir / "collector-summary.json"
+    collector_samples_path = session_dir / "collector-samples.jsonl"
+    capture_log_path = session_dir / "capture-log.jsonl"
+
+    analysis_dir = session_dir / "analysis"
+    analysis_dir.mkdir(parents=True, exist_ok=True)
+
+    analysis_path = analysis_dir / "window-process-analysis.json"
+    anomalies_path = analysis_dir / "window-process-anomalies.jsonl"
+    handoff_path = analysis_dir / "WINDOW_PROCESS_ANALYSIS.md"
+
+    manifest = load_json(manifest_path)
+    collector_summary = load_json(collector_summary_path)
+    samples, sample_parse_errors = read_jsonl(collector_samples_path)
+    capture_events, capture_log_parse_errors = read_jsonl(capture_log_path)
+
+    anomalies: list[dict[str, Any]] = []
+
+    def add_anomaly(kind: str, severity: str, message: str, **extra: Any) -> None:
+        anomaly = {
+            "kind": kind,
+            "severity": severity,
+            "message": message,
+        }
+        anomaly.update(extra)
+        anomalies.append(anomaly)
+
+    if manifest.get("_missing") or manifest.get("_error"):
+        add_anomaly("manifest_problem", "error", "capture-session-manifest.json is missing or invalid.", details=manifest)
+
+    if collector_summary.get("_missing") or collector_summary.get("_error"):
+        add_anomaly("collector_summary_problem", "error", "collector-summary.json is missing or invalid.", details=collector_summary)
+
+    if sample_parse_errors:
+        add_anomaly("sample_parse_errors", "error", "collector-samples.jsonl contains parse errors.", count=len(sample_parse_errors), errors=sample_parse_errors[:10])
+
+    if capture_log_parse_errors:
+        add_anomaly("capture_log_parse_errors", "warning", "capture-log.jsonl contains parse errors.", count=len(capture_log_parse_errors), errors=capture_log_parse_errors[:10])
+
+    sample_count = len(samples)
+    expected_sample_count = collector_summary.get("sample_count")
+    if isinstance(expected_sample_count, int) and expected_sample_count != sample_count:
+        add_anomaly(
+            "sample_count_mismatch",
+            "error",
+            "collector-summary sample_count does not match actual parsed sample count.",
+            expected=expected_sample_count,
+            actual=sample_count,
+        )
+
+    sample_indexes = [parse_int(sample.get("sample_index") or sample.get("event_index")) for sample in samples]
+    nonzero_sample_indexes = [index for index in sample_indexes if index > 0]
+    missing_sample_indexes: list[int] = []
+    duplicate_sample_indexes: list[int] = []
+
+    if nonzero_sample_indexes:
+        min_index = min(nonzero_sample_indexes)
+        max_index = max(nonzero_sample_indexes)
+        expected_indexes = set(range(min_index, max_index + 1))
+        actual_indexes = set(nonzero_sample_indexes)
+        missing_sample_indexes = sorted(expected_indexes - actual_indexes)
+        duplicate_sample_indexes = sorted(index for index in actual_indexes if nonzero_sample_indexes.count(index) > 1)
+
+        if min_index != 1:
+            add_anomaly("sample_index_start", "warning", "Sample indexes do not start at 1.", first_index=min_index)
+        if missing_sample_indexes:
+            add_anomaly("missing_sample_indexes", "error", "Missing sample indexes detected.", missing_sample_indexes=missing_sample_indexes[:50], count=len(missing_sample_indexes))
+        if duplicate_sample_indexes:
+            add_anomaly("duplicate_sample_indexes", "error", "Duplicate sample indexes detected.", duplicate_sample_indexes=duplicate_sample_indexes[:50], count=len(duplicate_sample_indexes))
+    elif sample_count:
+        add_anomaly("sample_index_missing", "warning", "No usable sample_index/event_index values found in sample records.")
+
+    focus_lost_samples: list[int] = []
+    rift_process_dead_samples: list[int] = []
+    foreground_hwnds: list[Any] = []
+    foreground_pids: list[Any] = []
+    rift_hwnds: list[Any] = []
+    rift_pids: list[Any] = []
+    rift_titles: list[Any] = []
+    rift_window_rects: list[Any] = []
+    rift_client_rects: list[Any] = []
+    monotonic_values: list[float] = []
+
+    for index, sample in enumerate(samples, start=1):
+        sample_index = parse_int(sample.get("sample_index") or sample.get("event_index"), default=index)
+        data = sample.get("data") or {}
+        foreground = data.get("foreground") or {}
+        rift_window = data.get("rift_window") or {}
+
+        if data.get("focus_verified") is not True:
+            focus_lost_samples.append(sample_index)
+
+        if rift_window.get("process_alive") is not True:
+            rift_process_dead_samples.append(sample_index)
+
+        foreground_hwnds.append(foreground.get("hwnd_hex") or foreground.get("hwnd"))
+        foreground_pids.append(foreground.get("pid"))
+        rift_hwnds.append(rift_window.get("hwnd_hex") or rift_window.get("hwnd"))
+        rift_pids.append(rift_window.get("pid"))
+        rift_titles.append(rift_window.get("title"))
+        rift_window_rects.append(rect_signature(rift_window.get("window_rect")))
+        rift_client_rects.append(rect_signature(rift_window.get("client_rect")))
+
+        try:
+            monotonic_values.append(float(sample.get("monotonic_elapsed_seconds")))
+        except (TypeError, ValueError):
+            pass
+
+    unique_foreground_hwnds = unique_values([value for value in foreground_hwnds if value is not None])
+    unique_foreground_pids = unique_values([value for value in foreground_pids if value is not None])
+    unique_rift_hwnds = unique_values([value for value in rift_hwnds if value is not None])
+    unique_rift_pids = unique_values([value for value in rift_pids if value is not None])
+    unique_rift_titles = unique_values([value for value in rift_titles if value is not None])
+    unique_rift_window_rects = unique_values([value for value in rift_window_rects if value is not None])
+    unique_rift_client_rects = unique_values([value for value in rift_client_rects if value is not None])
+
+    if focus_lost_samples:
+        add_anomaly("focus_lost", "error", "One or more samples were not focus-verified.", sample_indexes=focus_lost_samples[:50], count=len(focus_lost_samples))
+
+    if rift_process_dead_samples:
+        add_anomaly("rift_process_not_alive", "error", "One or more samples reported RIFT process not alive.", sample_indexes=rift_process_dead_samples[:50], count=len(rift_process_dead_samples))
+
+    if len(unique_foreground_hwnds) > 1:
+        add_anomaly("foreground_hwnd_changed", "warning", "Foreground HWND changed during session.", values=unique_foreground_hwnds)
+
+    if len(unique_foreground_pids) > 1:
+        add_anomaly("foreground_pid_changed", "warning", "Foreground PID changed during session.", values=unique_foreground_pids)
+
+    if len(unique_rift_hwnds) > 1:
+        add_anomaly("rift_hwnd_changed", "error", "RIFT HWND changed during session.", values=unique_rift_hwnds)
+
+    if len(unique_rift_pids) > 1:
+        add_anomaly("rift_pid_changed", "error", "RIFT PID changed during session.", values=unique_rift_pids)
+
+    if len(unique_rift_titles) > 1:
+        add_anomaly("rift_window_title_changed", "warning", "RIFT window title changed during session.", values=unique_rift_titles)
+
+    if len(unique_rift_window_rects) > 1:
+        add_anomaly("rift_window_rect_changed", "warning", "RIFT window rect changed during session.", values=unique_rift_window_rects)
+
+    if len(unique_rift_client_rects) > 1:
+        add_anomaly("rift_client_rect_changed", "warning", "RIFT client rect changed during session.", values=unique_rift_client_rects)
+
+    interval_deltas: list[float] = []
+    if len(monotonic_values) >= 2:
+        interval_deltas = [
+            round(monotonic_values[index] - monotonic_values[index - 1], 3)
+            for index in range(1, len(monotonic_values))
+        ]
+
+    sample_interval_ms = collector_summary.get("sample_interval_ms") or manifest.get("sample_interval_ms") or DEFAULT_WINDOW_PROCESS_SAMPLE_INTERVAL_MS
+    expected_interval = float(sample_interval_ms) / 1000.0
+    max_interval_delta = max(interval_deltas) if interval_deltas else None
+    min_interval_delta = min(interval_deltas) if interval_deltas else None
+    avg_interval_delta = round(sum(interval_deltas) / len(interval_deltas), 3) if interval_deltas else None
+    max_abs_interval_drift = max((abs(delta - expected_interval) for delta in interval_deltas), default=0.0)
+
+    if interval_deltas and max_abs_interval_drift > 0.25:
+        add_anomaly(
+            "sample_interval_drift",
+            "warning",
+            "Sample interval drift exceeded 250 ms from expected interval.",
+            expected_interval_seconds=expected_interval,
+            max_abs_interval_drift_seconds=round(max_abs_interval_drift, 3),
+            min_interval_delta=min_interval_delta,
+            max_interval_delta=max_interval_delta,
+            avg_interval_delta=avg_interval_delta,
+        )
+
+    artifact_contract = manifest.get("artifact_contract") or collector_summary.get("artifact_contract") or {}
+    if artifact_contract.get("status") != "PASS":
+        add_anomaly("artifact_contract_not_pass", "error", "Artifact contract is not PASS.", artifact_contract=artifact_contract)
+
+    summary = {
+        "status": "PASS" if not any(item.get("severity") == "error" for item in anomalies) else "FAIL",
+        "warning_count": sum(1 for item in anomalies if item.get("severity") == "warning"),
+        "error_count": sum(1 for item in anomalies if item.get("severity") == "error"),
+        "anomaly_count": len(anomalies),
+        "session": session_rel,
+        "sample_count": sample_count,
+        "expected_sample_count": expected_sample_count,
+        "focus_lost_count": len(focus_lost_samples),
+        "rift_process_dead_count": len(rift_process_dead_samples),
+        "unique_foreground_hwnds": unique_foreground_hwnds,
+        "unique_foreground_pids": unique_foreground_pids,
+        "unique_rift_hwnds": unique_rift_hwnds,
+        "unique_rift_pids": unique_rift_pids,
+        "unique_rift_titles": unique_rift_titles,
+        "unique_rift_window_rects": unique_rift_window_rects,
+        "unique_rift_client_rects": unique_rift_client_rects,
+        "missing_sample_index_count": len(missing_sample_indexes),
+        "duplicate_sample_index_count": len(duplicate_sample_indexes),
+        "sample_interval_seconds": {
+            "expected": expected_interval,
+            "min": min_interval_delta,
+            "max": max_interval_delta,
+            "avg": avg_interval_delta,
+            "max_abs_drift": round(max_abs_interval_drift, 3),
+        },
+        "artifact_contract_status": artifact_contract.get("status"),
+    }
+
+    analysis = {
+        "schema_version": ANALYSIS_SCHEMA_VERSION,
+        "created_utc": utc_now(),
+        "app_version": APP_VERSION,
+        "session_dir": session_rel,
+        "inputs": {
+            "manifest": rel(manifest_path),
+            "collector_summary": rel(collector_summary_path),
+            "collector_samples": rel(collector_samples_path),
+            "capture_log": rel(capture_log_path),
+        },
+        "outputs": {
+            "analysis_json": rel(analysis_path),
+            "anomalies_jsonl": rel(anomalies_path),
+            "handoff": rel(handoff_path),
+        },
+        "summary": summary,
+        "anomalies": anomalies,
+    }
+
+    write_json(analysis_path, analysis)
+
+    anomalies_path.parent.mkdir(parents=True, exist_ok=True)
+    with anomalies_path.open("w", encoding="utf-8") as handle:
+        for anomaly in anomalies:
+            handle.write(json.dumps(anomaly, ensure_ascii=False, sort_keys=True) + "\n")
+
+    handoff_lines = [
+        "# Window/Process Metadata Session Analysis",
+        "",
+        f"Created UTC: `{analysis['created_utc']}`",
+        f"App version: `{APP_VERSION}`",
+        f"Session: `{session_rel}`",
+        f"Status: `{summary['status']}`",
+        f"Samples: `{sample_count}`",
+        f"Anomalies: `{len(anomalies)}`",
+        f"Errors: `{summary['error_count']}`",
+        f"Warnings: `{summary['warning_count']}`",
+        "",
+        "## Key Checks",
+        "",
+        f"- Focus lost count: `{summary['focus_lost_count']}`",
+        f"- RIFT process dead count: `{summary['rift_process_dead_count']}`",
+        f"- Missing sample indexes: `{summary['missing_sample_index_count']}`",
+        f"- Duplicate sample indexes: `{summary['duplicate_sample_index_count']}`",
+        f"- Artifact contract: `{summary['artifact_contract_status']}`",
+        "",
+        "## Files",
+        "",
+        "```text",
+        rel(analysis_path),
+        rel(anomalies_path),
+        rel(handoff_path),
+        "```",
+        "",
+        "## Notes",
+        "",
+        "This analysis is offline-only. It does not run capture, read process memory, send input, change focus, or run /reloadui.",
+    ]
+
+    if anomalies:
+        handoff_lines.extend(["", "## Anomalies", ""])
+        for anomaly in anomalies[:20]:
+            handoff_lines.append(f"- `{anomaly.get('severity')}` `{anomaly.get('kind')}` — {anomaly.get('message')}")
+
+    handoff_path.write_text("\n".join(handoff_lines) + "\n", encoding="utf-8")
+
+    return {
+        "session_dir": session_dir,
+        "analysis_path": analysis_path,
+        "anomalies_path": anomalies_path,
+        "handoff_path": handoff_path,
+    }
+
+
 def write_operator_report() -> Path:
     OPERATOR_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -1033,6 +1420,7 @@ def write_operator_report() -> Path:
     dry_run = latest_dry_run_summary()
     capture_plan = latest_capture_plan_summary()
     capture_session = latest_capture_session_summary()
+    window_process_analysis = latest_window_process_analysis_summary()
 
     focus_ok = summary.get("status") == "foreground_verified"
     full_ok, validation_issues = validate_full_live_preflight(summary, windows)
@@ -1103,6 +1491,12 @@ Exit code: `{log_code}`
 
 ```json
 {json_block(capture_session)}
+```
+
+## Latest Window/Process Analysis
+
+```json
+{json_block(window_process_analysis)}
 ```
 
 ## Focus Log Tail
@@ -1656,6 +2050,7 @@ class RiftScanOperatorApp(tk.Tk):
             [
                 ("Refresh Status", self.refresh_status),
                 ("Run Window/Process Metadata Collector", self.run_window_process_metadata_collector),
+                ("Analyze Latest Session", self.analyze_latest_session_clicked),
                 ("Open Report", self.open_report_clicked),
             ],
             columns=3,
@@ -2149,6 +2544,35 @@ class RiftScanOperatorApp(tk.Tk):
             return "\n".join(lines)
 
         self.run_async("window/process metadata collector", task)
+
+
+    def analyze_latest_session_clicked(self) -> None:
+        def task() -> str:
+            artifacts = analyze_latest_window_process_session()
+            analysis = load_json(artifacts["analysis_path"])
+            summary = analysis.get("summary") or {}
+            report_path = write_operator_report()
+
+            lines = [
+                "\n=== ANALYZE LATEST SESSION ===",
+                f"ANALYZE LATEST SESSION: {summary.get('status', 'UNKNOWN')}",
+                f"Session: {rel(artifacts['session_dir'])}",
+                f"Analysis: {rel(artifacts['analysis_path'])}",
+                f"Anomalies: {rel(artifacts['anomalies_path'])}",
+                f"Handoff: {rel(artifacts['handoff_path'])}",
+                f"Samples: {summary.get('sample_count', 'n/a')}",
+                f"Anomalies: {summary.get('anomaly_count', 'n/a')}",
+                f"Errors: {summary.get('error_count', 'n/a')}",
+                f"Warnings: {summary.get('warning_count', 'n/a')}",
+                f"Focus lost: {summary.get('focus_lost_count', 'n/a')}",
+                f"Artifact contract: {summary.get('artifact_contract_status', 'n/a')}",
+                f"Operator report: {rel(report_path)}",
+                "",
+                "Offline analysis only. No capture, memory read, input, focus change, or /reloadui was run.",
+            ]
+            return "\n".join(lines)
+
+        self.run_async("analyze latest session", task)
 
     def write_report_clicked(self) -> None:
         path = write_operator_report()

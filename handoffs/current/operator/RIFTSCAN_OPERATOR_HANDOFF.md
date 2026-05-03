@@ -1,7 +1,7 @@
 # RiftScan Operator Handoff
 
-Created UTC: `2026-05-03T09:18:16Z`
-App version: `riftscan-operator-app-v3.6.2`
+Created UTC: `2026-05-03T10:04:30Z`
+App version: `riftscan-operator-app-v3.7`
 Repo root: `C:\RIFT MODDING\Riftscan`
 
 ## Operator Assessment
@@ -17,11 +17,7 @@ Summary: `status=foreground_verified pid=29420 hwnd=0x4E0F42 title=RIFT`
 Exit code: `0`
 
 ```text
- M handoffs/current/focus-control-local/focus-control-log.jsonl
- M handoffs/current/focus-control-local/focus-control-summary.json
- M handoffs/current/focus-control-local/process-command-result.json
  M handoffs/current/operator/RIFTSCAN_OPERATOR_HANDOFF.md
- M sessions/focus-gated-captures/LATEST_CAPTURE_SESSION.txt
  M tools/riftscan_operator_app.py
 
 ```
@@ -31,11 +27,11 @@ Exit code: `0`
 Exit code: `0`
 
 ```text
+3f50c61 Update RiftScan operator handoff
 def3614 Update RiftScan operator handoff
 a765f2a Update RiftScan operator handoff
 6b07aee Update RiftScan operator handoff
 abceebc Update RiftScan operator handoff
-fe02a33 Update RiftScan operator handoff
 
 ```
 
@@ -253,7 +249,72 @@ fe02a33 Update RiftScan operator handoff
     "sample_count": 60,
     "error_count": 0,
     "artifact_contract_status": "PASS",
-    "missing_artifacts": []
+    "missing_artifacts": [],
+    "analysis_status": "PASS",
+    "analysis_anomaly_count": 0
+  }
+}
+```
+
+## Latest Window/Process Analysis
+
+```json
+{
+  "status": "present",
+  "latest_session": "sessions/focus-gated-captures/20260503T091644Z_window_process_metadata_collector",
+  "analysis_path": "sessions/focus-gated-captures/20260503T091644Z_window_process_metadata_collector/analysis/window-process-analysis.json",
+  "handoff_path": "sessions/focus-gated-captures/20260503T091644Z_window_process_metadata_collector/analysis/WINDOW_PROCESS_ANALYSIS.md",
+  "summary": {
+    "status": "PASS",
+    "warning_count": 0,
+    "error_count": 0,
+    "anomaly_count": 0,
+    "session": "sessions/focus-gated-captures/20260503T091644Z_window_process_metadata_collector",
+    "sample_count": 60,
+    "expected_sample_count": 60,
+    "focus_lost_count": 0,
+    "rift_process_dead_count": 0,
+    "unique_foreground_hwnds": [
+      "0x4E0F42"
+    ],
+    "unique_foreground_pids": [
+      29420
+    ],
+    "unique_rift_hwnds": [
+      "0x4E0F42"
+    ],
+    "unique_rift_pids": [
+      29420
+    ],
+    "unique_rift_titles": [
+      "RIFT"
+    ],
+    "unique_rift_window_rects": [
+      [
+        2,
+        10,
+        657,
+        408
+      ]
+    ],
+    "unique_rift_client_rects": [
+      [
+        0,
+        0,
+        639,
+        359
+      ]
+    ],
+    "missing_sample_index_count": 0,
+    "duplicate_sample_index_count": 0,
+    "sample_interval_seconds": {
+      "expected": 0.5,
+      "min": 0.497,
+      "max": 0.501,
+      "avg": 0.5,
+      "max_abs_drift": 0.003
+    },
+    "artifact_contract_status": "PASS"
   }
 }
 ```
