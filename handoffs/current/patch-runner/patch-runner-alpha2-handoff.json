@@ -1,0 +1,161 @@
+{
+  "schema_version": "riftscan.patch_runner_handoff.v1",
+  "handoff_id": "RIFTSCAN_PATCH_RUNNER_ALPHA2_HANDOFF_2026-05-03",
+  "created_utc": "2026-05-03T18:10:00Z",
+  "repo": {
+    "name": "360madden/RiftScan",
+    "local_path": "C:\\RIFT MODDING\\Riftscan",
+    "branch": "main",
+    "workflow": "GitHub main first, then local git pull --ff-only"
+  },
+  "current_milestone": {
+    "name": "Patch Runner v3.9-alpha2 — manifest validation only",
+    "status": "implemented_on_github_main",
+    "runner_version": "riftscan-patch-runner-v3.9-alpha2",
+    "launcher_version": "riftscan-patch-runner-cmd-v1.1",
+    "docs_version": "riftscan-patch-runner-docs-v1.1",
+    "example_manifest_version": "riftscan-patch-manifest-example-v3.9-alpha2"
+  },
+  "important_commits_before_handoff": [
+    {
+      "sha": "98aba37",
+      "message": "Update patch manifest example for alpha2"
+    },
+    {
+      "sha": "f52f064",
+      "message": "Add patch manifest validation alpha2"
+    },
+    {
+      "sha": "3bb367d",
+      "message": "Clarify patch runner alpha scope"
+    },
+    {
+      "sha": "8588366",
+      "message": "Add patch runner skeleton"
+    },
+    {
+      "sha": "929b355",
+      "message": "Add patch runner documentation"
+    },
+    {
+      "sha": "55ac845",
+      "message": "Add patch runner command launcher"
+    }
+  ],
+  "handoff_commits": [
+    {
+      "sha": "aa33ecf",
+      "message": "Add patch runner alpha2 handoff",
+      "file": "handoffs/current/patch-runner/RIFTSCAN_PATCH_RUNNER_ALPHA2_HANDOFF.md"
+    }
+  ],
+  "current_files": [
+    "patches/README.md",
+    "patches/apply-latest.cmd",
+    "patches/apply-latest.ps1",
+    "patches/pending/PATCH_MANIFEST.example.json",
+    "handoffs/current/patch-runner/RIFTSCAN_PATCH_RUNNER_ALPHA2_HANDOFF.md",
+    "handoffs/current/patch-runner/patch-runner-alpha2-handoff.json"
+  ],
+  "completed": {
+    "readme_alpha_scope_clarified": true,
+    "cmd_launcher_exit_code_preserved": true,
+    "manifest_validation_added": true,
+    "example_manifest_updated_for_alpha2": true,
+    "patch_application_enabled": false,
+    "auto_commit_enabled": false,
+    "auto_push_enabled": false,
+    "operator_app_behavior_changed": false
+  },
+  "manifest_validation_fields": [
+    "schema_version",
+    "example_only",
+    "patch_id",
+    "patch_title",
+    "created_utc",
+    "runner_min_version",
+    "status",
+    "bundle.path",
+    "bundle.sha256",
+    "bundle.base64_path",
+    "patcher.type",
+    "patcher.entry_point",
+    "patcher.arguments",
+    "expected_extracted_files",
+    "validation.post_patch_commands",
+    "validation.operator_app_behavior_change_expected",
+    "guardrails"
+  ],
+  "exit_codes": {
+    "2": "fail_no_pending_manifest",
+    "3": "fail_manifest_parse_error",
+    "4": "fail_manifest_validation",
+    "5": "blocked_validation_only",
+    "99": "fail_unhandled_error"
+  },
+  "local_validation_plan": [
+    {
+      "name": "pull_latest_main",
+      "commands": [
+        "cd \"C:\\RIFT MODDING\\Riftscan\"",
+        "git pull --ff-only"
+      ]
+    },
+    {
+      "name": "no_manifest_test",
+      "commands": [
+        ".\\patches\\apply-latest.cmd",
+        "$LASTEXITCODE"
+      ],
+      "expected_status": "FAIL_NO_PENDING_MANIFEST",
+      "expected_exit_code": 2
+    },
+    {
+      "name": "invalid_example_manifest_test",
+      "commands": [
+        "Copy-Item -LiteralPath \".\\patches\\pending\\PATCH_MANIFEST.example.json\" -Destination \".\\patches\\pending\\PATCH_MANIFEST.json\" -Force",
+        ".\\patches\\apply-latest.cmd",
+        "$LASTEXITCODE",
+        "Remove-Item -LiteralPath \".\\patches\\pending\\PATCH_MANIFEST.json\" -Force"
+      ],
+      "expected_status": "FAIL_MANIFEST_VALIDATION",
+      "expected_exit_code": 4,
+      "do_not_commit": [
+        "patches/pending/PATCH_MANIFEST.json"
+      ]
+    },
+    {
+      "name": "valid_shape_manifest_test",
+      "expected_status": "BLOCKED_VALIDATION_ONLY",
+      "expected_exit_code": 5,
+      "meaning": "Manifest shape passed; alpha2 intentionally refused to apply patch."
+    }
+  ],
+  "guardrails": [
+    "No patch extraction",
+    "No patcher execution",
+    "No post-patch command execution",
+    "No Operator app behavior change",
+    "No automatic commit",
+    "No automatic push",
+    "No git add ."
+  ],
+  "next_recommended_milestone": {
+    "name": "Patch Runner v3.9-alpha3 — bundle presence and SHA256 verification only",
+    "scope": [
+      "require clean manifest validation",
+      "verify bundle file exists",
+      "calculate SHA256 of bundle file",
+      "compare SHA256 against manifest bundle.sha256",
+      "fail cleanly on mismatch"
+    ],
+    "still_not_allowed": [
+      "bundle extraction",
+      "patcher execution",
+      "post-patch mutation",
+      "automatic commit",
+      "automatic push"
+    ]
+  },
+  "resume_prompt": "Read handoffs/current/patch-runner/RIFTSCAN_PATCH_RUNNER_ALPHA2_HANDOFF.md and handoffs/current/patch-runner/patch-runner-alpha2-handoff.json. Resume RiftScan from Patch Runner v3.9-alpha2. First, help me locally pull and validate alpha2 with no-manifest, invalid example-manifest, and valid-shape manifest tests. Do not advance to extraction or patch execution yet."
+}
