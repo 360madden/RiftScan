@@ -1,6 +1,6 @@
 # RiftScan Operator Handoff
 
-Created UTC: `2026-05-03T15:15:56Z`
+Created UTC: `2026-05-03T15:16:16Z`
 App version: `riftscan-operator-app-v3.8.1`
 Repo root: `C:\RIFT MODDING\Riftscan`
 
@@ -17,11 +17,6 @@ Summary: `status=foreground_verified pid=29420 hwnd=0x4E0F42 title=RIFT`
 Exit code: `0`
 
 ```text
- M handoffs/current/operator/RIFTSCAN_OPERATOR_HANDOFF.md
- M sessions/focus-gated-captures/20260503T091644Z_window_process_metadata_collector/comparison/WINDOW_PROCESS_COMPARISON.md
- M sessions/focus-gated-captures/20260503T091644Z_window_process_metadata_collector/comparison/window-process-comparison-differences.jsonl
- M sessions/focus-gated-captures/20260503T091644Z_window_process_metadata_collector/comparison/window-process-comparison.json
- M tools/riftscan_operator_app.py
 
 ```
 
@@ -30,11 +25,11 @@ Exit code: `0`
 Exit code: `0`
 
 ```text
+980cc80 Update RiftScan operator handoff
 614c46f Update RiftScan operator handoff
 71713d9 Update RiftScan operator handoff
 3f50c61 Update RiftScan operator handoff
 def3614 Update RiftScan operator handoff
-a765f2a Update RiftScan operator handoff
 
 ```
 
