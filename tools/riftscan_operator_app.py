@@ -1,6 +1,6 @@
-# Version: riftscan-operator-app-v3.5.1
-# Purpose: Windows Tkinter helper app for RiftScan operator workflow: run focus preflight, run full live preflight gate, create focus-gated session dry-run manifests, create metadata-only focus-gated capture plans, run focus-gated timed capture scaffolds, run the focus-gated window/process metadata collector, validate declared collector artifacts, validate handoffs, write compact AI-ready reports, clean known junk, and safely commit/push allowlisted files, including ignored artifact paths when needed.
-# Total character count: 77333
+# Version: riftscan-operator-app-v3.6.2
+# Purpose: Windows Tkinter helper app for RiftScan operator workflow: run focus preflight, run full live preflight gate, create focus-gated capture plans, run the focus-gated window/process metadata collector, validate collector artifacts, write compact AI-ready reports, clean known junk, safely commit/push allowlisted files, and provide tabbed/wrapped controls with lightweight status highlighting.
+# Total character count: 82739
 
 from __future__ import annotations
 
@@ -9,17 +9,18 @@ import datetime as dt
 from ctypes import wintypes
 import json
 import os
+import re
 import shutil
 import subprocess
 import threading
 import time
 import tkinter as tk
 from pathlib import Path
-from tkinter import messagebox, scrolledtext
+from tkinter import messagebox, scrolledtext, ttk
 from typing import Any
 
 
-APP_VERSION = "riftscan-operator-app-v3.5.1"
+APP_VERSION = "riftscan-operator-app-v3.6.2"
 REPO_ROOT = Path(__file__).resolve().parents[1]
 FOCUS_SCRIPT = REPO_ROOT / "scripts" / "run-rift-focus-control.cmd"
 HANDOFF_DIR = REPO_ROOT / "handoffs" / "current" / "focus-control-local"
@@ -72,6 +73,11 @@ JUNK_LITERAL = [
     "RIFTSCAN_apply_operator_v34_hardening_patch_v11.py",
     "RIFTSCAN_apply_operator_v35_window_process_collector_patch.py",
     "RIFTSCAN_apply_operator_v351_artifact_contract_patch.py",
+    "RIFTSCAN_apply_operator_v36_ui_tabs_highlighting_patch.py",
+    "RIFTSCAN_apply_operator_v36_ui_tabs_highlighting_patch_v11.py",
+    "RIFTSCAN_apply_operator_v361_ui_hotfix_patch.py",
+    "RIFTSCAN_apply_operator_v361_ui_hotfix_patch_v11.py",
+    "RIFTSCAN_apply_operator_v362_ui_import_hotfix_patch.py",
     "payload",
     "rift_focus_local_simple_v2.zip",
 ]
@@ -1630,39 +1636,207 @@ class RiftScanOperatorApp(tk.Tk):
         tk.Label(header, text=APP_VERSION, font=("Segoe UI", 9), foreground="gray").pack(side=tk.LEFT, padx=(10, 0))
         tk.Label(header, textvariable=self.focus_var, font=("Segoe UI", 10)).pack(side=tk.RIGHT)
 
-        button_row = tk.Frame(self)
-        button_row.pack(fill=tk.X, padx=10, pady=4)
+        button_tabs = ttk.Notebook(self)
+        button_tabs.pack(fill=tk.X, padx=10, pady=4)
 
-        buttons = [
-            ("Refresh Status", self.refresh_status),
-            ("Run Full Live Preflight", self.run_full_live_preflight),
-            ("Run Focus-Gated Session Dry Run", self.run_focus_gated_session_dry_run),
-            ("Create Focus-Gated Capture Plan", self.create_focus_gated_capture_plan_clicked),
-            ("Run Window/Process Metadata Collector", self.run_window_process_metadata_collector),
-            ("Run Focus-Gated Capture Scaffold", self.run_focus_gated_capture_scaffold_clicked),
-            ("Run Focus Preflight", self.run_focus_preflight),
-            ("Write AI Report", self.write_report_clicked),
-            ("Clean Known Junk", self.clean_junk_clicked),
-            ("Commit Allowlist", self.commit_clicked),
-            ("Push", self.push_clicked),
-            ("Open Report", self.open_report_clicked),
-        ]
+        main_tab = tk.Frame(button_tabs)
+        planning_tab = tk.Frame(button_tabs)
+        diagnostics_tab = tk.Frame(button_tabs)
+        legacy_tab = tk.Frame(button_tabs)
+        git_tab = tk.Frame(button_tabs)
 
-        for label, command in buttons:
-            tk.Button(button_row, text=label, command=command).pack(side=tk.LEFT, padx=4, pady=4)
+        button_tabs.add(main_tab, text="Main")
+        button_tabs.add(planning_tab, text="Planning")
+        button_tabs.add(diagnostics_tab, text="Diagnostics")
+        button_tabs.add(legacy_tab, text="Legacy")
+        button_tabs.add(git_tab, text="Git / Maintenance")
+
+        self.add_button_grid(
+            main_tab,
+            [
+                ("Refresh Status", self.refresh_status),
+                ("Run Window/Process Metadata Collector", self.run_window_process_metadata_collector),
+                ("Open Report", self.open_report_clicked),
+            ],
+            columns=3,
+        )
+
+        self.add_button_grid(
+            planning_tab,
+            [
+                ("Create Focus-Gated Capture Plan", self.create_focus_gated_capture_plan_clicked),
+            ],
+            columns=3,
+        )
+
+        self.add_button_grid(
+            diagnostics_tab,
+            [
+                ("Run Full Live Preflight", self.run_full_live_preflight),
+                ("Run Focus Preflight", self.run_focus_preflight),
+            ],
+            columns=3,
+        )
+
+        self.add_button_grid(
+            legacy_tab,
+            [
+                ("Run Focus-Gated Session Dry Run", self.run_focus_gated_session_dry_run),
+                ("Write AI Report", self.write_report_clicked),
+            ],
+            columns=3,
+        )
+
+        self.add_button_grid(
+            git_tab,
+            [
+                ("Clean Known Junk", self.clean_junk_clicked),
+                ("Commit Allowlist", self.commit_clicked),
+                ("Push", self.push_clicked),
+            ],
+            columns=3,
+        )
 
         tk.Label(self, textvariable=self.status_var, anchor="w").pack(fill=tk.X, padx=10, pady=(2, 4))
 
         self.output = scrolledtext.ScrolledText(self, wrap=tk.WORD, font=("Consolas", 10))
         self.output.pack(fill=tk.BOTH, expand=True, padx=10, pady=(0, 10))
+        self.configure_output_tags()
 
         self.append(f"Repo root: {REPO_ROOT}\n")
         self.refresh_status()
 
+    def add_button_grid(self, parent: tk.Widget, buttons: list[tuple[str, Any]], columns: int = 3) -> None:
+        for index, (label, command) in enumerate(buttons):
+            row = index // columns
+            column = index % columns
+            tk.Button(parent, text=label, command=command).grid(
+                row=row,
+                column=column,
+                padx=4,
+                pady=4,
+                sticky="ew",
+            )
+
+        for column in range(columns):
+            parent.grid_columnconfigure(column, weight=1)
+
+    def configure_output_tags(self) -> None:
+        self.output.tag_configure("pass", foreground="#2e7d32", font=("Consolas", 10, "bold"))
+        self.output.tag_configure("fail", foreground="#c62828", font=("Consolas", 10, "bold"))
+        self.output.tag_configure("warning", foreground="#b26a00", font=("Consolas", 10, "bold"))
+        self.output.tag_configure("running", foreground="#1565c0", font=("Consolas", 10, "bold"))
+        self.output.tag_configure("section", foreground="#4e342e", font=("Consolas", 10, "bold"))
+        self.output.tag_configure("path", foreground="#00695c")
+        self.output.tag_configure("muted", foreground="#616161")
+
+    def classify_output_line(self, line: str) -> str | None:
+        stripped = line.strip()
+        lower = stripped.lower()
+
+        if not stripped:
+            return None
+
+        if stripped.startswith("===") or stripped.startswith("# "):
+            return "section"
+
+        if lower.startswith("running:") or "in progress" in lower:
+            return "running"
+
+        if stripped.startswith("??") or stripped.startswith(" M ") or stripped.startswith("MM "):
+            return "warning"
+
+        if (
+            "errors: 0" in lower
+            or '"error_count": 0' in lower
+            or "error_count: 0" in lower
+            or "missing_artifacts\": []" in lower
+            or "missing_artifacts: []" in lower
+            or "artifact contract: pass" in lower
+            or "artifact_contract_status\": \"pass\"" in lower
+        ):
+            return "pass"
+
+        fail_tokens = [
+            "fail",
+            "error:",
+            "blocked",
+            "traceback",
+            "exception",
+            "missing_artifacts",
+            "artifact contract: fail",
+            "artifact_contract_status\": \"fail\"",
+            "exit=1",
+            "exit code: 1",
+            "completed_with_artifact_warning",
+            "focus lost samples: 1",
+            "focus lost samples: 2",
+            "focus lost samples: 3",
+            "focus lost samples: 4",
+            "focus lost samples: 5",
+            "focus_lost_count\": 1",
+            "focus_lost_count\": 2",
+            "focus_lost_count\": 3",
+            "focus_lost_count\": 4",
+            "focus_lost_count\": 5",
+        ]
+        if any(token in lower for token in fail_tokens):
+            return "fail"
+
+        warning_tokens = [
+            "warning",
+            "dirty",
+            "untracked",
+            "completed_with",
+            "artifact warning",
+            "skipped",
+        ]
+        if any(token in lower for token in warning_tokens):
+            return "warning"
+
+        pass_tokens = [
+            "pass",
+            "ok",
+            "success",
+            "foreground_verified",
+            "exit=0",
+            "exit code: `0`",
+            "collector completed",
+            "samples: 60",
+            "focus verified samples:",
+            "git push exit=0",
+            "git commit exit=0",
+        ]
+        if any(token in lower for token in pass_tokens):
+            return "pass"
+
+        if (
+            "sessions/" in stripped
+            or "handoffs/" in stripped
+            or "plans/" in stripped
+            or "tools/" in stripped
+            or "scripts/" in stripped
+            or "C:\\" in stripped
+        ):
+            return "path"
+
+        if re.search(r"\\b[0-9a-f]{7,40}\\b", stripped, flags=re.IGNORECASE):
+            return "muted"
+
+        return None
+
     def append(self, text: str) -> None:
-        self.output.insert(tk.END, text)
         if not text.endswith("\n"):
-            self.output.insert(tk.END, "\n")
+            text += "\n"
+
+        for line in text.splitlines(keepends=True):
+            start = self.output.index(tk.END)
+            self.output.insert(tk.END, line)
+            end = self.output.index(tk.END)
+            tag = self.classify_output_line(line.rstrip("\r\n"))
+            if tag:
+                self.output.tag_add(tag, start, end)
+
         self.output.see(tk.END)
 
     def set_status(self, text: str) -> None:
