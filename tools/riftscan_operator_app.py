@@ -1,6 +1,6 @@
-# Version: riftscan-operator-app-v3.8
+# Version: riftscan-operator-app-v3.8.1
 # Purpose: Windows Tkinter helper app for RiftScan operator workflow: run focus preflight, run full live preflight gate, create focus-gated capture plans, run the focus-gated window/process metadata collector, analyze and compare collector sessions, validate collector artifacts, write compact AI-ready reports, clean known junk, safely commit/push allowlisted files, and provide tabbed/wrapped controls with lightweight status highlighting.
-# Total character count: 120550
+# Total character count: 121823
 
 from __future__ import annotations
 
@@ -20,7 +20,7 @@ from tkinter import messagebox, scrolledtext, ttk
 from typing import Any
 
 
-APP_VERSION = "riftscan-operator-app-v3.8"
+APP_VERSION = "riftscan-operator-app-v3.8.1"
 REPO_ROOT = Path(__file__).resolve().parents[1]
 FOCUS_SCRIPT = REPO_ROOT / "scripts" / "run-rift-focus-control.cmd"
 HANDOFF_DIR = REPO_ROOT / "handoffs" / "current" / "focus-control-local"
@@ -82,6 +82,7 @@ JUNK_LITERAL = [
     "RIFTSCAN_apply_operator_v362_ui_import_hotfix_patch.py",
     "RIFTSCAN_apply_operator_v37_analyze_latest_session_patch_checked.py",
     "RIFTSCAN_apply_operator_v38_compare_sessions_patch_checked.py",
+    "RIFTSCAN_apply_operator_v381_comparison_baseline_hotfix_patch.py",
     "payload",
     "rift_focus_local_simple_v2.zip",
 ]
@@ -1620,8 +1621,39 @@ def compare_latest_window_process_sessions() -> dict[str, Path]:
     compare_field("sample_count_declared", "warning")
     compare_field("sample_count_actual", "warning")
     compare_field("artifact_contract_status", "error", "Artifact contract status changed.")
-    compare_field("analysis_status", "error", "Analysis status changed.")
-    compare_field("analysis_anomaly_count", "warning", "Analysis anomaly count changed.")
+
+    previous_analysis_status = previous.get("analysis_status")
+    latest_analysis_status = latest.get("analysis_status")
+    if previous_analysis_status is None and latest_analysis_status == "PASS":
+        add_difference(
+            "previous_analysis_missing",
+            "warning",
+            "Previous session has no analysis artifact; latest analysis is PASS. Comparing raw metrics only.",
+            previous_analysis_status,
+            latest_analysis_status,
+        )
+    elif previous_analysis_status != latest_analysis_status:
+        add_difference(
+            "analysis_status",
+            "error" if latest_analysis_status == "FAIL" else "warning",
+            "Analysis status changed.",
+            previous_analysis_status,
+            latest_analysis_status,
+        )
+
+    previous_analysis_anomaly_count = previous.get("analysis_anomaly_count")
+    latest_analysis_anomaly_count = latest.get("analysis_anomaly_count")
+    if previous_analysis_anomaly_count is None and latest_analysis_anomaly_count in (None, 0):
+        pass
+    elif previous_analysis_anomaly_count != latest_analysis_anomaly_count:
+        add_difference(
+            "analysis_anomaly_count",
+            "warning",
+            "Analysis anomaly count changed.",
+            previous_analysis_anomaly_count,
+            latest_analysis_anomaly_count,
+        )
+
     compare_field("unique_foreground_hwnds", "warning", "Foreground HWND set changed.")
     compare_field("unique_foreground_pids", "warning", "Foreground PID set changed.")
     compare_field("unique_rift_hwnds", "warning", "RIFT HWND set changed.")

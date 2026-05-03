@@ -1,2 +1,1 @@
-{"kind": "analysis_status", "latest": "PASS", "message": "Analysis status changed.", "previous": null, "severity": "error"}
-{"kind": "analysis_anomaly_count", "latest": 0, "message": "Analysis anomaly count changed.", "previous": null, "severity": "warning"}
+{"kind": "previous_analysis_missing", "latest": "PASS", "message": "Previous session has no analysis artifact; latest analysis is PASS. Comparing raw metrics only.", "previous": null, "severity": "warning"}

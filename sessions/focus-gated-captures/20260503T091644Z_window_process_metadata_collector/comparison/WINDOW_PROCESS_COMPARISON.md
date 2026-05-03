@@ -1,12 +1,12 @@
 # Window/Process Metadata Session Comparison
 
-Created UTC: `2026-05-03T15:11:10Z`
-App version: `riftscan-operator-app-v3.8`
-Status: `FAIL`
+Created UTC: `2026-05-03T15:14:55Z`
+App version: `riftscan-operator-app-v3.8.1`
+Status: `PASS`
 Previous session: `sessions/focus-gated-captures/20260503T085611Z_window_process_metadata_collector`
 Latest session: `sessions/focus-gated-captures/20260503T091644Z_window_process_metadata_collector`
-Differences: `2`
-Errors: `1`
+Differences: `1`
+Errors: `0`
 Warnings: `1`
 
 ## Key Deltas
@@ -30,5 +30,4 @@ This comparison is offline-only. It does not run capture, read process memory, s
 
 ## Differences
 
-- `error` `analysis_status` — Analysis status changed. Previous=`None` Latest=`PASS`
-- `warning` `analysis_anomaly_count` — Analysis anomaly count changed. Previous=`None` Latest=`0`
+- `warning` `previous_analysis_missing` — Previous session has no analysis artifact; latest analysis is PASS. Comparing raw metrics only. Previous=`None` Latest=`PASS`

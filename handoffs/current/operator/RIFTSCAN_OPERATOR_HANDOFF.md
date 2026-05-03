@@ -1,7 +1,7 @@
 # RiftScan Operator Handoff
 
-Created UTC: `2026-05-03T15:11:31Z`
-App version: `riftscan-operator-app-v3.8`
+Created UTC: `2026-05-03T15:15:56Z`
+App version: `riftscan-operator-app-v3.8.1`
 Repo root: `C:\RIFT MODDING\Riftscan`
 
 ## Operator Assessment
@@ -18,6 +18,9 @@ Exit code: `0`
 
 ```text
  M handoffs/current/operator/RIFTSCAN_OPERATOR_HANDOFF.md
+ M sessions/focus-gated-captures/20260503T091644Z_window_process_metadata_collector/comparison/WINDOW_PROCESS_COMPARISON.md
+ M sessions/focus-gated-captures/20260503T091644Z_window_process_metadata_collector/comparison/window-process-comparison-differences.jsonl
+ M sessions/focus-gated-captures/20260503T091644Z_window_process_metadata_collector/comparison/window-process-comparison.json
  M tools/riftscan_operator_app.py
 
 ```
@@ -27,11 +30,11 @@ Exit code: `0`
 Exit code: `0`
 
 ```text
+614c46f Update RiftScan operator handoff
 71713d9 Update RiftScan operator handoff
 3f50c61 Update RiftScan operator handoff
 def3614 Update RiftScan operator handoff
 a765f2a Update RiftScan operator handoff
-6b07aee Update RiftScan operator handoff
 
 ```
 
@@ -252,8 +255,8 @@ a765f2a Update RiftScan operator handoff
     "missing_artifacts": [],
     "analysis_status": "PASS",
     "analysis_anomaly_count": 0,
-    "comparison_status": "FAIL",
-    "comparison_difference_count": 2
+    "comparison_status": "PASS",
+    "comparison_difference_count": 1
   }
 }
 ```
@@ -330,10 +333,10 @@ a765f2a Update RiftScan operator handoff
   "comparison_path": "sessions/focus-gated-captures/20260503T091644Z_window_process_metadata_collector/comparison/window-process-comparison.json",
   "handoff_path": "sessions/focus-gated-captures/20260503T091644Z_window_process_metadata_collector/comparison/WINDOW_PROCESS_COMPARISON.md",
   "summary": {
-    "status": "FAIL",
-    "difference_count": 2,
+    "status": "PASS",
+    "difference_count": 1,
     "warning_count": 1,
-    "error_count": 1,
+    "error_count": 0,
     "previous_session": "sessions/focus-gated-captures/20260503T085611Z_window_process_metadata_collector",
     "latest_session": "sessions/focus-gated-captures/20260503T091644Z_window_process_metadata_collector",
     "previous_analysis_status": null,

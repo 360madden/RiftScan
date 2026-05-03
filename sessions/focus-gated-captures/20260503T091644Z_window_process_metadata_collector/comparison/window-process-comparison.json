@@ -1,12 +1,12 @@
 {
   "schema_version": "riftscan.window_process_comparison.v1",
-  "created_utc": "2026-05-03T15:11:10Z",
-  "app_version": "riftscan-operator-app-v3.8",
+  "created_utc": "2026-05-03T15:14:55Z",
+  "app_version": "riftscan-operator-app-v3.8.1",
   "summary": {
-    "status": "FAIL",
-    "difference_count": 2,
+    "status": "PASS",
+    "difference_count": 1,
     "warning_count": 1,
-    "error_count": 1,
+    "error_count": 0,
     "previous_session": "sessions/focus-gated-captures/20260503T085611Z_window_process_metadata_collector",
     "latest_session": "sessions/focus-gated-captures/20260503T091644Z_window_process_metadata_collector",
     "previous_analysis_status": null,
@@ -138,18 +138,11 @@
   },
   "differences": [
     {
-      "kind": "analysis_status",
-      "severity": "error",
-      "message": "Analysis status changed.",
+      "kind": "previous_analysis_missing",
+      "severity": "warning",
+      "message": "Previous session has no analysis artifact; latest analysis is PASS. Comparing raw metrics only.",
       "previous": null,
       "latest": "PASS"
-    },
-    {
-      "kind": "analysis_anomaly_count",
-      "severity": "warning",
-      "message": "Analysis anomaly count changed.",
-      "previous": null,
-      "latest": 0
     }
   ],
   "outputs": {
