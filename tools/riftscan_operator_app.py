@@ -1,6 +1,6 @@
-# Version: riftscan-operator-app-v2
-# Purpose: Windows Tkinter helper app for RiftScan operator workflow: run focus preflight, run full live preflight gate, validate handoffs, write AI-ready reports, clean known junk, and safely commit/push allowlisted files.
-# Total character count: 17128
+# Version: riftscan-operator-app-v3.1
+# Purpose: Windows Tkinter helper app for RiftScan operator workflow: run focus preflight, run full live preflight gate, create focus-gated session dry-run manifests, validate handoffs, write AI-ready reports, clean known junk, and safely commit/push allowlisted files, including force-adding the ignored dry-run session path.
+# Total character count: 24636
 
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ from tkinter import messagebox, scrolledtext
 from typing import Any
 
 
-APP_VERSION = "riftscan-operator-app-v2"
+APP_VERSION = "riftscan-operator-app-v3.1"
 REPO_ROOT = Path(__file__).resolve().parents[1]
 FOCUS_SCRIPT = REPO_ROOT / "scripts" / "run-rift-focus-control.cmd"
 HANDOFF_DIR = REPO_ROOT / "handoffs" / "current" / "focus-control-local"
@@ -25,6 +25,8 @@ REPORT_PATH = OPERATOR_DIR / "RIFTSCAN_OPERATOR_HANDOFF.md"
 FOCUS_SUMMARY = HANDOFF_DIR / "focus-control-summary.json"
 WINDOWS_JSON = HANDOFF_DIR / "windows.json"
 FOCUS_LOG = HANDOFF_DIR / "focus-control-log.jsonl"
+DRY_RUN_ROOT = REPO_ROOT / "sessions" / "focus-gated-dry-runs"
+LATEST_DRY_RUN = DRY_RUN_ROOT / "LATEST_DRY_RUN.txt"
 
 ALLOWLIST = [
     "handoffs/current/focus-control-local",
@@ -35,12 +37,19 @@ ALLOWLIST = [
     "tools/riftscan_operator_app.py",
 ]
 
+FORCE_ADD_ALLOWLIST = [
+    "sessions/focus-gated-dry-runs",
+]
+
 JUNK_LITERAL = [
     "None",
     "dict[str",
     "list[dict[str",
     "str",
     "README.txt",
+    "README_INSTALL.md",
+    "install-riftscan-operator-app.cmd",
+    "payload",
     "rift_focus_local_simple_v2.zip",
 ]
 
@@ -55,6 +64,10 @@ JUNK_GLOBS = [
 
 def utc_now() -> str:
     return dt.datetime.now(dt.UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+
+
+def safe_timestamp() -> str:
+    return dt.datetime.now(dt.UTC).strftime("%Y%m%dT%H%M%SZ")
 
 
 def rel(path: Path) -> str:
@@ -140,6 +153,68 @@ def validate_full_live_preflight(summary: dict[str, Any], windows: dict[str, Any
     return not issues, issues
 
 
+def run_full_live_preflight_gate() -> dict[str, Any]:
+    focus_code = 1
+    focus_out = ""
+    focus_err = ""
+    issues: list[str] = []
+
+    if FOCUS_SCRIPT.exists():
+        focus_code, focus_out, focus_err = run_command(["cmd", "/c", str(FOCUS_SCRIPT)], timeout=90)
+    else:
+        issues.append(f"Missing {rel(FOCUS_SCRIPT)}.")
+
+    summary = load_json(FOCUS_SUMMARY)
+    windows = load_json(WINDOWS_JSON)
+    valid, validation_issues = validate_full_live_preflight(summary, windows)
+    issues.extend(validation_issues)
+
+    if FOCUS_SCRIPT.exists() and focus_code != 0:
+        issues.append(f"Focus-control script exited with code {focus_code}.")
+
+    git_status_code, git_status, git_status_err = run_command(["git", "status", "--short"], timeout=30)
+    git_log_code, git_log, git_log_err = run_command(["git", "log", "--oneline", "-5"], timeout=30)
+
+    if git_status_code != 0:
+        issues.append("git status --short failed.")
+    if git_log_code != 0:
+        issues.append("git log --oneline -5 failed.")
+
+    pass_gate = valid and focus_code == 0 and git_status_code == 0 and git_log_code == 0 and not issues
+
+    return {
+        "pass_gate": pass_gate,
+        "issues": issues,
+        "focus_code": focus_code,
+        "focus_stdout": focus_out,
+        "focus_stderr": focus_err,
+        "summary": summary,
+        "windows": windows,
+        "git_status_code": git_status_code,
+        "git_status": git_status,
+        "git_status_err": git_status_err,
+        "git_log_code": git_log_code,
+        "git_log": git_log,
+        "git_log_err": git_log_err,
+    }
+
+
+def latest_dry_run_summary() -> dict[str, Any]:
+    if not LATEST_DRY_RUN.exists():
+        return {"status": "none"}
+    session_rel = LATEST_DRY_RUN.read_text(encoding="utf-8", errors="replace").strip()
+    if not session_rel:
+        return {"status": "none", "reason": "latest pointer is empty"}
+    manifest_path = REPO_ROOT / session_rel / "manifest.json"
+    manifest = load_json(manifest_path)
+    return {
+        "status": "present",
+        "latest_session": session_rel,
+        "manifest_path": rel(manifest_path),
+        "manifest": manifest,
+    }
+
+
 def write_operator_report() -> Path:
     OPERATOR_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -149,6 +224,7 @@ def write_operator_report() -> Path:
     summary = load_json(FOCUS_SUMMARY)
     windows = load_json(WINDOWS_JSON)
     log_tail = tail_text(FOCUS_LOG, 60)
+    dry_run = latest_dry_run_summary()
 
     focus_ok = summary.get("status") == "foreground_verified"
     full_ok, validation_issues = validate_full_live_preflight(summary, windows)
@@ -203,6 +279,12 @@ Exit code: `{log_code}`
 {json_block(windows)}
 ```
 
+## Latest Focus-Gated Session Dry Run
+
+```json
+{json_block(dry_run)}
+```
+
 ## Focus Log Tail
 
 ```jsonl
@@ -218,13 +300,103 @@ Review this RiftScan operator handoff. Tell me the next safest practical step, a
 ## Guardrails
 
 - The full live preflight is conservative: focus + validation + report only.
-- The full live preflight does not run movement, input, capture, memory scans, or `/reloadui`.
-- The helper stages only explicit allowlisted paths.
+- The focus-gated session dry run creates session metadata only.
+- The helper stages only explicit allowlisted paths; ignored dry-run session paths are force-added explicitly.
 - The helper never runs `git add .`.
 - Known junk cleanup uses literal paths/globs from the helper configuration.
 """
     REPORT_PATH.write_text(report, encoding="utf-8")
     return REPORT_PATH
+
+
+def create_focus_gated_session_dry_run(gate: dict[str, Any]) -> tuple[Path, Path, Path]:
+    if not gate.get("pass_gate"):
+        raise RuntimeError("Cannot create dry-run session because full live preflight did not pass.")
+
+    summary = gate.get("summary") or {}
+    windows = gate.get("windows") or {}
+    process = summary.get("process") or {}
+    selected = summary.get("selected_window") or {}
+
+    session_id = f"{safe_timestamp()}_focus_gated_session_dry_run"
+    session_dir = DRY_RUN_ROOT / session_id
+    session_dir.mkdir(parents=True, exist_ok=False)
+
+    manifest = {
+        "schema_version": "riftscan.focus_gated_session_dry_run.v1",
+        "created_utc": utc_now(),
+        "app_version": APP_VERSION,
+        "session_id": session_id,
+        "status": "dry_run_session_created",
+        "dry_run": True,
+        "full_live_preflight": {
+            "status": "PASS",
+            "focus_status": summary.get("status"),
+            "process_id": process.get("Id"),
+            "process_name": process.get("ProcessName"),
+            "window_hwnd": selected.get("hwnd"),
+            "window_hwnd_hex": selected.get("hwnd_hex"),
+            "window_title": selected.get("title"),
+            "windows_count": len(windows.get("windows") or []),
+        },
+        "guardrails": [
+            "No live test sequence was started.",
+            "No local data collection sequence was started.",
+            "This session is metadata-only.",
+        ],
+        "source_artifacts": {
+            "focus_summary": rel(FOCUS_SUMMARY),
+            "windows_json": rel(WINDOWS_JSON),
+            "focus_log": rel(FOCUS_LOG),
+            "operator_report": rel(REPORT_PATH),
+        },
+        "next_expected_step": "Use this metadata-only session structure as the staging contract before wiring the first real focus-gated live-test workflow.",
+    }
+
+    manifest_path = session_dir / "manifest.json"
+    manifest_path.write_text(json_block(manifest) + "\n", encoding="utf-8")
+
+    handoff = f"""# Focus-Gated Session Dry Run
+
+Session ID: `{session_id}`
+Created UTC: `{manifest["created_utc"]}`
+Status: `{manifest["status"]}`
+
+## Result
+
+The operator app created this metadata-only session after the full live preflight gate passed.
+
+```text
+FULL LIVE PREFLIGHT: PASS
+Focus: {summary.get("status")}
+PID: {process.get("Id")}
+HWND: {selected.get("hwnd_hex")}
+Title: {selected.get("title")}
+```
+
+## Guardrails
+
+- No live test sequence was started.
+- No local data collection sequence was started.
+- This session is metadata-only.
+
+## Manifest
+
+```text
+{rel(manifest_path)}
+```
+
+## Next Expected Step
+
+Use this metadata-only session structure as the staging contract before wiring the first real focus-gated live-test workflow.
+"""
+    handoff_path = session_dir / "DRY_RUN_HANDOFF.md"
+    handoff_path.write_text(handoff, encoding="utf-8")
+
+    LATEST_DRY_RUN.parent.mkdir(parents=True, exist_ok=True)
+    LATEST_DRY_RUN.write_text(rel(session_dir) + "\n", encoding="utf-8")
+
+    return session_dir, manifest_path, handoff_path
 
 
 def clean_known_junk() -> list[str]:
@@ -255,8 +427,8 @@ class RiftScanOperatorApp(tk.Tk):
     def __init__(self) -> None:
         super().__init__()
         self.title("RiftScan Operator")
-        self.geometry("980x700")
-        self.minsize(820, 560)
+        self.geometry("1100x720")
+        self.minsize(900, 580)
 
         self.status_var = tk.StringVar(value="Ready.")
         self.focus_var = tk.StringVar(value="Focus: unknown")
@@ -273,6 +445,7 @@ class RiftScanOperatorApp(tk.Tk):
         buttons = [
             ("Refresh Status", self.refresh_status),
             ("Run Full Live Preflight", self.run_full_live_preflight),
+            ("Run Focus-Gated Session Dry Run", self.run_focus_gated_session_dry_run),
             ("Run Focus Preflight", self.run_focus_preflight),
             ("Write AI Report", self.write_report_clicked),
             ("Clean Known Junk", self.clean_junk_clicked),
@@ -356,31 +529,9 @@ class RiftScanOperatorApp(tk.Tk):
 
     def run_full_live_preflight(self) -> None:
         def task() -> str:
-            focus_code = 1
-            focus_out = ""
-            focus_err = ""
-
-            if FOCUS_SCRIPT.exists():
-                focus_code, focus_out, focus_err = run_command(["cmd", "/c", str(FOCUS_SCRIPT)], timeout=90)
-
-            summary = load_json(FOCUS_SUMMARY)
-            windows = load_json(WINDOWS_JSON)
-            valid, issues = validate_full_live_preflight(summary, windows)
-
-            if not FOCUS_SCRIPT.exists():
-                issues.append(f"Missing {rel(FOCUS_SCRIPT)}.")
-            elif focus_code != 0:
-                issues.append(f"Focus-control script exited with code {focus_code}.")
-
-            git_status_code, git_status, git_status_err = run_command(["git", "status", "--short"], timeout=30)
-            git_log_code, git_log, git_log_err = run_command(["git", "log", "--oneline", "-5"], timeout=30)
-
-            if git_status_code != 0:
-                issues.append("git status --short failed.")
-            if git_log_code != 0:
-                issues.append("git log --oneline -5 failed.")
-
+            gate = run_full_live_preflight_gate()
             report_path = write_operator_report()
+            summary = gate["summary"]
             self.after(0, lambda: self.focus_var.set(f"Focus: {focus_line(summary)}"))
 
             process = summary.get("process") or {}
@@ -389,10 +540,8 @@ class RiftScanOperatorApp(tk.Tk):
             hwnd = selected.get("hwnd_hex", "n/a")
             title = selected.get("title", "n/a")
 
-            pass_gate = valid and focus_code == 0 and git_status_code == 0 and git_log_code == 0 and not issues
-
             lines = ["\n=== FULL LIVE PREFLIGHT ==="]
-            if pass_gate:
+            if gate["pass_gate"]:
                 lines.extend(
                     [
                         "FULL LIVE PREFLIGHT: PASS",
@@ -405,28 +554,73 @@ class RiftScanOperatorApp(tk.Tk):
                 )
             else:
                 lines.append("FULL LIVE PREFLIGHT: FAIL")
-                lines.extend(f"- {issue}" for issue in issues)
+                lines.extend(f"- {issue}" for issue in gate["issues"])
                 lines.append(f"Operator report: {rel(report_path)}")
 
             lines.extend(
                 [
                     "",
                     "Focus-control stdout:",
-                    focus_out.strip() or "[empty]",
+                    gate["focus_stdout"].strip() or "[empty]",
                     "",
                     "Focus-control stderr:",
-                    focus_err.strip() or "[empty]",
+                    gate["focus_stderr"].strip() or "[empty]",
                     "",
                     "git status --short:",
-                    git_status.strip() if git_status_code == 0 and git_status.strip() else ("[clean]" if git_status_code == 0 else git_status_err.strip()),
+                    gate["git_status"].strip()
+                    if gate["git_status_code"] == 0 and gate["git_status"].strip()
+                    else ("[clean]" if gate["git_status_code"] == 0 else gate["git_status_err"].strip()),
                     "",
                     "git log --oneline -5:",
-                    git_log.strip() if git_log_code == 0 else git_log_err.strip(),
+                    gate["git_log"].strip() if gate["git_log_code"] == 0 else gate["git_log_err"].strip(),
                 ]
             )
             return "\n".join(lines)
 
         self.run_async("full live preflight", task)
+
+    def run_focus_gated_session_dry_run(self) -> None:
+        def task() -> str:
+            gate = run_full_live_preflight_gate()
+            summary = gate["summary"]
+            self.after(0, lambda: self.focus_var.set(f"Focus: {focus_line(summary)}"))
+
+            report_path = write_operator_report()
+
+            if not gate["pass_gate"]:
+                lines = [
+                    "\n=== FOCUS-GATED SESSION DRY RUN ===",
+                    "FOCUS-GATED SESSION DRY RUN: FAIL",
+                    "Dry-run session was not created because the full live preflight gate failed.",
+                ]
+                lines.extend(f"- {issue}" for issue in gate["issues"])
+                lines.append(f"Operator report: {rel(report_path)}")
+                return "\n".join(lines)
+
+            session_dir, manifest_path, handoff_path = create_focus_gated_session_dry_run(gate)
+            report_path = write_operator_report()
+
+            selected = (summary.get("selected_window") or {})
+            process = (summary.get("process") or {})
+
+            lines = [
+                "\n=== FOCUS-GATED SESSION DRY RUN ===",
+                "FOCUS-GATED SESSION DRY RUN: PASS",
+                "Created dry-run session metadata only.",
+                f"Session: {rel(session_dir)}",
+                f"Manifest: {rel(manifest_path)}",
+                f"Handoff: {rel(handoff_path)}",
+                f"Focus: {summary.get('status', 'unknown')}",
+                f"PID: {process.get('Id', 'n/a')}",
+                f"HWND: {selected.get('hwnd_hex', 'n/a')}",
+                f"Title: {selected.get('title', 'n/a')}",
+                f"Operator report: {rel(report_path)}",
+                "",
+                "No live test sequence or local data collection sequence was started.",
+            ]
+            return "\n".join(lines)
+
+        self.run_async("focus-gated session dry run", task)
 
     def write_report_clicked(self) -> None:
         path = write_operator_report()
@@ -447,19 +641,31 @@ class RiftScanOperatorApp(tk.Tk):
     def commit_clicked(self) -> None:
         if not messagebox.askyesno(
             "Commit allowlisted files",
-            "Stage only allowlisted focus/operator paths and commit? Push remains separate.",
+            "Stage only allowlisted focus/operator/session paths and commit? Push remains separate.",
         ):
             return
 
         def task() -> str:
             write_operator_report()
             existing = [path for path in ALLOWLIST if (REPO_ROOT / path).exists()]
-            if not existing:
+            force_existing = [path for path in FORCE_ADD_ALLOWLIST if (REPO_ROOT / path).exists()]
+
+            if not existing and not force_existing:
                 return "No allowlisted paths exist to stage."
 
-            add_code, add_out, add_err = run_command(["git", "add", "--", *existing], timeout=60)
-            if add_code != 0:
-                return f"git add failed:\n{add_out}\n{add_err}"
+            add_outputs: list[str] = []
+
+            if existing:
+                add_code, add_out, add_err = run_command(["git", "add", "--", *existing], timeout=60)
+                add_outputs.extend([add_out.strip(), add_err.strip()])
+                if add_code != 0:
+                    return f"git add failed:\n{add_out}\n{add_err}"
+
+            if force_existing:
+                force_code, force_out, force_err = run_command(["git", "add", "-f", "--", *force_existing], timeout=60)
+                add_outputs.extend([force_out.strip(), force_err.strip()])
+                if force_code != 0:
+                    return f"git add -f failed for ignored allowlist paths:\n{force_out}\n{force_err}"
 
             diff_code, _, _ = run_command(["git", "diff", "--cached", "--quiet"], timeout=30)
             if diff_code == 0:

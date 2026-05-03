@@ -1,7 +1,7 @@
 # RiftScan Operator Handoff
 
-Created UTC: `2026-05-03T07:25:24Z`
-App version: `riftscan-operator-app-v2`
+Created UTC: `2026-05-03T07:59:02Z`
+App version: `riftscan-operator-app-v3.1`
 Repo root: `C:\RIFT MODDING\Riftscan`
 
 ## Operator Assessment
@@ -17,10 +17,17 @@ Summary: `status=foreground_verified pid=29420 hwnd=0x4E0F42 title=RIFT`
 Exit code: `0`
 
 ```text
- M handoffs/current/focus-control-local/focus-control-log.jsonl
- M handoffs/current/focus-control-local/focus-control-summary.json
- M handoffs/current/focus-control-local/process-command-result.json
- M handoffs/current/operator/RIFTSCAN_OPERATOR_HANDOFF.md
+M  handoffs/current/focus-control-local/focus-control-log.jsonl
+M  handoffs/current/focus-control-local/focus-control-summary.json
+M  handoffs/current/focus-control-local/process-command-result.json
+MM handoffs/current/operator/RIFTSCAN_OPERATOR_HANDOFF.md
+M  scripts/riftscan-operator-app.cmd
+MM tools/riftscan_operator_app.py
+?? README_INSTALL_v3.md
+?? README_INSTALL_v31.md
+?? RiftScan_Operator_App_v31_Dry_Run_Commit_Hotfix.zip
+?? install-riftscan-operator-app-v3.cmd
+?? install-riftscan-operator-app-v31.cmd
 
 ```
 
@@ -29,11 +36,11 @@ Exit code: `0`
 Exit code: `0`
 
 ```text
+640eb62 Update RiftScan operator handoff
 5f5d335 Add full live preflight to operator app
 dbf13dd Update RiftScan operator handoff
 b7201b7 Add RiftScan operator helper app launcher
 5b6a3c7 Promote RIFT focus control probe to tracked tool
-6bf58a5 Update local RIFT focus control handoff with verified foreground
 
 ```
 
@@ -42,7 +49,7 @@ b7201b7 Add RiftScan operator helper app launcher
 ```json
 {
   "schema_version": "riftscan.local_focus_control_summary.v1",
-  "created_utc": "2026-05-03T07:21:23Z",
+  "created_utc": "2026-05-03T07:50:22Z",
   "status": "foreground_verified",
   "process": {
     "Id": 29420,
@@ -97,14 +104,54 @@ b7201b7 Add RiftScan operator helper app launcher
 }
 ```
 
+## Latest Focus-Gated Session Dry Run
+
+```json
+{
+  "status": "present",
+  "latest_session": "sessions/focus-gated-dry-runs/20260503T075023Z_focus_gated_session_dry_run",
+  "manifest_path": "sessions/focus-gated-dry-runs/20260503T075023Z_focus_gated_session_dry_run/manifest.json",
+  "manifest": {
+    "schema_version": "riftscan.focus_gated_session_dry_run.v1",
+    "created_utc": "2026-05-03T07:50:23Z",
+    "app_version": "riftscan-operator-app-v3",
+    "session_id": "20260503T075023Z_focus_gated_session_dry_run",
+    "status": "dry_run_session_created",
+    "dry_run": true,
+    "full_live_preflight": {
+      "status": "PASS",
+      "focus_status": "foreground_verified",
+      "process_id": 29420,
+      "process_name": "rift_x64",
+      "window_hwnd": 5115714,
+      "window_hwnd_hex": "0x4E0F42",
+      "window_title": "RIFT",
+      "windows_count": 1
+    },
+    "guardrails": [
+      "No live test sequence was started.",
+      "No local data collection sequence was started.",
+      "This session is metadata-only."
+    ],
+    "source_artifacts": {
+      "focus_summary": "handoffs/current/focus-control-local/focus-control-summary.json",
+      "windows_json": "handoffs/current/focus-control-local/windows.json",
+      "focus_log": "handoffs/current/focus-control-local/focus-control-log.jsonl",
+      "operator_report": "handoffs/current/operator/RIFTSCAN_OPERATOR_HANDOFF.md"
+    },
+    "next_expected_step": "Use this metadata-only session structure as the staging contract before wiring the first real focus-gated live-test workflow."
+  }
+}
+```
+
 ## Focus Log Tail
 
 ```jsonl
-{"timestamp_utc": "2026-05-03T07:21:19Z", "event": "script_start", "script": "C:\\RIFT MODDING\\Riftscan\\tools\\rift_focus_control.py", "repo_root": "C:\\RIFT MODDING\\Riftscan", "process_name": "rift_x64", "explicit_pid": 0, "retries": 3, "settle_ms": 400}
-{"timestamp_utc": "2026-05-03T07:21:19Z", "event": "powershell_start", "command": "$items = @(Get-Process -Name 'rift_x64' -ErrorAction SilentlyContinue | Select-Object Id,ProcessName,Path,MainWindowTitle,StartTime); $items | ConvertTo-Json -Depth 4"}
-{"timestamp_utc": "2026-05-03T07:21:22Z", "event": "powershell_finish", "success": true, "returncode": 0, "elapsed_ms": 3660, "stdout_length": 210, "stderr_length": 0}
-{"timestamp_utc": "2026-05-03T07:21:23Z", "event": "focus_attempt", "attempt": 1, "restore_ok": true, "set_foreground_ok": true, "foreground_hwnd": 5115714, "foreground_hwnd_hex": "0x4E0F42", "foreground_pid": 29420, "foreground_title": "RIFT", "verified": true}
-{"timestamp_utc": "2026-05-03T07:21:23Z", "event": "script_finish", "success": true, "status": "foreground_verified"}
+{"timestamp_utc": "2026-05-03T07:50:21Z", "event": "script_start", "script": "C:\\RIFT MODDING\\Riftscan\\tools\\rift_focus_control.py", "repo_root": "C:\\RIFT MODDING\\Riftscan", "process_name": "rift_x64", "explicit_pid": 0, "retries": 3, "settle_ms": 400}
+{"timestamp_utc": "2026-05-03T07:50:21Z", "event": "powershell_start", "command": "$items = @(Get-Process -Name 'rift_x64' -ErrorAction SilentlyContinue | Select-Object Id,ProcessName,Path,MainWindowTitle,StartTime); $items | ConvertTo-Json -Depth 4"}
+{"timestamp_utc": "2026-05-03T07:50:22Z", "event": "powershell_finish", "success": true, "returncode": 0, "elapsed_ms": 672, "stdout_length": 210, "stderr_length": 0}
+{"timestamp_utc": "2026-05-03T07:50:22Z", "event": "focus_attempt", "attempt": 1, "restore_ok": true, "set_foreground_ok": true, "foreground_hwnd": 5115714, "foreground_hwnd_hex": "0x4E0F42", "foreground_pid": 29420, "foreground_title": "RIFT", "verified": true}
+{"timestamp_utc": "2026-05-03T07:50:22Z", "event": "script_finish", "success": true, "status": "foreground_verified"}
 ```
 
 ## AI Review Prompt
@@ -116,7 +163,7 @@ Review this RiftScan operator handoff. Tell me the next safest practical step, a
 ## Guardrails
 
 - The full live preflight is conservative: focus + validation + report only.
-- The full live preflight does not run movement, input, capture, memory scans, or `/reloadui`.
-- The helper stages only explicit allowlisted paths.
+- The focus-gated session dry run creates session metadata only.
+- The helper stages only explicit allowlisted paths; ignored dry-run session paths are force-added explicitly.
 - The helper never runs `git add .`.
 - Known junk cleanup uses literal paths/globs from the helper configuration.

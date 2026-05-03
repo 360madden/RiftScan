@@ -1,0 +1,30 @@
+{
+  "schema_version": "riftscan.focus_gated_session_dry_run.v1",
+  "created_utc": "2026-05-03T07:50:23Z",
+  "app_version": "riftscan-operator-app-v3",
+  "session_id": "20260503T075023Z_focus_gated_session_dry_run",
+  "status": "dry_run_session_created",
+  "dry_run": true,
+  "full_live_preflight": {
+    "status": "PASS",
+    "focus_status": "foreground_verified",
+    "process_id": 29420,
+    "process_name": "rift_x64",
+    "window_hwnd": 5115714,
+    "window_hwnd_hex": "0x4E0F42",
+    "window_title": "RIFT",
+    "windows_count": 1
+  },
+  "guardrails": [
+    "No live test sequence was started.",
+    "No local data collection sequence was started.",
+    "This session is metadata-only."
+  ],
+  "source_artifacts": {
+    "focus_summary": "handoffs/current/focus-control-local/focus-control-summary.json",
+    "windows_json": "handoffs/current/focus-control-local/windows.json",
+    "focus_log": "handoffs/current/focus-control-local/focus-control-log.jsonl",
+    "operator_report": "handoffs/current/operator/RIFTSCAN_OPERATOR_HANDOFF.md"
+  },
+  "next_expected_step": "Use this metadata-only session structure as the staging contract before wiring the first real focus-gated live-test workflow."
+}

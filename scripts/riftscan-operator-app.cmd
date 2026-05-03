@@ -1,7 +1,7 @@
 @echo off
 REM Version: riftscan-operator-app-launcher-v2
 REM Purpose: Launch the RiftScan Windows operator helper app from the repository root.
-REM Total character count: 444
+REM Total character count: 500
 
 setlocal
 cd /d "%~dp0\.."
