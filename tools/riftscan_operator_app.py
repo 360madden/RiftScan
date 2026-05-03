@@ -1,6 +1,6 @@
-# Version: riftscan-operator-app-v3.3
-# Purpose: Windows Tkinter helper app for RiftScan operator workflow: run focus preflight, run full live preflight gate, create focus-gated session dry-run manifests, create metadata-only focus-gated capture plans, run focus-gated timed capture scaffolds, validate handoffs, write AI-ready reports, clean known junk, and safely commit/push allowlisted files, including ignored artifact paths when needed.
-# Total character count: 46678
+# Version: riftscan-operator-app-v3.4
+# Purpose: Windows Tkinter helper app for RiftScan operator workflow: run focus preflight, run full live preflight gate, create focus-gated session dry-run manifests, create metadata-only focus-gated capture plans, run focus-gated timed capture scaffolds, validate handoffs, write compact AI-ready reports, clean known junk, and safely commit/push allowlisted files, including ignored artifact paths when needed.
+# Total character count: 49599
 
 from __future__ import annotations
 
@@ -17,7 +17,7 @@ from tkinter import messagebox, scrolledtext
 from typing import Any
 
 
-APP_VERSION = "riftscan-operator-app-v3.3"
+APP_VERSION = "riftscan-operator-app-v3.4"
 REPO_ROOT = Path(__file__).resolve().parents[1]
 FOCUS_SCRIPT = REPO_ROOT / "scripts" / "run-rift-focus-control.cmd"
 HANDOFF_DIR = REPO_ROOT / "handoffs" / "current" / "focus-control-local"
@@ -63,6 +63,8 @@ JUNK_LITERAL = [
     "RiftScan_Operator_App_v31_Dry_Run_Commit_Hotfix.zip",
     "RIFTSCAN_apply_focus_gated_capture_plan_patch.py",
     "RIFTSCAN_apply_focus_gated_capture_scaffold_patch.py",
+    "RIFTSCAN_apply_operator_v34_hardening_patch.py",
+    "RIFTSCAN_apply_operator_v34_hardening_patch_v11.py",
     "payload",
     "rift_focus_local_simple_v2.zip",
 ]
@@ -270,12 +272,46 @@ def latest_capture_session_summary() -> dict[str, Any]:
     manifest_path = session_dir / "capture-session-manifest.json"
     handoff_path = session_dir / "CAPTURE_SESSION_HANDOFF.md"
     manifest = load_json(manifest_path)
+
+    if manifest.get("_missing") or manifest.get("_error"):
+        return {
+            "status": "present_with_manifest_problem",
+            "latest_session": session_rel,
+            "manifest_path": rel(manifest_path),
+            "handoff_path": rel(handoff_path),
+            "manifest_problem": manifest,
+        }
+
+    full_live_preflight = manifest.get("full_live_preflight") or {}
+    focus_after = manifest.get("focus_after") or {}
+    files = manifest.get("files") or {}
+
     return {
         "status": "present",
         "latest_session": session_rel,
         "manifest_path": rel(manifest_path),
         "handoff_path": rel(handoff_path),
-        "manifest": manifest,
+        "summary": {
+            "schema_version": manifest.get("schema_version"),
+            "app_version": manifest.get("app_version"),
+            "status": manifest.get("status"),
+            "scaffold_only": manifest.get("scaffold_only"),
+            "capture_mode": manifest.get("capture_mode"),
+            "duration_target_seconds": manifest.get("duration_target_seconds"),
+            "stimulus_name": manifest.get("stimulus_name"),
+            "scaffold_window_started": manifest.get("scaffold_window_started"),
+            "scaffold_window_completed": manifest.get("scaffold_window_completed"),
+            "real_capture_started": manifest.get("real_capture_started"),
+            "real_capture_completed": manifest.get("real_capture_completed"),
+            "legacy_capture_started": manifest.get("capture_started"),
+            "legacy_capture_completed": manifest.get("capture_completed"),
+            "focus_before_status": full_live_preflight.get("focus_status"),
+            "focus_after_status": focus_after.get("focus_status"),
+            "process_id": full_live_preflight.get("process_id"),
+            "window_hwnd_hex": full_live_preflight.get("window_hwnd_hex"),
+            "window_title": full_live_preflight.get("window_title"),
+            "capture_log": files.get("capture_log"),
+        },
     }
 
 
@@ -395,7 +431,8 @@ Review this RiftScan operator handoff. Tell me the next safest practical step, a
 - The full live preflight is conservative: focus + validation + report only.
 - The focus-gated session dry run creates session metadata only.
 - The focus-gated capture plan is metadata only.
-- The focus-gated capture scaffold may open a timed session, but records focus metadata/log structure only.
+- The focus-gated capture scaffold may open a timed scaffold window, but records focus metadata/log structure only.
+- Real capture collector did not run.
 - No movement/input sent.
 - No memory scan/read started.
 - No `/reloadui` sent.
@@ -702,15 +739,23 @@ def run_focus_gated_capture_scaffold(gate: dict[str, Any]) -> tuple[Path, Path, 
     })
 
     interim_manifest = {
-        "schema_version": "riftscan.focus_gated_capture_session_scaffold.v1",
+        "schema_version": "riftscan.focus_gated_capture_session_scaffold.v2",
         "created_utc": started_utc,
         "app_version": APP_VERSION,
         "session_id": session_id,
         "status": "capture_scaffold_running",
         "scaffold_only": True,
-        "capture_started": True,
-        "capture_completed": False,
         "capture_mode": "focus_metadata_only_scaffold",
+        "scaffold_window_started": True,
+        "scaffold_window_completed": False,
+        "real_capture_started": False,
+        "real_capture_completed": False,
+        "capture_started": False,
+        "capture_completed": False,
+        "capture_fields_note": (
+            "Legacy capture_started/capture_completed remain false because no real collector ran. "
+            "Use scaffold_window_started/scaffold_window_completed for scaffold timing."
+        ),
         "duration_target_seconds": duration_seconds,
         "stimulus_name": plan_manifest.get("stimulus_name", "none_metadata_only"),
         "source_capture_plan": plan_summary,
@@ -786,7 +831,11 @@ def run_focus_gated_capture_scaffold(gate: dict[str, Any]) -> tuple[Path, Path, 
     final_manifest.update({
         "completed_utc": completed_utc,
         "status": final_status,
-        "capture_completed": True,
+        "scaffold_window_completed": True,
+        "real_capture_started": False,
+        "real_capture_completed": False,
+        "capture_started": False,
+        "capture_completed": False,
         "elapsed_seconds": round(time.monotonic() - start_monotonic, 3),
         "focus_after": {
             "command_exit_code": after_code,
@@ -812,7 +861,7 @@ def run_focus_gated_capture_scaffold(gate: dict[str, Any]) -> tuple[Path, Path, 
         "",
         "## Result",
         "",
-        "The operator app opened and closed a timed focus-gated capture scaffold. This is the first capture-session wiring layer, but it records focus metadata/log structure only.",
+        "The operator app opened and closed a timed focus-gated scaffold window. This is session wiring only: no real capture collector ran.",
         "",
         "```text",
         f"Focus before: {summary_before.get('status')}",
@@ -836,6 +885,7 @@ def run_focus_gated_capture_scaffold(gate: dict[str, Any]) -> tuple[Path, Path, 
         "",
         "- Timed capture scaffold only.",
         "- Focus metadata/log structure only.",
+        "- Real capture collector did not run.",
         "- No movement/input sent.",
         "- No memory scan/read started.",
         "- No /reloadui sent.",
@@ -880,17 +930,19 @@ def clean_known_junk() -> list[str]:
 class RiftScanOperatorApp(tk.Tk):
     def __init__(self) -> None:
         super().__init__()
-        self.title("RiftScan Operator")
+        self.title(f"RiftScan Operator — {APP_VERSION}")
         self.geometry("1100x720")
         self.minsize(900, 580)
 
         self.status_var = tk.StringVar(value="Ready.")
         self.focus_var = tk.StringVar(value="Focus: unknown")
+        self.busy = False
 
         header = tk.Frame(self)
         header.pack(fill=tk.X, padx=10, pady=(10, 4))
 
         tk.Label(header, text="RiftScan Operator", font=("Segoe UI", 16, "bold")).pack(side=tk.LEFT)
+        tk.Label(header, text=APP_VERSION, font=("Segoe UI", 9), foreground="gray").pack(side=tk.LEFT, padx=(10, 0))
         tk.Label(header, textvariable=self.focus_var, font=("Segoe UI", 10)).pack(side=tk.RIGHT)
 
         button_row = tk.Frame(self)
@@ -932,6 +984,16 @@ class RiftScanOperatorApp(tk.Tk):
         self.append(text)
 
     def run_async(self, label: str, func: Any) -> None:
+        if self.busy:
+            self.append(f"\nBLOCKED: another Operator action is already running; skipped {label}.")
+            return
+
+        self.busy = True
+
+        def finish_ready() -> None:
+            self.status_var.set("Ready.")
+            self.busy = False
+
         def worker() -> None:
             self.after(0, lambda: self.set_status(f"Running: {label}"))
             try:
@@ -942,7 +1004,7 @@ class RiftScanOperatorApp(tk.Tk):
                 self.after(0, lambda: messagebox.showerror("RiftScan Operator", f"{type(exc).__name__}: {exc}"))
                 self.after(0, lambda: self.append(f"ERROR: {type(exc).__name__}: {exc}"))
             finally:
-                self.after(0, lambda: self.status_var.set("Ready."))
+                self.after(0, finish_ready)
 
         threading.Thread(target=worker, daemon=True).start()
 

@@ -1,6 +1,6 @@
 # RiftScan Operator Handoff
 
-Created UTC: `2026-05-03T08:36:41Z`
+Created UTC: `2026-05-03T08:36:07Z`
 App version: `riftscan-operator-app-v3.4`
 Repo root: `C:\RIFT MODDING\Riftscan`
 
@@ -21,8 +21,8 @@ Exit code: `0`
  M handoffs/current/focus-control-local/focus-control-summary.json
  M handoffs/current/focus-control-local/process-command-result.json
  M handoffs/current/operator/RIFTSCAN_OPERATOR_HANDOFF.md
- M sessions/focus-gated-captures/LATEST_CAPTURE_SESSION.txt
  M tools/riftscan_operator_app.py
+?? tools/riftscan_operator_app.py.bak-20260503T083505Z
 
 ```
 
@@ -222,29 +222,29 @@ fe02a33 Update RiftScan operator handoff
 ```json
 {
   "status": "present",
-  "latest_session": "sessions/focus-gated-captures/20260503T083535Z_focus_gated_capture_scaffold",
-  "manifest_path": "sessions/focus-gated-captures/20260503T083535Z_focus_gated_capture_scaffold/capture-session-manifest.json",
-  "handoff_path": "sessions/focus-gated-captures/20260503T083535Z_focus_gated_capture_scaffold/CAPTURE_SESSION_HANDOFF.md",
+  "latest_session": "sessions/focus-gated-captures/20260503T082517Z_focus_gated_capture_scaffold",
+  "manifest_path": "sessions/focus-gated-captures/20260503T082517Z_focus_gated_capture_scaffold/capture-session-manifest.json",
+  "handoff_path": "sessions/focus-gated-captures/20260503T082517Z_focus_gated_capture_scaffold/CAPTURE_SESSION_HANDOFF.md",
   "summary": {
-    "schema_version": "riftscan.focus_gated_capture_session_scaffold.v2",
-    "app_version": "riftscan-operator-app-v3.4",
+    "schema_version": "riftscan.focus_gated_capture_session_scaffold.v1",
+    "app_version": "riftscan-operator-app-v3.3",
     "status": "capture_scaffold_completed",
     "scaffold_only": true,
     "capture_mode": "focus_metadata_only_scaffold",
     "duration_target_seconds": 30,
     "stimulus_name": "none_metadata_only",
-    "scaffold_window_started": true,
-    "scaffold_window_completed": true,
-    "real_capture_started": false,
-    "real_capture_completed": false,
-    "legacy_capture_started": false,
-    "legacy_capture_completed": false,
+    "scaffold_window_started": null,
+    "scaffold_window_completed": null,
+    "real_capture_started": null,
+    "real_capture_completed": null,
+    "legacy_capture_started": true,
+    "legacy_capture_completed": true,
     "focus_before_status": "foreground_verified",
     "focus_after_status": "foreground_verified",
     "process_id": 29420,
     "window_hwnd_hex": "0x4E0F42",
     "window_title": "RIFT",
-    "capture_log": "sessions/focus-gated-captures/20260503T083535Z_focus_gated_capture_scaffold/capture-log.jsonl"
+    "capture_log": "sessions/focus-gated-captures/20260503T082517Z_focus_gated_capture_scaffold/capture-log.jsonl"
   }
 }
 ```
