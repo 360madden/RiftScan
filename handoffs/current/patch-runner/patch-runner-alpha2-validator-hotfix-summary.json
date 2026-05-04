@@ -1,0 +1,51 @@
+{
+  "schema_version": "riftscan.patch_runner_alpha2_validator_hotfix.v3",
+  "patch_id": "patch-runner-alpha2-validator-hotfix-v3",
+  "created_utc": "2026-05-04T03:56:08Z",
+  "repo_root": "C:\\RIFT MODDING\\Riftscan",
+  "target_file": "patches/apply-latest.ps1",
+  "target_runner_version": "riftscan-patch-runner-v3.9-alpha2",
+  "backup_file_outside_repo": "C:\\Users\\mrkoo\\AppData\\Local\\Temp\\RiftScan_Patch_Runner_Alpha2_Validator_Hotfix_v3\\riftscan_patch_runner_alpha2_validator_hotfix_v3\\apply-latest.ps1.backup-20260504T035607Z.txt",
+  "status": "hotfix_applied",
+  "changes": {
+    "get_prop_array_preservation_fixed": "already_current",
+    "created_utc_datetime_normalization_fixed": true,
+    "total_character_count_updated": true,
+    "already_current": false
+  },
+  "parse_check": {
+    "command": "powershell -NoProfile -ExecutionPolicy Bypass -Command $ErrorActionPreference = 'Stop'; $text = Get-Content -LiteralPath 'C:\\RIFT MODDING\\Riftscan\\patches\\apply-latest.ps1' -Raw; $null = [scriptblock]::Create($text); Write-Output 'POWERSHELL_PARSE_OK'",
+    "exit_code": 0,
+    "stdout": "POWERSHELL_PARSE_OK\n",
+    "stderr": ""
+  },
+  "guardrails": {
+    "bundle_extraction_started": false,
+    "patcher_execution_started": false,
+    "post_patch_validation_started_by_runner": false,
+    "git_add_run": false,
+    "git_commit_run": false,
+    "git_push_run": false
+  },
+  "git_status_before": [
+    " M patches/apply-latest.ps1",
+    "?? handoffs/current/patch-runner/PATCH_RUNNER_ALPHA2_VALIDATOR_HOTFIX.md",
+    "?? handoffs/current/patch-runner/patch-runner-alpha2-validator-hotfix-summary.json"
+  ],
+  "git_status_after_patch_before_handoff": [
+    " M patches/apply-latest.ps1",
+    "?? handoffs/current/patch-runner/PATCH_RUNNER_ALPHA2_VALIDATOR_HOTFIX.md",
+    "?? handoffs/current/patch-runner/patch-runner-alpha2-validator-hotfix-summary.json"
+  ],
+  "expected_next_result": {
+    "operator_button": "Validate Pending Patch",
+    "runner_status": "blocked_validation_only",
+    "exit_code": 5
+  },
+  "next_manual_validation": [
+    "Create a temporary valid-shape patches/pending/PATCH_MANIFEST.json.",
+    "Run RiftScan Operator > Diagnostics > Validate Pending Patch.",
+    "Expect PATCH RUNNER: BLOCKED/PASS_ALPHA2 with runner status blocked_validation_only and exit code 5.",
+    "Remove the temporary PATCH_MANIFEST.json before committing evidence."
+  ]
+}

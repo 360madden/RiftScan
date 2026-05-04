@@ -1,6 +1,6 @@
 # RiftScan Operator Handoff
 
-Created UTC: `2026-05-04T02:22:37Z`
+Created UTC: `2026-05-04T09:20:31Z`
 App version: `riftscan-operator-app-v3.8.2`
 Repo root: `C:\RIFT MODDING\Riftscan`
 
@@ -21,6 +21,9 @@ Exit code: `0`
  M handoffs/current/patch-runner/patch-runner-log.jsonl
  M handoffs/current/patch-runner/patch-runner-output.txt
  M handoffs/current/patch-runner/patch-runner-summary.json
+ M patches/apply-latest.ps1
+?? handoffs/current/patch-runner/PATCH_RUNNER_ALPHA2_VALIDATOR_HOTFIX.md
+?? handoffs/current/patch-runner/patch-runner-alpha2-validator-hotfix-summary.json
 
 ```
 
@@ -29,11 +32,11 @@ Exit code: `0`
 Exit code: `0`
 
 ```text
+e71035b Update RiftScan operator handoff
 c631f36 Update RiftScan operator handoff
 80ee201 Update RiftScan operator handoff
 1d692fc Validate patch runner alpha2 locally
 a18cbc9 Add patch runner alpha2 JSON handoff
-aa33ecf Add patch runner alpha2 handoff
 
 ```
 

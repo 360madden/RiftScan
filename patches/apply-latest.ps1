@@ -1,6 +1,6 @@
 # Version: riftscan-patch-runner-v3.9-alpha2
 # Purpose: Manifest-validation-only runner for RiftScan pending patch manifests. Logs to handoffs/current/patch-runner, validates PATCH_MANIFEST.json, and never extracts, applies, commits, or pushes.
-# Total character count: 019641
+# Total character count: 019910
 
 [CmdletBinding()]
 param(
@@ -63,7 +63,9 @@ function Get-Prop {
     if ($null -eq $ObjectValue) { return $DefaultValue }
     $property = $ObjectValue.PSObject.Properties[$Name]
     if ($null -eq $property -or $null -eq $property.Value) { return $DefaultValue }
-    return $property.Value
+    $value = $property.Value
+    if ($value -is [System.Array]) { return ,$value }
+    return $value
 }
 
 function Test-StringArray {
@@ -141,7 +143,8 @@ function Test-PatchManifest {
     $exampleOnly = Get-Prop $Manifest 'example_only' $null
     $patchId = [string](Get-Prop $Manifest 'patch_id' '')
     $patchTitle = [string](Get-Prop $Manifest 'patch_title' '')
-    $createdUtc = [string](Get-Prop $Manifest 'created_utc' '')
+    $createdUtcRaw = Get-Prop $Manifest 'created_utc' ''
+    $createdUtc = if ($createdUtcRaw -is [datetime]) { $createdUtcRaw.ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ', [Globalization.CultureInfo]::InvariantCulture) } else { [string]$createdUtcRaw }
     $runnerMinVersion = [string](Get-Prop $Manifest 'runner_min_version' '')
     $status = [string](Get-Prop $Manifest 'status' '')
     $bundle = Get-Prop $Manifest 'bundle' $null

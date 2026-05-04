@@ -1,21 +1,15 @@
-RIFTSCAN PATCH RUNNER: FAIL_MANIFEST_VALIDATION
+RIFTSCAN PATCH RUNNER: BLOCKED_VALIDATION_ONLY
 Runner: riftscan-patch-runner-v3.9-alpha2
-Run ID: patch_runner_20260504T020335Z
+Run ID: patch_runner_20260504T035921Z
 Manifest: patches/pending/PATCH_MANIFEST.json
 Log: handoffs/current/patch-runner/patch-runner-log.jsonl
 Summary: handoffs/current/patch-runner/patch-runner-summary.json
 Patch applied: false
 Auto-commit: false
 Auto-push: false
-Manifest validation: FAIL
-Manifest validation issues: 7
+Manifest validation: PASS
+Manifest validation issues: 0
 Manifest validation warnings: 0
 
 Blockers:
-- example_only must be false or absent for a runnable pending manifest.
-- patch_id must be a non-placeholder string.
-- patch_title must be a non-placeholder string.
-- created_utc must be a UTC timestamp like 2026-05-03T18:00:00Z.
-- status must be pending or ready_for_validation.
-- bundle.sha256 must be a real 64-character hex SHA256 value.
-- validation.post_patch_commands must be an array of command strings when present.
+- v3.9-alpha2 validates PATCH_MANIFEST.json only. It does not extract bundles, compile patchers, run patchers, commit, or push.
