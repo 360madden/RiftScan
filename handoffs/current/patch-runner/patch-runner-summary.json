@@ -1,9 +1,9 @@
 {
   "schema_version": "riftscan.patch_runner_log.v1",
   "runner_version": "riftscan-patch-runner-v3.9-alpha2",
-  "run_id": "patch_runner_20260504T014421Z",
-  "started_utc": "2026-05-04T01:44:21Z",
-  "completed_utc": "2026-05-04T01:44:21Z",
+  "run_id": "patch_runner_20260504T015304Z",
+  "started_utc": "2026-05-04T01:53:04Z",
+  "completed_utc": "2026-05-04T01:53:04Z",
   "status": "fail_no_pending_manifest",
   "exit_code": 2,
   "repo_root": "C:\\RIFT MODDING\\Riftscan",
@@ -24,7 +24,7 @@
   "git_status": {
     "command": "git status --short",
     "exit_code": 0,
-    "output": " M handoffs/current/patch-runner/patch-runner-log.jsonl\r\n D handoffs/current/patch-runner/patch-runner-output.txt\r\n D handoffs/current/patch-runner/patch-runner-summary.json\r\n M tools/riftscan_operator_app.py\r\n?? PATCH_PACKAGE_MANIFEST.json\r\n?? PATCH_PACKAGE_README.md\r\n?? RIFTSCAN_apply_operator_patch_runner_validation_patch.py\r\n?? apply-riftscan-operator-patch-runner-validation.cmd\r\n?? handoffs/current/patch-runner/OPERATOR_PATCH_RUNNER_VALIDATION_PATCH.md\r\n?? handoffs/current/patch-runner/operator-patch-runner-validation-patch-summary.json\r\n?? tools/__pycache__/\r\n?? tools/riftscan_operator_app.py.bak-operator-patch-runner-validation-v382-20260504T014324Z"
+    "output": " M handoffs/current/patch-runner/patch-runner-log.jsonl\r\n D handoffs/current/patch-runner/patch-runner-output.txt\r\n D handoffs/current/patch-runner/patch-runner-summary.json"
   },
   "details": {
     "current_stage": "v3.9-alpha2 manifest validation only",
