@@ -1,0 +1,38 @@
+{
+  "schema_version": "riftscan.patch_inbox_discovery_result.v1",
+  "created_utc": "2026-05-04T17:29:48Z",
+  "app_version": "riftscan-operator-app-v3.8.5",
+  "status": "pass",
+  "display_status": "PASS",
+  "discovery_only": true,
+  "inbox_path": ".riftscan/inbox/patch-packages",
+  "result_path": "handoffs/current/repo-bridge/patch-inbox-discovery-result.json",
+  "candidate_count": 1,
+  "valid_shape_count": 1,
+  "invalid_shape_count": 0,
+  "issues": [],
+  "candidates": [
+    {
+      "path": ".riftscan/inbox/patch-packages/patch-inbox-discovery-v385/RIFTSCAN_PATCH_PACKAGE.json",
+      "parse_status": "parsed",
+      "valid_shape": true,
+      "issues": [],
+      "summary": {
+        "schema_version": "riftscan.patch_package.v1",
+        "package_id": "patch-inbox-discovery-v385"
+      }
+    }
+  ],
+  "guardrails": [
+    "Discovery only.",
+    "No package download.",
+    "No package extraction.",
+    "No staging.",
+    "No dry-run apply.",
+    "No real apply.",
+    "No service/listener/polling.",
+    "No auto-commit.",
+    "No auto-push.",
+    "No git add ."
+  ]
+}

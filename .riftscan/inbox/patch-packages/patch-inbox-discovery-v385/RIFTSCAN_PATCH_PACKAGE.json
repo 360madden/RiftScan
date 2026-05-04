@@ -1,0 +1,44 @@
+{
+  "schema_version": "riftscan.patch_package.v1",
+  "repo": "RiftScan",
+  "component": "operator",
+  "package_id": "patch-inbox-discovery-v385",
+  "patch_name": "patch-inbox-discovery",
+  "from_version": "riftscan-operator-app-v3.8.4",
+  "to_version": "riftscan-operator-app-v3.8.5",
+  "created_utc": "20260504T172814Z",
+  "target_repo_root": "C:\\RIFT MODDING\\Riftscan",
+  "target_file": "tools/riftscan_operator_app.py",
+  "applier": "patch-applier.py",
+  "required_existing_markers": [
+    "riftscan-operator-app-v3.8.4",
+    "RIFTSCAN PATCH INBOX DISCOVERY V384 PATCH START"
+  ],
+  "already_applied_markers": [
+    "riftscan-operator-app-v3.8.5",
+    "v3.8.5 native Main-tab repair",
+    "Check Online Patch Inbox"
+  ],
+  "required_result_markers": [
+    "riftscan-operator-app-v3.8.5",
+    "v3.8.5 native Main-tab repair",
+    "Check Online Patch Inbox",
+    "dynamic UI injection is intentionally disabled"
+  ],
+  "forbidden_actions": [
+    "service",
+    "listener",
+    "polling",
+    "auto_commit",
+    "auto_push",
+    "git_add_dot",
+    "force_push",
+    "scheduled_task"
+  ],
+  "expected_files": [
+    "RUN_ME_FIRST.cmd",
+    "RIFTSCAN_PATCH_PACKAGE.json",
+    "patch-applier.py",
+    "README.md"
+  ]
+}

@@ -1,6 +1,6 @@
-# Version: riftscan-operator-app-v3.8.2
-# Purpose: Windows Tkinter helper app for RiftScan operator workflow: run focus preflight, run full live preflight gate, create focus-gated capture plans, run the focus-gated window/process metadata collector, analyze and compare collector sessions, validate collector artifacts, validate pending patch-runner manifests, write compact AI-ready reports, clean known junk, safely commit/push allowlisted files, and provide tabbed/wrapped controls with lightweight status highlighting.
-# Total character count: 121823
+# Version: riftscan-operator-app-v3.8.5
+# Purpose: Windows Tkinter helper app for RiftScan operator workflow: run focus preflight, run full live preflight gate, manage focus-gated metadata workflows, validate patch-runner manifests, check the online patch inbox discovery-only from the visible Main tab, write compact AI-ready reports, clean known junk, safely commit/push allowlisted files, and provide tabbed/wrapped controls with lightweight status highlighting.
+# Total character count: 139991
 
 from __future__ import annotations
 
@@ -20,7 +20,7 @@ from tkinter import messagebox, scrolledtext, ttk
 from typing import Any
 
 
-APP_VERSION = "riftscan-operator-app-v3.8.2"
+APP_VERSION = "riftscan-operator-app-v3.8.5"
 REPO_ROOT = Path(__file__).resolve().parents[1]
 FOCUS_SCRIPT = REPO_ROOT / "scripts" / "run-rift-focus-control.cmd"
 HANDOFF_DIR = REPO_ROOT / "handoffs" / "current" / "focus-control-local"
@@ -2525,6 +2525,8 @@ class RiftScanOperatorApp(tk.Tk):
             main_tab,
             [
                 ("Refresh Status", self.refresh_status),
+                # v3.8.5 native Main-tab repair: visible discovery-only inbox button.
+                ("Check Online Patch Inbox", self.check_online_patch_inbox),
                 ("Run Window/Process Metadata Collector", self.run_window_process_metadata_collector),
                 ("Analyze Latest Session", self.analyze_latest_session_clicked),
                 ("Compare Sessions", self.compare_sessions_clicked),
@@ -3225,6 +3227,385 @@ class RiftScanOperatorApp(tk.Tk):
         except Exception as exc:
             messagebox.showerror("Open report failed", f"{type(exc).__name__}: {exc}")
 
+
+
+
+# RIFTSCAN PATCH INBOX DISCOVERY V384 PATCH START
+PATCH_INBOX_DIR = REPO_ROOT / ".riftscan" / "inbox" / "patch-packages"
+REPO_BRIDGE_DIR = REPO_ROOT / "handoffs" / "current" / "repo-bridge"
+PATCH_INBOX_DISCOVERY_RESULT = REPO_BRIDGE_DIR / "patch-inbox-discovery-result.json"
+
+if "handoffs/current/repo-bridge" not in ALLOWLIST:
+    ALLOWLIST.append("handoffs/current/repo-bridge")
+
+
+def _patch_inbox_write_json(path: Path, value: Any) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json_block(value) + "\n", encoding="utf-8")
+
+
+def validate_patch_inbox_json_shape(payload: Any) -> tuple[bool, list[str]]:
+    issues: list[str] = []
+
+    if not isinstance(payload, dict):
+        return False, ["Top-level JSON value must be an object."]
+
+    if not payload:
+        issues.append("JSON object is empty.")
+
+    recognized_fields = {
+        "schema_version",
+        "package_id",
+        "package_name",
+        "source_type",
+        "sha256",
+        "requested_action",
+        "allowed_processor",
+        "expected_files",
+        "pointer_type",
+        "target",
+    }
+    if not any(field in payload for field in recognized_fields):
+        issues.append("No recognized patch manifest/pointer fields found.")
+
+    string_fields = [
+        "schema_version",
+        "package_id",
+        "package_name",
+        "source_type",
+        "sha256",
+        "requested_action",
+        "allowed_processor",
+        "pointer_type",
+        "target",
+    ]
+    for field in string_fields:
+        if field in payload and payload[field] is not None and not isinstance(payload[field], str):
+            issues.append(f"{field} must be a string when present.")
+
+    if "expected_files" in payload and not isinstance(payload["expected_files"], list):
+        issues.append("expected_files must be a list when present.")
+
+    forbidden_command_fields = ["command", "commands", "shell", "powershell", "cmd", "script"]
+    present_forbidden = [field for field in forbidden_command_fields if field in payload]
+    if present_forbidden:
+        issues.append(
+            "Raw command-like fields are not allowed in patch inbox metadata: "
+            + ", ".join(sorted(present_forbidden))
+        )
+
+    return not issues, issues
+
+
+def summarize_patch_inbox_payload(payload: Any) -> dict[str, Any]:
+    if not isinstance(payload, dict):
+        return {"top_level_type": type(payload).__name__}
+
+    summary_fields = [
+        "schema_version",
+        "package_id",
+        "package_name",
+        "source_type",
+        "sha256",
+        "requested_action",
+        "allowed_processor",
+        "pointer_type",
+        "target",
+    ]
+    return {field: payload.get(field) for field in summary_fields if field in payload}
+
+
+def discover_patch_inbox() -> dict[str, Any]:
+    result: dict[str, Any] = {
+        "schema_version": "riftscan.patch_inbox_discovery_result.v1",
+        "created_utc": utc_now(),
+        "app_version": APP_VERSION,
+        "status": "empty",
+        "display_status": "PASS/EMPTY",
+        "discovery_only": True,
+        "inbox_path": rel(PATCH_INBOX_DIR),
+        "result_path": rel(PATCH_INBOX_DISCOVERY_RESULT),
+        "candidate_count": 0,
+        "valid_shape_count": 0,
+        "invalid_shape_count": 0,
+        "issues": [],
+        "candidates": [],
+        "guardrails": [
+            "Discovery only.",
+            "No package download.",
+            "No package extraction.",
+            "No staging.",
+            "No dry-run apply.",
+            "No real apply.",
+            "No service/listener/polling.",
+            "No auto-commit.",
+            "No auto-push.",
+            "No git add .",
+        ],
+    }
+
+    if not PATCH_INBOX_DIR.exists():
+        result["empty_reason"] = "inbox_path_missing"
+        _patch_inbox_write_json(PATCH_INBOX_DISCOVERY_RESULT, result)
+        return result
+
+    if not PATCH_INBOX_DIR.is_dir():
+        result["status"] = "fail"
+        result["display_status"] = "FAIL"
+        result["issues"].append("Patch inbox path exists but is not a directory.")
+        _patch_inbox_write_json(PATCH_INBOX_DISCOVERY_RESULT, result)
+        return result
+
+    candidate_paths = sorted(
+        path
+        for path in PATCH_INBOX_DIR.rglob("*.json")
+        if path.is_file()
+    )
+
+    if not candidate_paths:
+        result["empty_reason"] = "no_json_manifest_or_pointer_files"
+        _patch_inbox_write_json(PATCH_INBOX_DISCOVERY_RESULT, result)
+        return result
+
+    candidates: list[dict[str, Any]] = []
+    for candidate_path in candidate_paths:
+        candidate: dict[str, Any] = {
+            "path": rel(candidate_path),
+            "parse_status": "unknown",
+            "valid_shape": False,
+            "issues": [],
+            "summary": {},
+        }
+
+        try:
+            payload = json.loads(candidate_path.read_text(encoding="utf-8", errors="replace"))
+            candidate["parse_status"] = "parsed"
+            valid_shape, issues = validate_patch_inbox_json_shape(payload)
+            candidate["valid_shape"] = valid_shape
+            candidate["issues"] = issues
+            candidate["summary"] = summarize_patch_inbox_payload(payload)
+        except Exception as exc:
+            candidate["parse_status"] = "parse_error"
+            candidate["issues"] = [f"{type(exc).__name__}: {exc}"]
+
+        candidates.append(candidate)
+
+    result["candidates"] = candidates
+    result["candidate_count"] = len(candidates)
+    result["valid_shape_count"] = sum(1 for candidate in candidates if candidate.get("valid_shape") is True)
+    result["invalid_shape_count"] = len(candidates) - int(result["valid_shape_count"])
+
+    if result["invalid_shape_count"]:
+        result["status"] = "fail"
+        result["display_status"] = "FAIL"
+        result["issues"].append("One or more patch inbox JSON files failed basic shape validation.")
+    else:
+        result["status"] = "pass"
+        result["display_status"] = "PASS"
+
+    _patch_inbox_write_json(PATCH_INBOX_DISCOVERY_RESULT, result)
+    return result
+
+
+def latest_patch_inbox_discovery_summary() -> dict[str, Any]:
+    return load_json(PATCH_INBOX_DISCOVERY_RESULT)
+
+
+def append_latest_patch_inbox_discovery_section(report_path: Path) -> None:
+    report_path.parent.mkdir(parents=True, exist_ok=True)
+    existing = read_text(report_path) if report_path.exists() else ""
+    latest = latest_patch_inbox_discovery_summary()
+
+    section = (
+        "## Latest Patch Inbox Discovery\n\n"
+        "```json\n"
+        f"{json_block(latest)}\n"
+        "```\n\n"
+    )
+
+    stripped = re.sub(
+        r"\n?## Latest Patch Inbox Discovery\n\n```json\n.*?\n```\n\n",
+        "\n",
+        existing,
+        flags=re.DOTALL,
+    )
+
+    guardrails_heading = "\n## Guardrails\n"
+    if guardrails_heading in stripped:
+        stripped = stripped.replace(guardrails_heading, "\n" + section + "## Guardrails\n", 1)
+    else:
+        stripped = stripped.rstrip() + "\n\n" + section
+
+    report_path.write_text(stripped, encoding="utf-8")
+
+
+def _riftscan_patch_inbox_button_parent(root: Any) -> Any:
+    try:
+        button_types = (tk.Button, ttk.Button)
+    except NameError:
+        button_types = (tk.Button,)
+
+    try:
+        frame_types = (tk.Frame, ttk.Frame)
+    except NameError:
+        frame_types = (tk.Frame,)
+
+    preferred = None
+
+    def walk(widget: Any) -> list[Any]:
+        found = [widget]
+        try:
+            children = widget.winfo_children()
+        except Exception:
+            return found
+        for child in children:
+            found.extend(walk(child))
+        return found
+
+    for widget in walk(root):
+        if not isinstance(widget, frame_types):
+            continue
+        try:
+            children = widget.winfo_children()
+        except Exception:
+            continue
+
+        buttons = [child for child in children if isinstance(child, button_types)]
+        if not buttons:
+            continue
+
+        labels = []
+        for button in buttons:
+            try:
+                labels.append(str(button.cget("text")))
+            except Exception:
+                pass
+
+        if any(label in labels for label in ["Refresh Status", "Run Full Live Preflight", "Open Report"]):
+            return widget
+
+        if preferred is None:
+            preferred = widget
+
+    return preferred or root
+
+
+def _riftscan_add_patch_inbox_button(self: Any) -> None:
+    if getattr(self, "_patch_inbox_button_added", False):
+        return
+
+    parent = _riftscan_patch_inbox_button_parent(self)
+
+    try:
+        existing_labels = [
+            str(child.cget("text"))
+            for child in parent.winfo_children()
+            if hasattr(child, "cget")
+        ]
+        if "Check Online Patch Inbox" in existing_labels:
+            self._patch_inbox_button_added = True
+            return
+    except Exception:
+        pass
+
+    try:
+        button_factory = ttk.Button
+    except NameError:
+        button_factory = tk.Button
+
+    button = button_factory(parent, text="Check Online Patch Inbox", command=self.check_online_patch_inbox)
+
+    manager = "pack"
+    try:
+        existing_children = parent.winfo_children()
+        if existing_children:
+            manager = existing_children[-1].winfo_manager() or "pack"
+    except Exception:
+        manager = "pack"
+
+    try:
+        if manager == "grid":
+            cols = 0
+            try:
+                cols = len(parent.grid_slaves(row=0))
+            except Exception:
+                cols = 0
+            button.grid(row=0, column=cols, padx=4, pady=4, sticky="w")
+        else:
+            button.pack(side=tk.LEFT, padx=4, pady=4)
+    except Exception:
+        try:
+            button.pack(padx=4, pady=4)
+        except Exception:
+            pass
+
+    self._patch_inbox_button_added = True
+
+
+def _riftscan_check_online_patch_inbox(self: Any) -> None:
+    def task() -> str:
+        result = discover_patch_inbox()
+        append_latest_patch_inbox_discovery_section(REPORT_PATH)
+
+        lines = [
+            "=== PATCH INBOX DISCOVERY ===",
+            f"PATCH INBOX DISCOVERY: {result.get('display_status', 'UNKNOWN')}",
+            f"Inbox: {result.get('inbox_path')}",
+            f"Result: {result.get('result_path')}",
+            f"Candidate JSON files: {result.get('candidate_count', 0)}",
+            f"Valid shape: {result.get('valid_shape_count', 0)}",
+            f"Invalid shape: {result.get('invalid_shape_count', 0)}",
+        ]
+
+        empty_reason = result.get("empty_reason")
+        if empty_reason:
+            lines.append(f"Empty reason: {empty_reason}")
+
+        issues = result.get("issues") or []
+        if issues:
+            lines.append("")
+            lines.append("Issues:")
+            lines.extend(f"- {issue}" for issue in issues)
+
+        candidates = result.get("candidates") or []
+        if candidates:
+            lines.append("")
+            lines.append("Candidates:")
+            for candidate in candidates[:20]:
+                shape = "VALID" if candidate.get("valid_shape") else "INVALID"
+                lines.append(f"- {candidate.get('path')} [{shape}]")
+                for issue in candidate.get("issues") or []:
+                    lines.append(f"  - {issue}")
+            if len(candidates) > 20:
+                lines.append(f"- ... {len(candidates) - 20} more candidate(s) omitted from GUI output.")
+
+        lines.extend([
+            "",
+            f"Operator report: {rel(REPORT_PATH)}",
+            "",
+            "No package download, extraction, staging, dry-run apply, real apply, service/listener, polling, auto-commit, or auto-push was run.",
+        ])
+
+        return "\n".join(lines)
+
+    self.run_async("patch inbox discovery", task)
+
+
+_original_riftscan_operator_init = RiftScanOperatorApp.__init__
+
+
+def _riftscan_operator_init_with_patch_inbox(self: Any, *args: Any, **kwargs: Any) -> None:
+    _original_riftscan_operator_init(self, *args, **kwargs)
+    # v3.8.5: native Main-tab button is inserted in __init__; dynamic UI injection is intentionally disabled.
+    try:
+        self._patch_inbox_button_added = True
+    except Exception:
+        pass
+
+
+RiftScanOperatorApp.check_online_patch_inbox = _riftscan_check_online_patch_inbox
+RiftScanOperatorApp.__init__ = _riftscan_operator_init_with_patch_inbox
+# RIFTSCAN PATCH INBOX DISCOVERY V384 PATCH END
 
 def main() -> int:
     app = RiftScanOperatorApp()
