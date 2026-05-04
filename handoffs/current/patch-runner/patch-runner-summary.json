@@ -1,9 +1,9 @@
 {
   "schema_version": "riftscan.patch_runner_log.v1",
-  "runner_version": "riftscan-patch-runner-v3.9-alpha1",
-  "run_id": "patch_runner_20260503T175439Z",
-  "started_utc": "2026-05-03T17:54:39Z",
-  "completed_utc": "2026-05-03T17:54:39Z",
+  "runner_version": "riftscan-patch-runner-v3.9-alpha2",
+  "run_id": "patch_runner_20260503T180437Z",
+  "started_utc": "2026-05-03T18:04:37Z",
+  "completed_utc": "2026-05-03T18:04:37Z",
   "status": "fail_no_pending_manifest",
   "exit_code": 2,
   "repo_root": "C:\\RIFT MODDING\\Riftscan",
@@ -16,16 +16,18 @@
   "auto_commit": false,
   "auto_push": false,
   "operator_app_behavior_changed": false,
+  "manifest": null,
+  "manifest_validation": null,
   "blockers": [
     "No pending patch manifest exists at patches/pending/PATCH_MANIFEST.json."
   ],
-  "manifest": null,
   "git_status": {
     "command": "git status --short",
     "exit_code": 0,
-    "output": " M patches/apply-latest.cmd\r\n?? handoffs/current/patch-runner/\r\n?? patches/apply-latest.ps1\r\n?? patches/pending/"
+    "output": " M handoffs/current/patch-runner/patch-runner-log.jsonl\r\n D handoffs/current/patch-runner/patch-runner-output.txt\r\n D handoffs/current/patch-runner/patch-runner-summary.json"
   },
   "details": {
+    "current_stage": "v3.9-alpha2 manifest validation only",
     "expected_manifest": "patches/pending/PATCH_MANIFEST.json",
     "example_manifest": "patches/pending/PATCH_MANIFEST.example.json",
     "next_action": "Create or copy a reviewed PATCH_MANIFEST.json before running the patch runner."
