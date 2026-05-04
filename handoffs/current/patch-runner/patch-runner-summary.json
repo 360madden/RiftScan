@@ -1,11 +1,11 @@
 {
   "schema_version": "riftscan.patch_runner_log.v1",
   "runner_version": "riftscan-patch-runner-v3.9-alpha2",
-  "run_id": "patch_runner_20260504T015304Z",
-  "started_utc": "2026-05-04T01:53:04Z",
-  "completed_utc": "2026-05-04T01:53:04Z",
-  "status": "fail_no_pending_manifest",
-  "exit_code": 2,
+  "run_id": "patch_runner_20260504T020335Z",
+  "started_utc": "2026-05-04T02:03:35Z",
+  "completed_utc": "2026-05-04T02:03:35Z",
+  "status": "fail_manifest_validation",
+  "exit_code": 4,
   "repo_root": "C:\\RIFT MODDING\\Riftscan",
   "manifest_path": "patches/pending/PATCH_MANIFEST.json",
   "log_root": "handoffs/current/patch-runner",
@@ -16,20 +16,98 @@
   "auto_commit": false,
   "auto_push": false,
   "operator_app_behavior_changed": false,
-  "manifest": null,
-  "manifest_validation": null,
+  "manifest": {
+    "_documentation": {
+      "version": "riftscan-patch-manifest-example-v3.9-alpha2",
+      "purpose": "Example-only pending patch manifest for the v3.9-alpha2 manifest-validation-only runner. Copy to PATCH_MANIFEST.json only after replacing all placeholder values and setting example_only to false.",
+      "total_character_count": "001522"
+    },
+    "schema_version": "riftscan.patch_manifest.v1",
+    "example_only": true,
+    "patch_id": "example-do-not-run",
+    "patch_title": "Example pending patch manifest",
+    "created_utc": "2026-05-03T00:00:00Z",
+    "runner_min_version": "riftscan-patch-runner-v3.9-alpha2",
+    "status": "example_only",
+    "bundle": {
+      "path": "patches/pending/patch-bundle.zip",
+      "sha256": "REPLACE_WITH_PATCH_BUNDLE_SHA256",
+      "base64_path": null
+    },
+    "patcher": {
+      "type": "powershell",
+      "entry_point": "patches/pending/.extract/apply-patch.ps1",
+      "arguments": []
+    },
+    "expected_extracted_files": [
+      "apply-patch.ps1",
+      "PATCH_NOTES.md"
+    ],
+    "validation": {
+      "post_patch_commands": [
+        "python -m py_compile tools/riftscan_operator_app.py"
+      ],
+      "operator_app_behavior_change_expected": false
+    },
+    "guardrails": [
+      "Example manifest only; do not rename this file to PATCH_MANIFEST.json without replacing placeholders.",
+      "Patch runner must validate the manifest before any future patch application stage.",
+      "Patch runner must not auto-commit.",
+      "Patch runner must not auto-push.",
+      "Patch runner must log to handoffs/current/patch-runner."
+    ]
+  },
+  "manifest_validation": {
+    "status": "FAIL",
+    "issue_count": 7,
+    "warning_count": 0,
+    "issues": [
+      "example_only must be false or absent for a runnable pending manifest.",
+      "patch_id must be a non-placeholder string.",
+      "patch_title must be a non-placeholder string.",
+      "created_utc must be a UTC timestamp like 2026-05-03T18:00:00Z.",
+      "status must be pending or ready_for_validation.",
+      "bundle.sha256 must be a real 64-character hex SHA256 value.",
+      "validation.post_patch_commands must be an array of command strings when present."
+    ],
+    "warnings": [],
+    "checked_fields": [
+      "schema_version",
+      "example_only",
+      "patch_id",
+      "patch_title",
+      "created_utc",
+      "runner_min_version",
+      "status",
+      "bundle.path",
+      "bundle.sha256",
+      "bundle.base64_path",
+      "patcher.type",
+      "patcher.entry_point",
+      "patcher.arguments",
+      "expected_extracted_files",
+      "validation.post_patch_commands",
+      "validation.operator_app_behavior_change_expected",
+      "guardrails"
+    ]
+  },
   "blockers": [
-    "No pending patch manifest exists at patches/pending/PATCH_MANIFEST.json."
+    "example_only must be false or absent for a runnable pending manifest.",
+    "patch_id must be a non-placeholder string.",
+    "patch_title must be a non-placeholder string.",
+    "created_utc must be a UTC timestamp like 2026-05-03T18:00:00Z.",
+    "status must be pending or ready_for_validation.",
+    "bundle.sha256 must be a real 64-character hex SHA256 value.",
+    "validation.post_patch_commands must be an array of command strings when present."
   ],
   "git_status": {
     "command": "git status --short",
     "exit_code": 0,
-    "output": " M handoffs/current/patch-runner/patch-runner-log.jsonl\r\n D handoffs/current/patch-runner/patch-runner-output.txt\r\n D handoffs/current/patch-runner/patch-runner-summary.json"
+    "output": " M handoffs/current/patch-runner/patch-runner-log.jsonl\r\n D handoffs/current/patch-runner/patch-runner-output.txt\r\n D handoffs/current/patch-runner/patch-runner-summary.json\r\n?? patches/pending/PATCH_MANIFEST.json"
   },
   "details": {
     "current_stage": "v3.9-alpha2 manifest validation only",
-    "expected_manifest": "patches/pending/PATCH_MANIFEST.json",
-    "example_manifest": "patches/pending/PATCH_MANIFEST.example.json",
-    "next_action": "Create or copy a reviewed PATCH_MANIFEST.json before running the patch runner."
+    "patch_application_enabled": false,
+    "next_action": "Fix PATCH_MANIFEST.json validation issues before any future patch-application runner stage."
   }
 }
