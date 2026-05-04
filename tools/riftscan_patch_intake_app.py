@@ -1,6 +1,6 @@
-# Version: riftscan-patch-intake-v1.1.0
+# Version: riftscan-patch-intake-v1.1.1
 # Purpose: Local RiftScan Patch Intake Helper. Provides an always-on-top paste GUI plus gated validate/dry-run/apply/process/commit/push controls for machine-readable RiftScan clipboard patch payloads. No clipboard watcher, no service, no listener, no polling, no dot staging, no automatic commit, no automatic push.
-# Total character count: 72758
+# Total character count: 72435
 
 from __future__ import annotations
 
@@ -24,7 +24,7 @@ from tkinter import messagebox, scrolledtext, ttk
 from typing import Any, Callable
 
 
-APP_VERSION = "riftscan-patch-intake-v1.1.0"
+APP_VERSION = "riftscan-patch-intake-v1.1.1"
 MAGIC = "RIFTSCAN_CLIPBOARD_PATCH_V1"
 DEFAULT_REPO_ROOT = Path(__file__).resolve().parents[1]
 STATE_DIR_REL = ".riftscan-local/patch-intake"
@@ -1332,6 +1332,181 @@ def run_self_test() -> tuple[bool, dict[str, Any]]:
     }
     return passed, summary
 
+
+
+# v1.1.1 override: push verify nonzero remote match handling.
+def push_verify_remote(repo_root: Path, simulate: bool = False) -> dict[str, Any]:
+    """Push current main and treat remote SHA verification as authoritative.
+
+    Fix marker: push verify nonzero remote match.
+    This keeps the v1.1 self-test API compatible with simulate=True while
+    preventing a false failure when git push emits stderr/noisy nonzero output
+    but origin/main already equals local HEAD.
+    """
+    paths = get_paths(repo_root)
+
+    if simulate:
+        result = {
+            "schema_version": "riftscan.patch_intake_push_result.v1",
+            "created_utc": utc_now(),
+            "app_version": APP_VERSION,
+            "mode": "push",
+            "status": "pass",
+            "code": "PASS_PUSH_VERIFY_SIMULATED_OR_SKIPPED",
+            "stage": "simulate",
+            "verification_authority": "simulation",
+            "push_nonzero_ignored_after_remote_match": False,
+            "warnings": [],
+            "issues": [],
+        }
+        write_report(repo_root, result, "push")
+        append_event(
+            repo_root,
+            event="verify_remote",
+            stage="simulate",
+            status="pass",
+            code="PASS_PUSH_VERIFY_SIMULATED_OR_SKIPPED",
+            artifact_paths=result_artifacts(repo_root, "push", "event_log", "report"),
+            extra={"verification_authority": "simulation"},
+        )
+        return result
+
+    commit_result = read_json(paths["commit_json"], {})
+    issues: list[str] = []
+    warnings: list[str] = []
+    artifact_paths = result_artifacts(repo_root, "push", "event_log", "report")
+
+    result: dict[str, Any] = {
+        "schema_version": "riftscan.patch_intake_push_result.v1",
+        "created_utc": utc_now(),
+        "app_version": APP_VERSION,
+        "mode": "push",
+        "status": "fail",
+        "code": "FAIL_UNKNOWN",
+        "source_result": "commit",
+        "verification_authority": "remote_sha_match",
+        "push_nonzero_ignored_after_remote_match": False,
+        "warnings": warnings,
+        "issues": issues,
+    }
+
+    if commit_result.get("code") != "PASS_COMMITTED":
+        issues.append("Successful commit result is required before push.")
+        result["code"] = "FAIL_PUSH_WITHOUT_COMMIT"
+        write_report(repo_root, result, "push")
+        append_event(
+            repo_root,
+            event="push",
+            stage="precondition",
+            status="fail",
+            code=str(result["code"]),
+            artifact_paths=artifact_paths,
+            extra={"verification_authority": "remote_sha_match"},
+        )
+        return result
+
+    head_code, head_out, head_err = run_command(["git", "rev-parse", "HEAD"], cwd=repo_root, timeout=30)
+    local_head = head_out.strip()
+    result["head_exit_code"] = head_code
+    result["head_stdout"] = head_out
+    result["head_stderr"] = head_err
+    result["local_head"] = local_head
+
+    if head_code != 0 or not local_head:
+        issues.append("Could not resolve local HEAD.")
+        result["code"] = "FAIL_REMOTE_VERIFY"
+        write_report(repo_root, result, "push")
+        append_event(
+            repo_root,
+            event="verify_remote",
+            stage="local_head",
+            status="fail",
+            code=str(result["code"]),
+            artifact_paths=artifact_paths,
+            extra={"verification_authority": "remote_sha_match"},
+        )
+        return result
+
+    push_code, push_out, push_err = run_command(["git", "push", "origin", "main"], cwd=repo_root, timeout=180)
+    result["push_exit_code"] = push_code
+    result["push_stdout"] = push_out
+    result["push_stderr"] = push_err
+
+    remote_code, remote_out, remote_err = run_command(
+        ["git", "ls-remote", "origin", "refs/heads/main"],
+        cwd=repo_root,
+        timeout=60,
+    )
+    result["remote_verify_exit_code"] = remote_code
+    result["remote_verify_stdout"] = remote_out
+    result["remote_verify_stderr"] = remote_err
+
+    remote_line = remote_out.strip()
+    remote_sha = remote_line.split()[0] if remote_line else ""
+    result["remote_line"] = remote_line
+    result["remote_sha"] = remote_sha
+
+    if remote_code != 0 or not remote_sha:
+        issues.append("Could not verify remote main SHA.")
+        result["code"] = "FAIL_REMOTE_VERIFY"
+        write_report(repo_root, result, "push")
+        append_event(
+            repo_root,
+            event="verify_remote",
+            stage="remote_lookup",
+            status="fail",
+            code=str(result["code"]),
+            artifact_paths=artifact_paths,
+            extra={"verification_authority": "remote_sha_match"},
+        )
+        return result
+
+    if remote_sha != local_head:
+        if push_code != 0:
+            issues.append("git push failed and remote main does not match local HEAD.")
+            result["code"] = "FAIL_PUSH_REJECTED"
+        else:
+            issues.append("Remote main does not match local HEAD after push.")
+            result["code"] = "FAIL_REMOTE_VERIFY"
+        write_report(repo_root, result, "push")
+        append_event(
+            repo_root,
+            event="verify_remote",
+            stage="compare_remote",
+            status="fail",
+            code=str(result["code"]),
+            artifact_paths=artifact_paths,
+            extra={
+                "verification_authority": "remote_sha_match",
+                "local_head": local_head,
+                "remote_sha": remote_sha,
+            },
+        )
+        return result
+
+    if push_code != 0:
+        warnings.append("WARN_PUSH_NONZERO_VERIFY_REMOTE")
+        result["push_nonzero_ignored_after_remote_match"] = True
+
+    result["status"] = "pass"
+    result["code"] = "PASS_PUSHED_AND_VERIFIED"
+    write_report(repo_root, result, "push")
+    append_event(
+        repo_root,
+        event="verify_remote",
+        stage="compare_remote",
+        status="pass",
+        code="PASS_PUSHED_AND_VERIFIED",
+        artifact_paths=artifact_paths,
+        extra={
+            "verification_authority": "remote_sha_match",
+            "local_head": local_head,
+            "remote_sha": remote_sha,
+            "push_exit_code": push_code,
+            "push_nonzero_ignored_after_remote_match": result["push_nonzero_ignored_after_remote_match"],
+        },
+    )
+    return result
 
 class PatchIntakeApp(tk.Tk):
     def __init__(self, repo_root: Path) -> None:

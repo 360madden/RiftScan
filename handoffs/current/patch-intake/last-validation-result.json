@@ -1,13 +1,40 @@
 {
-  "app_version": "riftscan-patch-intake-v1.0.0",
+  "app_version": "riftscan-patch-intake-v1.1.0",
   "code": "PASS_VALID_PATCH",
-  "created_utc": "2026-05-04T21:26:17Z",
-  "from_version": "riftscan-patch-intake-v1.0.0",
-  "git_status_short": "",
+  "created_utc": "2026-05-04T21:47:46Z",
+  "from_version": "riftscan-patch-intake-v1.1.0",
+  "git_status_short": " M handoffs/current/patch-intake/PATCH_INTAKE_REPORT.md\n M handoffs/current/patch-intake/last-validation-result.json\n M handoffs/current/patch-intake/patch-intake-log.jsonl\n",
   "issues": [],
-  "mode": "validation",
-  "package_id": "patch-intake-helper-v1-1-0-20260504",
-  "payload_sha256": "b674d2f8feae66825e043b1a8a192e4d039ec7b94f880e621cb9df64fd48564a",
+  "manifest": {
+    "applier": "apply_patch_intake_push_verify_v1_1_1_compact.py",
+    "commit": {
+      "message": "Fix patch intake push verification false failure",
+      "push": false,
+      "stage_paths": [
+        "tools/riftscan_patch_intake_app.py",
+        "scripts/riftscan-patch-intake.cmd",
+        "handoffs/current/patch-intake/"
+      ]
+    },
+    "component": "patch-intake-helper",
+    "created_utc": "2026-05-04T22:12:00Z",
+    "from_version": "riftscan-patch-intake-v1.1.0",
+    "magic": "RIFTSCAN_CLIPBOARD_PATCH_V1",
+    "package_id": "patch-intake-push-verify-v1-1-1-compact-20260504b",
+    "payload_type": "python_applier_base64_gzip",
+    "post_apply_checks": [
+      "py_compile_patch_intake",
+      "git_status_check"
+    ],
+    "repo": "RiftScan",
+    "schema_version": "riftscan.clipboard_patch.v1",
+    "target_file": "tools/riftscan_patch_intake_app.py",
+    "target_repo_root": "C:\\RIFT MODDING\\Riftscan",
+    "to_version": "riftscan-patch-intake-v1.1.1"
+  },
+  "mode": "process_validate",
+  "package_id": "patch-intake-push-verify-v1-1-1-compact-20260504b",
+  "payload_sha256": "07810b4a03bbdb4e4022058c098e17607aa4475dbc8e8c6e3cca3d80cc8277c6",
   "payload_type": "python_applier_base64_gzip",
   "repo_root": "C:\\RIFT MODDING\\Riftscan",
   "report_path": "handoffs/current/patch-intake/PATCH_INTAKE_REPORT.md",
@@ -15,6 +42,6 @@
   "status": "pass",
   "target_file": "tools/riftscan_patch_intake_app.py",
   "target_repo_root": "C:\\RIFT MODDING\\Riftscan",
-  "to_version": "riftscan-patch-intake-v1.1.0",
+  "to_version": "riftscan-patch-intake-v1.1.1",
   "warnings": []
 }
