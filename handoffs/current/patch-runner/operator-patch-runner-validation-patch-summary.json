@@ -1,0 +1,52 @@
+{
+  "schema_version": "riftscan.operator_patch_runner_validation_patch.v1",
+  "patch_id": "operator-patch-runner-validation-v382",
+  "created_utc": "2026-05-04T01:43:25Z",
+  "target_version": "riftscan-operator-app-v3.8.2",
+  "source_version": "riftscan-operator-app-v3.8.1",
+  "repo_root": "C:\\RIFT MODDING\\Riftscan",
+  "modified_file": "tools/riftscan_operator_app.py",
+  "backup_file": "tools/riftscan_operator_app.py.bak-operator-patch-runner-validation-v382-20260504T014324Z",
+  "changes": {
+    "version_updated": true,
+    "app_version_updated": true,
+    "purpose_updated": true,
+    "constants_added": true,
+    "allowlist_added": [
+      "handoffs/current/patch-runner",
+      "patches/README.md",
+      "patches/apply-latest.cmd",
+      "patches/apply-latest.ps1",
+      "patches/pending/PATCH_MANIFEST.example.json"
+    ],
+    "junk_added": [
+      "RIFTSCAN_apply_operator_patch_runner_validation_patch.py",
+      "RiftScan_Operator_Patch_Runner_Validation_v382.zip",
+      "apply-riftscan-operator-patch-runner-validation.cmd"
+    ],
+    "helpers_added": true,
+    "button_added": true,
+    "method_added": true,
+    "already_current": false
+  },
+  "guardrails": [
+    "No git add was run.",
+    "No git commit was run.",
+    "No git push was run.",
+    "No patch bundle extraction was run.",
+    "No pending patcher was run.",
+    "Only the Operator integration patch was applied."
+  ],
+  "git_status": {
+    "command": "git status --short",
+    "exit_code": 0,
+    "stdout": " M tools/riftscan_operator_app.py\n?? PATCH_PACKAGE_MANIFEST.json\n?? PATCH_PACKAGE_README.md\n?? RIFTSCAN_apply_operator_patch_runner_validation_patch.py\n?? apply-riftscan-operator-patch-runner-validation.cmd\n?? tools/__pycache__/\n?? tools/riftscan_operator_app.py.bak-operator-patch-runner-validation-v382-20260504T014324Z\n",
+    "stderr": ""
+  },
+  "recent_commits": {
+    "command": "git log --oneline -5",
+    "exit_code": 0,
+    "stdout": "1d692fc Validate patch runner alpha2 locally\na18cbc9 Add patch runner alpha2 JSON handoff\naa33ecf Add patch runner alpha2 handoff\n98aba37 Update patch manifest example for alpha2\nf52f064 Add patch manifest validation alpha2\n",
+    "stderr": ""
+  }
+}

@@ -1,5 +1,5 @@
-# Version: riftscan-operator-app-v3.8.1
-# Purpose: Windows Tkinter helper app for RiftScan operator workflow: run focus preflight, run full live preflight gate, create focus-gated capture plans, run the focus-gated window/process metadata collector, analyze and compare collector sessions, validate collector artifacts, write compact AI-ready reports, clean known junk, safely commit/push allowlisted files, and provide tabbed/wrapped controls with lightweight status highlighting.
+# Version: riftscan-operator-app-v3.8.2
+# Purpose: Windows Tkinter helper app for RiftScan operator workflow: run focus preflight, run full live preflight gate, create focus-gated capture plans, run the focus-gated window/process metadata collector, analyze and compare collector sessions, validate collector artifacts, validate pending patch-runner manifests, write compact AI-ready reports, clean known junk, safely commit/push allowlisted files, and provide tabbed/wrapped controls with lightweight status highlighting.
 # Total character count: 121823
 
 from __future__ import annotations
@@ -20,7 +20,7 @@ from tkinter import messagebox, scrolledtext, ttk
 from typing import Any
 
 
-APP_VERSION = "riftscan-operator-app-v3.8.1"
+APP_VERSION = "riftscan-operator-app-v3.8.2"
 REPO_ROOT = Path(__file__).resolve().parents[1]
 FOCUS_SCRIPT = REPO_ROOT / "scripts" / "run-rift-focus-control.cmd"
 HANDOFF_DIR = REPO_ROOT / "handoffs" / "current" / "focus-control-local"
@@ -35,6 +35,12 @@ CAPTURE_PLAN_ROOT = REPO_ROOT / "plans" / "focus-gated-capture-plans"
 LATEST_CAPTURE_PLAN = CAPTURE_PLAN_ROOT / "LATEST_CAPTURE_PLAN.txt"
 CAPTURE_SESSION_ROOT = REPO_ROOT / "sessions" / "focus-gated-captures"
 LATEST_CAPTURE_SESSION = CAPTURE_SESSION_ROOT / "LATEST_CAPTURE_SESSION.txt"
+
+PATCH_RUNNER_CMD = REPO_ROOT / "patches" / "apply-latest.cmd"
+PATCH_RUNNER_DIR = REPO_ROOT / "handoffs" / "current" / "patch-runner"
+PATCH_RUNNER_SUMMARY = PATCH_RUNNER_DIR / "patch-runner-summary.json"
+PATCH_RUNNER_OUTPUT = PATCH_RUNNER_DIR / "patch-runner-output.txt"
+PATCH_RUNNER_LOG = PATCH_RUNNER_DIR / "patch-runner-log.jsonl"
 LOG_SCHEMA_VERSION = "riftscan.capture_log.v1"
 WINDOW_PROCESS_COLLECTOR_SCHEMA_VERSION = "riftscan.window_process_metadata_collector.v1"
 ANALYSIS_SCHEMA_VERSION = "riftscan.window_process_analysis.v1"
@@ -49,6 +55,11 @@ ALLOWLIST = [
     "tools/rift_focus_control.py",
     "tools/riftscan_operator_app.py",
     "plans/focus-gated-capture-plans",
+    "handoffs/current/patch-runner",
+    "patches/README.md",
+    "patches/apply-latest.cmd",
+    "patches/apply-latest.ps1",
+    "patches/pending/PATCH_MANIFEST.example.json",
 ]
 
 FORCE_ADD_ALLOWLIST = [
@@ -83,6 +94,9 @@ JUNK_LITERAL = [
     "RIFTSCAN_apply_operator_v37_analyze_latest_session_patch_checked.py",
     "RIFTSCAN_apply_operator_v38_compare_sessions_patch_checked.py",
     "RIFTSCAN_apply_operator_v381_comparison_baseline_hotfix_patch.py",
+    "RIFTSCAN_apply_operator_patch_runner_validation_patch.py",
+    "RiftScan_Operator_Patch_Runner_Validation_v382.zip",
+    "apply-riftscan-operator-patch-runner-validation.cmd",
     "payload",
     "rift_focus_local_simple_v2.zip",
 ]
@@ -345,6 +359,75 @@ def latest_capture_session_summary() -> dict[str, Any]:
         },
     }
 
+
+
+def latest_patch_runner_summary() -> dict[str, Any]:
+    summary = load_json(PATCH_RUNNER_SUMMARY)
+    output_text = read_text(PATCH_RUNNER_OUTPUT)
+    log_tail = tail_text(PATCH_RUNNER_LOG, lines=40)
+    return {
+        "summary_path": rel(PATCH_RUNNER_SUMMARY),
+        "output_path": rel(PATCH_RUNNER_OUTPUT),
+        "log_path": rel(PATCH_RUNNER_LOG),
+        "summary": summary,
+        "output_text": output_text,
+        "log_tail": log_tail,
+    }
+
+
+def patch_runner_display_status(exit_code: int, summary: dict[str, Any]) -> str:
+    status = str(summary.get("status", "unknown"))
+    if status == "blocked_validation_only" and exit_code == 5:
+        return "BLOCKED/PASS_ALPHA2"
+    if status == "fail_no_pending_manifest" and exit_code == 2:
+        return "FAIL_NO_PENDING_MANIFEST"
+    if status == "fail_manifest_parse_error" and exit_code == 3:
+        return "FAIL_MANIFEST_PARSE_ERROR"
+    if status == "fail_manifest_validation" and exit_code == 4:
+        return "FAIL_MANIFEST_VALIDATION"
+    if status == "fail_unhandled_error" or exit_code == 99:
+        return "FAIL_UNHANDLED_ERROR"
+    return "UNKNOWN"
+
+
+def append_latest_patch_runner_section(report_path: Path, exit_code: int | None = None) -> None:
+    report_path.parent.mkdir(parents=True, exist_ok=True)
+    existing = read_text(report_path) if report_path.exists() else ""
+    latest = latest_patch_runner_summary()
+    summary = latest.get("summary") or {}
+    output_text = latest.get("output_text") or ""
+
+    section_payload = {
+        "exit_code_from_operator": exit_code,
+        "display_status": patch_runner_display_status(exit_code if exit_code is not None else int(summary.get("exit_code", -1)), summary),
+        "summary_path": latest.get("summary_path"),
+        "output_path": latest.get("output_path"),
+        "log_path": latest.get("log_path"),
+        "summary": summary,
+        "output_tail": "\n".join(str(output_text).splitlines()[-40:]),
+    }
+
+    section = (
+        "## Latest Patch Runner\n\n"
+        "```json\n"
+        f"{json_block(section_payload)}\n"
+        "```\n\n"
+    )
+
+    stripped = re.sub(
+        r"\n?## Latest Patch Runner\n\n```json\n.*?\n```\n\n",
+        "\n",
+        existing,
+        flags=re.DOTALL,
+    )
+
+    guardrails_heading = "\n## Guardrails\n"
+    if guardrails_heading in stripped:
+        stripped = stripped.replace(guardrails_heading, "\n" + section + "## Guardrails\n", 1)
+    else:
+        stripped = stripped.rstrip() + "\n\n" + section
+
+    report_path.write_text(stripped, encoding="utf-8")
 
 def append_jsonl(path: Path, event: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -2462,6 +2545,7 @@ class RiftScanOperatorApp(tk.Tk):
             diagnostics_tab,
             [
                 ("Run Full Live Preflight", self.run_full_live_preflight),
+                ("Validate Pending Patch", self.validate_pending_patch),
                 ("Run Focus Preflight", self.run_focus_preflight),
             ],
             columns=3,
@@ -2693,6 +2777,62 @@ class RiftScanOperatorApp(tk.Tk):
             return "\n".join(line for line in lines if line)
 
         self.run_async("focus preflight", task)
+
+
+    def validate_pending_patch(self) -> None:
+        def task() -> str:
+            lines: list[str] = [
+                "=== PATCH RUNNER VALIDATION ===",
+                "Scope: alpha2 manifest validation only.",
+            ]
+
+            if not PATCH_RUNNER_CMD.exists():
+                return "\n".join([
+                    "PATCH RUNNER: FAIL",
+                    f"Missing command launcher: {rel(PATCH_RUNNER_CMD)}",
+                ])
+
+            exit_code, stdout, stderr = run_command(["cmd", "/c", str(PATCH_RUNNER_CMD)], timeout=90)
+            summary = load_json(PATCH_RUNNER_SUMMARY)
+            output_text = read_text(PATCH_RUNNER_OUTPUT)
+            display_status = patch_runner_display_status(exit_code, summary)
+
+            report_path = write_operator_report()
+            append_latest_patch_runner_section(report_path, exit_code)
+
+            lines.extend([
+                f"PATCH RUNNER: {display_status}",
+                f"Runner status: {summary.get('status', 'unknown')}",
+                f"Exit code: {exit_code}",
+                f"Runner version: {summary.get('runner_version', 'unknown')}",
+                f"Manifest: {summary.get('manifest_path', 'patches/pending/PATCH_MANIFEST.json')}",
+                f"Summary: {rel(PATCH_RUNNER_SUMMARY)}",
+                f"Output: {rel(PATCH_RUNNER_OUTPUT)}",
+                f"Log: {rel(PATCH_RUNNER_LOG)}",
+                f"Operator report: {rel(report_path)}",
+                "",
+                "Guardrails:",
+                f"- Patch applied: {summary.get('patch_applied')}",
+                f"- Auto-commit: {summary.get('auto_commit')}",
+                f"- Auto-push: {summary.get('auto_push')}",
+                f"- Operator behavior changed by runner: {summary.get('operator_app_behavior_changed')}",
+                "",
+                "Runner output:",
+                output_text.strip() or "[no runner output text]",
+            ])
+
+            if stdout.strip():
+                lines.extend(["", "Launcher stdout:", stdout.strip()])
+            if stderr.strip():
+                lines.extend(["", "Launcher stderr:", stderr.strip()])
+
+            lines.extend([
+                "",
+                "No bundle extraction or patch execution was started by this Operator action.",
+            ])
+            return "\n".join(lines)
+
+        self.run_async("patch runner validation", task)
 
     def run_full_live_preflight(self) -> None:
         def task() -> str:

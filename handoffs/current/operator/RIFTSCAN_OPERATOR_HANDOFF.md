@@ -1,7 +1,7 @@
 # RiftScan Operator Handoff
 
-Created UTC: `2026-05-03T15:16:16Z`
-App version: `riftscan-operator-app-v3.8.1`
+Created UTC: `2026-05-04T01:44:58Z`
+App version: `riftscan-operator-app-v3.8.2`
 Repo root: `C:\RIFT MODDING\Riftscan`
 
 ## Operator Assessment
@@ -17,6 +17,15 @@ Summary: `status=foreground_verified pid=29420 hwnd=0x4E0F42 title=RIFT`
 Exit code: `0`
 
 ```text
+ M handoffs/current/operator/RIFTSCAN_OPERATOR_HANDOFF.md
+ M handoffs/current/patch-runner/patch-runner-log.jsonl
+ M handoffs/current/patch-runner/patch-runner-output.txt
+ M handoffs/current/patch-runner/patch-runner-summary.json
+ M tools/riftscan_operator_app.py
+?? PATCH_PACKAGE_MANIFEST.json
+?? PATCH_PACKAGE_README.md
+?? handoffs/current/patch-runner/OPERATOR_PATCH_RUNNER_VALIDATION_PATCH.md
+?? handoffs/current/patch-runner/operator-patch-runner-validation-patch-summary.json
 
 ```
 
@@ -25,11 +34,11 @@ Exit code: `0`
 Exit code: `0`
 
 ```text
-980cc80 Update RiftScan operator handoff
-614c46f Update RiftScan operator handoff
-71713d9 Update RiftScan operator handoff
-3f50c61 Update RiftScan operator handoff
-def3614 Update RiftScan operator handoff
+1d692fc Validate patch runner alpha2 locally
+a18cbc9 Add patch runner alpha2 JSON handoff
+aa33ecf Add patch runner alpha2 handoff
+98aba37 Update patch manifest example for alpha2
+f52f064 Add patch manifest validation alpha2
 
 ```
 
