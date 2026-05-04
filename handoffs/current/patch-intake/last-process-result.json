@@ -1,0 +1,91 @@
+{
+  "app_version": "riftscan-patch-intake-v1.1.0",
+  "apply_result": {
+    "code": "PASS_APPLIED",
+    "required_result_markers": [
+      "riftscan-patch-intake-v1.1.0",
+      "LAST_PROCESS_JSON",
+      "PATCH_INTAKE_LOG_JSONL",
+      "def process_payload_text",
+      "def commit_result",
+      "def push_verify_remote",
+      "Process Payload",
+      "Commit Result",
+      "Push + Verify Remote"
+    ],
+    "status": "pass",
+    "target_file": "tools/riftscan_patch_intake_app.py"
+  },
+  "artifact_paths": [
+    "tools/riftscan_patch_intake_app.py",
+    "scripts/riftscan-patch-intake.cmd",
+    "handoffs/current/patch-intake/last-process-result.json",
+    "handoffs/current/patch-intake/patch-intake-log.jsonl"
+  ],
+  "code": "PASS_PROCESSED",
+  "created_utc": "2026-05-04T21:26:38Z",
+  "manifest": {
+    "applier": "apply_patch_intake_helper_v1_1_0.py",
+    "commit": {
+      "message": "Implement patch intake helper v1.1",
+      "push": false,
+      "stage_paths": [
+        "tools/riftscan_patch_intake_app.py",
+        "scripts/riftscan-patch-intake.cmd",
+        "handoffs/current/patch-intake/"
+      ]
+    },
+    "component": "patch-intake-helper",
+    "created_utc": "2026-05-04T21:10:07Z",
+    "forbidden_actions": [
+      "auto_commit",
+      "auto_push",
+      "force_push",
+      "git_add_dot",
+      "listener",
+      "polling",
+      "scheduled_task",
+      "service"
+    ],
+    "from_version": "riftscan-patch-intake-v1.0.0",
+    "magic": "RIFTSCAN_CLIPBOARD_PATCH_V1",
+    "package_id": "patch-intake-helper-v1-1-0-20260504",
+    "payload_type": "python_applier_base64_gzip",
+    "post_apply_checks": [
+      "py_compile_patch_intake",
+      "git_status_check"
+    ],
+    "repo": "RiftScan",
+    "required_existing_markers": [
+      "riftscan-patch-intake-v1.0.0",
+      "def apply_payload_text",
+      "class PatchIntakeApp",
+      "Run Self-Test"
+    ],
+    "required_result_markers": [
+      "riftscan-patch-intake-v1.1.0",
+      "LAST_PROCESS_JSON",
+      "PATCH_INTAKE_LOG_JSONL",
+      "def process_payload_text",
+      "def commit_result",
+      "def push_verify_remote",
+      "Process Payload",
+      "Commit Result",
+      "Push + Verify Remote"
+    ],
+    "schema_version": "riftscan.clipboard_patch.v1",
+    "target_file": "tools/riftscan_patch_intake_app.py",
+    "target_repo_root": "C:\\RIFT MODDING\\Riftscan",
+    "to_version": "riftscan-patch-intake-v1.1.0"
+  },
+  "mode": "process",
+  "notes": [
+    "Bootstrap artifact written by the v1.1.0 applier because the pre-upgrade v1.0.0 helper does not know last-process-result.json yet.",
+    "Use the reopened v1.1.0 helper's Commit Result button for explicit commit control."
+  ],
+  "package_id": "patch-intake-helper-v1-1-0-20260504",
+  "schema_version": "riftscan.patch_intake_process_result.v1",
+  "stage": "applier_bootstrap_process_result",
+  "status": "pass",
+  "target_file": "tools/riftscan_patch_intake_app.py"
+}

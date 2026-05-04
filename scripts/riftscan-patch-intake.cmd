@@ -1,8 +1,8 @@
 @echo off
 setlocal
-REM Version: riftscan-patch-intake-launcher-v1.0.0
-REM Purpose: Thin launcher for tools\riftscan_patch_intake_app.py. It does not apply logic itself; it only passes arguments to Python and returns Python's exit code.
-REM Total character count: 510
+REM Version: riftscan-patch-intake-launcher-v1.1.0
+REM Purpose: Thin launcher for tools\riftscan_patch_intake_app.py. It only resolves the helper, passes arguments to Python, and preserves Python's exit code.
+REM Total character count: 502
 
 set "SCRIPT_DIR=%~dp0"
 set "PYTHON_APP=%SCRIPT_DIR%..\tools\riftscan_patch_intake_app.py"
@@ -15,4 +15,4 @@ if not exist "%PYTHON_APP%" (
 python "%PYTHON_APP%" %*
 exit /b %ERRORLEVEL%
 
-REM End of script
+REM END_OF_SCRIPT

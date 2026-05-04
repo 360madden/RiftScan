@@ -1,6 +1,6 @@
-# Version: riftscan-patch-intake-v1.0.0
-# Purpose: Local RiftScan Patch Intake Helper. Provides an always-on-top paste GUI plus headless validate/dry-run/apply/self-test modes for machine-readable RiftScan clipboard patch payloads. No clipboard watcher, no service, no listener, no polling, no git add, no auto-commit, no auto-push.
-# Total character count: 31815
+# Version: riftscan-patch-intake-v1.1.0
+# Purpose: Local RiftScan Patch Intake Helper. Provides an always-on-top paste GUI plus gated validate/dry-run/apply/process/commit/push controls for machine-readable RiftScan clipboard patch payloads. No clipboard watcher, no service, no listener, no polling, no dot staging, no automatic commit, no automatic push.
+# Total character count: 72758
 
 from __future__ import annotations
 
@@ -20,11 +20,11 @@ import tkinter as tk
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
-from tkinter import filedialog, messagebox, scrolledtext, ttk
-from typing import Any
+from tkinter import messagebox, scrolledtext, ttk
+from typing import Any, Callable
 
 
-APP_VERSION = "riftscan-patch-intake-v1.0.0"
+APP_VERSION = "riftscan-patch-intake-v1.1.0"
 MAGIC = "RIFTSCAN_CLIPBOARD_PATCH_V1"
 DEFAULT_REPO_ROOT = Path(__file__).resolve().parents[1]
 STATE_DIR_REL = ".riftscan-local/patch-intake"
@@ -33,6 +33,10 @@ ACCEPTED_LEDGER_NAME = "accepted-patches.json"
 LAST_VALIDATION_JSON = "last-validation-result.json"
 LAST_DRY_RUN_JSON = "last-dry-run-result.json"
 LAST_APPLY_JSON = "last-apply-result.json"
+LAST_PROCESS_JSON = "last-process-result.json"
+LAST_COMMIT_JSON = "last-commit-result.json"
+LAST_PUSH_JSON = "last-push-result.json"
+PATCH_INTAKE_LOG_JSONL = "patch-intake-log.jsonl"
 REPORT_MD = "PATCH_INTAKE_REPORT.md"
 
 ALLOWED_PAYLOAD_TYPES = {"python_applier_base64_gzip"}
@@ -57,6 +61,21 @@ FORBIDDEN_PAYLOAD_PATTERNS = [
     r"\bSet-Service\b",
     r"\bwhile\s+True\s*:",
 ]
+ALLOWED_POST_APPLY_CHECKS = {
+    "py_compile_target",
+    "py_compile_operator",
+    "py_compile_patch_intake",
+    "patch_intake_self_test",
+    "operator_marker_verify",
+    "git_status_check",
+}
+FORBIDDEN_POST_APPLY_CHECKS = {
+    "raw_command",
+    "powershell_from_manifest",
+    "cmd_from_manifest",
+    "shell_from_manifest",
+}
+COMMIT_SUCCESS_CODES = {"PASS_PROCESSED", "PASS_APPLIED", "PASS_ALREADY_PATCHED"}
 
 
 @dataclass
@@ -159,6 +178,10 @@ def get_paths(repo_root: Path) -> dict[str, Path]:
         "validation_json": report_dir / LAST_VALIDATION_JSON,
         "dry_run_json": report_dir / LAST_DRY_RUN_JSON,
         "apply_json": report_dir / LAST_APPLY_JSON,
+        "process_json": report_dir / LAST_PROCESS_JSON,
+        "commit_json": report_dir / LAST_COMMIT_JSON,
+        "push_json": report_dir / LAST_PUSH_JSON,
+        "event_log": report_dir / PATCH_INTAKE_LOG_JSONL,
         "report_md": report_dir / REPORT_MD,
         "staging_dir": state_dir / "staging",
         "logs_dir": state_dir / "logs",
@@ -171,6 +194,67 @@ def load_ledger(repo_root: Path) -> dict[str, Any]:
 
 def save_ledger(repo_root: Path, ledger: dict[str, Any]) -> None:
     write_json(get_paths(repo_root)["ledger"], ledger)
+
+
+def result_artifacts(repo_root: Path, *names: str) -> list[str]:
+    paths = get_paths(repo_root)
+    mapping = {
+        "validation": paths["validation_json"],
+        "dry_run": paths["dry_run_json"],
+        "apply": paths["apply_json"],
+        "process": paths["process_json"],
+        "commit": paths["commit_json"],
+        "push": paths["push_json"],
+        "event_log": paths["event_log"],
+        "report": paths["report_md"],
+    }
+    return [rel(repo_root, mapping[name]) for name in names if name in mapping]
+
+
+def event_envelope(
+    event: str,
+    stage: str,
+    status: str,
+    code: str,
+    package_id: str = "",
+    target_file: str = "",
+    artifact_paths: list[str] | None = None,
+    extra: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    envelope: dict[str, Any] = {
+        "schema_version": "riftscan.event_log.v1",
+        "created_utc": utc_now(),
+        "component": "patch_intake",
+        "app_version": APP_VERSION,
+        "event": event,
+        "stage": stage,
+        "status": status,
+        "code": code,
+        "package_id": package_id,
+        "target_file": target_file,
+        "artifact_paths": artifact_paths or [],
+    }
+    if extra:
+        envelope["extra"] = extra
+    return envelope
+
+
+def append_event(
+    repo_root: Path,
+    event: str,
+    stage: str,
+    status: str,
+    code: str,
+    package_id: str = "",
+    target_file: str = "",
+    artifact_paths: list[str] | None = None,
+    extra: dict[str, Any] | None = None,
+) -> None:
+    paths = get_paths(repo_root)
+    paths["event_log"].parent.mkdir(parents=True, exist_ok=True)
+    envelope = event_envelope(event, stage, status, code, package_id, target_file, artifact_paths, extra)
+    with paths["event_log"].open("a", encoding="utf-8") as handle:
+        handle.write(json.dumps(envelope, ensure_ascii=False, sort_keys=True) + "\n")
 
 
 def git_status(repo_root: Path) -> tuple[bool, list[str], str]:
@@ -194,6 +278,18 @@ def git_status(repo_root: Path) -> tuple[bool, list[str], str]:
         unsafe.append(line)
 
     return not unsafe, unsafe, out
+
+
+def git_status_lines(repo_root: Path) -> tuple[int, list[str], str, str]:
+    code, out, err = run_command(["git", "status", "--short"], cwd=repo_root, timeout=30)
+    return code, [line for line in out.splitlines() if line.strip()], out, err
+
+
+def parse_status_path(line: str) -> str:
+    text = line[3:].strip() if len(line) >= 3 else line.strip()
+    if " -> " in text:
+        text = text.split(" -> ", 1)[1].strip()
+    return text.replace("\\", "/")
 
 
 def parse_payload(text: str) -> tuple[ParsedPayload | None, dict[str, Any]]:
@@ -244,6 +340,67 @@ def parse_payload(text: str) -> tuple[ParsedPayload | None, dict[str, Any]]:
     return ParsedPayload(manifest=manifest, payload_text=payload_text.strip(), payload_bytes=payload_bytes, raw_text=raw), result
 
 
+def manifest_summary(manifest: dict[str, Any]) -> dict[str, Any]:
+    commit = manifest.get("commit") if isinstance(manifest.get("commit"), dict) else None
+    return {
+        "magic": manifest.get("magic"),
+        "schema_version": manifest.get("schema_version"),
+        "package_id": manifest.get("package_id"),
+        "created_utc": manifest.get("created_utc"),
+        "repo": manifest.get("repo"),
+        "component": manifest.get("component"),
+        "from_version": manifest.get("from_version"),
+        "to_version": manifest.get("to_version"),
+        "target_repo_root": manifest.get("target_repo_root"),
+        "target_file": manifest.get("target_file"),
+        "payload_type": manifest.get("payload_type"),
+        "applier": manifest.get("applier"),
+        "post_apply_checks": manifest.get("post_apply_checks"),
+        "commit": commit,
+    }
+
+
+def validate_post_apply_checks(manifest: dict[str, Any], issues: list[str]) -> list[str]:
+    checks = manifest.get("post_apply_checks") or []
+    if not isinstance(checks, list):
+        issues.append("post_apply_checks must be a list when present.")
+        return []
+    normalized = [str(check).strip() for check in checks if str(check).strip()]
+    forbidden = [check for check in normalized if check in FORBIDDEN_POST_APPLY_CHECKS]
+    unknown = [check for check in normalized if check not in ALLOWED_POST_APPLY_CHECKS]
+    if forbidden:
+        issues.append("Forbidden post-apply checks requested: " + ", ".join(sorted(forbidden)))
+    if unknown:
+        issues.append("Unknown post-apply checks requested: " + ", ".join(sorted(unknown)))
+    return normalized
+
+
+def validate_commit_metadata_shape(manifest: dict[str, Any], issues: list[str], require_commit: bool = False) -> dict[str, Any] | None:
+    commit = manifest.get("commit")
+    if commit is None:
+        if require_commit:
+            issues.append("Manifest commit block is required.")
+        return None
+    if not isinstance(commit, dict):
+        issues.append("Manifest commit block must be an object.")
+        return None
+
+    message = str(commit.get("message", "")).strip()
+    stage_paths = commit.get("stage_paths")
+    if not message:
+        issues.append("commit.message is required.")
+    if not isinstance(stage_paths, list) or not stage_paths:
+        issues.append("commit.stage_paths must be a non-empty list.")
+    else:
+        for raw in stage_paths:
+            path_text = str(raw).strip().replace("\\", "/")
+            if not is_safe_stage_path(path_text):
+                issues.append(f"Unsafe commit.stage_paths entry: {raw}")
+    if bool(commit.get("push")):
+        issues.append("commit.push must be false for v1.1.")
+    return commit
+
+
 def validate_parsed_payload(parsed: ParsedPayload, repo_root: Path, mode: str = "validate") -> dict[str, Any]:
     manifest = parsed.manifest
     payload_bytes = parsed.payload_bytes
@@ -281,6 +438,7 @@ def validate_parsed_payload(parsed: ParsedPayload, repo_root: Path, mode: str = 
         "repo_root": str(repo_root),
         "target_file": target_file_rel,
         "payload_sha256": actual_hash,
+        "manifest": manifest_summary(manifest),
         "issues": issues,
         "warnings": warnings,
         "report_path": rel(repo_root, paths["report_md"]),
@@ -335,6 +493,14 @@ def validate_parsed_payload(parsed: ParsedPayload, repo_root: Path, mode: str = 
             issues.append(f"Payload source contains forbidden pattern: {pattern}")
             result["code"] = "FAIL_FORBIDDEN_ACTION"
 
+    before_commit_issue_count = len(issues)
+    validate_post_apply_checks(manifest, issues)
+    validate_commit_metadata_shape(manifest, issues, require_commit=False)
+    if len(issues) > before_commit_issue_count and any("Unsafe commit.stage_paths" in issue for issue in issues):
+        result["code"] = "FAIL_COMMIT_UNSAFE_STAGE_PATH"
+    elif len(issues) > before_commit_issue_count and result["code"] == "FAIL_UNKNOWN":
+        result["code"] = "FAIL_COMMIT_MISSING_METADATA"
+
     if not target_file_rel:
         issues.append("target_file is required.")
         result["code"] = "FAIL_BAD_MANIFEST"
@@ -385,12 +551,16 @@ def write_report(repo_root: Path, result: dict[str, Any], kind: str) -> None:
     paths = get_paths(repo_root)
     paths["report_dir"].mkdir(parents=True, exist_ok=True)
 
-    if kind == "validation":
-        write_json(paths["validation_json"], result)
-    elif kind == "dry_run":
-        write_json(paths["dry_run_json"], result)
-    elif kind == "apply":
-        write_json(paths["apply_json"], result)
+    json_targets = {
+        "validation": paths["validation_json"],
+        "dry_run": paths["dry_run_json"],
+        "apply": paths["apply_json"],
+        "process": paths["process_json"],
+        "commit": paths["commit_json"],
+        "push": paths["push_json"],
+    }
+    if kind in json_targets:
+        write_json(json_targets[kind], result)
 
     md = (
         "# RiftScan Patch Intake Report\n\n"
@@ -401,6 +571,19 @@ def write_report(repo_root: Path, result: dict[str, Any], kind: str) -> None:
         "```\n"
     )
     paths["report_md"].write_text(md, encoding="utf-8")
+
+
+def log_result(repo_root: Path, result: dict[str, Any], event: str, stage: str, artifacts: list[str]) -> None:
+    append_event(
+        repo_root,
+        event=event,
+        stage=stage,
+        status=str(result.get("status", "unknown")),
+        code=str(result.get("code", "UNKNOWN")),
+        package_id=str(result.get("package_id", "")),
+        target_file=str(result.get("target_file", "")),
+        artifact_paths=artifacts,
+    )
 
 
 def validate_payload_text(text: str, repo_root: Path, kind: str = "validation") -> dict[str, Any]:
@@ -414,10 +597,12 @@ def validate_payload_text(text: str, repo_root: Path, kind: str = "validation") 
             **parse_result,
         }
         write_report(repo_root, result, kind)
+        log_result(repo_root, result, "validate", "parse_payload", result_artifacts(repo_root, "validation", "event_log", "report"))
         return result
 
     result = validate_parsed_payload(parsed, repo_root, mode=kind)
     write_report(repo_root, result, kind)
+    log_result(repo_root, result, "validate", "validate_manifest", result_artifacts(repo_root, "validation", "event_log", "report"))
     return result
 
 
@@ -445,14 +630,17 @@ def dry_run_payload_text(text: str, repo_root: Path) -> dict[str, Any]:
             **parse_result,
         }
         write_report(repo_root, result, "dry_run")
+        log_result(repo_root, result, "dry_run", "parse_payload", result_artifacts(repo_root, "dry_run", "event_log", "report"))
         return result
 
     result = validate_parsed_payload(parsed, repo_root, mode="dry_run")
     if result.get("code") == "PASS_ALREADY_PATCHED":
         write_report(repo_root, result, "dry_run")
+        log_result(repo_root, result, "dry_run", "already_patched", result_artifacts(repo_root, "dry_run", "event_log", "report"))
         return result
     if result.get("status") != "pass":
         write_report(repo_root, result, "dry_run")
+        log_result(repo_root, result, "dry_run", "validate_manifest", result_artifacts(repo_root, "dry_run", "event_log", "report"))
         return result
 
     package_id = str(parsed.manifest.get("package_id"))
@@ -471,29 +659,75 @@ def dry_run_payload_text(text: str, repo_root: Path) -> dict[str, Any]:
         result["code"] = "PASS_DRY_RUN"
 
     write_report(repo_root, result, "dry_run")
+    log_result(repo_root, result, "dry_run", "compile_applier", result_artifacts(repo_root, "dry_run", "event_log", "report"))
     return result
 
 
-def apply_payload_text(text: str, repo_root: Path) -> dict[str, Any]:
-    parsed, parse_result = parse_payload(text)
-    if parsed is None:
-        result = {
-            "schema_version": "riftscan.patch_intake_result.v1",
-            "created_utc": utc_now(),
-            "app_version": APP_VERSION,
-            "mode": "apply",
-            **parse_result,
+def run_named_checks(parsed: ParsedPayload, repo_root: Path) -> list[dict[str, Any]]:
+    manifest = parsed.manifest
+    checks = manifest.get("post_apply_checks") or []
+    results: list[dict[str, Any]] = []
+    for check in [str(item).strip() for item in checks if str(item).strip()]:
+        item: dict[str, Any] = {
+            "check": check,
+            "status": "fail",
+            "code": "FAIL_CHECK_UNKNOWN",
+            "stdout": "",
+            "stderr": "",
+            "exit_code": None,
         }
-        write_report(repo_root, result, "apply")
-        return result
+        if check not in ALLOWED_POST_APPLY_CHECKS:
+            item["code"] = "FAIL_CHECK_NOT_ALLOWED"
+            results.append(item)
+            continue
 
-    dry = dry_run_payload_text(text, repo_root)
+        if check == "py_compile_target":
+            target = repo_root / str(manifest.get("target_file", ""))
+            if target.suffix.lower() != ".py":
+                item.update({"status": "skip", "code": "SKIP_NOT_PYTHON_TARGET"})
+            else:
+                code, out, err = run_command([sys.executable, "-m", "py_compile", str(target)], cwd=repo_root, timeout=60)
+                item.update({"exit_code": code, "stdout": out, "stderr": err, "status": "pass" if code == 0 else "fail", "code": "PASS_CHECK" if code == 0 else "FAIL_CHECK"})
+        elif check == "py_compile_operator":
+            target = repo_root / "tools" / "riftscan_operator_app.py"
+            code, out, err = run_command([sys.executable, "-m", "py_compile", str(target)], cwd=repo_root, timeout=60)
+            item.update({"exit_code": code, "stdout": out, "stderr": err, "status": "pass" if code == 0 else "fail", "code": "PASS_CHECK" if code == 0 else "FAIL_CHECK"})
+        elif check == "py_compile_patch_intake":
+            target = repo_root / "tools" / "riftscan_patch_intake_app.py"
+            code, out, err = run_command([sys.executable, "-m", "py_compile", str(target)], cwd=repo_root, timeout=60)
+            item.update({"exit_code": code, "stdout": out, "stderr": err, "status": "pass" if code == 0 else "fail", "code": "PASS_CHECK" if code == 0 else "FAIL_CHECK"})
+        elif check == "patch_intake_self_test":
+            target = repo_root / "tools" / "riftscan_patch_intake_app.py"
+            code, out, err = run_command([sys.executable, str(target), "--self-test"], cwd=repo_root, timeout=180)
+            item.update({"exit_code": code, "stdout": out, "stderr": err, "status": "pass" if code == 0 else "fail", "code": "PASS_CHECK" if code == 0 else "FAIL_CHECK"})
+        elif check == "operator_marker_verify":
+            target = repo_root / "tools" / "riftscan_operator_app.py"
+            markers = manifest.get("operator_required_markers") or []
+            text = target.read_text(encoding="utf-8", errors="replace") if target.exists() else ""
+            missing = [str(marker) for marker in markers if str(marker) not in text]
+            item["missing_markers"] = missing
+            item["status"] = "pass" if not missing else "fail"
+            item["code"] = "PASS_CHECK" if not missing else "FAIL_CHECK"
+        elif check == "git_status_check":
+            code, out, err = run_command(["git", "status", "--short"], cwd=repo_root, timeout=30)
+            item.update({"exit_code": code, "stdout": out, "stderr": err, "status": "pass" if code == 0 else "fail", "code": "PASS_CHECK" if code == 0 else "FAIL_CHECK"})
+        results.append(item)
+    return results
+
+
+def apply_after_dry(parsed: ParsedPayload, repo_root: Path, dry: dict[str, Any]) -> dict[str, Any]:
     if dry.get("code") == "PASS_ALREADY_PATCHED":
-        write_report(repo_root, dry, "apply")
-        return dry
+        result = dict(dry)
+        result["mode"] = "apply"
+        write_report(repo_root, result, "apply")
+        log_result(repo_root, result, "apply", "already_patched", result_artifacts(repo_root, "apply", "event_log", "report"))
+        return result
     if dry.get("code") != "PASS_DRY_RUN":
-        write_report(repo_root, dry, "apply")
-        return dry
+        result = dict(dry)
+        result["mode"] = "apply"
+        write_report(repo_root, result, "apply")
+        log_result(repo_root, result, "apply", "blocked_by_dry_run", result_artifacts(repo_root, "apply", "event_log", "report"))
+        return result
 
     applier_path = repo_root / str(dry.get("applier_path"))
     code, out, err = run_command([sys.executable, str(applier_path), "--repo-root", str(repo_root)], cwd=repo_root, timeout=120)
@@ -508,6 +742,7 @@ def apply_payload_text(text: str, repo_root: Path) -> dict[str, Any]:
         result["status"] = "fail"
         result["code"] = "FAIL_APPLIER_RUNTIME"
         write_report(repo_root, result, "apply")
+        log_result(repo_root, result, "apply", "run_applier", result_artifacts(repo_root, "apply", "event_log", "report"))
         return result
 
     target_file = repo_root / str(parsed.manifest.get("target_file"))
@@ -522,6 +757,17 @@ def apply_payload_text(text: str, repo_root: Path) -> dict[str, Any]:
         result["code"] = "FAIL_VERIFY_MARKERS"
         result["missing_result_markers"] = missing
         write_report(repo_root, result, "apply")
+        log_result(repo_root, result, "apply", "verify_result_markers", result_artifacts(repo_root, "apply", "event_log", "report"))
+        return result
+
+    check_results = run_named_checks(parsed, repo_root)
+    result["post_apply_checks"] = check_results
+    failed_checks = [check for check in check_results if check.get("status") == "fail"]
+    if failed_checks:
+        result["status"] = "fail"
+        result["code"] = "FAIL_POST_APPLY_CHECK"
+        write_report(repo_root, result, "apply")
+        log_result(repo_root, result, "apply", "post_apply_checks", result_artifacts(repo_root, "apply", "event_log", "report"))
         return result
 
     ledger = load_ledger(repo_root)
@@ -540,7 +786,110 @@ def apply_payload_text(text: str, repo_root: Path) -> dict[str, Any]:
     result["status"] = "pass"
     result["code"] = "PASS_APPLIED"
     write_report(repo_root, result, "apply")
+    log_result(repo_root, result, "apply", "verify_result_markers", result_artifacts(repo_root, "apply", "event_log", "report"))
     return result
+
+
+def apply_payload_text(text: str, repo_root: Path) -> dict[str, Any]:
+    parsed, parse_result = parse_payload(text)
+    if parsed is None:
+        result = {
+            "schema_version": "riftscan.patch_intake_result.v1",
+            "created_utc": utc_now(),
+            "app_version": APP_VERSION,
+            "mode": "apply",
+            **parse_result,
+        }
+        write_report(repo_root, result, "apply")
+        log_result(repo_root, result, "apply", "parse_payload", result_artifacts(repo_root, "apply", "event_log", "report"))
+        return result
+
+    dry = dry_run_payload_text(text, repo_root)
+    return apply_after_dry(parsed, repo_root, dry)
+
+
+def write_process_result(repo_root: Path, result: dict[str, Any]) -> dict[str, Any]:
+    write_report(repo_root, result, "process")
+    log_result(repo_root, result, "process", str(result.get("stage", "write_last_process_result")), result_artifacts(repo_root, "process", "event_log", "report"))
+    return result
+
+
+def process_payload_text(
+    text: str,
+    repo_root: Path,
+    prompt_callback: Callable[[], bool] | None = None,
+) -> dict[str, Any]:
+    parsed, parse_result = parse_payload(text)
+    base: dict[str, Any] = {
+        "schema_version": "riftscan.patch_intake_process_result.v1",
+        "created_utc": utc_now(),
+        "app_version": APP_VERSION,
+        "mode": "process",
+        "status": "fail",
+        "code": "FAIL_PROCESS",
+        "stage": "parse_payload",
+        "issues": [],
+        "validation_result": None,
+        "dry_run_result": None,
+        "apply_result": None,
+    }
+    if parsed is None:
+        base.update(parse_result)
+        return write_process_result(repo_root, base)
+
+    base["package_id"] = parsed.manifest.get("package_id")
+    base["target_file"] = parsed.manifest.get("target_file")
+    base["manifest"] = manifest_summary(parsed.manifest)
+
+    validation = validate_parsed_payload(parsed, repo_root, mode="process_validate")
+    write_report(repo_root, validation, "validation")
+    log_result(repo_root, validation, "validate", "process_validate", result_artifacts(repo_root, "validation", "event_log", "report"))
+    base["validation_result"] = validation
+    if validation.get("code") == "PASS_ALREADY_PATCHED":
+        base.update({"status": "pass", "code": "PASS_ALREADY_PATCHED", "stage": "validate"})
+        return write_process_result(repo_root, base)
+    if validation.get("status") != "pass":
+        base.update({"status": "fail", "code": validation.get("code", "FAIL_VALIDATION"), "stage": "validate", "issues": validation.get("issues", [])})
+        return write_process_result(repo_root, base)
+
+    dry = dry_run_payload_text(text, repo_root)
+    base["dry_run_result"] = dry
+    if dry.get("code") == "PASS_ALREADY_PATCHED":
+        base.update({"status": "pass", "code": "PASS_ALREADY_PATCHED", "stage": "dry_run"})
+        return write_process_result(repo_root, base)
+    if dry.get("code") != "PASS_DRY_RUN":
+        base.update({"status": "fail", "code": dry.get("code", "FAIL_DRY_RUN"), "stage": "dry_run", "issues": dry.get("issues", [])})
+        return write_process_result(repo_root, base)
+
+    prompt_approved = True
+    prompt_mode = "headless_no_prompt_callback"
+    if prompt_callback is not None:
+        prompt_mode = "gui_apply_prompt"
+        prompt_approved = bool(prompt_callback())
+    base["apply_prompt"] = {"mode": prompt_mode, "approved": prompt_approved}
+    append_event(
+        repo_root,
+        event="process",
+        stage="apply_prompt",
+        status="pass" if prompt_approved else "fail",
+        code="PASS_APPLY_PROMPT_APPROVED" if prompt_approved else "FAIL_APPLY_CANCELLED",
+        package_id=str(parsed.manifest.get("package_id", "")),
+        target_file=str(parsed.manifest.get("target_file", "")),
+        artifact_paths=result_artifacts(repo_root, "event_log"),
+    )
+    if not prompt_approved:
+        base.update({"status": "fail", "code": "FAIL_APPLY_CANCELLED", "stage": "apply_prompt", "issues": ["Operator cancelled apply after dry run."]})
+        return write_process_result(repo_root, base)
+
+    apply_result = apply_after_dry(parsed, repo_root, dry)
+    base["apply_result"] = apply_result
+    if apply_result.get("code") == "PASS_ALREADY_PATCHED":
+        base.update({"status": "pass", "code": "PASS_ALREADY_PATCHED", "stage": "apply"})
+    elif apply_result.get("code") == "PASS_APPLIED":
+        base.update({"status": "pass", "code": "PASS_PROCESSED", "stage": "write_last_process_result"})
+    else:
+        base.update({"status": "fail", "code": apply_result.get("code", "FAIL_APPLY"), "stage": "apply", "issues": apply_result.get("issues", [])})
+    return write_process_result(repo_root, base)
 
 
 def make_payload(manifest: dict[str, Any], payload_source: str) -> str:
@@ -558,11 +907,11 @@ def make_payload(manifest: dict[str, Any], payload_source: str) -> str:
     )
 
 
-def make_example_payload(repo_root: Path, valid: bool = True) -> str:
+def make_example_payload(repo_root: Path, valid: bool = True, with_commit: bool = False) -> str:
     created = utc_now()
     target_file = "tools/riftscan_patch_intake_app.py"
     from_version = APP_VERSION
-    to_version = "riftscan-patch-intake-v1.0.1"
+    to_version = "riftscan-patch-intake-v1.1.1"
     applier = (
         "from __future__ import annotations\n"
         "import argparse\n"
@@ -574,8 +923,8 @@ def make_example_payload(repo_root: Path, valid: bool = True) -> str:
         "    args = parser.parse_args()\n"
         "    path = Path(args.repo_root) / 'tools' / 'riftscan_patch_intake_app.py'\n"
         "    text = path.read_text(encoding='utf-8', errors='replace')\n"
-        "    if 'riftscan-patch-intake-v1.0.1' not in text:\n"
-        "        text = text.replace('riftscan-patch-intake-v1.0.0', 'riftscan-patch-intake-v1.0.1')\n"
+        "    if 'riftscan-patch-intake-v1.1.1' not in text:\n"
+        "        text = text.replace('riftscan-patch-intake-v1.1.0', 'riftscan-patch-intake-v1.1.1')\n"
         "        path.write_text(text, encoding='utf-8')\n"
         "    return 0\n"
         "\n"
@@ -597,11 +946,256 @@ def make_example_payload(repo_root: Path, valid: bool = True) -> str:
         "applier": "patch-applier.py",
         "required_existing_markers": [from_version],
         "required_result_markers": [to_version],
+        "post_apply_checks": ["py_compile_patch_intake", "git_status_check"],
         "forbidden_actions": sorted(REQUIRED_FORBIDDEN_ACTIONS),
     }
+    if with_commit:
+        manifest["commit"] = {
+            "message": "Self-test example commit",
+            "stage_paths": ["tools/riftscan_patch_intake_app.py", "handoffs/current/patch-intake/"],
+            "push": False,
+        }
     if not valid:
         manifest["repo"] = "WrongRepo"
     return make_payload(manifest, applier)
+
+
+def is_safe_stage_path(path_text: str) -> bool:
+    text = str(path_text or "").strip().replace("\\", "/")
+    if not text or text == ".":
+        return False
+    if text.startswith("/") or re.match(r"^[A-Za-z]:", text):
+        return False
+    if ".." in Path(text).parts:
+        return False
+    if any(char in text for char in "*?[]"):
+        return False
+    if text.startswith(".riftscan-local/") or text == ".riftscan-local":
+        return False
+    return True
+
+
+def path_is_covered(path_text: str, stage_paths: list[str]) -> bool:
+    normalized = path_text.strip().replace("\\", "/")
+    for stage in stage_paths:
+        item = stage.strip().replace("\\", "/")
+        if not item:
+            continue
+        if normalized == item.rstrip("/"):
+            return True
+        if item.endswith("/") and normalized.startswith(item):
+            return True
+        if normalized.startswith(item.rstrip("/") + "/"):
+            return True
+    return False
+
+
+def get_last_successful_patch_result(repo_root: Path) -> tuple[dict[str, Any] | None, str]:
+    paths = get_paths(repo_root)
+    for name, path in [("process", paths["process_json"]), ("apply", paths["apply_json"])]:
+        result = read_json(path, None)
+        if isinstance(result, dict):
+            code = str(result.get("code", ""))
+            apply_result = result.get("apply_result") if isinstance(result.get("apply_result"), dict) else {}
+            apply_code = str(apply_result.get("code", ""))
+            if code in COMMIT_SUCCESS_CODES or apply_code in COMMIT_SUCCESS_CODES:
+                return result, name
+    return None, ""
+
+
+def validate_commit_request(repo_root: Path, last_result: dict[str, Any] | None) -> tuple[bool, list[str], dict[str, Any] | None]:
+    issues: list[str] = []
+    if not last_result:
+        return False, ["No successful process/apply result exists."], None
+
+    manifest = last_result.get("manifest")
+    if not isinstance(manifest, dict):
+        apply_result = last_result.get("apply_result")
+        if isinstance(apply_result, dict) and isinstance(apply_result.get("manifest"), dict):
+            manifest = apply_result.get("manifest")
+    if not isinstance(manifest, dict):
+        return False, ["Last result has no manifest metadata."], None
+
+    commit = validate_commit_metadata_shape(manifest, issues, require_commit=True)
+    if commit is None:
+        return False, issues or ["Commit metadata is missing."], None
+
+    stage_paths = [str(item).strip().replace("\\", "/") for item in commit.get("stage_paths", [])]
+    code, lines, out, err = git_status_lines(repo_root)
+    if code != 0:
+        return False, [err.strip() or out.strip() or "Unable to read git status."], commit
+
+    unexpected: list[str] = []
+    for line in lines:
+        path = parse_status_path(line)
+        if path.startswith(".riftscan-local/"):
+            continue
+        if path.startswith("tools/__pycache__/") or path.startswith("scripts/__pycache__/"):
+            continue
+        if not path_is_covered(path, stage_paths):
+            unexpected.append(line)
+
+    if unexpected:
+        issues.append("Repo has unexpected dirty files outside commit.stage_paths.")
+    if issues:
+        return False, issues + unexpected, commit
+    return True, [], commit
+
+
+def commit_result(repo_root: Path) -> dict[str, Any]:
+    last_result, source = get_last_successful_patch_result(repo_root)
+    ok, issues, commit = validate_commit_request(repo_root, last_result)
+    result: dict[str, Any] = {
+        "schema_version": "riftscan.patch_intake_commit_result.v1",
+        "created_utc": utc_now(),
+        "app_version": APP_VERSION,
+        "mode": "commit",
+        "status": "fail",
+        "code": "FAIL_COMMIT",
+        "source_result": source,
+        "issues": issues,
+    }
+    if not last_result:
+        result["code"] = "FAIL_COMMIT_WITHOUT_APPLY"
+        write_report(repo_root, result, "commit")
+        log_result(repo_root, result, "commit", "preconditions", result_artifacts(repo_root, "commit", "event_log", "report"))
+        return result
+    if commit is None:
+        result["code"] = "FAIL_COMMIT_MISSING_METADATA"
+        write_report(repo_root, result, "commit")
+        log_result(repo_root, result, "commit", "metadata", result_artifacts(repo_root, "commit", "event_log", "report"))
+        return result
+    if issues:
+        if any("Unsafe" in issue for issue in issues):
+            result["code"] = "FAIL_COMMIT_UNSAFE_STAGE_PATH"
+        else:
+            result["code"] = "FAIL_REPO_DIRTY"
+        result["commit"] = commit
+        write_report(repo_root, result, "commit")
+        log_result(repo_root, result, "commit", "preconditions", result_artifacts(repo_root, "commit", "event_log", "report"))
+        return result
+
+    stage_paths = [str(item).strip().replace("\\", "/") for item in commit.get("stage_paths", [])]
+    add_args = ["git", "add", "--"] + stage_paths
+    add_code, add_out, add_err = run_command(add_args, cwd=repo_root, timeout=60)
+    result["stage_paths"] = stage_paths
+    result["stage_exit_code"] = add_code
+    result["stage_stdout"] = add_out
+    result["stage_stderr"] = add_err
+    if add_code != 0:
+        result["code"] = "FAIL_COMMIT"
+        write_report(repo_root, result, "commit")
+        log_result(repo_root, result, "commit", "stage_paths", result_artifacts(repo_root, "commit", "event_log", "report"))
+        return result
+
+    diff_code, diff_out, diff_err = run_command(["git", "diff", "--cached", "--name-status"], cwd=repo_root, timeout=30)
+    result["cached_diff_exit_code"] = diff_code
+    result["cached_diff_name_status"] = diff_out
+    result["cached_diff_stderr"] = diff_err
+    if diff_code != 0 or not diff_out.strip():
+        result["code"] = "FAIL_STAGED_DIFF_UNEXPECTED"
+        result["issues"] = ["No staged diff was found."] if not diff_out.strip() else [diff_err.strip()]
+        write_report(repo_root, result, "commit")
+        log_result(repo_root, result, "commit", "cached_diff", result_artifacts(repo_root, "commit", "event_log", "report"))
+        return result
+
+    commit_code, commit_out, commit_err = run_command(["git", "commit", "-m", str(commit.get("message"))], cwd=repo_root, timeout=90)
+    result["commit_exit_code"] = commit_code
+    result["commit_stdout"] = commit_out
+    result["commit_stderr"] = commit_err
+    if commit_code != 0:
+        result["code"] = "FAIL_COMMIT"
+        write_report(repo_root, result, "commit")
+        log_result(repo_root, result, "commit", "create_commit", result_artifacts(repo_root, "commit", "event_log", "report"))
+        return result
+
+    head_code, head_out, head_err = run_command(["git", "rev-parse", "HEAD"], cwd=repo_root, timeout=30)
+    result["head_exit_code"] = head_code
+    result["commit_sha"] = head_out.strip() if head_code == 0 else ""
+    result["head_stderr"] = head_err
+    result["status"] = "pass"
+    result["code"] = "PASS_COMMITTED"
+    result["issues"] = []
+    write_report(repo_root, result, "commit")
+    log_result(repo_root, result, "commit", "create_commit", result_artifacts(repo_root, "commit", "event_log", "report"))
+    return result
+
+
+def push_verify_remote(repo_root: Path, simulate: bool = False) -> dict[str, Any]:
+    paths = get_paths(repo_root)
+    last_commit = read_json(paths["commit_json"], {})
+    result: dict[str, Any] = {
+        "schema_version": "riftscan.patch_intake_push_result.v1",
+        "created_utc": utc_now(),
+        "app_version": APP_VERSION,
+        "mode": "push",
+        "status": "fail",
+        "code": "FAIL_PUSH",
+        "issues": [],
+    }
+    if not isinstance(last_commit, dict) or last_commit.get("code") != "PASS_COMMITTED":
+        result["code"] = "FAIL_PUSH_WITHOUT_COMMIT"
+        result["issues"] = ["No successful commit result exists."]
+        write_report(repo_root, result, "push")
+        log_result(repo_root, result, "push", "preconditions", result_artifacts(repo_root, "push", "event_log", "report"))
+        return result
+
+    local_code, local_out, local_err = run_command(["git", "rev-parse", "HEAD"], cwd=repo_root, timeout=30)
+    result["local_head_exit_code"] = local_code
+    result["local_head"] = local_out.strip()
+    result["local_head_stderr"] = local_err
+    if local_code != 0:
+        result["code"] = "FAIL_REMOTE_VERIFY"
+        result["issues"] = [local_err.strip() or "Unable to read local HEAD."]
+        write_report(repo_root, result, "push")
+        log_result(repo_root, result, "verify_remote", "local_head", result_artifacts(repo_root, "push", "event_log", "report"))
+        return result
+
+    if simulate:
+        result["status"] = "pass"
+        result["code"] = "PASS_PUSH_VERIFY_SIMULATED_OR_SKIPPED"
+        result["simulated"] = True
+        write_report(repo_root, result, "push")
+        log_result(repo_root, result, "verify_remote", "simulated", result_artifacts(repo_root, "push", "event_log", "report"))
+        return result
+
+    push_code, push_out, push_err = run_command(["git", "push"], cwd=repo_root, timeout=120)
+    result["push_exit_code"] = push_code
+    result["push_stdout"] = push_out
+    result["push_stderr"] = push_err
+    append_event(
+        repo_root,
+        event="push",
+        stage="push_current_branch",
+        status="pass" if push_code == 0 else "fail",
+        code="PASS_PUSH" if push_code == 0 else "FAIL_PUSH_REJECTED",
+        artifact_paths=result_artifacts(repo_root, "event_log"),
+    )
+    if push_code != 0:
+        result["code"] = "FAIL_PUSH_REJECTED"
+        result["issues"] = [push_err.strip() or push_out.strip()]
+        write_report(repo_root, result, "push")
+        log_result(repo_root, result, "push", "push_current_branch", result_artifacts(repo_root, "push", "event_log", "report"))
+        return result
+
+    remote_code, remote_out, remote_err = run_command(["git", "ls-remote", "origin", "main"], cwd=repo_root, timeout=60)
+    result["remote_exit_code"] = remote_code
+    result["remote_stdout"] = remote_out
+    result["remote_stderr"] = remote_err
+    remote_sha = remote_out.split()[0] if remote_code == 0 and remote_out.strip() else ""
+    result["remote_main_sha"] = remote_sha
+    if remote_sha != result["local_head"]:
+        result["code"] = "FAIL_REMOTE_VERIFY"
+        result["issues"] = ["Remote main does not match local HEAD."]
+        write_report(repo_root, result, "push")
+        log_result(repo_root, result, "verify_remote", "compare_remote_main", result_artifacts(repo_root, "push", "event_log", "report"))
+        return result
+
+    result["status"] = "pass"
+    result["code"] = "PASS_PUSHED_AND_VERIFIED"
+    write_report(repo_root, result, "push")
+    log_result(repo_root, result, "verify_remote", "compare_remote_main", result_artifacts(repo_root, "push", "event_log", "report"))
+    return result
 
 
 def run_self_test() -> tuple[bool, dict[str, Any]]:
@@ -627,8 +1221,10 @@ def run_self_test() -> tuple[bool, dict[str, Any]]:
         (handoff_root / ".gitkeep").write_text("", encoding="utf-8")
 
         run_command(["git", "init"], cwd=repo, timeout=30)
-        run_command(["git", "add", "tools/dummy_target.py", "handoffs/current/.gitkeep"], cwd=repo, timeout=30)
-        run_command(["git", "-c", "user.email=selftest@example.local", "-c", "user.name=Self Test", "commit", "-m", "init"], cwd=repo, timeout=30)
+        run_command(["git", "config", "user.email", "selftest@example.local"], cwd=repo, timeout=30)
+        run_command(["git", "config", "user.name", "Self Test"], cwd=repo, timeout=30)
+        run_command(["git", "add", "--", "tools/dummy_target.py", "handoffs/current/.gitkeep"], cwd=repo, timeout=30)
+        run_command(["git", "commit", "-m", "init"], cwd=repo, timeout=30)
 
         base_manifest = {
             "magic": MAGIC,
@@ -645,8 +1241,25 @@ def run_self_test() -> tuple[bool, dict[str, Any]]:
             "applier": "patch-applier.py",
             "required_existing_markers": ["riftscan-dummy-v1.0.0"],
             "required_result_markers": ["riftscan-dummy-v1.0.1"],
+            "post_apply_checks": ["py_compile_target", "git_status_check"],
             "forbidden_actions": sorted(REQUIRED_FORBIDDEN_ACTIONS),
         }
+        commit_manifest = dict(base_manifest)
+        commit_manifest["commit"] = {
+            "message": "Self-test commit result",
+            "stage_paths": ["tools/dummy_target.py", "handoffs/current/patch-intake/"],
+            "push": False,
+        }
+        unsafe_commit_manifest = dict(base_manifest)
+        unsafe_commit_manifest["package_id"] = "dummy-unsafe-commit"
+        unsafe_commit_manifest["commit"] = {
+            "message": "Unsafe self-test commit result",
+            "stage_paths": ["."],
+            "push": False,
+        }
+        missing_commit_manifest = dict(base_manifest)
+        missing_commit_manifest["package_id"] = "dummy-missing-commit"
+
         applier = (
             "from __future__ import annotations\n"
             "import argparse\n"
@@ -664,6 +1277,8 @@ def run_self_test() -> tuple[bool, dict[str, Any]]:
             "    raise SystemExit(main())\n"
         )
         valid_payload = make_payload(base_manifest, applier)
+        commit_payload = make_payload(commit_manifest, applier)
+        unsafe_commit_payload = make_payload(unsafe_commit_manifest, applier)
 
         record("empty payload", "FAIL_BAD_HEADER", validate_payload_text("", repo))
         record("wrong header", "FAIL_BAD_HEADER", validate_payload_text("NOPE\n{}", repo))
@@ -692,7 +1307,20 @@ def run_self_test() -> tuple[bool, dict[str, Any]]:
         record("wrong repo", "FAIL_WRONG_REPO", validate_payload_text(wrong_repo_payload, repo))
 
         record("valid dry run", "PASS_DRY_RUN", dry_run_payload_text(valid_payload, repo))
-        record("valid apply", "PASS_APPLIED", apply_payload_text(valid_payload, repo))
+        record("commit without apply", "FAIL_COMMIT_WITHOUT_APPLY", commit_result(repo))
+        missing_commit_process = process_payload_text(make_payload(missing_commit_manifest, applier), repo)
+        record("process payload without commit metadata", "PASS_PROCESSED", missing_commit_process)
+        record("commit missing metadata", "FAIL_COMMIT_MISSING_METADATA", commit_result(repo))
+
+        target.write_text("# Version: riftscan-dummy-v1.0.0\nprint('dummy')\n", encoding="utf-8")
+        save_ledger(repo, {"accepted": [], "last_accepted_created_utc": None})
+        record("unsafe commit stage path validation", "FAIL_COMMIT_UNSAFE_STAGE_PATH", validate_payload_text(unsafe_commit_payload, repo))
+
+        target.write_text("# Version: riftscan-dummy-v1.0.0\nprint('dummy')\n", encoding="utf-8")
+        save_ledger(repo, {"accepted": [], "last_accepted_created_utc": None})
+        record("process payload", "PASS_PROCESSED", process_payload_text(commit_payload, repo))
+        record("commit in temp repo", "PASS_COMMITTED", commit_result(repo))
+        record("push verify simulated", "PASS_PUSH_VERIFY_SIMULATED_OR_SKIPPED", push_verify_remote(repo, simulate=True))
 
     passed = all(test["pass"] for test in tests)
     summary = {
@@ -710,9 +1338,9 @@ class PatchIntakeApp(tk.Tk):
         super().__init__()
         self.repo_root = repo_root
         self.title(f"RiftScan Patch Intake Helper - {APP_VERSION}")
-        self.geometry("1000x760")
+        self.geometry("1120x820")
         self.attributes("-topmost", True)
-        self.status_var = tk.StringVar(value="Paste a RiftScan payload, then validate.")
+        self.status_var = tk.StringVar(value="Paste a RiftScan payload, then process or use advanced gates.")
         self._build_ui()
 
     def _build_ui(self) -> None:
@@ -721,68 +1349,108 @@ class PatchIntakeApp(tk.Tk):
         ttk.Label(top, text=f"Repo: {self.repo_root}").pack(side=tk.LEFT)
         ttk.Label(top, textvariable=self.status_var).pack(side=tk.RIGHT)
 
-        buttons = ttk.Frame(self)
-        buttons.pack(fill=tk.X, padx=8, pady=4)
+        primary = ttk.LabelFrame(self, text="Primary")
+        primary.pack(fill=tk.X, padx=8, pady=4)
+        ttk.Button(primary, text="Process Payload", command=self.process_payload).pack(side=tk.LEFT, padx=4, pady=4)
 
+        advanced = ttk.LabelFrame(self, text="Advanced gates")
+        advanced.pack(fill=tk.X, padx=8, pady=4)
         for text, command in [
             ("Validate Payload", self.validate_payload),
             ("Dry Run", self.dry_run),
             ("Apply Patch", self.apply_patch),
+        ]:
+            ttk.Button(advanced, text=text, command=command).pack(side=tk.LEFT, padx=4, pady=4)
+
+        commit_frame = ttk.LabelFrame(self, text="Commit / push")
+        commit_frame.pack(fill=tk.X, padx=8, pady=4)
+        for text, command in [
+            ("Commit Result", self.commit_result),
+            ("Push + Verify Remote", self.push_verify_remote),
+        ]:
+            ttk.Button(commit_frame, text=text, command=command).pack(side=tk.LEFT, padx=4, pady=4)
+
+        utility = ttk.LabelFrame(self, text="Utility")
+        utility.pack(fill=tk.X, padx=8, pady=4)
+        for text, command in [
             ("Run Self-Test", self.self_test),
             ("Load Example Valid", self.load_example_valid),
             ("Load Example Invalid", self.load_example_invalid),
             ("Open Report", self.open_report),
+            ("Open Log", self.open_log),
             ("Clear", self.clear),
         ]:
-            ttk.Button(buttons, text=text, command=command).pack(side=tk.LEFT, padx=4, pady=2)
+            ttk.Button(utility, text=text, command=command).pack(side=tk.LEFT, padx=4, pady=4)
 
         self.input_box = scrolledtext.ScrolledText(self, wrap=tk.WORD, height=24)
         self.input_box.pack(fill=tk.BOTH, expand=True, padx=8, pady=6)
 
         ttk.Label(self, text="Output").pack(anchor=tk.W, padx=8)
-        self.output_box = scrolledtext.ScrolledText(self, wrap=tk.WORD, height=12)
+        self.output_box = scrolledtext.ScrolledText(self, wrap=tk.WORD, height=13)
         self.output_box.pack(fill=tk.BOTH, expand=False, padx=8, pady=6)
 
-    def payload_text(self) -> str:
+    def get_input(self) -> str:
         return self.input_box.get("1.0", tk.END)
 
-    def show_result(self, result: dict[str, Any]) -> None:
+    def write_output(self, value: Any) -> None:
+        text = value if isinstance(value, str) else json_block(value)
         self.output_box.delete("1.0", tk.END)
-        self.output_box.insert(tk.END, json_block(result))
-        self.status_var.set(str(result.get("code", "UNKNOWN")))
+        self.output_box.insert(tk.END, text + "\n")
+        if isinstance(value, dict):
+            self.status_var.set(f"{value.get('code', 'UNKNOWN')}")
 
     def validate_payload(self) -> None:
-        self.show_result(validate_payload_text(self.payload_text(), self.repo_root, "validation"))
+        self.write_output(validate_payload_text(self.get_input(), self.repo_root))
 
     def dry_run(self) -> None:
-        self.show_result(dry_run_payload_text(self.payload_text(), self.repo_root))
+        self.write_output(dry_run_payload_text(self.get_input(), self.repo_root))
 
     def apply_patch(self) -> None:
-        if not messagebox.askyesno("Apply Patch", "Apply this validated patch to the local repo?"):
+        if not messagebox.askyesno("Apply patch", "Dry-run and apply this payload now? This will not commit or push."):
             return
-        self.show_result(apply_payload_text(self.payload_text(), self.repo_root))
+        self.write_output(apply_payload_text(self.get_input(), self.repo_root))
+
+    def process_payload(self) -> None:
+        def prompt() -> bool:
+            return messagebox.askyesno("Process payload", "Validation and dry-run passed. Apply now? This will not commit or push.")
+        self.write_output(process_payload_text(self.get_input(), self.repo_root, prompt_callback=prompt))
+
+    def commit_result(self) -> None:
+        if not messagebox.askyesno("Commit result", "Stage only manifest-declared paths and create the commit now?"):
+            return
+        self.write_output(commit_result(self.repo_root))
+
+    def push_verify_remote(self) -> None:
+        if not messagebox.askyesno("Push + verify", "Push current branch and verify origin/main equals local HEAD?"):
+            return
+        self.write_output(push_verify_remote(self.repo_root))
 
     def self_test(self) -> None:
         passed, summary = run_self_test()
-        self.show_result(summary)
-        self.status_var.set("SELF_TEST: PASS" if passed else "SELF_TEST: FAIL")
+        self.write_output(summary)
+        self.status_var.set("PASS_SELF_TEST" if passed else "FAIL_SELF_TEST")
 
     def load_example_valid(self) -> None:
         self.input_box.delete("1.0", tk.END)
-        self.input_box.insert(tk.END, make_example_payload(self.repo_root, valid=True))
-        self.status_var.set("Loaded example valid payload.")
+        self.input_box.insert(tk.END, make_example_payload(self.repo_root, valid=True, with_commit=True))
 
     def load_example_invalid(self) -> None:
         self.input_box.delete("1.0", tk.END)
         self.input_box.insert(tk.END, make_example_payload(self.repo_root, valid=False))
-        self.status_var.set("Loaded example invalid payload.")
 
     def open_report(self) -> None:
-        report = get_paths(self.repo_root)["report_md"]
-        report.parent.mkdir(parents=True, exist_ok=True)
-        if not report.exists():
-            report.write_text("# RiftScan Patch Intake Report\n\nNo report yet.\n", encoding="utf-8")
-        os.startfile(str(report))
+        path = get_paths(self.repo_root)["report_md"]
+        if path.exists():
+            os.startfile(path)
+        else:
+            messagebox.showerror("Open Report", f"Missing report: {path}")
+
+    def open_log(self) -> None:
+        path = get_paths(self.repo_root)["event_log"]
+        if path.exists():
+            os.startfile(path)
+        else:
+            messagebox.showerror("Open Log", f"Missing log: {path}")
 
     def clear(self) -> None:
         self.input_box.delete("1.0", tk.END)
@@ -790,18 +1458,22 @@ class PatchIntakeApp(tk.Tk):
         self.status_var.set("Cleared.")
 
 
-def read_file(path: str) -> str:
-    return Path(path).read_text(encoding="utf-8", errors="replace")
+def read_payload_file(path: str) -> str:
+    return Path(path).expanduser().read_text(encoding="utf-8", errors="replace")
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="RiftScan Patch Intake Helper")
     parser.add_argument("--repo-root", default=None)
-    parser.add_argument("--self-test", action="store_true")
     parser.add_argument("--validate-file", default=None)
     parser.add_argument("--dry-run-file", default=None)
     parser.add_argument("--apply-file", default=None)
-    parser.add_argument("--gui", action="store_true")
+    parser.add_argument("--process-file", default=None)
+    parser.add_argument("--commit-result", action="store_true")
+    parser.add_argument("--push-verify-remote", action="store_true")
+    parser.add_argument("--self-test", action="store_true")
+    parser.add_argument("--make-example-valid", action="store_true")
+    parser.add_argument("--make-example-invalid", action="store_true")
     args = parser.parse_args()
 
     repo_root = repo_root_from_arg(args.repo_root)
@@ -809,23 +1481,45 @@ def main() -> int:
     if args.self_test:
         passed, summary = run_self_test()
         print(json_block(summary))
-        print("SELF_TEST: PASS" if passed else "SELF_TEST: FAIL")
         return 0 if passed else 1
 
+    if args.make_example_valid:
+        print(make_example_payload(repo_root, valid=True, with_commit=True))
+        return 0
+
+    if args.make_example_invalid:
+        print(make_example_payload(repo_root, valid=False))
+        return 0
+
     if args.validate_file:
-        result = validate_payload_text(read_file(args.validate_file), repo_root, "validation")
+        result = validate_payload_text(read_payload_file(args.validate_file), repo_root)
         print(json_block(result))
-        return 0 if str(result.get("code", "")).startswith("PASS") else 1
+        return 0 if result.get("status") == "pass" else 1
 
     if args.dry_run_file:
-        result = dry_run_payload_text(read_file(args.dry_run_file), repo_root)
+        result = dry_run_payload_text(read_payload_file(args.dry_run_file), repo_root)
         print(json_block(result))
-        return 0 if str(result.get("code", "")).startswith("PASS") else 1
+        return 0 if result.get("status") == "pass" else 1
 
     if args.apply_file:
-        result = apply_payload_text(read_file(args.apply_file), repo_root)
+        result = apply_payload_text(read_payload_file(args.apply_file), repo_root)
         print(json_block(result))
-        return 0 if str(result.get("code", "")).startswith("PASS") else 1
+        return 0 if result.get("status") == "pass" else 1
+
+    if args.process_file:
+        result = process_payload_text(read_payload_file(args.process_file), repo_root)
+        print(json_block(result))
+        return 0 if result.get("status") == "pass" else 1
+
+    if args.commit_result:
+        result = commit_result(repo_root)
+        print(json_block(result))
+        return 0 if result.get("status") == "pass" else 1
+
+    if args.push_verify_remote:
+        result = push_verify_remote(repo_root)
+        print(json_block(result))
+        return 0 if result.get("status") == "pass" else 1
 
     app = PatchIntakeApp(repo_root)
     app.mainloop()
@@ -835,4 +1529,4 @@ def main() -> int:
 if __name__ == "__main__":
     raise SystemExit(main())
 
-# End of script
+# END_OF_SCRIPT

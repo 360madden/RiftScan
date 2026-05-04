@@ -1,0 +1,33 @@
+﻿{
+    "schema_version":  "riftscan.patch_intake_post_apply_verify.v1",
+    "created_utc":  "2026-05-04T21:29:27Z",
+    "app_version":  "riftscan-patch-intake-v1.1.0",
+    "status":  "pass",
+    "code":  "PASS_POST_APPLY_VERIFY",
+    "repo_root":  "C:\\RIFT MODDING\\Riftscan",
+    "checked_files":  [
+                          "tools/riftscan_patch_intake_app.py",
+                          "scripts/riftscan-patch-intake.cmd",
+                          "handoffs/current/patch-intake/last-process-result.json",
+                          "handoffs/current/patch-intake/patch-intake-log.jsonl"
+                      ],
+    "markers":  [
+                    "riftscan-patch-intake-v1.1.0",
+                    "LAST_PROCESS_JSON",
+                    "PATCH_INTAKE_LOG_JSONL",
+                    "def process_payload_text",
+                    "def commit_result",
+                    "def push_verify_remote",
+                    "Process Payload",
+                    "Commit Result",
+                    "Push + Verify Remote"
+                ],
+    "process_code":  "PASS_PROCESSED",
+    "git_status_short":  " M handoffs/current/patch-intake/PATCH_INTAKE_REPORT.md\n M handoffs/current/patch-intake/last-apply-result.json\n M handoffs/current/patch-intake/last-dry-run-result.json\n M handoffs/current/patch-intake/last-validation-result.json\n M scripts/riftscan-patch-intake.cmd\n M tools/riftscan_patch_intake_app.py\n?? handoffs/current/patch-intake/last-process-result.json\n?? handoffs/current/patch-intake/patch-intake-log.jsonl\n?? handoffs/current/patch-intake/post-apply-local-verify.json\n?? tools/__pycache__/",
+    "next_allowed_step":  "Use Commit Result only after reviewing this status.",
+    "forbidden":  [
+                      "git add .",
+                      "auto-push",
+                      "force-push"
+                  ]
+}
