@@ -1,0 +1,51 @@
+{
+  "schema_version": "riftscan.repo_bridge_handoff.v1",
+  "created_utc": "20260504T105139Z",
+  "created_date_local_context": "2026-05-04",
+  "repo": {
+    "owner": "360madden",
+    "name": "RiftScan",
+    "local_path": "C:\\RIFT MODDING\\Riftscan",
+    "branch": "main",
+    "preferred_workflow": "RiftScan Operator GUI first; manual PowerShell only if Operator fails"
+  },
+  "known_current_state": {
+    "focus_control": "working/tracked",
+    "full_live_preflight": "working/tracked",
+    "focus_gated_session_dry_run": "working/tracked metadata-only",
+    "operator_app": "working/tracked with allowlisted commit/push workflow",
+    "patch_runner": "v3.9-alpha2 manifest validation only",
+    "patch_runner_boundaries": [
+      "validates PATCH_MANIFEST.json",
+      "writes patch-runner logs",
+      "fails cleanly on no manifest, parse error, or validation error",
+      "stops before extraction or patch execution",
+      "no auto-commit",
+      "no auto-push",
+      "no Operator behavior change"
+    ]
+  },
+  "architecture_decision": {
+    "decision": "Prefer on-demand Operator workflow before any always-on listener/server.",
+    "reason": "Lower risk, easier debugging, no background repo mutation, explicit operator control.",
+    "cloud_boundary": "ChatGPT can design/review code and analyze artifacts; local Windows/RIFT actions must be run by local tools on Joey's PC."
+  },
+  "future_plan": [
+    "Freeze and preserve the current patch-runner alpha2 evidence.",
+    "Disable or avoid any always-on patcher service behavior for now.",
+    "Implement Operator on-demand Check Online Patch Inbox as discovery-only first.",
+    "Add package download/hash validation only after discovery is boring and reliable.",
+    "Add staging extraction only after validation is proven.",
+    "Add patch dry-run only after staging is proven.",
+    "Add real patch application only with explicit GUI approval and rollback metadata."
+  ],
+  "rollback_recommendation": "Soft rollback service/listener path to on-demand Operator-only workflow; keep alpha2 manifest validator unless specifically rejected.",
+  "explicit_no_go_for_now": [
+    "no always-on background polling service",
+    "no automatic extraction into live repo",
+    "no automatic patch application",
+    "no arbitrary shell commands from repo manifests",
+    "no git add .",
+    "no force-push rollback unless intentionally chosen as a last resort"
+  ]
+}

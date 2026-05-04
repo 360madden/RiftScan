@@ -1,0 +1,59 @@
+{
+  "schema_version": "riftscan.patcher_service_rollback_plan.v1",
+  "created_utc": "20260504T105139Z",
+  "rollback_goal": "Return any patcher service/listener work to a safe on-demand Operator-only baseline while preserving evidence.",
+  "recommended_level": "Level 1 or Level 3: disable service/listener behavior; keep alpha2 manifest validator unless rejected.",
+  "levels": [
+    {
+      "level": 1,
+      "name": "Disable only",
+      "description": "Keep files but disable any service/listener entry point."
+    },
+    {
+      "level": 2,
+      "name": "Remove Operator integration",
+      "description": "Remove UI buttons/menu paths that trigger automatic patcher behavior."
+    },
+    {
+      "level": 3,
+      "name": "Revert service/listener commits",
+      "description": "Keep alpha2 validator and revert always-on service/listener commits."
+    },
+    {
+      "level": 4,
+      "name": "Revert all patcher commits",
+      "description": "Remove patcher subsystem entirely; not recommended unless direction is rejected."
+    }
+  ],
+  "pre_rollback_freeze_commands": [
+    "cd \\\"C:\\RIFT MODDING\\Riftscan\\\"",
+    "git status --short",
+    "git log --oneline -12",
+    "git branch backup-before-patcher-rollback",
+    "git tag backup-before-patcher-rollback"
+  ],
+  "windows_inspection_commands": [
+    "Get-Service | Where-Object { $_.Name -like '*RiftScan*' -or $_.DisplayName -like '*RiftScan*' }",
+    "Get-ScheduledTask | Where-Object { $_.TaskName -like '*RiftScan*' -or $_.TaskPath -like '*RiftScan*' }"
+  ],
+  "safe_disable_commands_examples": [
+    "Stop-Service -Name 'SERVICE_NAME_HERE' -ErrorAction SilentlyContinue",
+    "Set-Service -Name 'SERVICE_NAME_HERE' -StartupType Disabled",
+    "Disable-ScheduledTask -TaskName 'TASK_NAME_HERE'"
+  ],
+  "git_guidance": {
+    "pushed_history": "Use git revert <commit_sha>; do not force push by default.",
+    "local_unpushed_work": "Use branch/tag backup first; then selectively restore or revert files.",
+    "never": [
+      "git add .",
+      "force push unless deliberately chosen"
+    ]
+  },
+  "validation_after_rollback": [
+    "git status --short",
+    "python or script tests for patch manifest validation if available",
+    "confirm no service/scheduled task is enabled",
+    "confirm Operator app still launches",
+    "confirm Patch Runner alpha2 remains validation-only if retained"
+  ]
+}

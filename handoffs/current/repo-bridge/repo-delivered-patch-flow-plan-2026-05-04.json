@@ -1,0 +1,105 @@
+{
+  "schema_version": "riftscan.repo_delivered_patch_flow_plan.v1",
+  "created_utc": "20260504T105139Z",
+  "plan_name": "Operator on-demand repo-delivered patch flow",
+  "starting_point": "Patch Runner v3.9-alpha2 manifest validation only",
+  "preferred_mode": "on-demand operator workflow",
+  "not_preferred_initially": "always-on listener/server",
+  "repo_paths": {
+    "online_inbox": ".riftscan/inbox/patch-packages/",
+    "result_reports": "handoffs/current/repo-bridge/",
+    "operator_report": "handoffs/current/operator/RIFTSCAN_OPERATOR_HANDOFF.md"
+  },
+  "local_untracked_paths": {
+    "workspace_root": ".riftscan-local/",
+    "package_cache": ".riftscan-local/package-cache/",
+    "staging": ".riftscan-local/staging/",
+    "logs": ".riftscan-local/logs/",
+    "locks": ".riftscan-local/locks/"
+  },
+  "phases": [
+    {
+      "phase": 0,
+      "name": "Keep alpha2 baseline",
+      "allowed": [
+        "manifest validation"
+      ],
+      "blocked": [
+        "download",
+        "extract",
+        "apply"
+      ]
+    },
+    {
+      "phase": 1,
+      "name": "Check Online Patch Inbox",
+      "allowed": [
+        "discover manifests",
+        "write discovery report"
+      ],
+      "blocked": [
+        "download package",
+        "extract",
+        "apply"
+      ]
+    },
+    {
+      "phase": 2,
+      "name": "Validate Online Package",
+      "allowed": [
+        "download/cache",
+        "verify hash",
+        "validate manifest"
+      ],
+      "blocked": [
+        "extract into repo",
+        "apply"
+      ]
+    },
+    {
+      "phase": 3,
+      "name": "Extract Package to Staging",
+      "allowed": [
+        "extract to .riftscan-local/staging",
+        "path traversal checks"
+      ],
+      "blocked": [
+        "live repo overwrite",
+        "apply"
+      ]
+    },
+    {
+      "phase": 4,
+      "name": "Run Patch Dry Run",
+      "allowed": [
+        "compare staged vs repo",
+        "write dry-run report"
+      ],
+      "blocked": [
+        "modify live files"
+      ]
+    },
+    {
+      "phase": 5,
+      "name": "Apply Validated Patch",
+      "allowed": [
+        "explicit GUI-approved apply",
+        "backup metadata",
+        "validation commands"
+      ],
+      "blocked": [
+        "git add .",
+        "silent apply"
+      ]
+    }
+  ],
+  "mandatory_guardrails": [
+    "deny-by-default action map",
+    "no raw shell commands from manifests",
+    "no path traversal",
+    "no absolute extraction paths",
+    "no direct extraction to repo root",
+    "no auto-apply in early phases",
+    "no git add ."
+  ]
+}
