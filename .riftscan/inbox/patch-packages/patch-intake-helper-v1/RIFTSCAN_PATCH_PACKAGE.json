@@ -1,0 +1,41 @@
+{
+  "schema_version": "riftscan.patch_package.v1",
+  "repo": "RiftScan",
+  "component": "patch-intake",
+  "package_id": "patch-intake-helper-v1",
+  "patch_name": "helper-v1",
+  "from_version": "none",
+  "to_version": "riftscan-patch-intake-v1.0.0",
+  "created_utc": "20260504T180836Z",
+  "target_repo_root": "C:\\RIFT MODDING\\Riftscan",
+  "target_files": [
+    "tools/riftscan_patch_intake_app.py",
+    "scripts/riftscan-patch-intake.cmd"
+  ],
+  "applier": "patch-applier.py",
+  "required_existing_markers": [],
+  "required_result_markers": [
+    "riftscan-patch-intake-v1.0.0",
+    "RIFTSCAN_CLIPBOARD_PATCH_V1",
+    "--self-test"
+  ],
+  "forbidden_actions": [
+    "git_add_dot",
+    "auto_commit",
+    "auto_push",
+    "force_push",
+    "service",
+    "listener",
+    "polling",
+    "scheduled_task",
+    "clipboard_watcher"
+  ],
+  "expected_files": [
+    "RUN_ME_FIRST.cmd",
+    "RIFTSCAN_PATCH_PACKAGE.json",
+    "patch-applier.py",
+    "payload/tools/riftscan_patch_intake_app.py",
+    "payload/scripts/riftscan-patch-intake.cmd",
+    "README.md"
+  ]
+}
