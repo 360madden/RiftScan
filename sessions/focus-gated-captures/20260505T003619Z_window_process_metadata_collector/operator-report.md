@@ -1,6 +1,6 @@
 # RiftScan Operator Handoff
 
-Created UTC: `2026-05-05T00:47:20Z`
+Created UTC: `2026-05-05T00:36:51Z`
 App version: `riftscan-operator-app-v3.8.6`
 Repo root: `C:\RIFT MODDING\Riftscan`
 
@@ -45,7 +45,7 @@ f8a1ff0 Add patch intake GUI test report
 ```json
 {
   "schema_version": "riftscan.local_focus_control_summary.v1",
-  "created_utc": "2026-05-05T00:40:46Z",
+  "created_utc": "2026-05-05T00:36:50Z",
   "status": "foreground_verified",
   "process": {
     "Id": 29420,
@@ -223,9 +223,9 @@ f8a1ff0 Add patch intake GUI test report
 ```json
 {
   "status": "present",
-  "latest_session": "sessions/focus-gated-captures/20260505T004015Z_window_process_metadata_collector",
-  "manifest_path": "sessions/focus-gated-captures/20260505T004015Z_window_process_metadata_collector/capture-session-manifest.json",
-  "handoff_path": "sessions/focus-gated-captures/20260505T004015Z_window_process_metadata_collector/CAPTURE_SESSION_HANDOFF.md",
+  "latest_session": "sessions/focus-gated-captures/20260505T003619Z_window_process_metadata_collector",
+  "manifest_path": "sessions/focus-gated-captures/20260505T003619Z_window_process_metadata_collector/capture-session-manifest.json",
+  "handoff_path": "sessions/focus-gated-captures/20260505T003619Z_window_process_metadata_collector/CAPTURE_SESSION_HANDOFF.md",
   "summary": {
     "schema_version": "riftscan.focus_gated_window_process_metadata_session.v1",
     "app_version": "riftscan-operator-app-v3.8.6",
@@ -245,9 +245,9 @@ f8a1ff0 Add patch intake GUI test report
     "process_id": 29420,
     "window_hwnd_hex": "0x4E0F42",
     "window_title": "RIFT",
-    "capture_log": "sessions/focus-gated-captures/20260505T004015Z_window_process_metadata_collector/capture-log.jsonl",
-    "collector_samples": "sessions/focus-gated-captures/20260505T004015Z_window_process_metadata_collector/collector-samples.jsonl",
-    "collector_summary": "sessions/focus-gated-captures/20260505T004015Z_window_process_metadata_collector/collector-summary.json",
+    "capture_log": "sessions/focus-gated-captures/20260505T003619Z_window_process_metadata_collector/capture-log.jsonl",
+    "collector_samples": "sessions/focus-gated-captures/20260505T003619Z_window_process_metadata_collector/collector-samples.jsonl",
+    "collector_summary": "sessions/focus-gated-captures/20260505T003619Z_window_process_metadata_collector/collector-summary.json",
     "memory_read_started": false,
     "input_sent": false,
     "reloadui_sent": false,
@@ -255,10 +255,10 @@ f8a1ff0 Add patch intake GUI test report
     "error_count": 0,
     "artifact_contract_status": "PASS",
     "missing_artifacts": [],
-    "analysis_status": "PASS",
-    "analysis_anomaly_count": 0,
-    "comparison_status": "PASS",
-    "comparison_difference_count": 5
+    "analysis_status": null,
+    "analysis_anomaly_count": null,
+    "comparison_status": null,
+    "comparison_difference_count": null
   }
 }
 ```
@@ -267,62 +267,10 @@ f8a1ff0 Add patch intake GUI test report
 
 ```json
 {
-  "status": "present",
-  "latest_session": "sessions/focus-gated-captures/20260505T004015Z_window_process_metadata_collector",
-  "analysis_path": "sessions/focus-gated-captures/20260505T004015Z_window_process_metadata_collector/analysis/window-process-analysis.json",
-  "handoff_path": "sessions/focus-gated-captures/20260505T004015Z_window_process_metadata_collector/analysis/WINDOW_PROCESS_ANALYSIS.md",
-  "summary": {
-    "status": "PASS",
-    "warning_count": 0,
-    "error_count": 0,
-    "anomaly_count": 0,
-    "session": "sessions/focus-gated-captures/20260505T004015Z_window_process_metadata_collector",
-    "sample_count": 60,
-    "expected_sample_count": 60,
-    "focus_lost_count": 0,
-    "rift_process_dead_count": 0,
-    "unique_foreground_hwnds": [
-      "0x4E0F42"
-    ],
-    "unique_foreground_pids": [
-      29420
-    ],
-    "unique_rift_hwnds": [
-      "0x4E0F42"
-    ],
-    "unique_rift_pids": [
-      29420
-    ],
-    "unique_rift_titles": [
-      "RIFT"
-    ],
-    "unique_rift_window_rects": [
-      [
-        4,
-        11,
-        659,
-        409
-      ]
-    ],
-    "unique_rift_client_rects": [
-      [
-        0,
-        0,
-        639,
-        359
-      ]
-    ],
-    "missing_sample_index_count": 0,
-    "duplicate_sample_index_count": 0,
-    "sample_interval_seconds": {
-      "expected": 0.5,
-      "min": 0.495,
-      "max": 0.501,
-      "avg": 0.5,
-      "max_abs_drift": 0.005
-    },
-    "artifact_contract_status": "PASS"
-  }
+  "status": "none",
+  "latest_session": "sessions/focus-gated-captures/20260505T003619Z_window_process_metadata_collector",
+  "reason": "analysis has not been generated for latest session",
+  "expected_analysis_path": "sessions/focus-gated-captures/20260505T003619Z_window_process_metadata_collector/analysis/window-process-analysis.json"
 }
 ```
 
@@ -330,37 +278,21 @@ f8a1ff0 Add patch intake GUI test report
 
 ```json
 {
-  "status": "present",
-  "latest_session": "sessions/focus-gated-captures/20260505T004015Z_window_process_metadata_collector",
-  "comparison_path": "sessions/focus-gated-captures/20260505T004015Z_window_process_metadata_collector/comparison/window-process-comparison.json",
-  "handoff_path": "sessions/focus-gated-captures/20260505T004015Z_window_process_metadata_collector/comparison/WINDOW_PROCESS_COMPARISON.md",
-  "summary": {
-    "status": "PASS",
-    "difference_count": 5,
-    "warning_count": 5,
-    "error_count": 0,
-    "previous_session": "sessions/focus-gated-captures/20260505T003619Z_window_process_metadata_collector",
-    "latest_session": "sessions/focus-gated-captures/20260505T004015Z_window_process_metadata_collector",
-    "previous_analysis_status": "FAIL",
-    "latest_analysis_status": "PASS",
-    "previous_sample_count": 60,
-    "latest_sample_count": 60,
-    "previous_focus_lost_count": 47,
-    "latest_focus_lost_count": 0,
-    "previous_artifact_contract_status": "PASS",
-    "latest_artifact_contract_status": "PASS"
-  }
+  "status": "none",
+  "latest_session": "sessions/focus-gated-captures/20260505T003619Z_window_process_metadata_collector",
+  "reason": "comparison has not been generated for latest session",
+  "expected_comparison_path": "sessions/focus-gated-captures/20260505T003619Z_window_process_metadata_collector/comparison/window-process-comparison.json"
 }
 ```
 
 ## Focus Log Tail
 
 ```jsonl
-{"timestamp_utc": "2026-05-05T00:40:45Z", "event": "script_start", "script": "C:\\RIFT MODDING\\Riftscan\\tools\\rift_focus_control.py", "repo_root": "C:\\RIFT MODDING\\Riftscan", "process_name": "rift_x64", "explicit_pid": 0, "retries": 3, "settle_ms": 400}
-{"timestamp_utc": "2026-05-05T00:40:45Z", "event": "powershell_start", "command": "$items = @(Get-Process -Name 'rift_x64' -ErrorAction SilentlyContinue | Select-Object Id,ProcessName,Path,MainWindowTitle,StartTime); $items | ConvertTo-Json -Depth 4"}
-{"timestamp_utc": "2026-05-05T00:40:45Z", "event": "powershell_finish", "success": true, "returncode": 0, "elapsed_ms": 420, "stdout_length": 210, "stderr_length": 0}
-{"timestamp_utc": "2026-05-05T00:40:46Z", "event": "focus_attempt", "attempt": 1, "restore_ok": true, "set_foreground_ok": true, "foreground_hwnd": 5115714, "foreground_hwnd_hex": "0x4E0F42", "foreground_pid": 29420, "foreground_title": "RIFT", "verified": true}
-{"timestamp_utc": "2026-05-05T00:40:46Z", "event": "script_finish", "success": true, "status": "foreground_verified"}
+{"timestamp_utc": "2026-05-05T00:36:49Z", "event": "script_start", "script": "C:\\RIFT MODDING\\Riftscan\\tools\\rift_focus_control.py", "repo_root": "C:\\RIFT MODDING\\Riftscan", "process_name": "rift_x64", "explicit_pid": 0, "retries": 3, "settle_ms": 400}
+{"timestamp_utc": "2026-05-05T00:36:49Z", "event": "powershell_start", "command": "$items = @(Get-Process -Name 'rift_x64' -ErrorAction SilentlyContinue | Select-Object Id,ProcessName,Path,MainWindowTitle,StartTime); $items | ConvertTo-Json -Depth 4"}
+{"timestamp_utc": "2026-05-05T00:36:50Z", "event": "powershell_finish", "success": true, "returncode": 0, "elapsed_ms": 675, "stdout_length": 210, "stderr_length": 0}
+{"timestamp_utc": "2026-05-05T00:36:50Z", "event": "focus_attempt", "attempt": 1, "restore_ok": true, "set_foreground_ok": true, "foreground_hwnd": 5115714, "foreground_hwnd_hex": "0x4E0F42", "foreground_pid": 29420, "foreground_title": "RIFT", "verified": true}
+{"timestamp_utc": "2026-05-05T00:36:50Z", "event": "script_finish", "success": true, "status": "foreground_verified"}
 ```
 
 ## AI Review Prompt

@@ -1,0 +1,5 @@
+{"kind": "analysis_status", "latest": "PASS", "message": "Analysis status changed.", "previous": "FAIL", "severity": "warning"}
+{"kind": "analysis_anomaly_count", "latest": 0, "message": "Analysis anomaly count changed.", "previous": 3, "severity": "warning"}
+{"kind": "unique_foreground_hwnds", "latest": ["0x4E0F42"], "message": "Foreground HWND set changed.", "previous": ["0x4E0F42", "0x9AD0DEC"], "severity": "warning"}
+{"kind": "unique_foreground_pids", "latest": [29420], "message": "Foreground PID set changed.", "previous": [29420, 61120], "severity": "warning"}
+{"kind": "focus_lost_changed", "latest": 0, "message": "Focus lost count changed.", "previous": 47, "severity": "warning"}

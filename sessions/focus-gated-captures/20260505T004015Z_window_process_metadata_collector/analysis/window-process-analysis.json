@@ -1,0 +1,70 @@
+{
+  "schema_version": "riftscan.window_process_analysis.v1",
+  "created_utc": "2026-05-05T00:41:51Z",
+  "app_version": "riftscan-operator-app-v3.8.6",
+  "session_dir": "sessions/focus-gated-captures/20260505T004015Z_window_process_metadata_collector",
+  "inputs": {
+    "manifest": "sessions/focus-gated-captures/20260505T004015Z_window_process_metadata_collector/capture-session-manifest.json",
+    "collector_summary": "sessions/focus-gated-captures/20260505T004015Z_window_process_metadata_collector/collector-summary.json",
+    "collector_samples": "sessions/focus-gated-captures/20260505T004015Z_window_process_metadata_collector/collector-samples.jsonl",
+    "capture_log": "sessions/focus-gated-captures/20260505T004015Z_window_process_metadata_collector/capture-log.jsonl"
+  },
+  "outputs": {
+    "analysis_json": "sessions/focus-gated-captures/20260505T004015Z_window_process_metadata_collector/analysis/window-process-analysis.json",
+    "anomalies_jsonl": "sessions/focus-gated-captures/20260505T004015Z_window_process_metadata_collector/analysis/window-process-anomalies.jsonl",
+    "handoff": "sessions/focus-gated-captures/20260505T004015Z_window_process_metadata_collector/analysis/WINDOW_PROCESS_ANALYSIS.md"
+  },
+  "summary": {
+    "status": "PASS",
+    "warning_count": 0,
+    "error_count": 0,
+    "anomaly_count": 0,
+    "session": "sessions/focus-gated-captures/20260505T004015Z_window_process_metadata_collector",
+    "sample_count": 60,
+    "expected_sample_count": 60,
+    "focus_lost_count": 0,
+    "rift_process_dead_count": 0,
+    "unique_foreground_hwnds": [
+      "0x4E0F42"
+    ],
+    "unique_foreground_pids": [
+      29420
+    ],
+    "unique_rift_hwnds": [
+      "0x4E0F42"
+    ],
+    "unique_rift_pids": [
+      29420
+    ],
+    "unique_rift_titles": [
+      "RIFT"
+    ],
+    "unique_rift_window_rects": [
+      [
+        4,
+        11,
+        659,
+        409
+      ]
+    ],
+    "unique_rift_client_rects": [
+      [
+        0,
+        0,
+        639,
+        359
+      ]
+    ],
+    "missing_sample_index_count": 0,
+    "duplicate_sample_index_count": 0,
+    "sample_interval_seconds": {
+      "expected": 0.5,
+      "min": 0.495,
+      "max": 0.501,
+      "avg": 0.5,
+      "max_abs_drift": 0.005
+    },
+    "artifact_contract_status": "PASS"
+  },
+  "anomalies": []
+}

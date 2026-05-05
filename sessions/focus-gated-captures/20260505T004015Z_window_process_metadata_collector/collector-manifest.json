@@ -1,0 +1,41 @@
+{
+  "schema_version": "riftscan.window_process_metadata_collector.v1",
+  "created_utc": "2026-05-05T00:40:15Z",
+  "app_version": "riftscan-operator-app-v3.8.6",
+  "session_id": "20260505T004015Z_window_process_metadata_collector",
+  "collector": {
+    "name": "window_process_metadata",
+    "real_capture_started": true,
+    "memory_read_started": false,
+    "input_sent": false,
+    "reloadui_sent": false
+  },
+  "target_identity": {
+    "process_name": "rift_x64",
+    "pid": 29420,
+    "hwnd": 5115714,
+    "hwnd_hex": "0x4E0F42",
+    "title": "RIFT"
+  },
+  "duration_target_seconds": 30,
+  "sample_interval_ms": 500,
+  "output_files": {
+    "capture_session_manifest": "sessions/focus-gated-captures/20260505T004015Z_window_process_metadata_collector/capture-session-manifest.json",
+    "capture_log": "sessions/focus-gated-captures/20260505T004015Z_window_process_metadata_collector/capture-log.jsonl",
+    "focus_summary_before": "sessions/focus-gated-captures/20260505T004015Z_window_process_metadata_collector/focus-summary-before.json",
+    "focus_summary_after": "sessions/focus-gated-captures/20260505T004015Z_window_process_metadata_collector/focus-summary-after.json",
+    "operator_report": "sessions/focus-gated-captures/20260505T004015Z_window_process_metadata_collector/operator-report.md",
+    "handoff": "sessions/focus-gated-captures/20260505T004015Z_window_process_metadata_collector/CAPTURE_SESSION_HANDOFF.md",
+    "collector_manifest": "sessions/focus-gated-captures/20260505T004015Z_window_process_metadata_collector/collector-manifest.json",
+    "collector_samples": "sessions/focus-gated-captures/20260505T004015Z_window_process_metadata_collector/collector-samples.jsonl",
+    "collector_summary": "sessions/focus-gated-captures/20260505T004015Z_window_process_metadata_collector/collector-summary.json",
+    "collector_errors": "sessions/focus-gated-captures/20260505T004015Z_window_process_metadata_collector/collector-errors.jsonl"
+  },
+  "guardrails": [
+    "OS/window/process metadata only.",
+    "No process memory read.",
+    "No keyboard input sent.",
+    "No mouse input sent.",
+    "No /reloadui sent."
+  ]
+}
