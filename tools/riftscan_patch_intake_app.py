@@ -1,6 +1,6 @@
-# Version: riftscan-patch-intake-v1.1.1
+# Version: riftscan-patch-intake-v1.2.1
 # Purpose: Local RiftScan Patch Intake Helper. Provides an always-on-top paste GUI plus gated validate/dry-run/apply/process/commit/push controls for machine-readable RiftScan clipboard patch payloads. No clipboard watcher, no service, no listener, no polling, no dot staging, no automatic commit, no automatic push.
-# Total character count: 72435
+# Total character count: 84636
 
 from __future__ import annotations
 
@@ -24,8 +24,9 @@ from tkinter import messagebox, scrolledtext, ttk
 from typing import Any, Callable
 
 
-APP_VERSION = "riftscan-patch-intake-v1.1.1"
+APP_VERSION = "riftscan-patch-intake-v1.2.1"
 MAGIC = "RIFTSCAN_CLIPBOARD_PATCH_V1"
+MAGIC_CHUNKED = "RIFTSCAN_CHUNKED_PATCH_V1"
 DEFAULT_REPO_ROOT = Path(__file__).resolve().parents[1]
 STATE_DIR_REL = ".riftscan-local/patch-intake"
 REPORT_DIR_REL = "handoffs/current/patch-intake"
@@ -292,34 +293,105 @@ def parse_status_path(line: str) -> str:
     return text.replace("\\", "/")
 
 
-def parse_payload(text: str) -> tuple[ParsedPayload | None, dict[str, Any]]:
-    raw = text or ""
-    result: dict[str, Any] = {
-        "status": "unknown",
-        "code": "UNKNOWN",
+
+def payload_encoding_diagnostics(payload_text: str, manifest: dict[str, Any] | None = None) -> dict[str, Any]:
+    raw = payload_text or ""
+    cleaned = "".join(raw.split())
+    allowed = set("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=")
+    invalid_positions = [index for index, char in enumerate(cleaned) if char not in allowed]
+    first_invalid = invalid_positions[0] if invalid_positions else None
+    first_padding = cleaned.find("=") if "=" in cleaned else -1
+    terminal_padding = len(cleaned) - len(cleaned.rstrip("="))
+    padding_before_terminal = False
+    if first_padding != -1:
+        padding_before_terminal = any(char != "=" for char in cleaned[first_padding:])
+    diagnostics: dict[str, Any] = {
+        "schema_version": "riftscan.payload_encoding_diagnostics.v1",
+        "raw_length": len(raw),
+        "cleaned_length": len(cleaned),
+        "removed_whitespace_count": len(raw) - len(cleaned),
+        "length_mod4": len(cleaned) % 4,
+        "padding_count": cleaned.count("="),
+        "terminal_padding_count": terminal_padding,
+        "first_padding_index": first_padding,
+        "padding_before_terminal": padding_before_terminal,
+        "invalid_character_count": len(invalid_positions),
+        "first_invalid_character_position": first_invalid,
+        "encoded_payload_sha256": hashlib.sha256(cleaned.encode("ascii", errors="ignore")).hexdigest(),
+        "encoded_payload_length": len(cleaned),
+        "suggested_padding_needed": (4 - (len(cleaned) % 4)) % 4,
         "issues": [],
     }
+    if manifest:
+        expected_length = manifest.get("encoded_payload_length")
+        expected_hash = str(manifest.get("encoded_payload_sha256", "")).lower()
+        if expected_length is not None and int(expected_length) != len(cleaned):
+            diagnostics["issues"].append("encoded_payload_length mismatch")
+        if expected_hash and expected_hash != diagnostics["encoded_payload_sha256"]:
+            diagnostics["issues"].append("encoded_payload_sha256 mismatch")
+    if invalid_positions:
+        diagnostics["issues"].append("invalid base64 character present")
+    if terminal_padding > 2:
+        diagnostics["issues"].append("too much terminal padding")
+    if padding_before_terminal:
+        diagnostics["issues"].append("padding appears before encoded payload end")
+    if len(cleaned) % 4 != 0:
+        diagnostics["issues"].append("encoded payload length is not divisible by 4")
+    return diagnostics
 
-    stripped = raw.strip()
-    if not stripped.startswith(MAGIC):
-        result["status"] = "fail"
-        result["code"] = "FAIL_BAD_HEADER"
-        result["issues"].append(f"Payload must start with {MAGIC}.")
-        return None, result
 
-    marker_payload = "---PAYLOAD---"
+def decode_base64_gzip_payload(payload_text: str, manifest: dict[str, Any] | None = None) -> tuple[bytes | None, dict[str, Any]]:
+    diagnostics = payload_encoding_diagnostics(payload_text, manifest)
+    cleaned = "".join((payload_text or "").split())
+    if diagnostics["invalid_character_count"]:
+        diagnostics["failure_code"] = "FAIL_BAD_PAYLOAD_CHARACTER"
+        return None, diagnostics
+    if diagnostics["padding_before_terminal"] or diagnostics["terminal_padding_count"] > 2:
+        diagnostics["failure_code"] = "FAIL_BAD_PAYLOAD_PADDING"
+        return None, diagnostics
+    if diagnostics["length_mod4"] != 0:
+        diagnostics["failure_code"] = "FAIL_BAD_PAYLOAD_PADDING"
+        return None, diagnostics
+    if manifest:
+        expected_hash = str(manifest.get("encoded_payload_sha256", "")).lower()
+        if expected_hash and expected_hash != diagnostics["encoded_payload_sha256"]:
+            diagnostics["failure_code"] = "FAIL_ENCODED_PAYLOAD_HASH_MISMATCH"
+            return None, diagnostics
+    try:
+        compressed = base64.b64decode(cleaned, validate=True)
+    except Exception as exc:
+        diagnostics["failure_code"] = "FAIL_BAD_PAYLOAD_ENCODING"
+        diagnostics["decode_error"] = f"{type(exc).__name__}: {exc}"
+        return None, diagnostics
+    try:
+        payload_bytes = gzip.decompress(compressed)
+    except Exception as exc:
+        diagnostics["failure_code"] = "FAIL_BAD_PAYLOAD_GZIP"
+        diagnostics["gzip_error"] = f"{type(exc).__name__}: {exc}"
+        return None, diagnostics
+    diagnostics["decoded_payload_sha256"] = hashlib.sha256(payload_bytes).hexdigest()
+    diagnostics["decoded_payload_length"] = len(payload_bytes)
+    if manifest:
+        expected_decoded = str(manifest.get("decoded_payload_sha256") or manifest.get("payload_sha256") or "").lower()
+        if expected_decoded and expected_decoded != diagnostics["decoded_payload_sha256"]:
+            diagnostics["failure_code"] = "FAIL_HASH_MISMATCH"
+            return None, diagnostics
+    diagnostics["failure_code"] = None
+    return payload_bytes, diagnostics
+
+
+def parse_chunked_payload(stripped: str) -> tuple[ParsedPayload | None, dict[str, Any]]:
+    result: dict[str, Any] = {"status": "unknown", "code": "UNKNOWN", "issues": []}
+    marker_chunks = "---CHUNKS---"
     marker_end = "---END---"
-
-    if marker_payload not in stripped or marker_end not in stripped:
+    if marker_chunks not in stripped or marker_end not in stripped:
         result["status"] = "fail"
         result["code"] = "FAIL_MISSING_PAYLOAD"
-        result["issues"].append("Payload block markers are missing.")
+        result["issues"].append("Chunked payload markers are missing.")
         return None, result
-
-    after_magic = stripped[len(MAGIC):].strip()
-    manifest_text, rest = after_magic.split(marker_payload, 1)
-    payload_text, _ = rest.split(marker_end, 1)
-
+    after_magic = stripped[len(MAGIC_CHUNKED):].strip()
+    manifest_text, rest = after_magic.split(marker_chunks, 1)
+    chunk_text, _ = rest.split(marker_end, 1)
     try:
         manifest = json.loads(manifest_text.strip())
     except Exception as exc:
@@ -327,18 +399,82 @@ def parse_payload(text: str) -> tuple[ParsedPayload | None, dict[str, Any]]:
         result["code"] = "FAIL_BAD_MANIFEST"
         result["issues"].append(f"{type(exc).__name__}: {exc}")
         return None, result
-
-    try:
-        compressed = base64.b64decode("".join(payload_text.split()), validate=True)
-        payload_bytes = gzip.decompress(compressed)
-    except Exception as exc:
+    chunk_header = re.compile(r"---CHUNK\s+(\d+)/(\d+)\s+sha256=([0-9a-fA-F]{64})\s+length=(\d+)---")
+    matches = list(chunk_header.finditer(chunk_text))
+    if not matches:
         result["status"] = "fail"
-        result["code"] = "FAIL_BAD_PAYLOAD_ENCODING"
-        result["issues"].append(f"{type(exc).__name__}: {exc}")
+        result["code"] = "FAIL_MISSING_CHUNK"
+        result["issues"].append("No chunk headers found.")
         return None, result
+    chunk_map: dict[int, str] = {}
+    diagnostics: dict[str, Any] = {"schema_version": "riftscan.chunked_payload_diagnostics.v1", "declared_total_chunks": None, "observed_chunk_count": len(matches), "chunks": [], "issues": []}
+    declared_total = None
+    for index, match in enumerate(matches):
+        chunk_no = int(match.group(1)); total = int(match.group(2)); expected_hash = match.group(3).lower(); expected_length = int(match.group(4))
+        if declared_total is None:
+            declared_total = total; diagnostics["declared_total_chunks"] = total
+        elif total != declared_total:
+            diagnostics["issues"].append("inconsistent total chunk count")
+        body_start = match.end(); body_end = matches[index + 1].start() if index + 1 < len(matches) else len(chunk_text)
+        cleaned_body = "".join(chunk_text[body_start:body_end].split())
+        actual_hash = hashlib.sha256(cleaned_body.encode("ascii", errors="ignore")).hexdigest(); actual_length = len(cleaned_body)
+        chunk_info = {"chunk": chunk_no, "total": total, "expected_length": expected_length, "actual_length": actual_length, "expected_sha256": expected_hash, "actual_sha256": actual_hash, "status": "pass"}
+        if chunk_no in chunk_map:
+            chunk_info["status"] = "fail"; diagnostics["issues"].append(f"duplicate chunk {chunk_no}")
+        if actual_length != expected_length:
+            chunk_info["status"] = "fail"; diagnostics["issues"].append(f"chunk {chunk_no} length mismatch")
+        if actual_hash != expected_hash:
+            chunk_info["status"] = "fail"; diagnostics["issues"].append(f"chunk {chunk_no} hash mismatch")
+        chunk_map[chunk_no] = cleaned_body; diagnostics["chunks"].append(chunk_info)
+    if declared_total is None:
+        result["status"] = "fail"; result["code"] = "FAIL_MISSING_CHUNK"; result["issues"].append("Chunk total could not be determined."); result["chunk_diagnostics"] = diagnostics; return None, result
+    missing = [number for number in range(1, declared_total + 1) if number not in chunk_map]
+    if missing:
+        diagnostics["issues"].append("missing chunks: " + ", ".join(str(item) for item in missing))
+    if diagnostics["issues"]:
+        result["status"] = "fail"; result["code"] = "FAIL_CHUNK_HASH_MISMATCH" if any("hash mismatch" in item for item in diagnostics["issues"]) else "FAIL_MISSING_CHUNK"; result["issues"].extend(diagnostics["issues"]); result["chunk_diagnostics"] = diagnostics; return None, result
+    encoded_payload = "".join(chunk_map[number] for number in range(1, declared_total + 1))
+    payload_bytes, payload_diagnostics = decode_base64_gzip_payload(encoded_payload, manifest)
+    result["chunk_diagnostics"] = diagnostics; result["payload_diagnostics"] = payload_diagnostics
+    if payload_bytes is None:
+        result["status"] = "fail"; result["code"] = str(payload_diagnostics.get("failure_code") or "FAIL_BAD_PAYLOAD_ENCODING")
+        if payload_diagnostics.get("issues"):
+            result["issues"].extend(payload_diagnostics["issues"])
+        if payload_diagnostics.get("decode_error"):
+            result["issues"].append(payload_diagnostics["decode_error"])
+        if payload_diagnostics.get("gzip_error"):
+            result["issues"].append(payload_diagnostics["gzip_error"])
+        return None, result
+    return ParsedPayload(manifest=manifest, payload_text=encoded_payload, payload_bytes=payload_bytes, raw_text=stripped), result
 
+def parse_payload(text: str) -> tuple[ParsedPayload | None, dict[str, Any]]:
+    raw = text or ""
+    result: dict[str, Any] = {"status": "unknown", "code": "UNKNOWN", "issues": []}
+    stripped = raw.strip()
+    if stripped.startswith(MAGIC_CHUNKED):
+        return parse_chunked_payload(stripped)
+    if not stripped.startswith(MAGIC):
+        result["status"] = "fail"; result["code"] = "FAIL_BAD_HEADER"; result["issues"].append(f"Payload must start with {MAGIC} or {MAGIC_CHUNKED}."); return None, result
+    marker_payload = "---PAYLOAD---"; marker_end = "---END---"
+    if marker_payload not in stripped or marker_end not in stripped:
+        result["status"] = "fail"; result["code"] = "FAIL_MISSING_PAYLOAD"; result["issues"].append("Payload block markers are missing."); return None, result
+    after_magic = stripped[len(MAGIC):].strip(); manifest_text, rest = after_magic.split(marker_payload, 1); payload_text, _ = rest.split(marker_end, 1)
+    try:
+        manifest = json.loads(manifest_text.strip())
+    except Exception as exc:
+        result["status"] = "fail"; result["code"] = "FAIL_BAD_MANIFEST"; result["issues"].append(f"{type(exc).__name__}: {exc}"); return None, result
+    payload_bytes, diagnostics = decode_base64_gzip_payload(payload_text, manifest)
+    result["payload_diagnostics"] = diagnostics
+    if payload_bytes is None:
+        result["status"] = "fail"; result["code"] = str(diagnostics.get("failure_code") or "FAIL_BAD_PAYLOAD_ENCODING")
+        if diagnostics.get("issues"):
+            result["issues"].extend(diagnostics["issues"])
+        if diagnostics.get("decode_error"):
+            result["issues"].append(diagnostics["decode_error"])
+        if diagnostics.get("gzip_error"):
+            result["issues"].append(diagnostics["gzip_error"])
+        return None, result
     return ParsedPayload(manifest=manifest, payload_text=payload_text.strip(), payload_bytes=payload_bytes, raw_text=raw), result
-
 
 def manifest_summary(manifest: dict[str, Any]) -> dict[str, Any]:
     commit = manifest.get("commit") if isinstance(manifest.get("commit"), dict) else None
@@ -444,11 +580,11 @@ def validate_parsed_payload(parsed: ParsedPayload, repo_root: Path, mode: str = 
         "report_path": rel(repo_root, paths["report_md"]),
     }
 
-    if manifest.get("magic") != MAGIC:
+    if manifest.get("magic") not in {MAGIC, MAGIC_CHUNKED}:
         issues.append("Manifest magic does not match.")
         result["code"] = "FAIL_BAD_MANIFEST"
-    if manifest.get("schema_version") != "riftscan.clipboard_patch.v1":
-        issues.append("Manifest schema_version must be riftscan.clipboard_patch.v1.")
+    if manifest.get("schema_version") not in {"riftscan.clipboard_patch.v1", "riftscan.chunked_clipboard_patch.v1"}:
+        issues.append("Manifest schema_version must be riftscan.clipboard_patch.v1 or riftscan.chunked_clipboard_patch.v1.")
         result["code"] = "FAIL_BAD_MANIFEST"
     if manifest.get("repo") != "RiftScan":
         issues.append("Manifest repo must be RiftScan.")
@@ -907,6 +1043,27 @@ def make_payload(manifest: dict[str, Any], payload_source: str) -> str:
     )
 
 
+def make_chunked_payload(manifest: dict[str, Any], payload_source: str, chunk_size: int = 1200) -> str:
+    payload_bytes = payload_source.encode("utf-8")
+    encoded = base64.b64encode(gzip.compress(payload_bytes)).decode("ascii")
+    manifest = dict(manifest)
+    manifest["magic"] = MAGIC_CHUNKED
+    manifest["schema_version"] = "riftscan.chunked_clipboard_patch.v1"
+    manifest["payload_sha256"] = hashlib.sha256(payload_bytes).hexdigest()
+    manifest["decoded_payload_sha256"] = manifest["payload_sha256"]
+    manifest["encoded_payload_sha256"] = hashlib.sha256(encoded.encode("ascii")).hexdigest()
+    manifest["encoded_payload_length"] = len(encoded)
+    chunks = [encoded[index:index + chunk_size] for index in range(0, len(encoded), chunk_size)]
+    manifest["total_chunks"] = len(chunks)
+    parts = [f"{MAGIC_CHUNKED}\n", json_block(manifest), "\n---CHUNKS---\n"]
+    for number, chunk in enumerate(chunks, start=1):
+        chunk_hash = hashlib.sha256(chunk.encode("ascii")).hexdigest()
+        parts.append(f"---CHUNK {number}/{len(chunks)} sha256={chunk_hash} length={len(chunk)}---\n")
+        parts.append("\n".join(textwrap.wrap(chunk, width=76)) + "\n")
+    parts.append("---END---\n")
+    return "".join(parts)
+
+
 def make_example_payload(repo_root: Path, valid: bool = True, with_commit: bool = False) -> str:
     created = utc_now()
     target_file = "tools/riftscan_patch_intake_app.py"
@@ -1321,6 +1478,43 @@ def run_self_test() -> tuple[bool, dict[str, Any]]:
         record("process payload", "PASS_PROCESSED", process_payload_text(commit_payload, repo))
         record("commit in temp repo", "PASS_COMMITTED", commit_result(repo))
         record("push verify simulated", "PASS_PUSH_VERIFY_SIMULATED_OR_SKIPPED", push_verify_remote(repo, simulate=True))
+
+        chunk_repo = Path(tmp) / "ChunkRiftscan"
+        chunk_tools = chunk_repo / "tools"
+        chunk_tools.mkdir(parents=True)
+        chunk_target = chunk_tools / "chunk_target.py"
+        chunk_target.write_text("# Version: riftscan-chunk-v1.0.0\nprint('chunk')\n", encoding="utf-8")
+        (chunk_repo / "handoffs" / "current").mkdir(parents=True, exist_ok=True)
+        (chunk_repo / "handoffs" / "current" / ".gitkeep").write_text("", encoding="utf-8")
+        run_command(["git", "init"], cwd=chunk_repo, timeout=30)
+        run_command(["git", "add", "tools/chunk_target.py", "handoffs/current/.gitkeep"], cwd=chunk_repo, timeout=30)
+        run_command(["git", "-c", "user.email=selftest@example.local", "-c", "user.name=Self Test", "commit", "-m", "init"], cwd=chunk_repo, timeout=30)
+        chunk_applier = textwrap.dedent("""
+            from __future__ import annotations
+            import argparse
+            from pathlib import Path
+
+            def main() -> int:
+                parser = argparse.ArgumentParser()
+                parser.add_argument('--repo-root', required=True)
+                args = parser.parse_args()
+                path = Path(args.repo_root) / 'tools' / 'chunk_target.py'
+                text = path.read_text(encoding='utf-8')
+                text = text.replace('riftscan-chunk-v1.0.0', 'riftscan-chunk-v1.0.1')
+                path.write_text(text, encoding='utf-8')
+                return 0
+
+            if __name__ == '__main__':
+                raise SystemExit(main())
+            """).lstrip()
+        chunk_manifest = {"package_id": "chunk-valid-v100-to-v101", "created_utc": "2026-05-05T01:00:00Z", "repo": "RiftScan", "component": "self-test", "from_version": "riftscan-chunk-v1.0.0", "to_version": "riftscan-chunk-v1.0.1", "target_repo_root": str(chunk_repo), "target_file": "tools/chunk_target.py", "payload_type": "python_applier_base64_gzip", "applier": "chunk-applier.py", "required_existing_markers": ["riftscan-chunk-v1.0.0"], "required_result_markers": ["riftscan-chunk-v1.0.1"], "forbidden_actions": sorted(REQUIRED_FORBIDDEN_ACTIONS)}
+        chunk_payload = make_chunked_payload(chunk_manifest, chunk_applier, chunk_size=80)
+        record("chunked dry run", "PASS_DRY_RUN", dry_run_payload_text(chunk_payload, chunk_repo))
+        bad_hash_payload = re.sub(r"sha256=[0-9a-f]{64}", "sha256=" + "0" * 64, chunk_payload, count=1)
+        record("chunked bad chunk hash", "FAIL_CHUNK_HASH_MISMATCH", validate_payload_text(bad_hash_payload, chunk_repo))
+        missing_chunk_payload = re.sub(r"---CHUNK 1/\d+ sha256=[0-9a-f]{64} length=\d+---\n.*?(?=---CHUNK 2/)", "", chunk_payload, count=1, flags=re.DOTALL)
+        record("chunked missing chunk", "FAIL_MISSING_CHUNK", validate_payload_text(missing_chunk_payload, chunk_repo))
+
 
     passed = all(test["pass"] for test in tests)
     summary = {

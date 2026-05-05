@@ -1,213 +1,63 @@
 {
-  "app_version": "riftscan-patch-intake-v1.1.0",
-  "apply_prompt": {
-    "approved": true,
-    "mode": "gui_apply_prompt"
-  },
-  "apply_result": {
-    "app_version": "riftscan-patch-intake-v1.1.0",
-    "applier_path": ".riftscan-local/patch-intake/staging/patch-intake-push-verify-v1-1-1-compact-20260504b/apply_patch_intake_push_verify_v1_1_1_compact.py",
-    "apply_exit_code": 0,
-    "apply_stderr": "",
-    "apply_stdout": "PASS_PATCH_INTAKE_PUSH_VERIFY_V1_1_1\n",
-    "code": "PASS_APPLIED",
-    "compile_exit_code": 0,
-    "compile_stderr": "",
-    "compile_stdout": "",
-    "created_utc": "2026-05-04T21:47:47Z",
-    "from_version": "riftscan-patch-intake-v1.1.0",
-    "git_status_short": " M handoffs/current/patch-intake/PATCH_INTAKE_REPORT.md\n M handoffs/current/patch-intake/last-validation-result.json\n M handoffs/current/patch-intake/patch-intake-log.jsonl\n",
-    "issues": [],
-    "manifest": {
-      "applier": "apply_patch_intake_push_verify_v1_1_1_compact.py",
-      "commit": {
-        "message": "Fix patch intake push verification false failure",
-        "push": false,
-        "stage_paths": [
-          "tools/riftscan_patch_intake_app.py",
-          "scripts/riftscan-patch-intake.cmd",
-          "handoffs/current/patch-intake/"
-        ]
-      },
-      "component": "patch-intake-helper",
-      "created_utc": "2026-05-04T22:12:00Z",
-      "from_version": "riftscan-patch-intake-v1.1.0",
-      "magic": "RIFTSCAN_CLIPBOARD_PATCH_V1",
-      "package_id": "patch-intake-push-verify-v1-1-1-compact-20260504b",
-      "payload_type": "python_applier_base64_gzip",
-      "post_apply_checks": [
-        "py_compile_patch_intake",
-        "git_status_check"
-      ],
-      "repo": "RiftScan",
-      "schema_version": "riftscan.clipboard_patch.v1",
-      "target_file": "tools/riftscan_patch_intake_app.py",
-      "target_repo_root": "C:\\RIFT MODDING\\Riftscan",
-      "to_version": "riftscan-patch-intake-v1.1.1"
-    },
-    "mode": "apply",
-    "package_id": "patch-intake-push-verify-v1-1-1-compact-20260504b",
-    "payload_sha256": "07810b4a03bbdb4e4022058c098e17607aa4475dbc8e8c6e3cca3d80cc8277c6",
-    "payload_type": "python_applier_base64_gzip",
-    "post_apply_checks": [
-      {
-        "check": "py_compile_patch_intake",
-        "code": "PASS_CHECK",
-        "exit_code": 0,
-        "status": "pass",
-        "stderr": "",
-        "stdout": ""
-      },
-      {
-        "check": "git_status_check",
-        "code": "PASS_CHECK",
-        "exit_code": 0,
-        "status": "pass",
-        "stderr": "",
-        "stdout": " M handoffs/current/patch-intake/PATCH_INTAKE_REPORT.md\n M handoffs/current/patch-intake/last-dry-run-result.json\n M handoffs/current/patch-intake/last-validation-result.json\n M handoffs/current/patch-intake/patch-intake-log.jsonl\n M scripts/riftscan-patch-intake.cmd\n M tools/riftscan_patch_intake_app.py\n?? tools/__pycache__/\n"
-      }
-    ],
-    "repo_root": "C:\\RIFT MODDING\\Riftscan",
-    "report_path": "handoffs/current/patch-intake/PATCH_INTAKE_REPORT.md",
-    "schema_version": "riftscan.patch_intake_result.v1",
-    "status": "pass",
-    "target_file": "tools/riftscan_patch_intake_app.py",
-    "target_repo_root": "C:\\RIFT MODDING\\Riftscan",
-    "to_version": "riftscan-patch-intake-v1.1.1",
-    "warnings": []
-  },
+  "app_version": "riftscan-patch-intake-v1.2.1",
+  "artifact_paths": [
+    "tools/riftscan_patch_intake_app.py",
+    "handoffs/current/patch-intake/last-process-result.json",
+    "handoffs/current/patch-intake/patch-intake-log.jsonl",
+    "handoffs/current/patch-intake/PATCH_INTAKE_REPORT.md"
+  ],
   "code": "PASS_PROCESSED",
-  "created_utc": "2026-05-04T21:47:46Z",
-  "dry_run_result": {
-    "app_version": "riftscan-patch-intake-v1.1.0",
-    "applier_path": ".riftscan-local/patch-intake/staging/patch-intake-push-verify-v1-1-1-compact-20260504b/apply_patch_intake_push_verify_v1_1_1_compact.py",
-    "code": "PASS_DRY_RUN",
-    "compile_exit_code": 0,
-    "compile_stderr": "",
-    "compile_stdout": "",
-    "created_utc": "2026-05-04T21:47:47Z",
-    "from_version": "riftscan-patch-intake-v1.1.0",
-    "git_status_short": " M handoffs/current/patch-intake/PATCH_INTAKE_REPORT.md\n M handoffs/current/patch-intake/last-validation-result.json\n M handoffs/current/patch-intake/patch-intake-log.jsonl\n",
-    "issues": [],
-    "manifest": {
-      "applier": "apply_patch_intake_push_verify_v1_1_1_compact.py",
-      "commit": {
-        "message": "Fix patch intake push verification false failure",
-        "push": false,
-        "stage_paths": [
-          "tools/riftscan_patch_intake_app.py",
-          "scripts/riftscan-patch-intake.cmd",
-          "handoffs/current/patch-intake/"
-        ]
-      },
-      "component": "patch-intake-helper",
-      "created_utc": "2026-05-04T22:12:00Z",
-      "from_version": "riftscan-patch-intake-v1.1.0",
-      "magic": "RIFTSCAN_CLIPBOARD_PATCH_V1",
-      "package_id": "patch-intake-push-verify-v1-1-1-compact-20260504b",
-      "payload_type": "python_applier_base64_gzip",
-      "post_apply_checks": [
-        "py_compile_patch_intake",
-        "git_status_check"
-      ],
-      "repo": "RiftScan",
-      "schema_version": "riftscan.clipboard_patch.v1",
-      "target_file": "tools/riftscan_patch_intake_app.py",
-      "target_repo_root": "C:\\RIFT MODDING\\Riftscan",
-      "to_version": "riftscan-patch-intake-v1.1.1"
-    },
-    "mode": "dry_run",
-    "package_id": "patch-intake-push-verify-v1-1-1-compact-20260504b",
-    "payload_sha256": "07810b4a03bbdb4e4022058c098e17607aa4475dbc8e8c6e3cca3d80cc8277c6",
-    "payload_type": "python_applier_base64_gzip",
-    "repo_root": "C:\\RIFT MODDING\\Riftscan",
-    "report_path": "handoffs/current/patch-intake/PATCH_INTAKE_REPORT.md",
-    "schema_version": "riftscan.patch_intake_result.v1",
-    "status": "pass",
-    "target_file": "tools/riftscan_patch_intake_app.py",
-    "target_repo_root": "C:\\RIFT MODDING\\Riftscan",
-    "to_version": "riftscan-patch-intake-v1.1.1",
-    "warnings": []
-  },
-  "issues": [],
+  "created_utc": "2026-05-05T12:07:29Z",
   "manifest": {
-    "applier": "apply_patch_intake_push_verify_v1_1_1_compact.py",
+    "applier": "repair_patch_intake_transfer_reliability_v1_2_1_v102.py",
     "commit": {
-      "message": "Fix patch intake push verification false failure",
+      "message": "Repair patch intake transfer reliability self-tests",
       "push": false,
       "stage_paths": [
         "tools/riftscan_patch_intake_app.py",
-        "scripts/riftscan-patch-intake.cmd",
         "handoffs/current/patch-intake/"
       ]
     },
     "component": "patch-intake-helper",
-    "created_utc": "2026-05-04T22:12:00Z",
-    "from_version": "riftscan-patch-intake-v1.1.0",
-    "magic": "RIFTSCAN_CLIPBOARD_PATCH_V1",
-    "package_id": "patch-intake-push-verify-v1-1-1-compact-20260504b",
-    "payload_type": "python_applier_base64_gzip",
-    "post_apply_checks": [
-      "py_compile_patch_intake",
-      "git_status_check"
+    "created_utc": "2026-05-05T12:07:29Z",
+    "forbidden_actions": [
+      "auto_commit",
+      "auto_push",
+      "force_push",
+      "git_add_dot",
+      "listener",
+      "polling",
+      "scheduled_task",
+      "service"
     ],
+    "from_version": "riftscan-patch-intake-v1.2.0",
+    "magic": "RIFTSCAN_CLIPBOARD_PATCH_V1",
+    "package_id": "patch-intake-transfer-reliability-v1-2-1-20260505T120500Z",
+    "payload_type": "python_applier_direct_bootstrap",
     "repo": "RiftScan",
+    "required_result_markers": [
+      "riftscan-patch-intake-v1.2.1",
+      "MAGIC_CHUNKED = \"RIFTSCAN_CHUNKED_PATCH_V1\"",
+      "def payload_encoding_diagnostics",
+      "def parse_chunked_payload",
+      "def make_chunked_payload",
+      "FAIL_CHUNK_HASH_MISMATCH",
+      "chunked dry run",
+      "chunked missing chunk"
+    ],
     "schema_version": "riftscan.clipboard_patch.v1",
     "target_file": "tools/riftscan_patch_intake_app.py",
     "target_repo_root": "C:\\RIFT MODDING\\Riftscan",
-    "to_version": "riftscan-patch-intake-v1.1.1"
+    "to_version": "riftscan-patch-intake-v1.2.1"
   },
   "mode": "process",
-  "package_id": "patch-intake-push-verify-v1-1-1-compact-20260504b",
+  "notes": [
+    "Repairs v1.2.0 bootstrap self-test expectations and chunked self-test applier escaping.",
+    "Keeps chunked payload support and transfer diagnostics enabled."
+  ],
+  "package_id": "patch-intake-transfer-reliability-v1-2-1-20260505T120500Z",
   "schema_version": "riftscan.patch_intake_process_result.v1",
-  "stage": "write_last_process_result",
+  "stage": "direct_bootstrap_transfer_reliability_repair",
   "status": "pass",
-  "target_file": "tools/riftscan_patch_intake_app.py",
-  "validation_result": {
-    "app_version": "riftscan-patch-intake-v1.1.0",
-    "code": "PASS_VALID_PATCH",
-    "created_utc": "2026-05-04T21:47:46Z",
-    "from_version": "riftscan-patch-intake-v1.1.0",
-    "git_status_short": " M handoffs/current/patch-intake/PATCH_INTAKE_REPORT.md\n M handoffs/current/patch-intake/last-validation-result.json\n M handoffs/current/patch-intake/patch-intake-log.jsonl\n",
-    "issues": [],
-    "manifest": {
-      "applier": "apply_patch_intake_push_verify_v1_1_1_compact.py",
-      "commit": {
-        "message": "Fix patch intake push verification false failure",
-        "push": false,
-        "stage_paths": [
-          "tools/riftscan_patch_intake_app.py",
-          "scripts/riftscan-patch-intake.cmd",
-          "handoffs/current/patch-intake/"
-        ]
-      },
-      "component": "patch-intake-helper",
-      "created_utc": "2026-05-04T22:12:00Z",
-      "from_version": "riftscan-patch-intake-v1.1.0",
-      "magic": "RIFTSCAN_CLIPBOARD_PATCH_V1",
-      "package_id": "patch-intake-push-verify-v1-1-1-compact-20260504b",
-      "payload_type": "python_applier_base64_gzip",
-      "post_apply_checks": [
-        "py_compile_patch_intake",
-        "git_status_check"
-      ],
-      "repo": "RiftScan",
-      "schema_version": "riftscan.clipboard_patch.v1",
-      "target_file": "tools/riftscan_patch_intake_app.py",
-      "target_repo_root": "C:\\RIFT MODDING\\Riftscan",
-      "to_version": "riftscan-patch-intake-v1.1.1"
-    },
-    "mode": "process_validate",
-    "package_id": "patch-intake-push-verify-v1-1-1-compact-20260504b",
-    "payload_sha256": "07810b4a03bbdb4e4022058c098e17607aa4475dbc8e8c6e3cca3d80cc8277c6",
-    "payload_type": "python_applier_base64_gzip",
-    "repo_root": "C:\\RIFT MODDING\\Riftscan",
-    "report_path": "handoffs/current/patch-intake/PATCH_INTAKE_REPORT.md",
-    "schema_version": "riftscan.patch_intake_result.v1",
-    "status": "pass",
-    "target_file": "tools/riftscan_patch_intake_app.py",
-    "target_repo_root": "C:\\RIFT MODDING\\Riftscan",
-    "to_version": "riftscan-patch-intake-v1.1.1",
-    "warnings": []
-  }
+  "target_file": "tools/riftscan_patch_intake_app.py"
 }
