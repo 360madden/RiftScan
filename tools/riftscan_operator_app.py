@@ -1,6 +1,6 @@
-# Version: riftscan-operator-app-v3.8.6
-# Purpose: Windows Tkinter helper app for RiftScan operator workflow: run focus preflight, run full live preflight gate, manage focus-gated metadata workflows, validate patch-runner manifests, check the online patch inbox discovery-only from the visible Main tab, write compact AI-ready reports, clean known junk, safely commit/push allowlisted files including repo-bridge handoffs and repo inbox patch packages, and provide tabbed/wrapped controls with lightweight status highlighting.
-# Total character count: 140126
+# Version: riftscan-operator-app-v3.8.7
+# Purpose: Windows Tkinter helper app for RiftScan operator workflow: run focus preflight, run full live preflight gate, manage focus-gated metadata workflows, validate patch-runner manifests, check the online patch inbox discovery-only from the visible Main tab, write compact AI-ready reports, clean known junk, safely commit/push allowlisted files including repo-bridge handoffs and repo inbox patch packages, and provide tabbed/wrapped controls, a guided button-pusher workflow, focus-discipline confirmation, and lightweight status highlighting.
+# Total character count: 142786
 
 from __future__ import annotations
 
@@ -20,7 +20,7 @@ from tkinter import messagebox, scrolledtext, ttk
 from typing import Any
 
 
-APP_VERSION = "riftscan-operator-app-v3.8.6"
+APP_VERSION = "riftscan-operator-app-v3.8.7"
 REPO_ROOT = Path(__file__).resolve().parents[1]
 FOCUS_SCRIPT = REPO_ROOT / "scripts" / "run-rift-focus-control.cmd"
 HANDOFF_DIR = REPO_ROOT / "handoffs" / "current" / "focus-control-local"
@@ -2527,6 +2527,9 @@ class RiftScanOperatorApp(tk.Tk):
             main_tab,
             [
                 ("Refresh Status", self.refresh_status),
+            ("Workflow Guide", self.show_guided_workflow_clicked),
+            ("Run Full Live Preflight", self.run_full_live_preflight),
+            ("Create Capture Plan", self.create_focus_gated_capture_plan_clicked),
                 # v3.8.5 native Main-tab repair: visible discovery-only inbox button.
                 ("Check Online Patch Inbox", self.check_online_patch_inbox),
                 ("Run Window/Process Metadata Collector", self.run_window_process_metadata_collector),
@@ -3032,7 +3035,61 @@ class RiftScanOperatorApp(tk.Tk):
 
 
 
+
+    # operator-guided-workflow-v3.8.7
+    def show_guided_workflow_clicked(self) -> None:
+        guide = (
+            "=== RIFTSCAN GUIDED WORKFLOW ===\n"
+            "Recommended button order:\n"
+            "1. Run Full Live Preflight\n"
+            "2. Create Capture Plan\n"
+            "3. Run Window/Process Metadata Collector\n"
+            "4. Analyze Latest Session\n"
+            "5. Compare Sessions\n"
+            "6. Clean Known Junk, Commit Allowlist, Push\n\n"
+            "LEAVE RIFT FOREGROUND during the metadata collector.\n"
+            "Do not click ChatGPT, PowerShell, the Operator window, or any other window.\n\n"
+            "Guardrails: metadata only; no movement, input, memory read, memory scan, /reloadui, service, listener, polling, auto-commit, auto-push, or git add dot.\n"
+        )
+        wrote_output = False
+        for attr in ("output_box", "output", "output_text", "log_text"):
+            widget = getattr(self, attr, None)
+            if widget is None:
+                continue
+            try:
+                widget.configure(state="normal")
+            except Exception:
+                pass
+            try:
+                widget.insert(tk.END, "\n" + guide + "\n")
+                widget.see(tk.END)
+                wrote_output = True
+                break
+            except Exception:
+                pass
+        try:
+            self.status_var.set("Guided workflow displayed.")
+        except Exception:
+            pass
+        if not wrote_output:
+            messagebox.showinfo("RiftScan Guided Workflow", guide)
+
+    # metadata collector focus-discipline confirmation
     def run_window_process_metadata_collector(self) -> None:
+        message = (
+            "LEAVE RIFT FOREGROUND during this metadata-only collector.\n\n"
+            "After you click Yes, do not click ChatGPT, PowerShell, the Operator window, or any other window until the collector finishes.\n\n"
+            "This still does not send movement, keyboard input, mouse input, memory reads, memory scans, or /reloadui."
+        )
+        if not messagebox.askyesno("LEAVE RIFT FOREGROUND", message):
+            try:
+                self.status_var.set("Metadata collector canceled before start.")
+            except Exception:
+                pass
+            return
+        return self._run_window_process_metadata_collector_impl()
+
+    def _run_window_process_metadata_collector_impl(self) -> None:
         def task() -> str:
             gate = run_full_live_preflight_gate()
             summary = gate["summary"]

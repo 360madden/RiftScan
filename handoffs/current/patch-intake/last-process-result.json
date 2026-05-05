@@ -1,63 +1,85 @@
 {
   "app_version": "riftscan-patch-intake-v1.2.1",
-  "artifact_paths": [
-    "tools/riftscan_patch_intake_app.py",
-    "handoffs/current/patch-intake/last-process-result.json",
-    "handoffs/current/patch-intake/patch-intake-log.jsonl",
-    "handoffs/current/patch-intake/PATCH_INTAKE_REPORT.md"
-  ],
-  "code": "PASS_PROCESSED",
-  "created_utc": "2026-05-05T12:07:29Z",
+  "apply_result": null,
+  "code": "PASS_ALREADY_PATCHED",
+  "created_utc": "2026-05-05T12:24:17Z",
+  "dry_run_result": null,
+  "issues": [],
   "manifest": {
-    "applier": "repair_patch_intake_transfer_reliability_v1_2_1_v102.py",
+    "applier": "apply_operator_guided_workflow_v387.py",
     "commit": {
-      "message": "Repair patch intake transfer reliability self-tests",
+      "message": "Add guided Operator workflow UX",
       "push": false,
       "stage_paths": [
-        "tools/riftscan_patch_intake_app.py",
+        "tools/riftscan_operator_app.py",
         "handoffs/current/patch-intake/"
       ]
     },
-    "component": "patch-intake-helper",
-    "created_utc": "2026-05-05T12:07:29Z",
-    "forbidden_actions": [
-      "auto_commit",
-      "auto_push",
-      "force_push",
-      "git_add_dot",
-      "listener",
-      "polling",
-      "scheduled_task",
-      "service"
+    "component": "operator-helper",
+    "created_utc": "2026-05-05T12:20:00Z",
+    "from_version": "riftscan-operator-app-v3.8.6",
+    "magic": "RIFTSCAN_CHUNKED_PATCH_V1",
+    "package_id": "operator-guided-workflow-v387-20260505T122000Z",
+    "payload_type": "python_applier_base64_gzip",
+    "post_apply_checks": [
+      "py_compile_operator",
+      "git_status_check"
     ],
-    "from_version": "riftscan-patch-intake-v1.2.0",
-    "magic": "RIFTSCAN_CLIPBOARD_PATCH_V1",
-    "package_id": "patch-intake-transfer-reliability-v1-2-1-20260505T120500Z",
-    "payload_type": "python_applier_direct_bootstrap",
     "repo": "RiftScan",
-    "required_result_markers": [
-      "riftscan-patch-intake-v1.2.1",
-      "MAGIC_CHUNKED = \"RIFTSCAN_CHUNKED_PATCH_V1\"",
-      "def payload_encoding_diagnostics",
-      "def parse_chunked_payload",
-      "def make_chunked_payload",
-      "FAIL_CHUNK_HASH_MISMATCH",
-      "chunked dry run",
-      "chunked missing chunk"
-    ],
-    "schema_version": "riftscan.clipboard_patch.v1",
-    "target_file": "tools/riftscan_patch_intake_app.py",
+    "schema_version": "riftscan.chunked_clipboard_patch.v1",
+    "target_file": "tools/riftscan_operator_app.py",
     "target_repo_root": "C:\\RIFT MODDING\\Riftscan",
-    "to_version": "riftscan-patch-intake-v1.2.1"
+    "to_version": "riftscan-operator-app-v3.8.7"
   },
   "mode": "process",
-  "notes": [
-    "Repairs v1.2.0 bootstrap self-test expectations and chunked self-test applier escaping.",
-    "Keeps chunked payload support and transfer diagnostics enabled."
-  ],
-  "package_id": "patch-intake-transfer-reliability-v1-2-1-20260505T120500Z",
+  "package_id": "operator-guided-workflow-v387-20260505T122000Z",
   "schema_version": "riftscan.patch_intake_process_result.v1",
-  "stage": "direct_bootstrap_transfer_reliability_repair",
+  "stage": "validate",
   "status": "pass",
-  "target_file": "tools/riftscan_patch_intake_app.py"
+  "target_file": "tools/riftscan_operator_app.py",
+  "validation_result": {
+    "app_version": "riftscan-patch-intake-v1.2.1",
+    "code": "PASS_ALREADY_PATCHED",
+    "created_utc": "2026-05-05T12:24:17Z",
+    "from_version": "riftscan-operator-app-v3.8.6",
+    "issues": [],
+    "manifest": {
+      "applier": "apply_operator_guided_workflow_v387.py",
+      "commit": {
+        "message": "Add guided Operator workflow UX",
+        "push": false,
+        "stage_paths": [
+          "tools/riftscan_operator_app.py",
+          "handoffs/current/patch-intake/"
+        ]
+      },
+      "component": "operator-helper",
+      "created_utc": "2026-05-05T12:20:00Z",
+      "from_version": "riftscan-operator-app-v3.8.6",
+      "magic": "RIFTSCAN_CHUNKED_PATCH_V1",
+      "package_id": "operator-guided-workflow-v387-20260505T122000Z",
+      "payload_type": "python_applier_base64_gzip",
+      "post_apply_checks": [
+        "py_compile_operator",
+        "git_status_check"
+      ],
+      "repo": "RiftScan",
+      "schema_version": "riftscan.chunked_clipboard_patch.v1",
+      "target_file": "tools/riftscan_operator_app.py",
+      "target_repo_root": "C:\\RIFT MODDING\\Riftscan",
+      "to_version": "riftscan-operator-app-v3.8.7"
+    },
+    "mode": "process_validate",
+    "package_id": "operator-guided-workflow-v387-20260505T122000Z",
+    "payload_sha256": "e8a5ad3e68cf4252e504590e1b799760216bfddb3c230c380dcd032d5edd314c",
+    "payload_type": "python_applier_base64_gzip",
+    "repo_root": "C:\\RIFT MODDING\\Riftscan",
+    "report_path": "handoffs/current/patch-intake/PATCH_INTAKE_REPORT.md",
+    "schema_version": "riftscan.patch_intake_result.v1",
+    "status": "pass",
+    "target_file": "tools/riftscan_operator_app.py",
+    "target_repo_root": "C:\\RIFT MODDING\\Riftscan",
+    "to_version": "riftscan-operator-app-v3.8.7",
+    "warnings": []
+  }
 }
