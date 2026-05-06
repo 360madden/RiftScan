@@ -124,6 +124,12 @@ tools/riftscan_capture_readiness.py
 scripts/run-riftscan-capture-readiness.cmd
 ```
 
+Post-Update Baseline offline validation:
+
+```text
+python tools/riftscan_post_update_baseline.py --self-test
+```
+
 Capture Readiness offline validation:
 
 ```text
