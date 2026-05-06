@@ -1,6 +1,6 @@
 {
   "schema_version": "riftscan.operator_current_workflow_gate.v1",
-  "created_utc": "2026-05-06T02:53:39Z",
+  "created_utc": "2026-05-06T03:05:02Z",
   "metadata_capture_plan_gate": "BLOCKED",
   "live_collection_allowed": false,
   "old_offsets_trusted": false,
@@ -36,6 +36,28 @@
       "summary": "handoffs/current/capture-readiness/capture-readiness-summary.json",
       "log": "handoffs/current/capture-readiness/capture-readiness-log.jsonl"
     }
+  },
+  "capture_readiness_baseline_link": {
+    "status": "match",
+    "current_baseline": {
+      "created_utc": "2026-05-06T02:53:38Z",
+      "status": "blocked_waiting_for_game_or_focus",
+      "display_status": "BLOCKED",
+      "runtime": {
+        "pid": 11220,
+        "hwnd": 657876
+      }
+    },
+    "readiness_baseline": {
+      "created_utc": "2026-05-06T02:53:38Z",
+      "status": "blocked_waiting_for_game_or_focus",
+      "display_status": "BLOCKED",
+      "runtime": {
+        "pid": 11220,
+        "hwnd": 657876
+      }
+    },
+    "mismatches": []
   },
   "full_live_preflight": "PASS",
   "focus_preflight": "PASS",

@@ -1,7 +1,7 @@
 # RiftScan Operator Handoff
 
-Created UTC: `2026-05-06T02:53:39Z`
-App version: `riftscan-operator-app-v3.8.13`
+Created UTC: `2026-05-06T03:05:02Z`
+App version: `riftscan-operator-app-v3.8.14`
 Repo root: `C:\RIFT MODDING\Riftscan`
 
 ## Operator Assessment
@@ -20,6 +20,7 @@ Summary path: `handoffs/current/operator/operator-current-gate-summary.json`
 metadata_capture_plan_gate: BLOCKED
 post_update_baseline: BLOCKED
 capture_readiness: BLOCKED
+capture_readiness_baseline_link: match
 full_live_preflight: PASS
 focus_preflight: PASS
 live_collection_allowed: false
@@ -39,7 +40,7 @@ blockers:
 ```json
 {
   "schema_version": "riftscan.operator_current_workflow_gate.v1",
-  "created_utc": "2026-05-06T02:53:39Z",
+  "created_utc": "2026-05-06T03:05:02Z",
   "metadata_capture_plan_gate": "BLOCKED",
   "live_collection_allowed": false,
   "old_offsets_trusted": false,
@@ -76,6 +77,28 @@ blockers:
       "log": "handoffs/current/capture-readiness/capture-readiness-log.jsonl"
     }
   },
+  "capture_readiness_baseline_link": {
+    "status": "match",
+    "current_baseline": {
+      "created_utc": "2026-05-06T02:53:38Z",
+      "status": "blocked_waiting_for_game_or_focus",
+      "display_status": "BLOCKED",
+      "runtime": {
+        "pid": 11220,
+        "hwnd": 657876
+      }
+    },
+    "readiness_baseline": {
+      "created_utc": "2026-05-06T02:53:38Z",
+      "status": "blocked_waiting_for_game_or_focus",
+      "display_status": "BLOCKED",
+      "runtime": {
+        "pid": 11220,
+        "hwnd": 657876
+      }
+    },
+    "mismatches": []
+  },
   "full_live_preflight": "PASS",
   "focus_preflight": "PASS",
   "blockers": [
@@ -97,13 +120,6 @@ blockers:
 Exit code: `0`
 
 ```text
- M handoffs/current/capture-readiness/CAPTURE_READINESS_REPORT.md
- M handoffs/current/capture-readiness/capture-readiness-log.jsonl
- M handoffs/current/capture-readiness/capture-readiness-summary.json
- M handoffs/current/post-update-baseline/POST_UPDATE_BASELINE_REPORT.md
- M handoffs/current/post-update-baseline/post-update-baseline-log.jsonl
- M handoffs/current/post-update-baseline/post-update-baseline-summary.json
-?? tools/__pycache__/
 
 ```
 
@@ -112,11 +128,11 @@ Exit code: `0`
 Exit code: `0`
 
 ```text
+8652930 Add operator report CLI and readiness link gate
+1aad239 Update current handoff verified milestone
+4f17bbe Refresh blocked gate artifacts after baseline self-test
 870a721 Add post-update baseline self-test
 8311033 Clarify current handoff commit reference
-b4062da Refresh current RiftScan handoff pointer
-a666c77 Add operator gate self-test
-b07990f Add operator current workflow gate summary
 
 ```
 
