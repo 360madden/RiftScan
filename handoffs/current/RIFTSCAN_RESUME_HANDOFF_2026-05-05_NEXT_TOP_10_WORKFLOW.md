@@ -13,6 +13,19 @@ live_collection_allowed_now: false
 next_best_task: "Wire Post-Update Baseline into the Operator GUI"
 ---
 
+> **Historical / superseded notice — 2026-05-06**
+>
+> This handoff is preserved for audit context. Its original first next task, `Wire Post-Update Baseline into the Operator GUI`, is complete.
+>
+> Current resume entry point:
+>
+> ```text
+> handoffs/current/RIFTSCAN_RESUME_HANDOFF_2026-05-06_OPERATOR_GATE_WORKFLOW.md
+> handoffs/current/operator/operator-current-gate-summary.json
+> ```
+>
+> Do not use this file's ranked next-step ordering without first checking the current gate summary.
+
 # RiftScan Resume Handoff — Next Top 10 Workflow Plan
 
 ## 1. Purpose

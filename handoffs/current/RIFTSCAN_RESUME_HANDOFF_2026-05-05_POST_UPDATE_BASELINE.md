@@ -10,6 +10,19 @@ next_milestone: post_update_baseline_verification
 live_capture_allowed: false
 ---
 
+> **Historical / superseded notice — 2026-05-06**
+>
+> This handoff is preserved for May 5 post-update/maintenance context only. Its recommended next coding task, adding a conservative `Post-Update Baseline` Operator workflow/button, is complete.
+>
+> Current resume entry point:
+>
+> ```text
+> handoffs/current/RIFTSCAN_RESUME_HANDOFF_2026-05-06_OPERATOR_GATE_WORKFLOW.md
+> handoffs/current/operator/operator-current-gate-summary.json
+> ```
+>
+> Do not use this file as current next-step ordering without first checking the Operator current workflow gate.
+
 # RIFTSCAN_RESUME_HANDOFF_2026-05-05_POST_UPDATE_BASELINE
 
 ## Purpose

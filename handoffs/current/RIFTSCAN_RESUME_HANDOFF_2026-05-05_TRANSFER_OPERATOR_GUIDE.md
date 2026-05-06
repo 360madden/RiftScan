@@ -1,5 +1,17 @@
 # RIFTSCAN_RESUME_HANDOFF_2026-05-05_TRANSFER_OPERATOR_GUIDE
 
+> **Historical / superseded notice — 2026-05-06**
+>
+> This transfer guide is preserved for context on Operator v3.8.7 and Patch Intake v1.2.1.
+> Current workflow state has advanced to Operator v3.8.12, Capture Readiness v1.0.1, and Patch Intake v1.2.2.
+>
+> Current resume entry point:
+>
+> ```text
+> handoffs/current/RIFTSCAN_RESUME_HANDOFF_2026-05-06_OPERATOR_GATE_WORKFLOW.md
+> handoffs/current/operator/operator-current-gate-summary.json
+> ```
+
 ```yaml
 schema_version: riftscan.resume_handoff.v1
 created_utc: "2026-05-05T12:58:00Z"

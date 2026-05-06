@@ -4,14 +4,17 @@
 
 Start here for new RiftScan work:
 
-1. `handoffs/current/RIFTSCAN_RESUME_HANDOFF_2026-05-05_NEXT_TOP_10_WORKFLOW.md`
-2. `handoffs/current/RIFTSCAN_RESUME_HANDOFF_2026-05-05_TRANSFER_OPERATOR_GUIDE.md`
-3. `docs/helper-tooling-policy.md`
+1. `handoffs/current/RIFTSCAN_RESUME_HANDOFF_2026-05-06_OPERATOR_GATE_WORKFLOW.md`
+2. `handoffs/current/operator/operator-current-gate-summary.json`
+3. `handoffs/current/operator/RIFTSCAN_OPERATOR_HANDOFF.md`
+4. `docs/helper-tooling-policy.md`
+
+The older 2026-05-05 handoffs remain useful history, but their next-step ordering is superseded by the 2026-05-06 Operator Gate Workflow handoff and the current gate summary JSON.
 
 ## Latest completed workflow milestone before this document
 
 ```text
-27ecb05 Document Python helper tooling direction
+a666c77 Add operator gate self-test
 ```
 
 ## Completed since the 2026-05-05 workflow handoff
