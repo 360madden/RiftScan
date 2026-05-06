@@ -11,8 +11,14 @@ Start here for new RiftScan work:
 ## Latest completed workflow milestone before this document
 
 ```text
-f0f0362 Wire post-update baseline into operator app
+27ecb05 Document Python helper tooling direction
 ```
+
+## Completed since the 2026-05-05 workflow handoff
+
+- `Post-Update Baseline` is wired into the Operator GUI.
+- Python-first helper tooling direction is documented.
+- `Capture Readiness` is the active metadata-only gate between a fresh PASS baseline and any capture-plan refresh.
 
 ## Current direction
 
@@ -46,4 +52,4 @@ For meaningful workflow milestones:
 
 ## Current next recommended action
 
-GUI-smoke-test the Operator `Post-Update Baseline` button against the current updated RIFT client. If current client is stable in-world, produce a fresh PASS baseline before any collection/discovery work.
+GUI-smoke-test the Operator `Post-Update Baseline` and `Capture Readiness` buttons against the current updated RIFT client. If the current client is stable in-world, produce a fresh PASS baseline first, then require `CAPTURE READINESS: PASS` before any capture-plan refresh, collection, or discovery work.

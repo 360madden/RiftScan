@@ -1,6 +1,6 @@
-# Version: riftscan-operator-app-v3.8.8
-# Purpose: Windows Tkinter helper app for RiftScan operator workflow: run focus preflight, run full live preflight gate, run the post-update baseline gate, manage focus-gated metadata workflows, validate patch-runner manifests, check the online patch inbox discovery-only from the visible Main tab, write compact AI-ready reports, clean known junk, safely commit/push allowlisted files including baseline, repo-bridge handoffs and repo inbox patch packages, and provide tabbed/wrapped controls, a guided button-pusher workflow, focus-discipline confirmation, and lightweight status highlighting.
-# Total character count: 148655
+# Version: riftscan-operator-app-v3.8.9
+# Purpose: Windows Tkinter helper app for RiftScan operator workflow: run focus preflight, run full live preflight gate, run the post-update baseline and capture-readiness gates, manage focus-gated metadata workflows, validate patch-runner manifests, check the online patch inbox discovery-only from the visible Main tab, write compact AI-ready reports, clean known junk, safely commit/push allowlisted files including baseline/readiness, repo-bridge handoffs and repo inbox patch packages, and provide tabbed/wrapped controls, a guided button-pusher workflow, focus-discipline confirmation, and lightweight status highlighting.
+# Total character count: 153518
 
 from __future__ import annotations
 
@@ -20,7 +20,7 @@ from tkinter import messagebox, scrolledtext, ttk
 from typing import Any
 
 
-APP_VERSION = "riftscan-operator-app-v3.8.8"
+APP_VERSION = "riftscan-operator-app-v3.8.9"
 REPO_ROOT = Path(__file__).resolve().parents[1]
 FOCUS_SCRIPT = REPO_ROOT / "scripts" / "run-rift-focus-control.cmd"
 HANDOFF_DIR = REPO_ROOT / "handoffs" / "current" / "focus-control-local"
@@ -34,6 +34,11 @@ POST_UPDATE_BASELINE_DIR = REPO_ROOT / "handoffs" / "current" / "post-update-bas
 POST_UPDATE_BASELINE_REPORT = POST_UPDATE_BASELINE_DIR / "POST_UPDATE_BASELINE_REPORT.md"
 POST_UPDATE_BASELINE_SUMMARY = POST_UPDATE_BASELINE_DIR / "post-update-baseline-summary.json"
 POST_UPDATE_BASELINE_LOG = POST_UPDATE_BASELINE_DIR / "post-update-baseline-log.jsonl"
+CAPTURE_READINESS_CMD = REPO_ROOT / "scripts" / "run-riftscan-capture-readiness.cmd"
+CAPTURE_READINESS_DIR = REPO_ROOT / "handoffs" / "current" / "capture-readiness"
+CAPTURE_READINESS_REPORT = CAPTURE_READINESS_DIR / "CAPTURE_READINESS_REPORT.md"
+CAPTURE_READINESS_SUMMARY = CAPTURE_READINESS_DIR / "capture-readiness-summary.json"
+CAPTURE_READINESS_LOG = CAPTURE_READINESS_DIR / "capture-readiness-log.jsonl"
 DRY_RUN_ROOT = REPO_ROOT / "sessions" / "focus-gated-dry-runs"
 LATEST_DRY_RUN = DRY_RUN_ROOT / "LATEST_DRY_RUN.txt"
 CAPTURE_PLAN_ROOT = REPO_ROOT / "plans" / "focus-gated-capture-plans"
@@ -56,15 +61,18 @@ ALLOWLIST = [
     "handoffs/current/focus-control-local",
     "handoffs/current/operator",
     "handoffs/current/post-update-baseline",
+    "handoffs/current/capture-readiness",
     "handoffs/current/patch-intake",
     "handoffs/current/repo-bridge",
     ".riftscan/inbox/patch-packages",
     "scripts/run-rift-focus-control.cmd",
     "scripts/riftscan-operator-app.cmd",
     "scripts/run-riftscan-post-update-baseline.cmd",
+    "scripts/run-riftscan-capture-readiness.cmd",
     "tools/rift_focus_control.py",
     "tools/riftscan_operator_app.py",
     "tools/riftscan_post_update_baseline.py",
+    "tools/riftscan_capture_readiness.py",
     "plans/focus-gated-capture-plans",
     "handoffs/current/patch-runner",
     "patches/README.md",
@@ -397,6 +405,35 @@ def latest_post_update_baseline_summary() -> dict[str, Any]:
         "summary": summary,
         "report_exists": POST_UPDATE_BASELINE_REPORT.exists(),
         "log_exists": POST_UPDATE_BASELINE_LOG.exists(),
+    }
+
+
+def latest_capture_readiness_summary() -> dict[str, Any]:
+    if not CAPTURE_READINESS_SUMMARY.exists():
+        return {
+            "status": "none",
+            "reason": "capture readiness summary has not been generated",
+            "expected_report_path": rel(CAPTURE_READINESS_REPORT),
+            "expected_summary_path": rel(CAPTURE_READINESS_SUMMARY),
+            "expected_log_path": rel(CAPTURE_READINESS_LOG),
+        }
+
+    summary = load_json(CAPTURE_READINESS_SUMMARY)
+    if summary.get("_missing") or summary.get("_error"):
+        return {
+            "status": "error",
+            "summary_path": rel(CAPTURE_READINESS_SUMMARY),
+            "summary": summary,
+        }
+
+    return {
+        "status": "present",
+        "report_path": rel(CAPTURE_READINESS_REPORT),
+        "summary_path": rel(CAPTURE_READINESS_SUMMARY),
+        "log_path": rel(CAPTURE_READINESS_LOG),
+        "summary": summary,
+        "report_exists": CAPTURE_READINESS_REPORT.exists(),
+        "log_exists": CAPTURE_READINESS_LOG.exists(),
     }
 
 
@@ -1927,6 +1964,7 @@ def write_operator_report() -> Path:
     windows = load_json(WINDOWS_JSON)
     log_tail = tail_text(FOCUS_LOG, 60)
     post_update_baseline = latest_post_update_baseline_summary()
+    capture_readiness = latest_capture_readiness_summary()
     dry_run = latest_dry_run_summary()
     capture_plan = latest_capture_plan_summary()
     capture_session = latest_capture_session_summary()
@@ -1990,6 +2028,12 @@ Exit code: `{log_code}`
 
 ```json
 {json_block(post_update_baseline)}
+```
+
+## Latest Capture Readiness
+
+```json
+{json_block(capture_readiness)}
 ```
 
 ## Latest Focus-Gated Session Dry Run
@@ -2575,6 +2619,7 @@ class RiftScanOperatorApp(tk.Tk):
                 ("Workflow Guide", self.show_guided_workflow_clicked),
                 ("Run Full Live Preflight", self.run_full_live_preflight),
                 ("Post-Update Baseline", self.run_post_update_baseline),
+                ("Capture Readiness", self.run_capture_readiness),
                 ("Create Capture Plan", self.create_focus_gated_capture_plan_clicked),
                 # v3.8.5 native Main-tab repair: visible discovery-only inbox button.
                 ("Check Online Patch Inbox", self.check_online_patch_inbox),
@@ -2919,6 +2964,77 @@ class RiftScanOperatorApp(tk.Tk):
         self.run_async("post-update baseline", task)
 
 
+    def run_capture_readiness(self) -> None:
+        def task() -> str:
+            if not CAPTURE_READINESS_CMD.exists():
+                return f"ERROR: missing {rel(CAPTURE_READINESS_CMD)}"
+
+            exit_code, stdout, stderr = run_command(
+                ["cmd", "/c", str(CAPTURE_READINESS_CMD), "--strict-exit-code"],
+                timeout=120,
+            )
+            summary = load_json(CAPTURE_READINESS_SUMMARY)
+            focus_summary = load_json(FOCUS_SUMMARY)
+            report_path = write_operator_report()
+            self.after(0, lambda: self.focus_var.set(f"Focus: {focus_line(focus_summary)}"))
+
+            if summary.get("_missing") or summary.get("_error"):
+                display_status = "FAIL"
+                status = "summary_unavailable"
+                blockers = [summary.get("_error") or f"Missing summary: {rel(CAPTURE_READINESS_SUMMARY)}"]
+                paths = {
+                    "report": rel(CAPTURE_READINESS_REPORT),
+                    "summary": rel(CAPTURE_READINESS_SUMMARY),
+                    "log": rel(CAPTURE_READINESS_LOG),
+                }
+            else:
+                display_status = str(summary.get("display_status") or "UNKNOWN")
+                status = str(summary.get("status") or "unknown")
+                blockers = list(summary.get("blockers") or [])
+                paths = summary.get("paths") or {}
+
+            if exit_code not in (0, 2) and display_status not in ("PASS", "BLOCKED"):
+                display_status = "FAIL"
+
+            lines = [
+                "\n=== CAPTURE READINESS ===",
+                f"CAPTURE READINESS: {display_status}",
+                f"status: {status}",
+                f"Exit code: {exit_code}",
+                "",
+                "Blockers:",
+            ]
+            if blockers:
+                lines.extend(f"- {blocker}" for blocker in blockers)
+            else:
+                lines.append("- None")
+
+            lines.extend(
+                [
+                    "",
+                    f"Report: {paths.get('report') or rel(CAPTURE_READINESS_REPORT)}",
+                    f"Summary: {paths.get('summary') or rel(CAPTURE_READINESS_SUMMARY)}",
+                    f"Log: {paths.get('log') or rel(CAPTURE_READINESS_LOG)}",
+                    f"Operator report: {rel(report_path)}",
+                ]
+            )
+
+            if stdout.strip():
+                lines.extend(["", "Launcher stdout:", stdout.strip()])
+            if stderr.strip():
+                lines.extend(["", "Launcher stderr:", stderr.strip()])
+
+            lines.extend(
+                [
+                    "",
+                    "Safety: metadata-only readiness gate; no capture, movement/input, memory scan/read, offset validation, RiftReader validation, or /reloadui was run.",
+                ]
+            )
+            return "\n".join(lines)
+
+        self.run_async("capture readiness", task)
+
+
     def validate_pending_patch(self) -> None:
         def task() -> str:
             lines: list[str] = [
@@ -3169,19 +3285,21 @@ class RiftScanOperatorApp(tk.Tk):
 
 
 
-    # operator-guided-workflow-v3.8.8
+    # operator-guided-workflow-v3.8.9
     def show_guided_workflow_clicked(self) -> None:
         guide = (
             "=== RIFTSCAN GUIDED WORKFLOW ===\n"
             "Recommended button order:\n"
             "1. Post-Update Baseline\n"
-            "2. Run Full Live Preflight\n"
-            "3. Create Capture Plan\n"
-            "4. Run Window/Process Metadata Collector\n"
-            "5. Analyze Latest Session\n"
-            "6. Compare Sessions\n"
-            "7. Clean Known Junk, Commit Allowlist, Push\n\n"
+            "2. Capture Readiness\n"
+            "3. Run Full Live Preflight\n"
+            "4. Create Capture Plan\n"
+            "5. Run Window/Process Metadata Collector\n"
+            "6. Analyze Latest Session\n"
+            "7. Compare Sessions\n"
+            "8. Clean Known Junk, Commit Allowlist, Push\n\n"
             "After a RIFT update, treat older baselines and offsets as historical until a fresh current-client baseline passes.\n"
+            "Capture Readiness must PASS before creating or refreshing capture plans.\n"
             "LEAVE RIFT FOREGROUND during the metadata collector.\n"
             "Do not click ChatGPT, PowerShell, the Operator window, or any other window.\n\n"
             "Guardrails: metadata only; no movement, input, memory read, memory scan, /reloadui, service, listener, polling, auto-commit, auto-push, or git add dot.\n"
