@@ -22,6 +22,8 @@ This applies to:
 - Post-Update Baseline tool
 - Capture Readiness gate
 - Offline Workflow Check runners
+- Capture Plan Check and other metadata-plan validators
+- no-GUI Operator diagnostics wrappers
 - report and handoff writers
 - local validation runners
 - patch/package intake tooling
@@ -127,6 +129,11 @@ scripts/run-riftscan-capture-readiness.cmd
 
 tools/riftscan_offline_workflow_check.py
 scripts/run-riftscan-offline-workflow-check.cmd
+
+tools/riftscan_capture_plan_check.py
+scripts/run-riftscan-capture-plan-check.cmd
+
+scripts/run-riftscan-operator-offline-diagnostics.cmd
 ```
 
 Post-Update Baseline offline validation:
@@ -154,6 +161,19 @@ python tools/riftscan_offline_workflow_check.py --self-test
 .\scripts\run-riftscan-offline-workflow-check.cmd
 ```
 
+Capture plan validation:
+
+```text
+python tools/riftscan_capture_plan_check.py --self-test
+.\scripts\run-riftscan-capture-plan-check.cmd --strict-exit-code
+```
+
+No-GUI Operator diagnostics:
+
+```text
+.\scripts\run-riftscan-operator-offline-diagnostics.cmd
+```
+
 Operator report refresh without launching the GUI:
 
 ```text
@@ -172,14 +192,36 @@ py_compile_capture_readiness
 capture_readiness_self_test
 py_compile_offline_workflow_check
 offline_workflow_check_self_test
+py_compile_capture_plan_check
+capture_plan_check_self_test
 ```
 
-The Operator Diagnostics tab may expose offline self-tests and the Offline Workflow Check when the action does not touch live RIFT state, capture, input, memory scan/read, offsets, RiftReader validation, or `/reloadui`.
+The Operator Diagnostics tab may expose offline self-tests, Offline Workflow Check, and Capture Plan Check when the action does not touch live RIFT state, capture, input, memory scan/read, offsets, RiftReader validation, or `/reloadui`. Capture Plan Check reads existing metadata artifacts only.
 
 Operator handoffs should include a compact current workflow gate section that reports whether Post-Update Baseline, Capture Readiness, and required preflight checks allow the next metadata-only action.
 
 Gate summaries should distinguish harmless doc/handoff-only artifact HEAD drift from relevant helper-code drift that requires rerunning the affected gate.
 
+## PASS-but-not-live state
+
+`metadata_capture_plan_gate: PASS` means the current updated client has enough current metadata proof for capture-plan review/refinement.
+
+It does **not** mean live collection is allowed. Until a future live-collection gate explicitly passes:
+
+```text
+live_collection_allowed: false
+old_offsets_trusted: false
+```
+
+Still blocked:
+
+- real memory capture
+- scanner/discovery probes
+- movement/input
+- `/reloadui`
+- offset validation
+- RiftReader anchor/orientation validation
+
 ## Next preferred extension
 
-The next helper workflow should keep the same Python-first pattern. Prefer GUI smoke-test and offline validation consolidation first; the smallest safe post-readiness product step remains a metadata-only, focus-gated capture-plan refresh. Do not start live capture or discovery until the current-client Post-Update Baseline and Capture Readiness gates both PASS.
+The next helper workflow should keep the same Python-first pattern. Prefer capture-plan review/checking and a formal future live-collection gate first. Do not start live capture or discovery until Post-Update Baseline, Capture Readiness, Capture Plan Check, and explicit operator approval all pass under that separate future gate.

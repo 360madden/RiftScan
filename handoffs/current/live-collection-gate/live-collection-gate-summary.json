@@ -1,0 +1,40 @@
+{
+  "schema_version": "riftscan.live_collection_gate.v1",
+  "created_utc": "2026-05-06T05:05:00Z",
+  "status": "defined_not_satisfied",
+  "display_status": "BLOCKED",
+  "live_collection_allowed": false,
+  "old_offsets_trusted": false,
+  "requires": [
+    "fresh Post-Update Baseline PASS",
+    "fresh Capture Readiness PASS",
+    "fresh Capture Plan Check PASS",
+    "Operator report refreshed after checks",
+    "explicit operator approval for the exact live slice"
+  ],
+  "forbidden_without_separate_approval": [
+    "movement/input",
+    "/reloadui",
+    "offset trust or offset validation",
+    "RiftReader anchor/orientation validation",
+    "scanner/discovery expansion beyond approved slice",
+    "service/listener/polling/scheduled task behavior",
+    "hidden commit/push",
+    "git add ."
+  ],
+  "first_allowed_live_slice_shape_after_approval": {
+    "read_only": true,
+    "passive_only": true,
+    "short_timeout": true,
+    "no_stimulus": true,
+    "movement_or_input_sent": false,
+    "reloadui_sent": false,
+    "append_only_artifacts": true,
+    "abort_on_focus_drift": true
+  },
+  "paths": {
+    "checklist": "handoffs/current/live-collection-gate/LIVE_COLLECTION_GATE_CHECKLIST.md",
+    "summary": "handoffs/current/live-collection-gate/live-collection-gate-summary.json"
+  },
+  "next_action": "Review checklist only; do not run live collection from this milestone."
+}

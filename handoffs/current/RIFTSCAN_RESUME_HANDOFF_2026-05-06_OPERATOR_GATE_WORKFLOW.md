@@ -43,7 +43,9 @@ full_live_preflight: PASS
 focus_preflight: PASS
 live_collection_allowed: false
 old_offsets_trusted: false
-next_action: Review the metadata-only capture plan; live collection/discovery still requires an explicit future gate.
+next_action: Run Capture Plan Check and review the latest metadata-only capture plan; live collection/discovery still requires an explicit future gate.
+latest_metadata_capture_plan: valid_metadata_only
+capture_plan_check: PASS
 ```
 
 Source artifacts:
@@ -57,11 +59,12 @@ plans/focus-gated-capture-plans/20260506T042824Z_focus_gated_capture_plan/CAPTUR
 ## Current tool versions
 
 ```text
-Operator Helper App: riftscan-operator-app-v3.8.17
+Operator Helper App: riftscan-operator-app-v3.8.18
 Capture Readiness: riftscan-capture-readiness-v1.0.1
 Patch Intake Helper: riftscan-patch-intake-v1.2.5
 Post-Update Baseline: riftscan-post-update-baseline-v1.0.1
-Offline Workflow Check: riftscan-offline-workflow-check-v1.0.0
+Offline Workflow Check: riftscan-offline-workflow-check-v1.0.1
+Capture Plan Check: riftscan-capture-plan-check-v1.0.0
 ```
 
 ## What changed since the 2026-05-05 handoffs
@@ -101,12 +104,16 @@ The Operator now has:
 - Diagnostics tab `Capture Readiness Self-Test` button.
 - Diagnostics tab `Operator Gate Self-Test` button.
 - Diagnostics tab `Offline Workflow Check` button.
+- Diagnostics tab `Capture Plan Check` button.
 - CLI/CMD report-only refresh paths: `python tools\riftscan_operator_app.py --write-report` and `.\scripts\run-riftscan-operator-report.cmd`.
 - `Current Workflow Gate` section in `handoffs/current/operator/RIFTSCAN_OPERATOR_HANDOFF.md`.
 - Machine-readable gate summary at `handoffs/current/operator/operator-current-gate-summary.json`.
 - `capture_readiness_baseline_link` stale-chain check in the machine-readable gate summary.
 - Artifact freshness classification for Post-Update Baseline and Capture Readiness summaries.
 - Latest Offline Workflow Check summary/reference in the Operator report.
+- Latest Capture Plan Check summary/reference in the Operator report.
+- Next-action logic that recognizes when `metadata_capture_plan_gate: PASS` already has a valid metadata-only capture plan and advances to Capture Plan Check/review instead of asking to refresh the plan again.
+- No-GUI diagnostics wrapper: `.\scripts\run-riftscan-operator-offline-diagnostics.cmd`.
 
 Offline Workflow Check now has:
 
@@ -114,6 +121,19 @@ Offline Workflow Check now has:
 - Markdown, JSON, and JSONL artifacts under `handoffs/current/offline-workflow-check/`.
 - Conservative offline safety fields; it does not run focus preflight, live capture, input, movement, memory scan/read, offset validation, RiftReader validation, or `/reloadui`.
 - Helper py_compile/self-test sweep for Operator, Post-Update Baseline, Capture Readiness, Patch Intake, and itself.
+
+Capture Plan Check now has:
+
+- Python-first implementation with a thin CMD wrapper.
+- Markdown, JSON, and JSONL artifacts under `handoffs/current/capture-plan-check/`.
+- Validation that the latest capture plan is metadata-only, has `capture_started=false` and `capture_completed=false`, includes expected metadata output filenames, references existing focus/preflight artifacts, and sees `live_collection_allowed=false`.
+- Conservative PASS/BLOCKED behavior; it does not run focus preflight, capture, input, movement, memory scan/read, offset validation, RiftReader validation, or `/reloadui`.
+
+The future live-collection gate is documented but not satisfied:
+
+- Checklist path: `handoffs/current/live-collection-gate/LIVE_COLLECTION_GATE_CHECKLIST.md`.
+- Summary path: `handoffs/current/live-collection-gate/live-collection-gate-summary.json`.
+- It requires fresh Post-Update Baseline PASS, Capture Readiness PASS, Capture Plan Check PASS, explicit operator approval, no movement/input, no `/reloadui`, no offset trust, and clear abort conditions.
 
 Capture Readiness now has:
 
@@ -127,7 +147,7 @@ Post-Update Baseline now has:
 - Diagnostics tab `Post-Update Baseline Self-Test` button.
 - Offline PASS/BLOCKED logic coverage without writing current handoff artifacts.
 
-Patch Intake now supports post-apply checks for Capture Readiness and Offline Workflow Check patches:
+Patch Intake now supports post-apply checks for Capture Readiness and Offline Workflow Check patches; future plan-gate patches should include Capture Plan Check too:
 
 ```text
 py_compile_operator
@@ -138,6 +158,8 @@ py_compile_capture_readiness
 capture_readiness_self_test
 py_compile_offline_workflow_check
 offline_workflow_check_self_test
+py_compile_capture_plan_check
+capture_plan_check_self_test
 ```
 
 ## Current-client gate pass and capture plan
@@ -154,6 +176,8 @@ Post-Update Baseline: PASS
 Capture Readiness: PASS
 metadata_capture_plan_gate: PASS
 metadata-only capture plan: plans/focus-gated-capture-plans/20260506T042824Z_focus_gated_capture_plan
+Capture Plan Check: PASS
+live_collection_allowed: false
 ```
 
 The capture plan is metadata-only. It records `capture_started=false`, `capture_completed=false`, no movement/input, no memory scan/read, no `/reloadui`, and no offset/RiftReader validation.
@@ -162,7 +186,7 @@ The capture plan is metadata-only. It records `capture_started=false`, `capture_
 
 There are no current metadata capture-plan blockers. `metadata_capture_plan_gate` is PASS.
 
-Important: `live_collection_allowed` remains false. The PASS gate authorizes metadata capture-plan refresh only, not real capture/discovery/movement/input/offset work.
+Important: `live_collection_allowed` remains false. The PASS gate and Capture Plan Check authorize metadata capture-plan review/refinement only, not real capture/discovery/movement/input/offset work.
 
 ## Hard safety boundary
 
@@ -192,7 +216,10 @@ python tools\riftscan_capture_readiness.py --self-test
 python tools\riftscan_patch_intake_app.py --self-test
 python tools\riftscan_offline_workflow_check.py --self-test
 .\scripts\run-riftscan-offline-workflow-check.cmd
-python -m py_compile tools\riftscan_operator_app.py tools\riftscan_capture_readiness.py tools\riftscan_post_update_baseline.py tools\riftscan_patch_intake_app.py tools\riftscan_offline_workflow_check.py
+python tools\riftscan_capture_plan_check.py --self-test
+.\scripts\run-riftscan-capture-plan-check.cmd --strict-exit-code
+.\scripts\run-riftscan-operator-offline-diagnostics.cmd
+python -m py_compile tools\riftscan_operator_app.py tools\riftscan_capture_readiness.py tools\riftscan_post_update_baseline.py tools\riftscan_patch_intake_app.py tools\riftscan_offline_workflow_check.py tools\riftscan_capture_plan_check.py
 ```
 
 Expected self-test results:
@@ -205,6 +232,9 @@ Capture Readiness self-test: PASS
 Patch Intake self-test: PASS
 Offline Workflow Check self-test: PASS
 Offline Workflow Check full sweep: PASS
+Capture Plan Check self-test: PASS
+Capture Plan Check: PASS
+Operator offline diagnostics: PASS
 ```
 
 ## GUI smoke-test order
@@ -223,31 +253,32 @@ Recommended button order:
 2. Diagnostics -> Post-Update Baseline Self-Test
 3. Diagnostics -> Capture Readiness Self-Test
 4. Diagnostics -> Offline Workflow Check
-5. Main -> Open Report
-6. Main -> Post-Update Baseline only after the current updated RIFT client is truly stable in-world
-7. Main -> Capture Readiness
-8. Main -> Open Report and require metadata_capture_plan_gate: PASS before capture-plan refresh
+5. Diagnostics -> Capture Plan Check
+6. Main -> Open Report
+7. Main -> Post-Update Baseline only after the current updated RIFT client is truly stable in-world
+8. Main -> Capture Readiness
+9. Main -> Open Report and require metadata_capture_plan_gate: PASS plus Capture Plan Check PASS before any future live-collection gate review
 ```
 
 ## Current next best action
 
-Review the metadata-only capture plan and implement the next explicitly gated, non-movement, non-input, non-offset slice. The first candidate is a no-capture operator diagnostics wrapper or a capture-plan reviewer, not scanner/discovery work.
+Review the Capture Plan Check report and the future live-collection gate checklist. The next implementation slice should still be non-movement, non-input, and non-offset unless the separate live-collection gate is explicitly approved.
 
 ## Top 10 next recommended actions
 
-1. Commit and push the PASS baseline/readiness/capture-plan artifacts.
-2. Review `plans/focus-gated-capture-plans/20260506T042824Z_focus_gated_capture_plan/CAPTURE_PLAN_HANDOFF.md`.
-3. Add a no-GUI offline diagnostics wrapper if repeatability is more valuable than more GUI clicking.
-4. Add an Operator report section that recognizes when a latest metadata-only capture plan already exists.
-5. Add a capture-plan review/check command that validates `metadata_only=true`, `capture_started=false`, and required paths.
-6. Draft the future live-collection gate criteria separately before any real capture.
-7. Keep movement/input/reloadui/offset validation blocked.
-8. Keep RiftReader validation blocked until RiftReader recovery docs and live proof are read.
-9. Preserve all current PASS artifacts; do not overwrite them with exploratory runs unless intentionally refreshing.
-10. Only after an explicit future gate, implement the first minimal real capture scaffold; do not start it in this milestone.
+1. Review `handoffs/current/capture-plan-check/CAPTURE_PLAN_CHECK_REPORT.md`.
+2. Review `handoffs/current/live-collection-gate/LIVE_COLLECTION_GATE_CHECKLIST.md`.
+3. If the operator approves the future gate later, rerun Post-Update Baseline, Capture Readiness, Capture Plan Check, and Operator report refresh in that order.
+4. Keep movement/input/reloadui/offset validation blocked until that future gate explicitly passes.
+5. Keep RiftReader validation blocked until RiftReader recovery docs and live proof are read.
+6. Preserve current PASS artifacts; do not overwrite them with exploratory runs unless intentionally refreshing.
+7. Design the smallest read-only passive capture scaffold with strict timeout and append-only artifacts, but do not execute it yet.
+8. Add C# session-schema/report determinism tests after workflow gates are stable.
+9. Extend Patch Intake post-apply checks to include Capture Plan Check when future patches touch plan/gate code.
+10. Commit and push every coherent milestone promptly with explicit staging only.
 
 ## Ready-to-paste resume prompt
 
 ```text
-Resume RiftScan from C:\RIFT MODDING\Riftscan on main. Read handoffs/current/README_CURRENT.md and handoffs/current/RIFTSCAN_RESUME_HANDOFF_2026-05-06_OPERATOR_GATE_WORKFLOW.md first. Treat older 2026-05-05 handoffs as historical/superseded for next-step ordering. Current HEAD should be 40bbd1c Refresh blocked post-update baseline artifacts or newer. Current Operator gate should show metadata_capture_plan_gate: PASS, post_update_baseline: PASS, capture_readiness: PASS, capture_readiness_baseline_link: match, and live_collection_allowed: false. Latest metadata-only capture plan should be plans/focus-gated-capture-plans/20260506T042824Z_focus_gated_capture_plan. Do not run live capture, movement/input, /reloadui, scanner probes, offset validation, or RiftReader validation without a separate explicit future live-collection gate. First safe actions: inspect handoffs/current/operator/operator-current-gate-summary.json and the latest capture-plan handoff.
+Resume RiftScan from C:\RIFT MODDING\Riftscan on main. Read handoffs/current/README_CURRENT.md and handoffs/current/RIFTSCAN_RESUME_HANDOFF_2026-05-06_OPERATOR_GATE_WORKFLOW.md first. Treat older 2026-05-05 handoffs as historical/superseded for next-step ordering. Current HEAD should be 3ae21d7 Record current-client gate pass and capture plan or newer. Current Operator gate should show metadata_capture_plan_gate: PASS, post_update_baseline: PASS, capture_readiness: PASS, capture_readiness_baseline_link: match, latest_metadata_capture_plan: valid_metadata_only, and live_collection_allowed: false. Latest metadata-only capture plan should be plans/focus-gated-capture-plans/20260506T042824Z_focus_gated_capture_plan. Capture Plan Check artifacts should be under handoffs/current/capture-plan-check/. Do not run live capture, movement/input, /reloadui, scanner probes, offset validation, or RiftReader validation without a separate explicit future live-collection gate. First safe actions: inspect handoffs/current/operator/operator-current-gate-summary.json, handoffs/current/capture-plan-check/CAPTURE_PLAN_CHECK_REPORT.md, and handoffs/current/live-collection-gate/LIVE_COLLECTION_GATE_CHECKLIST.md.
 ```

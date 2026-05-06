@@ -1,6 +1,6 @@
-# Version: riftscan-operator-app-v3.8.17
+# Version: riftscan-operator-app-v3.8.18
 # Purpose: Windows Tkinter helper app for RiftScan operator workflow: run focus preflight, run full live preflight gate, run the post-update baseline and capture-readiness gates, run offline workflow checks and Post-Update Baseline, Capture Readiness, and Operator gate self-tests, summarize the current workflow go/no-go gate with artifact freshness/linkage checks, manage focus-gated metadata workflows, validate patch-runner manifests, check the online patch inbox discovery-only from the visible Main tab, write compact AI-ready reports, clean known junk, safely commit/push allowlisted files including baseline/readiness, repo-bridge handoffs and repo inbox patch packages, and provide tabbed/wrapped controls, a guided button-pusher workflow, focus-discipline confirmation, and lightweight status highlighting.
-# Total character count: 187044
+# Total character count: 195123
 
 from __future__ import annotations
 
@@ -22,7 +22,7 @@ from tkinter import messagebox, scrolledtext, ttk
 from typing import Any
 
 
-APP_VERSION = "riftscan-operator-app-v3.8.17"
+APP_VERSION = "riftscan-operator-app-v3.8.18"
 REPO_ROOT = Path(__file__).resolve().parents[1]
 FOCUS_SCRIPT = REPO_ROOT / "scripts" / "run-rift-focus-control.cmd"
 HANDOFF_DIR = REPO_ROOT / "handoffs" / "current" / "focus-control-local"
@@ -47,6 +47,11 @@ OFFLINE_WORKFLOW_CHECK_DIR = REPO_ROOT / "handoffs" / "current" / "offline-workf
 OFFLINE_WORKFLOW_CHECK_REPORT = OFFLINE_WORKFLOW_CHECK_DIR / "OFFLINE_WORKFLOW_CHECK_REPORT.md"
 OFFLINE_WORKFLOW_CHECK_SUMMARY = OFFLINE_WORKFLOW_CHECK_DIR / "offline-workflow-check-summary.json"
 OFFLINE_WORKFLOW_CHECK_LOG = OFFLINE_WORKFLOW_CHECK_DIR / "offline-workflow-check-log.jsonl"
+CAPTURE_PLAN_CHECK_CMD = REPO_ROOT / "scripts" / "run-riftscan-capture-plan-check.cmd"
+CAPTURE_PLAN_CHECK_DIR = REPO_ROOT / "handoffs" / "current" / "capture-plan-check"
+CAPTURE_PLAN_CHECK_REPORT = CAPTURE_PLAN_CHECK_DIR / "CAPTURE_PLAN_CHECK_REPORT.md"
+CAPTURE_PLAN_CHECK_SUMMARY = CAPTURE_PLAN_CHECK_DIR / "capture-plan-check-summary.json"
+CAPTURE_PLAN_CHECK_LOG = CAPTURE_PLAN_CHECK_DIR / "capture-plan-check-log.jsonl"
 POST_UPDATE_BASELINE_RELEVANT_PATHS = {
     "tools/riftscan_post_update_baseline.py",
     "scripts/run-riftscan-post-update-baseline.cmd",
@@ -82,6 +87,7 @@ ALLOWLIST = [
     "handoffs/current/post-update-baseline",
     "handoffs/current/capture-readiness",
     "handoffs/current/offline-workflow-check",
+    "handoffs/current/capture-plan-check",
     "handoffs/current/patch-intake",
     "handoffs/current/repo-bridge",
     ".riftscan/inbox/patch-packages",
@@ -91,11 +97,14 @@ ALLOWLIST = [
     "scripts/run-riftscan-post-update-baseline.cmd",
     "scripts/run-riftscan-capture-readiness.cmd",
     "scripts/run-riftscan-offline-workflow-check.cmd",
+    "scripts/run-riftscan-capture-plan-check.cmd",
+    "scripts/run-riftscan-operator-offline-diagnostics.cmd",
     "tools/rift_focus_control.py",
     "tools/riftscan_operator_app.py",
     "tools/riftscan_post_update_baseline.py",
     "tools/riftscan_capture_readiness.py",
     "tools/riftscan_offline_workflow_check.py",
+    "tools/riftscan_capture_plan_check.py",
     "plans/focus-gated-capture-plans",
     "handoffs/current/patch-runner",
     "patches/README.md",
@@ -489,6 +498,35 @@ def latest_offline_workflow_check_summary() -> dict[str, Any]:
     }
 
 
+def latest_capture_plan_check_summary() -> dict[str, Any]:
+    if not CAPTURE_PLAN_CHECK_SUMMARY.exists():
+        return {
+            "status": "none",
+            "reason": "capture plan check summary has not been generated",
+            "expected_report_path": rel(CAPTURE_PLAN_CHECK_REPORT),
+            "expected_summary_path": rel(CAPTURE_PLAN_CHECK_SUMMARY),
+            "expected_log_path": rel(CAPTURE_PLAN_CHECK_LOG),
+        }
+
+    summary = load_json(CAPTURE_PLAN_CHECK_SUMMARY)
+    if summary.get("_missing") or summary.get("_error"):
+        return {
+            "status": "error",
+            "summary_path": rel(CAPTURE_PLAN_CHECK_SUMMARY),
+            "summary": summary,
+        }
+
+    return {
+        "status": "present",
+        "report_path": rel(CAPTURE_PLAN_CHECK_REPORT),
+        "summary_path": rel(CAPTURE_PLAN_CHECK_SUMMARY),
+        "log_path": rel(CAPTURE_PLAN_CHECK_LOG),
+        "summary": summary,
+        "report_exists": CAPTURE_PLAN_CHECK_REPORT.exists(),
+        "log_exists": CAPTURE_PLAN_CHECK_LOG.exists(),
+    }
+
+
 def latest_gate_details(latest: dict[str, Any], label: str) -> dict[str, Any]:
     summary = latest.get("summary") if isinstance(latest.get("summary"), dict) else {}
     blockers = summary.get("blockers") if isinstance(summary.get("blockers"), list) else []
@@ -505,6 +543,31 @@ def latest_gate_details(latest: dict[str, Any], label: str) -> dict[str, Any]:
             "summary": paths.get("summary") or latest.get("summary_path") or latest.get("expected_summary_path"),
             "log": paths.get("log") or latest.get("log_path") or latest.get("expected_log_path"),
         },
+    }
+
+
+def latest_capture_plan_gate_details(capture_plan: dict[str, Any] | None) -> dict[str, Any]:
+    capture_plan = capture_plan if isinstance(capture_plan, dict) else {"status": "none"}
+    manifest = capture_plan.get("manifest") if isinstance(capture_plan.get("manifest"), dict) else {}
+    valid_metadata_only = (
+        capture_plan.get("status") == "present"
+        and manifest.get("schema_version") == "riftscan.focus_gated_capture_plan.v1"
+        and manifest.get("status") == "capture_plan_created"
+        and manifest.get("metadata_only") is True
+        and manifest.get("capture_started") is False
+        and manifest.get("capture_completed") is False
+    )
+    return {
+        "artifact_status": capture_plan.get("status"),
+        "status": "valid_metadata_only" if valid_metadata_only else "not_valid_metadata_only",
+        "latest_plan": capture_plan.get("latest_plan"),
+        "manifest_path": capture_plan.get("manifest_path"),
+        "handoff_path": capture_plan.get("handoff_path"),
+        "schema_version": manifest.get("schema_version"),
+        "plan_status": manifest.get("status"),
+        "metadata_only": manifest.get("metadata_only"),
+        "capture_started": manifest.get("capture_started"),
+        "capture_completed": manifest.get("capture_completed"),
     }
 
 
@@ -679,9 +742,11 @@ def build_current_workflow_gate(
     validation_issues: list[str],
     post_update_baseline: dict[str, Any],
     capture_readiness: dict[str, Any],
+    capture_plan: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     baseline = latest_gate_details(post_update_baseline, "Post-Update Baseline")
     readiness = latest_gate_details(capture_readiness, "Capture Readiness")
+    capture_plan_details = latest_capture_plan_gate_details(capture_plan)
     baseline_summary = post_update_baseline.get("summary") if isinstance(post_update_baseline.get("summary"), dict) else {}
     readiness_summary = capture_readiness.get("summary") if isinstance(capture_readiness.get("summary"), dict) else {}
     baseline["artifact_freshness"] = artifact_freshness(baseline_summary, POST_UPDATE_BASELINE_RELEVANT_PATHS)
@@ -718,6 +783,8 @@ def build_current_workflow_gate(
         next_action = "Rerun Capture Readiness because relevant baseline/readiness helper files changed."
     elif not full_ok or not focus_ok:
         next_action = "Run Full Live Preflight before metadata-only capture-plan refresh."
+    elif capture_plan_details.get("status") == "valid_metadata_only":
+        next_action = "Run Capture Plan Check and review the latest metadata-only capture plan; live collection/discovery still requires an explicit future gate."
     else:
         next_action = "Refresh the metadata-only capture plan; live collection/discovery still requires an explicit future gate."
 
@@ -731,6 +798,7 @@ def build_current_workflow_gate(
         "post_update_baseline": baseline,
         "capture_readiness": readiness,
         "capture_readiness_baseline_link": readiness_baseline_link,
+        "latest_capture_plan": capture_plan_details,
         "full_live_preflight": "PASS" if full_ok else "FAIL",
         "focus_preflight": "PASS" if focus_ok else "FAIL",
         "blockers": blockers,
@@ -744,6 +812,7 @@ def workflow_gate_text(gate: dict[str, Any]) -> str:
     baseline = gate.get("post_update_baseline") if isinstance(gate.get("post_update_baseline"), dict) else {}
     readiness = gate.get("capture_readiness") if isinstance(gate.get("capture_readiness"), dict) else {}
     readiness_baseline_link = gate.get("capture_readiness_baseline_link") if isinstance(gate.get("capture_readiness_baseline_link"), dict) else {}
+    latest_plan = gate.get("latest_capture_plan") if isinstance(gate.get("latest_capture_plan"), dict) else {}
     baseline_freshness = baseline.get("artifact_freshness") if isinstance(baseline.get("artifact_freshness"), dict) else {}
     readiness_freshness = readiness.get("artifact_freshness") if isinstance(readiness.get("artifact_freshness"), dict) else {}
     lines = [
@@ -753,6 +822,8 @@ def workflow_gate_text(gate: dict[str, Any]) -> str:
         f"capture_readiness: {readiness.get('display_status')}",
         f"capture_readiness_freshness: {readiness_freshness.get('status')}",
         f"capture_readiness_baseline_link: {readiness_baseline_link.get('status')}",
+        f"latest_metadata_capture_plan: {latest_plan.get('status')}",
+        f"latest_capture_plan: {latest_plan.get('latest_plan')}",
         f"full_live_preflight: {gate.get('full_live_preflight')}",
         f"focus_preflight: {gate.get('focus_preflight')}",
         "live_collection_allowed: false",
@@ -800,6 +871,28 @@ def operator_self_test_latest(
     }
 
 
+def operator_self_test_capture_plan(
+    *,
+    metadata_only: bool = True,
+    capture_started: bool = False,
+    capture_completed: bool = False,
+    status: str = "capture_plan_created",
+) -> dict[str, Any]:
+    return {
+        "status": "present",
+        "latest_plan": "plans/focus-gated-capture-plans/self_test_capture_plan",
+        "manifest_path": "plans/focus-gated-capture-plans/self_test_capture_plan/capture-plan.json",
+        "handoff_path": "plans/focus-gated-capture-plans/self_test_capture_plan/CAPTURE_PLAN_HANDOFF.md",
+        "manifest": {
+            "schema_version": "riftscan.focus_gated_capture_plan.v1",
+            "status": status,
+            "metadata_only": metadata_only,
+            "capture_started": capture_started,
+            "capture_completed": capture_completed,
+        },
+    }
+
+
 def run_operator_self_test() -> tuple[bool, dict[str, Any]]:
     tests: list[dict[str, Any]] = []
 
@@ -811,6 +904,7 @@ def run_operator_self_test() -> tuple[bool, dict[str, Any]]:
         readiness: dict[str, Any],
         full_ok: bool = True,
         focus_ok: bool = True,
+        capture_plan: dict[str, Any] | None = None,
         validation_issues: list[str] | None = None,
         expected_next_action_part: str | None = None,
         expected_blocker_part: str | None = None,
@@ -821,6 +915,7 @@ def run_operator_self_test() -> tuple[bool, dict[str, Any]]:
             validation_issues=validation_issues or [],
             post_update_baseline=baseline,
             capture_readiness=readiness,
+            capture_plan=capture_plan,
         )
         blockers = gate["blockers"] if isinstance(gate.get("blockers"), list) else []
         next_action = str(gate.get("next_action") or "")
@@ -864,11 +959,19 @@ def run_operator_self_test() -> tuple[bool, dict[str, Any]]:
     )
 
     record(
-        "all gates pass",
+        "all gates pass without latest capture plan",
         "PASS",
         baseline=pass_baseline,
         readiness=pass_readiness,
         expected_next_action_part="Refresh the metadata-only capture plan",
+    )
+    record(
+        "all gates pass with latest metadata-only capture plan",
+        "PASS",
+        baseline=pass_baseline,
+        readiness=pass_readiness,
+        capture_plan=operator_self_test_capture_plan(),
+        expected_next_action_part="Run Capture Plan Check",
     )
     record(
         "baseline blocks even when preflight passes",
@@ -2464,6 +2567,7 @@ def write_operator_report() -> Path:
     post_update_baseline = latest_post_update_baseline_summary()
     capture_readiness = latest_capture_readiness_summary()
     offline_workflow_check = latest_offline_workflow_check_summary()
+    capture_plan_check = latest_capture_plan_check_summary()
     dry_run = latest_dry_run_summary()
     capture_plan = latest_capture_plan_summary()
     capture_session = latest_capture_session_summary()
@@ -2478,6 +2582,7 @@ def write_operator_report() -> Path:
         validation_issues=validation_issues,
         post_update_baseline=post_update_baseline,
         capture_readiness=capture_readiness,
+        capture_plan=capture_plan,
     )
     write_json(OPERATOR_GATE_SUMMARY, workflow_gate)
     issues: list[str] = [f"- {issue}" for issue in validation_issues]
@@ -2559,6 +2664,12 @@ Exit code: `{log_code}`
 
 ```json
 {json_block(offline_workflow_check)}
+```
+
+## Latest Capture Plan Check
+
+```json
+{json_block(capture_plan_check)}
 ```
 
 ## Latest Focus-Gated Session Dry Run
@@ -3171,6 +3282,7 @@ class RiftScanOperatorApp(tk.Tk):
                 ("Validate Pending Patch", self.validate_pending_patch),
                 ("Operator Gate Self-Test", self.run_operator_gate_self_test),
                 ("Offline Workflow Check", self.run_offline_workflow_check),
+                ("Capture Plan Check", self.run_capture_plan_check),
                 ("Post-Update Baseline Self-Test", self.run_post_update_baseline_self_test),
                 ("Capture Readiness Self-Test", self.run_capture_readiness_self_test),
                 ("Run Focus Preflight", self.run_focus_preflight),
@@ -3630,6 +3742,75 @@ class RiftScanOperatorApp(tk.Tk):
         self.run_async("offline workflow check", task)
 
 
+    def run_capture_plan_check(self) -> None:
+        def task() -> str:
+            if not CAPTURE_PLAN_CHECK_CMD.exists():
+                return f"ERROR: missing {rel(CAPTURE_PLAN_CHECK_CMD)}"
+
+            exit_code, stdout, stderr = run_command(
+                ["cmd", "/c", str(CAPTURE_PLAN_CHECK_CMD), "--strict-exit-code"],
+                timeout=120,
+            )
+            summary = load_json(CAPTURE_PLAN_CHECK_SUMMARY)
+            report_path = write_operator_report()
+
+            if summary.get("_missing") or summary.get("_error"):
+                display_status = "FAIL"
+                status = "summary_unavailable"
+                blockers = [summary.get("_error") or f"Missing summary: {rel(CAPTURE_PLAN_CHECK_SUMMARY)}"]
+                paths = {
+                    "report": rel(CAPTURE_PLAN_CHECK_REPORT),
+                    "summary": rel(CAPTURE_PLAN_CHECK_SUMMARY),
+                    "log": rel(CAPTURE_PLAN_CHECK_LOG),
+                }
+            else:
+                display_status = str(summary.get("display_status") or "UNKNOWN")
+                status = str(summary.get("status") or "unknown")
+                blockers = list(summary.get("blockers") or [])
+                paths = summary.get("paths") or {}
+
+            if exit_code not in (0, 2) and display_status not in ("PASS", "BLOCKED"):
+                display_status = "FAIL"
+
+            lines = [
+                "\n=== CAPTURE PLAN CHECK ===",
+                f"CAPTURE PLAN CHECK: {display_status}",
+                f"status: {status}",
+                f"Exit code: {exit_code}",
+                "",
+                "Blockers:",
+            ]
+            if blockers:
+                lines.extend(f"- {blocker}" for blocker in blockers)
+            else:
+                lines.append("- None")
+
+            lines.extend(
+                [
+                    "",
+                    f"Report: {paths.get('report') or rel(CAPTURE_PLAN_CHECK_REPORT)}",
+                    f"Summary: {paths.get('summary') or rel(CAPTURE_PLAN_CHECK_SUMMARY)}",
+                    f"Log: {paths.get('log') or rel(CAPTURE_PLAN_CHECK_LOG)}",
+                    f"Operator report: {rel(report_path)}",
+                ]
+            )
+
+            if stdout.strip():
+                lines.extend(["", "Launcher stdout:", stdout.strip()])
+            if stderr.strip():
+                lines.extend(["", "Launcher stderr:", stderr.strip()])
+
+            lines.extend(
+                [
+                    "",
+                    "Safety: metadata-only plan validation; no capture, movement/input, memory scan/read, offset validation, RiftReader validation, or /reloadui was run.",
+                ]
+            )
+            return "\n".join(lines)
+
+        self.run_async("capture plan check", task)
+
+
     def run_operator_gate_self_test(self) -> None:
         def task() -> str:
             passed, summary = run_operator_self_test()
@@ -4020,13 +4201,14 @@ class RiftScanOperatorApp(tk.Tk):
             "2. Capture Readiness\n"
             "3. Run Full Live Preflight\n"
             "4. Create Capture Plan\n"
-            "5. Run Window/Process Metadata Collector\n"
-            "6. Analyze Latest Session\n"
-            "7. Compare Sessions\n"
-            "8. Clean Known Junk, Commit Allowlist, Push\n\n"
+            "5. Capture Plan Check\n"
+            "6. Run Window/Process Metadata Collector\n"
+            "7. Analyze Latest Session\n"
+            "8. Compare Sessions\n"
+            "9. Clean Known Junk, Commit Allowlist, Push\n\n"
             "After a RIFT update, treat older baselines and offsets as historical until a fresh current-client baseline passes.\n"
-            "Diagnostics > Operator Gate Self-Test, Offline Workflow Check, Post-Update Baseline Self-Test, and Capture Readiness Self-Test are offline and can be run anytime to check gate logic.\n"
-            "Capture Readiness must PASS before creating or refreshing capture plans.\n"
+            "Diagnostics > Operator Gate Self-Test, Offline Workflow Check, Capture Plan Check, Post-Update Baseline Self-Test, and Capture Readiness Self-Test are safe helper checks; self-tests are offline and Capture Plan Check only reads existing metadata artifacts.\n"
+            "Capture Readiness must PASS before creating or refreshing capture plans, and Capture Plan Check must PASS before any future live-collection gate review.\n"
             "LEAVE RIFT FOREGROUND during the metadata collector.\n"
             "Do not click ChatGPT, PowerShell, the Operator window, or any other window.\n\n"
             "Guardrails: metadata only; no movement, input, memory read, memory scan, /reloadui, service, listener, polling, auto-commit, auto-push, or git add dot.\n"

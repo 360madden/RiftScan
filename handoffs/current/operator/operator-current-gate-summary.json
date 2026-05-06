@@ -1,6 +1,6 @@
 {
   "schema_version": "riftscan.operator_current_workflow_gate.v1",
-  "created_utc": "2026-05-06T04:31:49Z",
+  "created_utc": "2026-05-06T05:04:32Z",
   "metadata_capture_plan_gate": "PASS",
   "live_collection_allowed": false,
   "old_offsets_trusted": false,
@@ -17,11 +17,31 @@
       "log": "handoffs\\current\\post-update-baseline\\post-update-baseline-log.jsonl"
     },
     "artifact_freshness": {
-      "status": "current",
+      "status": "warning_non_relevant_changes",
       "artifact_head": "40bbd1c62c5db71ecbe4d5931643d37619f955b3",
-      "current_head": "40bbd1c62c5db71ecbe4d5931643d37619f955b3",
-      "head_matches_current": true,
-      "changed_paths_since_artifact_head": [],
+      "current_head": "3ae21d7d758861c26aa7140067f999279bac8525",
+      "head_matches_current": false,
+      "changed_paths_since_artifact_head": [
+        "handoffs/current/README_CURRENT.md",
+        "handoffs/current/RIFTSCAN_RESUME_HANDOFF_2026-05-06_OPERATOR_GATE_WORKFLOW.md",
+        "handoffs/current/capture-readiness/CAPTURE_READINESS_REPORT.md",
+        "handoffs/current/capture-readiness/capture-readiness-log.jsonl",
+        "handoffs/current/capture-readiness/capture-readiness-summary.json",
+        "handoffs/current/focus-control-local/focus-control-log.jsonl",
+        "handoffs/current/focus-control-local/focus-control-summary.json",
+        "handoffs/current/focus-control-local/process-command-result.json",
+        "handoffs/current/offline-workflow-check/OFFLINE_WORKFLOW_CHECK_REPORT.md",
+        "handoffs/current/offline-workflow-check/offline-workflow-check-log.jsonl",
+        "handoffs/current/offline-workflow-check/offline-workflow-check-summary.json",
+        "handoffs/current/operator/RIFTSCAN_OPERATOR_HANDOFF.md",
+        "handoffs/current/operator/operator-current-gate-summary.json",
+        "handoffs/current/post-update-baseline/POST_UPDATE_BASELINE_REPORT.md",
+        "handoffs/current/post-update-baseline/post-update-baseline-log.jsonl",
+        "handoffs/current/post-update-baseline/post-update-baseline-summary.json",
+        "plans/focus-gated-capture-plans/20260506T042824Z_focus_gated_capture_plan/CAPTURE_PLAN_HANDOFF.md",
+        "plans/focus-gated-capture-plans/20260506T042824Z_focus_gated_capture_plan/capture-plan.json",
+        "plans/focus-gated-capture-plans/LATEST_CAPTURE_PLAN.txt"
+      ],
       "relevant_gate_code_changed": false,
       "relevant_changed_paths": []
     }
@@ -39,11 +59,31 @@
       "log": "handoffs/current/capture-readiness/capture-readiness-log.jsonl"
     },
     "artifact_freshness": {
-      "status": "current",
+      "status": "warning_non_relevant_changes",
       "artifact_head": "40bbd1c62c5db71ecbe4d5931643d37619f955b3",
-      "current_head": "40bbd1c62c5db71ecbe4d5931643d37619f955b3",
-      "head_matches_current": true,
-      "changed_paths_since_artifact_head": [],
+      "current_head": "3ae21d7d758861c26aa7140067f999279bac8525",
+      "head_matches_current": false,
+      "changed_paths_since_artifact_head": [
+        "handoffs/current/README_CURRENT.md",
+        "handoffs/current/RIFTSCAN_RESUME_HANDOFF_2026-05-06_OPERATOR_GATE_WORKFLOW.md",
+        "handoffs/current/capture-readiness/CAPTURE_READINESS_REPORT.md",
+        "handoffs/current/capture-readiness/capture-readiness-log.jsonl",
+        "handoffs/current/capture-readiness/capture-readiness-summary.json",
+        "handoffs/current/focus-control-local/focus-control-log.jsonl",
+        "handoffs/current/focus-control-local/focus-control-summary.json",
+        "handoffs/current/focus-control-local/process-command-result.json",
+        "handoffs/current/offline-workflow-check/OFFLINE_WORKFLOW_CHECK_REPORT.md",
+        "handoffs/current/offline-workflow-check/offline-workflow-check-log.jsonl",
+        "handoffs/current/offline-workflow-check/offline-workflow-check-summary.json",
+        "handoffs/current/operator/RIFTSCAN_OPERATOR_HANDOFF.md",
+        "handoffs/current/operator/operator-current-gate-summary.json",
+        "handoffs/current/post-update-baseline/POST_UPDATE_BASELINE_REPORT.md",
+        "handoffs/current/post-update-baseline/post-update-baseline-log.jsonl",
+        "handoffs/current/post-update-baseline/post-update-baseline-summary.json",
+        "plans/focus-gated-capture-plans/20260506T042824Z_focus_gated_capture_plan/CAPTURE_PLAN_HANDOFF.md",
+        "plans/focus-gated-capture-plans/20260506T042824Z_focus_gated_capture_plan/capture-plan.json",
+        "plans/focus-gated-capture-plans/LATEST_CAPTURE_PLAN.txt"
+      ],
       "relevant_gate_code_changed": false,
       "relevant_changed_paths": []
     }
@@ -70,9 +110,21 @@
     },
     "mismatches": []
   },
+  "latest_capture_plan": {
+    "artifact_status": "present",
+    "status": "valid_metadata_only",
+    "latest_plan": "plans/focus-gated-capture-plans/20260506T042824Z_focus_gated_capture_plan",
+    "manifest_path": "plans/focus-gated-capture-plans/20260506T042824Z_focus_gated_capture_plan/capture-plan.json",
+    "handoff_path": "plans/focus-gated-capture-plans/20260506T042824Z_focus_gated_capture_plan/CAPTURE_PLAN_HANDOFF.md",
+    "schema_version": "riftscan.focus_gated_capture_plan.v1",
+    "plan_status": "capture_plan_created",
+    "metadata_only": true,
+    "capture_started": false,
+    "capture_completed": false
+  },
   "full_live_preflight": "PASS",
   "focus_preflight": "PASS",
   "blockers": [],
-  "next_action": "Refresh the metadata-only capture plan; live collection/discovery still requires an explicit future gate.",
+  "next_action": "Run Capture Plan Check and review the latest metadata-only capture plan; live collection/discovery still requires an explicit future gate.",
   "guardrail": "No live capture, discovery, movement/input, memory scan/read, offset validation, RiftReader validation, or /reloadui until current gates pass and an explicit future live gate is added."
 }

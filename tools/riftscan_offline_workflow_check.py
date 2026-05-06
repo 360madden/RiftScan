@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # RiftScan script metadata
-# Version: riftscan-offline-workflow-check-v1.0.0
-# Total character count: 10951
+# Version: riftscan-offline-workflow-check-v1.0.1
+# Total character count: 11186
 # Purpose: Run conservative offline helper workflow checks and write deterministic report artifacts.
 # Safety boundary: Offline validation only. No RIFT focus preflight, live capture, input, movement, memory scan/read, offset validation, RiftReader validation, or /reloadui.
 
@@ -16,7 +16,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-APP_VERSION = "riftscan-offline-workflow-check-v1.0.0"
+APP_VERSION = "riftscan-offline-workflow-check-v1.0.1"
 REPO_ROOT = Path(__file__).resolve().parents[1]
 OUT_DIR = REPO_ROOT / "handoffs" / "current" / "offline-workflow-check"
 REPORT = OUT_DIR / "OFFLINE_WORKFLOW_CHECK_REPORT.md"
@@ -124,6 +124,7 @@ def helper_checks(timeout_seconds: int) -> list[tuple[str, list[str], int]]:
                 "tools/riftscan_capture_readiness.py",
                 "tools/riftscan_patch_intake_app.py",
                 "tools/riftscan_offline_workflow_check.py",
+                "tools/riftscan_capture_plan_check.py",
             ],
             timeout_seconds,
         ),
@@ -141,6 +142,11 @@ def helper_checks(timeout_seconds: int) -> list[tuple[str, list[str], int]]:
         (
             "capture_readiness_self_test",
             [sys.executable, "tools/riftscan_capture_readiness.py", "--self-test"],
+            timeout_seconds,
+        ),
+        (
+            "capture_plan_check_self_test",
+            [sys.executable, "tools/riftscan_capture_plan_check.py", "--self-test"],
             timeout_seconds,
         ),
         (
