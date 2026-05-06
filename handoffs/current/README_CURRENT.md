@@ -14,7 +14,7 @@ The older 2026-05-05 handoffs remain useful history, but their next-step orderin
 ## Latest verified workflow-code milestone referenced by this pointer
 
 ```text
-a2cf481 Add operator report command wrapper
+0125e33 Refresh handoff after operator report wrapper
 ```
 
 A newer doc-only handoff-pointer commit may exist; check `git log --oneline -5` for the exact current HEAD before editing.
@@ -29,8 +29,10 @@ A newer doc-only handoff-pointer commit may exist; check `git log --oneline -5` 
 - Operator Diagnostics has `Post-Update Baseline Self-Test` and `Capture Readiness Self-Test` buttons for offline GUI wiring checks.
 - Operator has an offline gate self-test: `python tools/riftscan_operator_app.py --self-test`.
 - Operator has report-only CLI/CMD refresh paths: `python tools/riftscan_operator_app.py --write-report` and `.\scripts\run-riftscan-operator-report.cmd`.
+- Offline Workflow Check is a Python-first helper sweep with a thin CMD wrapper: `python tools/riftscan_offline_workflow_check.py --self-test` and `.\scripts\run-riftscan-offline-workflow-check.cmd`.
+- Operator Diagnostics has an `Offline Workflow Check` button for offline helper validation without capture/input/memory-read behavior.
 - Operator reports include a `Current Workflow Gate` go/no-go section and `handoffs/current/operator/operator-current-gate-summary.json` for baseline/readiness/full-preflight state.
-- Patch Intake can require Operator, Post-Update Baseline, and Capture Readiness post-apply py_compile/self-test checks for future gate patches.
+- Patch Intake can require Operator, Post-Update Baseline, Capture Readiness, and Offline Workflow Check post-apply py_compile/self-test checks for future gate patches.
 
 ## Current direction
 
@@ -64,4 +66,4 @@ For meaningful workflow milestones:
 
 ## Current next recommended action
 
-GUI-smoke-test the Operator `Post-Update Baseline` and `Capture Readiness` buttons against the current updated RIFT client. If the current client is stable in-world, produce a fresh PASS baseline first, then require the Operator `Current Workflow Gate` section to show `metadata_capture_plan_gate: PASS` before any capture-plan refresh, collection, or discovery work.
+GUI-smoke-test the Operator offline diagnostics first, including `Offline Workflow Check`; then GUI-smoke-test the `Post-Update Baseline` and `Capture Readiness` buttons against the current updated RIFT client. If the current client is stable in-world, produce a fresh PASS baseline first, then require the Operator `Current Workflow Gate` section to show `metadata_capture_plan_gate: PASS` before any capture-plan refresh, collection, or discovery work.

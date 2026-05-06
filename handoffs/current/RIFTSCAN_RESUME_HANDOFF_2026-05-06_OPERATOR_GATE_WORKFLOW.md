@@ -55,10 +55,11 @@ handoffs/current/operator/operator-current-gate-summary.json
 ## Current tool versions
 
 ```text
-Operator Helper App: riftscan-operator-app-v3.8.16
+Operator Helper App: riftscan-operator-app-v3.8.17
 Capture Readiness: riftscan-capture-readiness-v1.0.1
-Patch Intake Helper: riftscan-patch-intake-v1.2.4
+Patch Intake Helper: riftscan-patch-intake-v1.2.5
 Post-Update Baseline: riftscan-post-update-baseline-v1.0.1
+Offline Workflow Check: riftscan-offline-workflow-check-v1.0.0
 ```
 
 ## What changed since the 2026-05-05 handoffs
@@ -96,11 +97,20 @@ The Operator now has:
 - Diagnostics tab `Post-Update Baseline Self-Test` button.
 - Diagnostics tab `Capture Readiness Self-Test` button.
 - Diagnostics tab `Operator Gate Self-Test` button.
+- Diagnostics tab `Offline Workflow Check` button.
 - CLI/CMD report-only refresh paths: `python tools\riftscan_operator_app.py --write-report` and `.\scripts\run-riftscan-operator-report.cmd`.
 - `Current Workflow Gate` section in `handoffs/current/operator/RIFTSCAN_OPERATOR_HANDOFF.md`.
 - Machine-readable gate summary at `handoffs/current/operator/operator-current-gate-summary.json`.
 - `capture_readiness_baseline_link` stale-chain check in the machine-readable gate summary.
 - Artifact freshness classification for Post-Update Baseline and Capture Readiness summaries.
+- Latest Offline Workflow Check summary/reference in the Operator report.
+
+Offline Workflow Check now has:
+
+- Python-first implementation with a thin CMD wrapper.
+- Markdown, JSON, and JSONL artifacts under `handoffs/current/offline-workflow-check/`.
+- Conservative offline safety fields; it does not run focus preflight, live capture, input, movement, memory scan/read, offset validation, RiftReader validation, or `/reloadui`.
+- Helper py_compile/self-test sweep for Operator, Post-Update Baseline, Capture Readiness, Patch Intake, and itself.
 
 Capture Readiness now has:
 
@@ -114,7 +124,7 @@ Post-Update Baseline now has:
 - Diagnostics tab `Post-Update Baseline Self-Test` button.
 - Offline PASS/BLOCKED logic coverage without writing current handoff artifacts.
 
-Patch Intake now supports post-apply checks for Capture Readiness patches:
+Patch Intake now supports post-apply checks for Capture Readiness and Offline Workflow Check patches:
 
 ```text
 py_compile_operator
@@ -123,6 +133,8 @@ py_compile_post_update_baseline
 post_update_baseline_self_test
 py_compile_capture_readiness
 capture_readiness_self_test
+py_compile_offline_workflow_check
+offline_workflow_check_self_test
 ```
 
 ## Current blockers
@@ -170,7 +182,9 @@ python tools\riftscan_operator_app.py --write-report
 python tools\riftscan_post_update_baseline.py --self-test
 python tools\riftscan_capture_readiness.py --self-test
 python tools\riftscan_patch_intake_app.py --self-test
-python -m py_compile tools\riftscan_operator_app.py tools\riftscan_capture_readiness.py tools\riftscan_post_update_baseline.py tools\riftscan_patch_intake_app.py
+python tools\riftscan_offline_workflow_check.py --self-test
+.\scripts\run-riftscan-offline-workflow-check.cmd
+python -m py_compile tools\riftscan_operator_app.py tools\riftscan_capture_readiness.py tools\riftscan_post_update_baseline.py tools\riftscan_patch_intake_app.py tools\riftscan_offline_workflow_check.py
 ```
 
 Expected self-test results:
@@ -181,6 +195,8 @@ Operator report refresh: PASS
 Post-Update Baseline self-test: PASS
 Capture Readiness self-test: PASS
 Patch Intake self-test: PASS
+Offline Workflow Check self-test: PASS
+Offline Workflow Check full sweep: PASS
 ```
 
 ## GUI smoke-test order
@@ -198,31 +214,32 @@ Recommended button order:
 1. Diagnostics -> Operator Gate Self-Test
 2. Diagnostics -> Post-Update Baseline Self-Test
 3. Diagnostics -> Capture Readiness Self-Test
-4. Main -> Open Report
-5. Main -> Post-Update Baseline only after the current updated RIFT client is truly stable in-world
-6. Main -> Capture Readiness
-7. Main -> Open Report and require metadata_capture_plan_gate: PASS before capture-plan refresh
+4. Diagnostics -> Offline Workflow Check
+5. Main -> Open Report
+6. Main -> Post-Update Baseline only after the current updated RIFT client is truly stable in-world
+7. Main -> Capture Readiness
+8. Main -> Open Report and require metadata_capture_plan_gate: PASS before capture-plan refresh
 ```
 
 ## Current next best action
 
-First GUI-smoke-test the three offline self-test buttons. Then, only when the current updated RIFT client is confirmed stable in-world, run `Post-Update Baseline` and require a PASS baseline before `Capture Readiness` or any downstream metadata plan refresh.
+First GUI-smoke-test the offline diagnostic buttons, including `Offline Workflow Check`. Then, only when the current updated RIFT client is confirmed stable in-world, run `Post-Update Baseline` and require a PASS baseline before `Capture Readiness` or any downstream metadata plan refresh.
 
 ## Top 10 next recommended actions
 
-1. GUI-click `Operator Gate Self-Test`.
-2. GUI-click `Post-Update Baseline Self-Test`.
-3. GUI-click `Capture Readiness Self-Test`.
-4. GUI-click `Open Report` and verify `Current Workflow Gate` is visible near the top.
-5. When RIFT is genuinely stable in-world, GUI-click `Post-Update Baseline`.
-6. Require `POST-UPDATE BASELINE: PASS`.
-7. GUI-click `Capture Readiness`.
-8. Require `metadata_capture_plan_gate: PASS` in the Operator report.
-9. Refresh the metadata-only capture plan only after the gate passes.
-10. After current gates pass, proceed only to metadata-only collector follow-up; still do not start movement/input/offset validation.
+1. GUI-click `Offline Workflow Check` in Diagnostics.
+2. GUI-click `Operator Gate Self-Test`.
+3. GUI-click `Post-Update Baseline Self-Test`.
+4. GUI-click `Capture Readiness Self-Test`.
+5. GUI-click `Open Report` and verify `Current Workflow Gate` and `Latest Offline Workflow Check` are visible near the top.
+6. When RIFT is genuinely stable in-world, GUI-click `Post-Update Baseline`.
+7. Require `POST-UPDATE BASELINE: PASS`.
+8. GUI-click `Capture Readiness`.
+9. Require `metadata_capture_plan_gate: PASS` in the Operator report.
+10. Refresh the metadata-only capture plan only after the gate passes; still do not start movement/input/offset validation.
 
 ## Ready-to-paste resume prompt
 
 ```text
-Resume RiftScan from C:\RIFT MODDING\Riftscan on main. Read handoffs/current/README_CURRENT.md and handoffs/current/RIFTSCAN_RESUME_HANDOFF_2026-05-06_OPERATOR_GATE_WORKFLOW.md first. Treat older 2026-05-05 handoffs as historical/superseded for next-step ordering. Current HEAD should be a2cf481 Add operator report command wrapper or newer. Do not run live capture, movement/input, /reloadui, scanner probes, offset validation, or RiftReader validation until the Operator Current Workflow Gate shows metadata_capture_plan_gate: PASS. First safe actions: run python tools\riftscan_operator_app.py --self-test, python tools\riftscan_post_update_baseline.py --self-test, python tools\riftscan_capture_readiness.py --self-test, and inspect handoffs/current/operator/operator-current-gate-summary.json.
+Resume RiftScan from C:\RIFT MODDING\Riftscan on main. Read handoffs/current/README_CURRENT.md and handoffs/current/RIFTSCAN_RESUME_HANDOFF_2026-05-06_OPERATOR_GATE_WORKFLOW.md first. Treat older 2026-05-05 handoffs as historical/superseded for next-step ordering. Current HEAD should be 0125e33 Refresh handoff after operator report wrapper or newer. Do not run live capture, movement/input, /reloadui, scanner probes, offset validation, or RiftReader validation until the Operator Current Workflow Gate shows metadata_capture_plan_gate: PASS. First safe actions: run python tools\riftscan_operator_app.py --self-test, python tools\riftscan_post_update_baseline.py --self-test, python tools\riftscan_capture_readiness.py --self-test, python tools\riftscan_offline_workflow_check.py --self-test, and inspect handoffs/current/operator/operator-current-gate-summary.json.
 ```

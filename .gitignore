@@ -30,6 +30,8 @@ desktop.ini
 *.tmp
 *.temp
 *.bak
+__pycache__/
+*.pyc
 
 # RiftScan generated runtime data
 /sessions/

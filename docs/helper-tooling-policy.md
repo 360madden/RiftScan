@@ -21,6 +21,7 @@ This applies to:
 - Patch Intake Helper
 - Post-Update Baseline tool
 - Capture Readiness gate
+- Offline Workflow Check runners
 - report and handoff writers
 - local validation runners
 - patch/package intake tooling
@@ -123,6 +124,9 @@ scripts/run-riftscan-post-update-baseline.cmd
 
 tools/riftscan_capture_readiness.py
 scripts/run-riftscan-capture-readiness.cmd
+
+tools/riftscan_offline_workflow_check.py
+scripts/run-riftscan-offline-workflow-check.cmd
 ```
 
 Post-Update Baseline offline validation:
@@ -143,6 +147,13 @@ Operator gate offline validation:
 python tools/riftscan_operator_app.py --self-test
 ```
 
+Offline workflow check validation and full helper sweep:
+
+```text
+python tools/riftscan_offline_workflow_check.py --self-test
+.\scripts\run-riftscan-offline-workflow-check.cmd
+```
+
 Operator report refresh without launching the GUI:
 
 ```text
@@ -159,9 +170,11 @@ py_compile_post_update_baseline
 post_update_baseline_self_test
 py_compile_capture_readiness
 capture_readiness_self_test
+py_compile_offline_workflow_check
+offline_workflow_check_self_test
 ```
 
-The Operator Diagnostics tab may expose offline self-tests when the test does not touch live RIFT state or write current handoff artifacts.
+The Operator Diagnostics tab may expose offline self-tests and the Offline Workflow Check when the action does not touch live RIFT state, capture, input, memory scan/read, offsets, RiftReader validation, or `/reloadui`.
 
 Operator handoffs should include a compact current workflow gate section that reports whether Post-Update Baseline, Capture Readiness, and required preflight checks allow the next metadata-only action.
 
@@ -169,4 +182,4 @@ Gate summaries should distinguish harmless doc/handoff-only artifact HEAD drift 
 
 ## Next preferred extension
 
-The next helper workflow should keep the same Python-first pattern and add the smallest safe post-readiness step: a metadata-only, focus-gated capture-plan refresh or GUI smoke-test flow. Do not start live capture or discovery until the current-client Post-Update Baseline and Capture Readiness gates both PASS.
+The next helper workflow should keep the same Python-first pattern. Prefer GUI smoke-test and offline validation consolidation first; the smallest safe post-readiness product step remains a metadata-only, focus-gated capture-plan refresh. Do not start live capture or discovery until the current-client Post-Update Baseline and Capture Readiness gates both PASS.

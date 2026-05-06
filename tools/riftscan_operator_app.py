@@ -1,6 +1,6 @@
-# Version: riftscan-operator-app-v3.8.16
-# Purpose: Windows Tkinter helper app for RiftScan operator workflow: run focus preflight, run full live preflight gate, run the post-update baseline and capture-readiness gates, run offline Post-Update Baseline, Capture Readiness, and Operator gate self-tests, summarize the current workflow go/no-go gate with artifact freshness/linkage checks, manage focus-gated metadata workflows, validate patch-runner manifests, check the online patch inbox discovery-only from the visible Main tab, write compact AI-ready reports, clean known junk, safely commit/push allowlisted files including baseline/readiness, repo-bridge handoffs and repo inbox patch packages, and provide tabbed/wrapped controls, a guided button-pusher workflow, focus-discipline confirmation, and lightweight status highlighting.
-# Total character count: 182242
+# Version: riftscan-operator-app-v3.8.17
+# Purpose: Windows Tkinter helper app for RiftScan operator workflow: run focus preflight, run full live preflight gate, run the post-update baseline and capture-readiness gates, run offline workflow checks and Post-Update Baseline, Capture Readiness, and Operator gate self-tests, summarize the current workflow go/no-go gate with artifact freshness/linkage checks, manage focus-gated metadata workflows, validate patch-runner manifests, check the online patch inbox discovery-only from the visible Main tab, write compact AI-ready reports, clean known junk, safely commit/push allowlisted files including baseline/readiness, repo-bridge handoffs and repo inbox patch packages, and provide tabbed/wrapped controls, a guided button-pusher workflow, focus-discipline confirmation, and lightweight status highlighting.
+# Total character count: 187044
 
 from __future__ import annotations
 
@@ -22,7 +22,7 @@ from tkinter import messagebox, scrolledtext, ttk
 from typing import Any
 
 
-APP_VERSION = "riftscan-operator-app-v3.8.16"
+APP_VERSION = "riftscan-operator-app-v3.8.17"
 REPO_ROOT = Path(__file__).resolve().parents[1]
 FOCUS_SCRIPT = REPO_ROOT / "scripts" / "run-rift-focus-control.cmd"
 HANDOFF_DIR = REPO_ROOT / "handoffs" / "current" / "focus-control-local"
@@ -42,6 +42,11 @@ CAPTURE_READINESS_DIR = REPO_ROOT / "handoffs" / "current" / "capture-readiness"
 CAPTURE_READINESS_REPORT = CAPTURE_READINESS_DIR / "CAPTURE_READINESS_REPORT.md"
 CAPTURE_READINESS_SUMMARY = CAPTURE_READINESS_DIR / "capture-readiness-summary.json"
 CAPTURE_READINESS_LOG = CAPTURE_READINESS_DIR / "capture-readiness-log.jsonl"
+OFFLINE_WORKFLOW_CHECK_CMD = REPO_ROOT / "scripts" / "run-riftscan-offline-workflow-check.cmd"
+OFFLINE_WORKFLOW_CHECK_DIR = REPO_ROOT / "handoffs" / "current" / "offline-workflow-check"
+OFFLINE_WORKFLOW_CHECK_REPORT = OFFLINE_WORKFLOW_CHECK_DIR / "OFFLINE_WORKFLOW_CHECK_REPORT.md"
+OFFLINE_WORKFLOW_CHECK_SUMMARY = OFFLINE_WORKFLOW_CHECK_DIR / "offline-workflow-check-summary.json"
+OFFLINE_WORKFLOW_CHECK_LOG = OFFLINE_WORKFLOW_CHECK_DIR / "offline-workflow-check-log.jsonl"
 POST_UPDATE_BASELINE_RELEVANT_PATHS = {
     "tools/riftscan_post_update_baseline.py",
     "scripts/run-riftscan-post-update-baseline.cmd",
@@ -76,6 +81,7 @@ ALLOWLIST = [
     "handoffs/current/operator",
     "handoffs/current/post-update-baseline",
     "handoffs/current/capture-readiness",
+    "handoffs/current/offline-workflow-check",
     "handoffs/current/patch-intake",
     "handoffs/current/repo-bridge",
     ".riftscan/inbox/patch-packages",
@@ -84,10 +90,12 @@ ALLOWLIST = [
     "scripts/run-riftscan-operator-report.cmd",
     "scripts/run-riftscan-post-update-baseline.cmd",
     "scripts/run-riftscan-capture-readiness.cmd",
+    "scripts/run-riftscan-offline-workflow-check.cmd",
     "tools/rift_focus_control.py",
     "tools/riftscan_operator_app.py",
     "tools/riftscan_post_update_baseline.py",
     "tools/riftscan_capture_readiness.py",
+    "tools/riftscan_offline_workflow_check.py",
     "plans/focus-gated-capture-plans",
     "handoffs/current/patch-runner",
     "patches/README.md",
@@ -449,6 +457,35 @@ def latest_capture_readiness_summary() -> dict[str, Any]:
         "summary": summary,
         "report_exists": CAPTURE_READINESS_REPORT.exists(),
         "log_exists": CAPTURE_READINESS_LOG.exists(),
+    }
+
+
+def latest_offline_workflow_check_summary() -> dict[str, Any]:
+    if not OFFLINE_WORKFLOW_CHECK_SUMMARY.exists():
+        return {
+            "status": "none",
+            "reason": "offline workflow check summary has not been generated",
+            "expected_report_path": rel(OFFLINE_WORKFLOW_CHECK_REPORT),
+            "expected_summary_path": rel(OFFLINE_WORKFLOW_CHECK_SUMMARY),
+            "expected_log_path": rel(OFFLINE_WORKFLOW_CHECK_LOG),
+        }
+
+    summary = load_json(OFFLINE_WORKFLOW_CHECK_SUMMARY)
+    if summary.get("_missing") or summary.get("_error"):
+        return {
+            "status": "error",
+            "summary_path": rel(OFFLINE_WORKFLOW_CHECK_SUMMARY),
+            "summary": summary,
+        }
+
+    return {
+        "status": "present",
+        "report_path": rel(OFFLINE_WORKFLOW_CHECK_REPORT),
+        "summary_path": rel(OFFLINE_WORKFLOW_CHECK_SUMMARY),
+        "log_path": rel(OFFLINE_WORKFLOW_CHECK_LOG),
+        "summary": summary,
+        "report_exists": OFFLINE_WORKFLOW_CHECK_REPORT.exists(),
+        "log_exists": OFFLINE_WORKFLOW_CHECK_LOG.exists(),
     }
 
 
@@ -2426,6 +2463,7 @@ def write_operator_report() -> Path:
     log_tail = tail_text(FOCUS_LOG, 60)
     post_update_baseline = latest_post_update_baseline_summary()
     capture_readiness = latest_capture_readiness_summary()
+    offline_workflow_check = latest_offline_workflow_check_summary()
     dry_run = latest_dry_run_summary()
     capture_plan = latest_capture_plan_summary()
     capture_session = latest_capture_session_summary()
@@ -2515,6 +2553,12 @@ Exit code: `{log_code}`
 
 ```json
 {json_block(capture_readiness)}
+```
+
+## Latest Offline Workflow Check
+
+```json
+{json_block(offline_workflow_check)}
 ```
 
 ## Latest Focus-Gated Session Dry Run
@@ -3126,6 +3170,7 @@ class RiftScanOperatorApp(tk.Tk):
                 ("Run Full Live Preflight", self.run_full_live_preflight),
                 ("Validate Pending Patch", self.validate_pending_patch),
                 ("Operator Gate Self-Test", self.run_operator_gate_self_test),
+                ("Offline Workflow Check", self.run_offline_workflow_check),
                 ("Post-Update Baseline Self-Test", self.run_post_update_baseline_self_test),
                 ("Capture Readiness Self-Test", self.run_capture_readiness_self_test),
                 ("Run Focus Preflight", self.run_focus_preflight),
@@ -3517,6 +3562,72 @@ class RiftScanOperatorApp(tk.Tk):
             return "\n".join(lines)
 
         self.run_async("capture readiness", task)
+
+
+    def run_offline_workflow_check(self) -> None:
+        def task() -> str:
+            if not OFFLINE_WORKFLOW_CHECK_CMD.exists():
+                return f"ERROR: missing {rel(OFFLINE_WORKFLOW_CHECK_CMD)}"
+
+            exit_code, stdout, stderr = run_command(["cmd", "/c", str(OFFLINE_WORKFLOW_CHECK_CMD)], timeout=360)
+            summary = load_json(OFFLINE_WORKFLOW_CHECK_SUMMARY)
+            report_path = write_operator_report()
+
+            if summary.get("_missing") or summary.get("_error"):
+                display_status = "FAIL"
+                status = "summary_unavailable"
+                failed_checks = [summary.get("_error") or f"Missing summary: {rel(OFFLINE_WORKFLOW_CHECK_SUMMARY)}"]
+                paths = {
+                    "report": rel(OFFLINE_WORKFLOW_CHECK_REPORT),
+                    "summary": rel(OFFLINE_WORKFLOW_CHECK_SUMMARY),
+                    "log": rel(OFFLINE_WORKFLOW_CHECK_LOG),
+                }
+            else:
+                display_status = str(summary.get("display_status") or "UNKNOWN")
+                status = str(summary.get("status") or "unknown")
+                failed_checks = list(summary.get("failed_checks") or [])
+                paths = summary.get("paths") or {}
+
+            if exit_code != 0 and display_status == "PASS":
+                display_status = "FAIL"
+
+            lines = [
+                "\n=== OFFLINE WORKFLOW CHECK ===",
+                f"OFFLINE WORKFLOW CHECK: {display_status}",
+                f"status: {status}",
+                f"Exit code: {exit_code}",
+                "",
+                "Failed checks:",
+            ]
+            if failed_checks:
+                lines.extend(f"- {check}" for check in failed_checks)
+            else:
+                lines.append("- None")
+
+            lines.extend(
+                [
+                    "",
+                    f"Report: {paths.get('report') or rel(OFFLINE_WORKFLOW_CHECK_REPORT)}",
+                    f"Summary: {paths.get('summary') or rel(OFFLINE_WORKFLOW_CHECK_SUMMARY)}",
+                    f"Log: {paths.get('log') or rel(OFFLINE_WORKFLOW_CHECK_LOG)}",
+                    f"Operator report: {rel(report_path)}",
+                ]
+            )
+
+            if stdout.strip():
+                lines.extend(["", "Launcher stdout:", stdout.strip()])
+            if stderr.strip():
+                lines.extend(["", "Launcher stderr:", stderr.strip()])
+
+            lines.extend(
+                [
+                    "",
+                    "Safety: offline helper validation only; no focus preflight, capture, movement/input, memory scan/read, offset validation, RiftReader validation, or /reloadui was run.",
+                ]
+            )
+            return "\n".join(lines)
+
+        self.run_async("offline workflow check", task)
 
 
     def run_operator_gate_self_test(self) -> None:
@@ -3914,7 +4025,7 @@ class RiftScanOperatorApp(tk.Tk):
             "7. Compare Sessions\n"
             "8. Clean Known Junk, Commit Allowlist, Push\n\n"
             "After a RIFT update, treat older baselines and offsets as historical until a fresh current-client baseline passes.\n"
-            "Diagnostics > Operator Gate Self-Test, Post-Update Baseline Self-Test, and Capture Readiness Self-Test are offline and can be run anytime to check gate logic.\n"
+            "Diagnostics > Operator Gate Self-Test, Offline Workflow Check, Post-Update Baseline Self-Test, and Capture Readiness Self-Test are offline and can be run anytime to check gate logic.\n"
             "Capture Readiness must PASS before creating or refreshing capture plans.\n"
             "LEAVE RIFT FOREGROUND during the metadata collector.\n"
             "Do not click ChatGPT, PowerShell, the Operator window, or any other window.\n\n"

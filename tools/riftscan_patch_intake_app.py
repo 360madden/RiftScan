@@ -1,6 +1,6 @@
-# Version: riftscan-patch-intake-v1.2.4
+# Version: riftscan-patch-intake-v1.2.5
 # Purpose: Local RiftScan Patch Intake Helper. Provides an always-on-top paste GUI plus gated validate/dry-run/apply/process/commit/push controls for machine-readable RiftScan clipboard patch payloads. No clipboard watcher, no service, no listener, no polling, no dot staging, no automatic commit, no automatic push.
-# Total character count: 88504
+# Total character count: 89795
 
 from __future__ import annotations
 
@@ -24,7 +24,7 @@ from tkinter import messagebox, scrolledtext, ttk
 from typing import Any, Callable
 
 
-APP_VERSION = "riftscan-patch-intake-v1.2.4"
+APP_VERSION = "riftscan-patch-intake-v1.2.5"
 MAGIC = "RIFTSCAN_CLIPBOARD_PATCH_V1"
 MAGIC_CHUNKED = "RIFTSCAN_CHUNKED_PATCH_V1"
 DEFAULT_REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -66,9 +66,11 @@ ALLOWED_POST_APPLY_CHECKS = {
     "py_compile_target",
     "py_compile_operator",
     "py_compile_patch_intake",
+    "py_compile_offline_workflow_check",
     "py_compile_post_update_baseline",
     "py_compile_capture_readiness",
     "patch_intake_self_test",
+    "offline_workflow_check_self_test",
     "operator_self_test",
     "post_update_baseline_self_test",
     "capture_readiness_self_test",
@@ -837,6 +839,10 @@ def run_named_checks(parsed: ParsedPayload, repo_root: Path) -> list[dict[str, A
             target = repo_root / "tools" / "riftscan_patch_intake_app.py"
             code, out, err = run_command([sys.executable, "-m", "py_compile", str(target)], cwd=repo_root, timeout=60)
             item.update({"exit_code": code, "stdout": out, "stderr": err, "status": "pass" if code == 0 else "fail", "code": "PASS_CHECK" if code == 0 else "FAIL_CHECK"})
+        elif check == "py_compile_offline_workflow_check":
+            target = repo_root / "tools" / "riftscan_offline_workflow_check.py"
+            code, out, err = run_command([sys.executable, "-m", "py_compile", str(target)], cwd=repo_root, timeout=60)
+            item.update({"exit_code": code, "stdout": out, "stderr": err, "status": "pass" if code == 0 else "fail", "code": "PASS_CHECK" if code == 0 else "FAIL_CHECK"})
         elif check == "py_compile_post_update_baseline":
             target = repo_root / "tools" / "riftscan_post_update_baseline.py"
             code, out, err = run_command([sys.executable, "-m", "py_compile", str(target)], cwd=repo_root, timeout=60)
@@ -848,6 +854,10 @@ def run_named_checks(parsed: ParsedPayload, repo_root: Path) -> list[dict[str, A
         elif check == "patch_intake_self_test":
             target = repo_root / "tools" / "riftscan_patch_intake_app.py"
             code, out, err = run_command([sys.executable, str(target), "--self-test"], cwd=repo_root, timeout=180)
+            item.update({"exit_code": code, "stdout": out, "stderr": err, "status": "pass" if code == 0 else "fail", "code": "PASS_CHECK" if code == 0 else "FAIL_CHECK"})
+        elif check == "offline_workflow_check_self_test":
+            target = repo_root / "tools" / "riftscan_offline_workflow_check.py"
+            code, out, err = run_command([sys.executable, str(target), "--self-test"], cwd=repo_root, timeout=60)
             item.update({"exit_code": code, "stdout": out, "stderr": err, "status": "pass" if code == 0 else "fail", "code": "PASS_CHECK" if code == 0 else "FAIL_CHECK"})
         elif check == "operator_self_test":
             target = repo_root / "tools" / "riftscan_operator_app.py"
@@ -1404,6 +1414,8 @@ def run_self_test() -> tuple[bool, dict[str, Any]]:
         shutil.copy2(post_update_baseline_source, tools / "riftscan_post_update_baseline.py")
         capture_readiness_source = Path(__file__).with_name("riftscan_capture_readiness.py")
         shutil.copy2(capture_readiness_source, tools / "riftscan_capture_readiness.py")
+        offline_workflow_check_source = Path(__file__).with_name("riftscan_offline_workflow_check.py")
+        shutil.copy2(offline_workflow_check_source, tools / "riftscan_offline_workflow_check.py")
         handoff_root = repo / "handoffs" / "current"
         handoff_root.mkdir(parents=True, exist_ok=True)
         (handoff_root / ".gitkeep").write_text("", encoding="utf-8")
@@ -1420,6 +1432,7 @@ def run_self_test() -> tuple[bool, dict[str, Any]]:
                 "tools/riftscan_operator_app.py",
                 "tools/riftscan_post_update_baseline.py",
                 "tools/riftscan_capture_readiness.py",
+                "tools/riftscan_offline_workflow_check.py",
                 "handoffs/current/.gitkeep",
             ],
             cwd=repo,
@@ -1467,6 +1480,8 @@ def run_self_test() -> tuple[bool, dict[str, Any]]:
             "post_update_baseline_self_test",
             "py_compile_capture_readiness",
             "capture_readiness_self_test",
+            "py_compile_offline_workflow_check",
+            "offline_workflow_check_self_test",
         ]
         missing_commit_manifest = dict(base_manifest)
         missing_commit_manifest["package_id"] = "dummy-missing-commit"
