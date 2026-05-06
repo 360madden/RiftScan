@@ -5,8 +5,8 @@ created_utc: 2026-05-06T02:45:00Z
 repo: 360madden/RiftScan
 branch: main
 local_repo_root: "C:\\RIFT MODDING\\Riftscan"
-latest_verified_commit: "5d237bc3fcf76dfbfe903420b77be954498f03a7"
-latest_verified_commit_subject: "Add post-update baseline patch intake checks"
+latest_verified_commit: "430f0b4a73299e106a1567ca1502df6f0b8ca5d0"
+latest_verified_commit_subject: "Add operator self-test patch intake check"
 current_gate_artifact: "handoffs/current/operator/operator-current-gate-summary.json"
 metadata_capture_plan_gate: "BLOCKED"
 live_collection_allowed_now: false
@@ -28,7 +28,7 @@ The older 2026-05-05 handoffs are useful historical context, but their next-step
 Latest verified workflow-code commit:
 
 ```text
-5d237bc3fcf76dfbfe903420b77be954498f03a7 Add post-update baseline patch intake checks
+430f0b4a73299e106a1567ca1502df6f0b8ca5d0 Add operator self-test patch intake check
 ```
 
 Newer generated-artifact or doc-only commits may exist. Always verify the exact current HEAD with `git log --oneline -5` before editing.
@@ -66,6 +66,8 @@ Post-Update Baseline: riftscan-post-update-baseline-v1.0.1
 Completed workflow milestones now pushed to GitHub:
 
 ```text
+430f0b4 Add operator self-test patch intake check
+e581464 Update current handoff for patch intake checks
 5d237bc Add post-update baseline patch intake checks
 cb1c058 Refresh operator gate freshness artifacts
 ede75ba Classify gate artifact freshness
@@ -219,5 +221,5 @@ First GUI-smoke-test the three offline self-test buttons. Then, only when the cu
 ## Ready-to-paste resume prompt
 
 ```text
-Resume RiftScan from C:\RIFT MODDING\Riftscan on main. Read handoffs/current/README_CURRENT.md and handoffs/current/RIFTSCAN_RESUME_HANDOFF_2026-05-06_OPERATOR_GATE_WORKFLOW.md first. Treat older 2026-05-05 handoffs as historical/superseded for next-step ordering. Current HEAD should be 5d237bc Add post-update baseline patch intake checks or newer. Do not run live capture, movement/input, /reloadui, scanner probes, offset validation, or RiftReader validation until the Operator Current Workflow Gate shows metadata_capture_plan_gate: PASS. First safe actions: run python tools\riftscan_operator_app.py --self-test, python tools\riftscan_post_update_baseline.py --self-test, python tools\riftscan_capture_readiness.py --self-test, and inspect handoffs/current/operator/operator-current-gate-summary.json.
+Resume RiftScan from C:\RIFT MODDING\Riftscan on main. Read handoffs/current/README_CURRENT.md and handoffs/current/RIFTSCAN_RESUME_HANDOFF_2026-05-06_OPERATOR_GATE_WORKFLOW.md first. Treat older 2026-05-05 handoffs as historical/superseded for next-step ordering. Current HEAD should be 430f0b4 Add operator self-test patch intake check or newer. Do not run live capture, movement/input, /reloadui, scanner probes, offset validation, or RiftReader validation until the Operator Current Workflow Gate shows metadata_capture_plan_gate: PASS. First safe actions: run python tools\riftscan_operator_app.py --self-test, python tools\riftscan_post_update_baseline.py --self-test, python tools\riftscan_capture_readiness.py --self-test, and inspect handoffs/current/operator/operator-current-gate-summary.json.
 ```

@@ -1,6 +1,6 @@
 # RiftScan Operator Handoff
 
-Created UTC: `2026-05-06T03:10:11Z`
+Created UTC: `2026-05-06T03:19:35Z`
 App version: `riftscan-operator-app-v3.8.15`
 Repo root: `C:\RIFT MODDING\Riftscan`
 
@@ -42,7 +42,7 @@ blockers:
 ```json
 {
   "schema_version": "riftscan.operator_current_workflow_gate.v1",
-  "created_utc": "2026-05-06T03:10:11Z",
+  "created_utc": "2026-05-06T03:19:35Z",
   "metadata_capture_plan_gate": "BLOCKED",
   "live_collection_allowed": false,
   "old_offsets_trusted": false,
@@ -65,7 +65,7 @@ blockers:
     "artifact_freshness": {
       "status": "warning_non_relevant_changes",
       "artifact_head": "870a7219add3ed3ecc62ef2dd7e3c3566e3c307d",
-      "current_head": "ede75ba6c778e7c8700d18339e0cf3a9868363a6",
+      "current_head": "430f0b4a73299e106a1567ca1502df6f0b8ca5d0",
       "head_matches_current": false,
       "changed_paths_since_artifact_head": [
         "docs/helper-tooling-policy.md",
@@ -80,7 +80,8 @@ blockers:
         "handoffs/current/post-update-baseline/POST_UPDATE_BASELINE_REPORT.md",
         "handoffs/current/post-update-baseline/post-update-baseline-log.jsonl",
         "handoffs/current/post-update-baseline/post-update-baseline-summary.json",
-        "tools/riftscan_operator_app.py"
+        "tools/riftscan_operator_app.py",
+        "tools/riftscan_patch_intake_app.py"
       ],
       "relevant_gate_code_changed": false,
       "relevant_changed_paths": []
@@ -104,7 +105,7 @@ blockers:
     "artifact_freshness": {
       "status": "warning_non_relevant_changes",
       "artifact_head": "870a7219add3ed3ecc62ef2dd7e3c3566e3c307d",
-      "current_head": "ede75ba6c778e7c8700d18339e0cf3a9868363a6",
+      "current_head": "430f0b4a73299e106a1567ca1502df6f0b8ca5d0",
       "head_matches_current": false,
       "changed_paths_since_artifact_head": [
         "docs/helper-tooling-policy.md",
@@ -119,7 +120,8 @@ blockers:
         "handoffs/current/post-update-baseline/POST_UPDATE_BASELINE_REPORT.md",
         "handoffs/current/post-update-baseline/post-update-baseline-log.jsonl",
         "handoffs/current/post-update-baseline/post-update-baseline-summary.json",
-        "tools/riftscan_operator_app.py"
+        "tools/riftscan_operator_app.py",
+        "tools/riftscan_patch_intake_app.py"
       ],
       "relevant_gate_code_changed": false,
       "relevant_changed_paths": []
@@ -168,6 +170,8 @@ blockers:
 Exit code: `0`
 
 ```text
+ M handoffs/current/README_CURRENT.md
+ M handoffs/current/RIFTSCAN_RESUME_HANDOFF_2026-05-06_OPERATOR_GATE_WORKFLOW.md
 
 ```
 
@@ -176,11 +180,11 @@ Exit code: `0`
 Exit code: `0`
 
 ```text
+430f0b4 Add operator self-test patch intake check
+e581464 Update current handoff for patch intake checks
+5d237bc Add post-update baseline patch intake checks
+cb1c058 Refresh operator gate freshness artifacts
 ede75ba Classify gate artifact freshness
-ba6583b Refresh operator gate after readiness link check
-8652930 Add operator report CLI and readiness link gate
-1aad239 Update current handoff verified milestone
-4f17bbe Refresh blocked gate artifacts after baseline self-test
 
 ```
 
