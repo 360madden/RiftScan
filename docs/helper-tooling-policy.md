@@ -142,6 +142,12 @@ Operator gate offline validation:
 python tools/riftscan_operator_app.py --self-test
 ```
 
+Operator report refresh without launching the GUI:
+
+```text
+python tools/riftscan_operator_app.py --write-report
+```
+
 Patch Intake post-apply checks can also require:
 
 ```text

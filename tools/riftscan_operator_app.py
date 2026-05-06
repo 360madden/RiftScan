@@ -1,6 +1,6 @@
-# Version: riftscan-operator-app-v3.8.13
+# Version: riftscan-operator-app-v3.8.14
 # Purpose: Windows Tkinter helper app for RiftScan operator workflow: run focus preflight, run full live preflight gate, run the post-update baseline and capture-readiness gates, run offline Post-Update Baseline, Capture Readiness, and Operator gate self-tests, summarize the current workflow go/no-go gate, manage focus-gated metadata workflows, validate patch-runner manifests, check the online patch inbox discovery-only from the visible Main tab, write compact AI-ready reports, clean known junk, safely commit/push allowlisted files including baseline/readiness, repo-bridge handoffs and repo inbox patch packages, and provide tabbed/wrapped controls, a guided button-pusher workflow, focus-discipline confirmation, and lightweight status highlighting.
-# Total character count: 171173
+# Total character count: 176031
 
 from __future__ import annotations
 
@@ -22,7 +22,7 @@ from tkinter import messagebox, scrolledtext, ttk
 from typing import Any
 
 
-APP_VERSION = "riftscan-operator-app-v3.8.13"
+APP_VERSION = "riftscan-operator-app-v3.8.14"
 REPO_ROOT = Path(__file__).resolve().parents[1]
 FOCUS_SCRIPT = REPO_ROOT / "scripts" / "run-rift-focus-control.cmd"
 HANDOFF_DIR = REPO_ROOT / "handoffs" / "current" / "focus-control-local"
@@ -459,6 +459,66 @@ def latest_gate_details(latest: dict[str, Any], label: str) -> dict[str, Any]:
     }
 
 
+def baseline_link(summary: dict[str, Any]) -> dict[str, Any]:
+    runtime = summary.get("runtime") if isinstance(summary.get("runtime"), dict) else {}
+    return {
+        "created_utc": summary.get("created_utc"),
+        "status": summary.get("status"),
+        "display_status": summary.get("display_status"),
+        "runtime": {
+            "pid": runtime.get("pid"),
+            "hwnd": runtime.get("hwnd"),
+        },
+    }
+
+
+def capture_readiness_baseline_link_status(
+    post_update_baseline: dict[str, Any],
+    capture_readiness: dict[str, Any],
+) -> dict[str, Any]:
+    baseline_summary = post_update_baseline.get("summary") if isinstance(post_update_baseline.get("summary"), dict) else {}
+    readiness_summary = capture_readiness.get("summary") if isinstance(capture_readiness.get("summary"), dict) else {}
+    if not baseline_summary or not readiness_summary:
+        return {
+            "status": "not_evaluated",
+            "reason": "post-update baseline or capture readiness summary is missing",
+        }
+
+    readiness_baseline = readiness_summary.get("baseline")
+    if not isinstance(readiness_baseline, dict) or not readiness_baseline:
+        return {
+            "status": "missing_readiness_baseline_link",
+            "current_baseline": baseline_link(baseline_summary),
+            "readiness_baseline": {},
+            "mismatches": ["capture_readiness.baseline is missing"],
+        }
+
+    current = baseline_link(baseline_summary)
+    embedded = baseline_link(readiness_baseline)
+    checks = [
+        ("created_utc", current.get("created_utc"), embedded.get("created_utc")),
+        ("status", current.get("status"), embedded.get("status")),
+        ("display_status", current.get("display_status"), embedded.get("display_status")),
+        ("runtime.pid", current.get("runtime", {}).get("pid"), embedded.get("runtime", {}).get("pid")),
+        ("runtime.hwnd", current.get("runtime", {}).get("hwnd"), embedded.get("runtime", {}).get("hwnd")),
+    ]
+    mismatches = [
+        {
+            "field": field,
+            "current_baseline": current_value,
+            "readiness_baseline": embedded_value,
+        }
+        for field, current_value, embedded_value in checks
+        if str(current_value or "") != str(embedded_value or "")
+    ]
+    return {
+        "status": "match" if not mismatches else "mismatch",
+        "current_baseline": current,
+        "readiness_baseline": embedded,
+        "mismatches": mismatches,
+    }
+
+
 def build_current_workflow_gate(
     *,
     full_ok: bool,
@@ -469,6 +529,7 @@ def build_current_workflow_gate(
 ) -> dict[str, Any]:
     baseline = latest_gate_details(post_update_baseline, "Post-Update Baseline")
     readiness = latest_gate_details(capture_readiness, "Capture Readiness")
+    readiness_baseline_link = capture_readiness_baseline_link_status(post_update_baseline, capture_readiness)
 
     blockers: list[str] = []
     if baseline["display_status"] != "PASS":
@@ -477,6 +538,8 @@ def build_current_workflow_gate(
     if readiness["display_status"] != "PASS":
         blockers.append("Capture Readiness is not PASS.")
         blockers.extend(str(blocker) for blocker in readiness["blockers"])
+    if readiness_baseline_link.get("status") in {"mismatch", "missing_readiness_baseline_link"}:
+        blockers.append("Capture Readiness was generated from an older/different Post-Update Baseline; rerun Capture Readiness.")
     if not focus_ok:
         blockers.append("Focus preflight is not foreground_verified.")
     if not full_ok:
@@ -486,6 +549,8 @@ def build_current_workflow_gate(
         next_action = "Run Post-Update Baseline after the current updated RIFT client is confirmed stable in-world."
     elif readiness["display_status"] != "PASS":
         next_action = "Run Capture Readiness and resolve any blockers before capture-plan refresh."
+    elif readiness_baseline_link.get("status") in {"mismatch", "missing_readiness_baseline_link"}:
+        next_action = "Run Capture Readiness again against the latest Post-Update Baseline."
     elif not full_ok or not focus_ok:
         next_action = "Run Full Live Preflight before metadata-only capture-plan refresh."
     else:
@@ -500,6 +565,7 @@ def build_current_workflow_gate(
         "old_offsets_trusted": False,
         "post_update_baseline": baseline,
         "capture_readiness": readiness,
+        "capture_readiness_baseline_link": readiness_baseline_link,
         "full_live_preflight": "PASS" if full_ok else "FAIL",
         "focus_preflight": "PASS" if focus_ok else "FAIL",
         "blockers": blockers,
@@ -512,10 +578,12 @@ def workflow_gate_text(gate: dict[str, Any]) -> str:
     blockers = gate.get("blockers") if isinstance(gate.get("blockers"), list) else []
     baseline = gate.get("post_update_baseline") if isinstance(gate.get("post_update_baseline"), dict) else {}
     readiness = gate.get("capture_readiness") if isinstance(gate.get("capture_readiness"), dict) else {}
+    readiness_baseline_link = gate.get("capture_readiness_baseline_link") if isinstance(gate.get("capture_readiness_baseline_link"), dict) else {}
     lines = [
         f"metadata_capture_plan_gate: {gate.get('metadata_capture_plan_gate')}",
         f"post_update_baseline: {baseline.get('display_status')}",
         f"capture_readiness: {readiness.get('display_status')}",
+        f"capture_readiness_baseline_link: {readiness_baseline_link.get('status')}",
         f"full_live_preflight: {gate.get('full_live_preflight')}",
         f"focus_preflight: {gate.get('focus_preflight')}",
         "live_collection_allowed: false",
@@ -531,21 +599,35 @@ def workflow_gate_text(gate: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
-def operator_self_test_latest(display_status: str, status: str, blockers: list[str] | None = None) -> dict[str, Any]:
-    label = "post-update-baseline" if "baseline" in status else "capture-readiness"
+def operator_self_test_latest(
+    display_status: str,
+    status: str,
+    blockers: list[str] | None = None,
+    *,
+    label: str = "capture-readiness",
+    created_utc: str = "2026-05-06T00:00:00Z",
+    runtime: dict[str, Any] | None = None,
+    baseline: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    summary = {
+        "status": status,
+        "display_status": display_status,
+        "created_utc": created_utc,
+        "blockers": blockers or [],
+        "runtime": runtime or {"pid": 1234, "hwnd": "0xABC"},
+        "paths": {
+            "report": f"handoffs/current/{label}/REPORT.md",
+            "summary": f"handoffs/current/{label}/summary.json",
+            "log": f"handoffs/current/{label}/log.jsonl",
+        },
+    }
+    if baseline is not None:
+        baseline_summary = baseline.get("summary") if isinstance(baseline.get("summary"), dict) else {}
+        summary["baseline"] = baseline_link(baseline_summary)
+
     return {
         "status": "present",
-        "summary": {
-            "status": status,
-            "display_status": display_status,
-            "created_utc": "2026-05-06T00:00:00Z",
-            "blockers": blockers or [],
-            "paths": {
-                "report": f"handoffs/current/{label}/REPORT.md",
-                "summary": f"handoffs/current/{label}/summary.json",
-                "log": f"handoffs/current/{label}/log.jsonl",
-            },
-        },
+        "summary": summary,
     }
 
 
@@ -590,17 +672,26 @@ def run_operator_self_test() -> tuple[bool, dict[str, Any]]:
             }
         )
 
-    pass_baseline = operator_self_test_latest("PASS", "pass")
-    pass_readiness = operator_self_test_latest("PASS", "pass")
+    pass_baseline = operator_self_test_latest("PASS", "pass", label="post-update-baseline")
+    pass_readiness = operator_self_test_latest("PASS", "pass", label="capture-readiness", baseline=pass_baseline)
     blocked_baseline = operator_self_test_latest(
         "BLOCKED",
         "blocked_waiting_for_game_or_focus",
         ["Stable in-world state is not confirmed."],
+        label="post-update-baseline",
     )
     blocked_readiness = operator_self_test_latest(
         "BLOCKED",
         "blocked_waiting_for_current_baseline",
         ["Post-update baseline is not PASS for the current client."],
+        label="capture-readiness",
+        baseline=pass_baseline,
+    )
+    newer_pass_baseline = operator_self_test_latest(
+        "PASS",
+        "pass",
+        label="post-update-baseline",
+        created_utc="2026-05-06T00:01:00Z",
     )
 
     record(
@@ -625,6 +716,14 @@ def run_operator_self_test() -> tuple[bool, dict[str, Any]]:
         readiness=blocked_readiness,
         expected_next_action_part="Run Capture Readiness",
         expected_blocker_part="Capture Readiness is not PASS",
+    )
+    record(
+        "stale readiness baseline link blocks metadata plan",
+        "BLOCKED",
+        baseline=newer_pass_baseline,
+        readiness=pass_readiness,
+        expected_next_action_part="Run Capture Readiness again",
+        expected_blocker_part="older/different Post-Update Baseline",
     )
     record(
         "full live preflight blocks metadata plan",
@@ -4307,12 +4406,24 @@ RiftScanOperatorApp.__init__ = _riftscan_operator_init_with_patch_inbox
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="RiftScan Operator Helper")
     parser.add_argument("--self-test", action="store_true")
+    parser.add_argument(
+        "--write-report",
+        action="store_true",
+        help="Write the current Operator handoff/report and gate summary without launching the GUI.",
+    )
     args = parser.parse_args(argv)
 
     if args.self_test:
         passed, summary = run_operator_self_test()
         print(json_block(summary))
         return 0 if passed else 1
+
+    if args.write_report:
+        report_path = write_operator_report()
+        print(f"RIFTSCAN OPERATOR REPORT: {rel(report_path)}")
+        print(f"Gate summary: {rel(OPERATOR_GATE_SUMMARY)}")
+        print("Safety: report-only; no capture, input, movement, memory scan/read, offset validation, RiftReader validation, or /reloadui was run.")
+        return 0
 
     app = RiftScanOperatorApp()
     app.mainloop()
