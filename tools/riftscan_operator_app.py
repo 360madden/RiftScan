@@ -1,6 +1,6 @@
-# Version: riftscan-operator-app-v3.8.15
+# Version: riftscan-operator-app-v3.8.16
 # Purpose: Windows Tkinter helper app for RiftScan operator workflow: run focus preflight, run full live preflight gate, run the post-update baseline and capture-readiness gates, run offline Post-Update Baseline, Capture Readiness, and Operator gate self-tests, summarize the current workflow go/no-go gate with artifact freshness/linkage checks, manage focus-gated metadata workflows, validate patch-runner manifests, check the online patch inbox discovery-only from the visible Main tab, write compact AI-ready reports, clean known junk, safely commit/push allowlisted files including baseline/readiness, repo-bridge handoffs and repo inbox patch packages, and provide tabbed/wrapped controls, a guided button-pusher workflow, focus-discipline confirmation, and lightweight status highlighting.
-# Total character count: 182194
+# Total character count: 182242
 
 from __future__ import annotations
 
@@ -22,7 +22,7 @@ from tkinter import messagebox, scrolledtext, ttk
 from typing import Any
 
 
-APP_VERSION = "riftscan-operator-app-v3.8.15"
+APP_VERSION = "riftscan-operator-app-v3.8.16"
 REPO_ROOT = Path(__file__).resolve().parents[1]
 FOCUS_SCRIPT = REPO_ROOT / "scripts" / "run-rift-focus-control.cmd"
 HANDOFF_DIR = REPO_ROOT / "handoffs" / "current" / "focus-control-local"
@@ -81,6 +81,7 @@ ALLOWLIST = [
     ".riftscan/inbox/patch-packages",
     "scripts/run-rift-focus-control.cmd",
     "scripts/riftscan-operator-app.cmd",
+    "scripts/run-riftscan-operator-report.cmd",
     "scripts/run-riftscan-post-update-baseline.cmd",
     "scripts/run-riftscan-capture-readiness.cmd",
     "tools/rift_focus_control.py",

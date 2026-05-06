@@ -113,6 +113,7 @@ Helper tooling must not add:
 ```text
 tools/riftscan_operator_app.py
 scripts/riftscan-operator-app.cmd
+scripts/run-riftscan-operator-report.cmd
 
 tools/riftscan_patch_intake_app.py
 scripts/riftscan-patch-intake.cmd
@@ -146,6 +147,7 @@ Operator report refresh without launching the GUI:
 
 ```text
 python tools/riftscan_operator_app.py --write-report
+.\scripts\run-riftscan-operator-report.cmd
 ```
 
 Patch Intake post-apply checks can also require:

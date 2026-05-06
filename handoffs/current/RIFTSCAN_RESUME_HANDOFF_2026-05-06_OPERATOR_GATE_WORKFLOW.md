@@ -55,7 +55,7 @@ handoffs/current/operator/operator-current-gate-summary.json
 ## Current tool versions
 
 ```text
-Operator Helper App: riftscan-operator-app-v3.8.15
+Operator Helper App: riftscan-operator-app-v3.8.16
 Capture Readiness: riftscan-capture-readiness-v1.0.1
 Patch Intake Helper: riftscan-patch-intake-v1.2.4
 Post-Update Baseline: riftscan-post-update-baseline-v1.0.1
@@ -94,7 +94,7 @@ The Operator now has:
 - Diagnostics tab `Post-Update Baseline Self-Test` button.
 - Diagnostics tab `Capture Readiness Self-Test` button.
 - Diagnostics tab `Operator Gate Self-Test` button.
-- CLI report-only refresh path: `python tools\riftscan_operator_app.py --write-report`.
+- CLI/CMD report-only refresh paths: `python tools\riftscan_operator_app.py --write-report` and `.\scripts\run-riftscan-operator-report.cmd`.
 - `Current Workflow Gate` section in `handoffs/current/operator/RIFTSCAN_OPERATOR_HANDOFF.md`.
 - Machine-readable gate summary at `handoffs/current/operator/operator-current-gate-summary.json`.
 - `capture_readiness_baseline_link` stale-chain check in the machine-readable gate summary.
@@ -164,6 +164,7 @@ Run these anytime from repo root:
 ```powershell
 python tools\riftscan_operator_app.py --self-test
 python tools\riftscan_operator_app.py --write-report
+.\scripts\run-riftscan-operator-report.cmd
 python tools\riftscan_post_update_baseline.py --self-test
 python tools\riftscan_capture_readiness.py --self-test
 python tools\riftscan_patch_intake_app.py --self-test

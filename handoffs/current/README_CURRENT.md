@@ -28,7 +28,7 @@ A newer doc-only handoff-pointer commit may exist; check `git log --oneline -5` 
 - `Capture Readiness` has an offline self-test: `python tools/riftscan_capture_readiness.py --self-test`.
 - Operator Diagnostics has `Post-Update Baseline Self-Test` and `Capture Readiness Self-Test` buttons for offline GUI wiring checks.
 - Operator has an offline gate self-test: `python tools/riftscan_operator_app.py --self-test`.
-- Operator has a report-only CLI refresh path: `python tools/riftscan_operator_app.py --write-report`.
+- Operator has report-only CLI/CMD refresh paths: `python tools/riftscan_operator_app.py --write-report` and `.\scripts\run-riftscan-operator-report.cmd`.
 - Operator reports include a `Current Workflow Gate` go/no-go section and `handoffs/current/operator/operator-current-gate-summary.json` for baseline/readiness/full-preflight state.
 - Patch Intake can require Operator, Post-Update Baseline, and Capture Readiness post-apply py_compile/self-test checks for future gate patches.
 
