@@ -1,6 +1,6 @@
 {
   "schema_version": "riftscan.operator_current_workflow_gate.v1",
-  "created_utc": "2026-05-06T03:05:02Z",
+  "created_utc": "2026-05-06T03:10:11Z",
   "metadata_capture_plan_gate": "BLOCKED",
   "live_collection_allowed": false,
   "old_offsets_trusted": false,
@@ -19,6 +19,29 @@
       "report": "handoffs\\current\\post-update-baseline\\POST_UPDATE_BASELINE_REPORT.md",
       "summary": "handoffs\\current\\post-update-baseline\\post-update-baseline-summary.json",
       "log": "handoffs\\current\\post-update-baseline\\post-update-baseline-log.jsonl"
+    },
+    "artifact_freshness": {
+      "status": "warning_non_relevant_changes",
+      "artifact_head": "870a7219add3ed3ecc62ef2dd7e3c3566e3c307d",
+      "current_head": "ede75ba6c778e7c8700d18339e0cf3a9868363a6",
+      "head_matches_current": false,
+      "changed_paths_since_artifact_head": [
+        "docs/helper-tooling-policy.md",
+        "handoffs/current/README_CURRENT.md",
+        "handoffs/current/RIFTSCAN_RESUME_HANDOFF_2026-05-05_TRANSFER_OPERATOR_GUIDE.md",
+        "handoffs/current/RIFTSCAN_RESUME_HANDOFF_2026-05-06_OPERATOR_GATE_WORKFLOW.md",
+        "handoffs/current/capture-readiness/CAPTURE_READINESS_REPORT.md",
+        "handoffs/current/capture-readiness/capture-readiness-log.jsonl",
+        "handoffs/current/capture-readiness/capture-readiness-summary.json",
+        "handoffs/current/operator/RIFTSCAN_OPERATOR_HANDOFF.md",
+        "handoffs/current/operator/operator-current-gate-summary.json",
+        "handoffs/current/post-update-baseline/POST_UPDATE_BASELINE_REPORT.md",
+        "handoffs/current/post-update-baseline/post-update-baseline-log.jsonl",
+        "handoffs/current/post-update-baseline/post-update-baseline-summary.json",
+        "tools/riftscan_operator_app.py"
+      ],
+      "relevant_gate_code_changed": false,
+      "relevant_changed_paths": []
     }
   },
   "capture_readiness": {
@@ -35,6 +58,29 @@
       "report": "handoffs/current/capture-readiness/CAPTURE_READINESS_REPORT.md",
       "summary": "handoffs/current/capture-readiness/capture-readiness-summary.json",
       "log": "handoffs/current/capture-readiness/capture-readiness-log.jsonl"
+    },
+    "artifact_freshness": {
+      "status": "warning_non_relevant_changes",
+      "artifact_head": "870a7219add3ed3ecc62ef2dd7e3c3566e3c307d",
+      "current_head": "ede75ba6c778e7c8700d18339e0cf3a9868363a6",
+      "head_matches_current": false,
+      "changed_paths_since_artifact_head": [
+        "docs/helper-tooling-policy.md",
+        "handoffs/current/README_CURRENT.md",
+        "handoffs/current/RIFTSCAN_RESUME_HANDOFF_2026-05-05_TRANSFER_OPERATOR_GUIDE.md",
+        "handoffs/current/RIFTSCAN_RESUME_HANDOFF_2026-05-06_OPERATOR_GATE_WORKFLOW.md",
+        "handoffs/current/capture-readiness/CAPTURE_READINESS_REPORT.md",
+        "handoffs/current/capture-readiness/capture-readiness-log.jsonl",
+        "handoffs/current/capture-readiness/capture-readiness-summary.json",
+        "handoffs/current/operator/RIFTSCAN_OPERATOR_HANDOFF.md",
+        "handoffs/current/operator/operator-current-gate-summary.json",
+        "handoffs/current/post-update-baseline/POST_UPDATE_BASELINE_REPORT.md",
+        "handoffs/current/post-update-baseline/post-update-baseline-log.jsonl",
+        "handoffs/current/post-update-baseline/post-update-baseline-summary.json",
+        "tools/riftscan_operator_app.py"
+      ],
+      "relevant_gate_code_changed": false,
+      "relevant_changed_paths": []
     }
   },
   "capture_readiness_baseline_link": {

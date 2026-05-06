@@ -14,7 +14,7 @@ The older 2026-05-05 handoffs remain useful history, but their next-step orderin
 ## Latest verified workflow-code milestone referenced by this pointer
 
 ```text
-8652930 Add operator report CLI and readiness link gate
+ede75ba Classify gate artifact freshness
 ```
 
 A newer doc-only handoff-pointer commit may exist; check `git log --oneline -5` for the exact current HEAD before editing.

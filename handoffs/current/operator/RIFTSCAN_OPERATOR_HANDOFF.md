@@ -1,7 +1,7 @@
 # RiftScan Operator Handoff
 
-Created UTC: `2026-05-06T03:05:02Z`
-App version: `riftscan-operator-app-v3.8.14`
+Created UTC: `2026-05-06T03:10:11Z`
+App version: `riftscan-operator-app-v3.8.15`
 Repo root: `C:\RIFT MODDING\Riftscan`
 
 ## Operator Assessment
@@ -19,7 +19,9 @@ Summary path: `handoffs/current/operator/operator-current-gate-summary.json`
 ```text
 metadata_capture_plan_gate: BLOCKED
 post_update_baseline: BLOCKED
+post_update_baseline_freshness: warning_non_relevant_changes
 capture_readiness: BLOCKED
+capture_readiness_freshness: warning_non_relevant_changes
 capture_readiness_baseline_link: match
 full_live_preflight: PASS
 focus_preflight: PASS
@@ -40,7 +42,7 @@ blockers:
 ```json
 {
   "schema_version": "riftscan.operator_current_workflow_gate.v1",
-  "created_utc": "2026-05-06T03:05:02Z",
+  "created_utc": "2026-05-06T03:10:11Z",
   "metadata_capture_plan_gate": "BLOCKED",
   "live_collection_allowed": false,
   "old_offsets_trusted": false,
@@ -59,6 +61,29 @@ blockers:
       "report": "handoffs\\current\\post-update-baseline\\POST_UPDATE_BASELINE_REPORT.md",
       "summary": "handoffs\\current\\post-update-baseline\\post-update-baseline-summary.json",
       "log": "handoffs\\current\\post-update-baseline\\post-update-baseline-log.jsonl"
+    },
+    "artifact_freshness": {
+      "status": "warning_non_relevant_changes",
+      "artifact_head": "870a7219add3ed3ecc62ef2dd7e3c3566e3c307d",
+      "current_head": "ede75ba6c778e7c8700d18339e0cf3a9868363a6",
+      "head_matches_current": false,
+      "changed_paths_since_artifact_head": [
+        "docs/helper-tooling-policy.md",
+        "handoffs/current/README_CURRENT.md",
+        "handoffs/current/RIFTSCAN_RESUME_HANDOFF_2026-05-05_TRANSFER_OPERATOR_GUIDE.md",
+        "handoffs/current/RIFTSCAN_RESUME_HANDOFF_2026-05-06_OPERATOR_GATE_WORKFLOW.md",
+        "handoffs/current/capture-readiness/CAPTURE_READINESS_REPORT.md",
+        "handoffs/current/capture-readiness/capture-readiness-log.jsonl",
+        "handoffs/current/capture-readiness/capture-readiness-summary.json",
+        "handoffs/current/operator/RIFTSCAN_OPERATOR_HANDOFF.md",
+        "handoffs/current/operator/operator-current-gate-summary.json",
+        "handoffs/current/post-update-baseline/POST_UPDATE_BASELINE_REPORT.md",
+        "handoffs/current/post-update-baseline/post-update-baseline-log.jsonl",
+        "handoffs/current/post-update-baseline/post-update-baseline-summary.json",
+        "tools/riftscan_operator_app.py"
+      ],
+      "relevant_gate_code_changed": false,
+      "relevant_changed_paths": []
     }
   },
   "capture_readiness": {
@@ -75,6 +100,29 @@ blockers:
       "report": "handoffs/current/capture-readiness/CAPTURE_READINESS_REPORT.md",
       "summary": "handoffs/current/capture-readiness/capture-readiness-summary.json",
       "log": "handoffs/current/capture-readiness/capture-readiness-log.jsonl"
+    },
+    "artifact_freshness": {
+      "status": "warning_non_relevant_changes",
+      "artifact_head": "870a7219add3ed3ecc62ef2dd7e3c3566e3c307d",
+      "current_head": "ede75ba6c778e7c8700d18339e0cf3a9868363a6",
+      "head_matches_current": false,
+      "changed_paths_since_artifact_head": [
+        "docs/helper-tooling-policy.md",
+        "handoffs/current/README_CURRENT.md",
+        "handoffs/current/RIFTSCAN_RESUME_HANDOFF_2026-05-05_TRANSFER_OPERATOR_GUIDE.md",
+        "handoffs/current/RIFTSCAN_RESUME_HANDOFF_2026-05-06_OPERATOR_GATE_WORKFLOW.md",
+        "handoffs/current/capture-readiness/CAPTURE_READINESS_REPORT.md",
+        "handoffs/current/capture-readiness/capture-readiness-log.jsonl",
+        "handoffs/current/capture-readiness/capture-readiness-summary.json",
+        "handoffs/current/operator/RIFTSCAN_OPERATOR_HANDOFF.md",
+        "handoffs/current/operator/operator-current-gate-summary.json",
+        "handoffs/current/post-update-baseline/POST_UPDATE_BASELINE_REPORT.md",
+        "handoffs/current/post-update-baseline/post-update-baseline-log.jsonl",
+        "handoffs/current/post-update-baseline/post-update-baseline-summary.json",
+        "tools/riftscan_operator_app.py"
+      ],
+      "relevant_gate_code_changed": false,
+      "relevant_changed_paths": []
     }
   },
   "capture_readiness_baseline_link": {
@@ -128,11 +176,11 @@ Exit code: `0`
 Exit code: `0`
 
 ```text
+ede75ba Classify gate artifact freshness
+ba6583b Refresh operator gate after readiness link check
 8652930 Add operator report CLI and readiness link gate
 1aad239 Update current handoff verified milestone
 4f17bbe Refresh blocked gate artifacts after baseline self-test
-870a721 Add post-update baseline self-test
-8311033 Clarify current handoff commit reference
 
 ```
 
