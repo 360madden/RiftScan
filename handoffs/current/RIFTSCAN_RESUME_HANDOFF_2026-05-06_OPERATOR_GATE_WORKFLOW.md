@@ -57,7 +57,7 @@ handoffs/current/operator/operator-current-gate-summary.json
 ```text
 Operator Helper App: riftscan-operator-app-v3.8.15
 Capture Readiness: riftscan-capture-readiness-v1.0.1
-Patch Intake Helper: riftscan-patch-intake-v1.2.3
+Patch Intake Helper: riftscan-patch-intake-v1.2.4
 Post-Update Baseline: riftscan-post-update-baseline-v1.0.1
 ```
 
@@ -113,6 +113,8 @@ Post-Update Baseline now has:
 Patch Intake now supports post-apply checks for Capture Readiness patches:
 
 ```text
+py_compile_operator
+operator_self_test
 py_compile_post_update_baseline
 post_update_baseline_self_test
 py_compile_capture_readiness
