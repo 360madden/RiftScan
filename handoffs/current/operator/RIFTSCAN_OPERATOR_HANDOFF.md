@@ -1,6 +1,6 @@
 # RiftScan Operator Handoff
 
-Created UTC: `2026-05-06T03:37:16Z`
+Created UTC: `2026-05-06T03:39:03Z`
 App version: `riftscan-operator-app-v3.8.17`
 Repo root: `C:\RIFT MODDING\Riftscan`
 
@@ -19,10 +19,10 @@ Summary path: `handoffs/current/operator/operator-current-gate-summary.json`
 ```text
 metadata_capture_plan_gate: BLOCKED
 post_update_baseline: BLOCKED
-post_update_baseline_freshness: warning_non_relevant_changes
+post_update_baseline_freshness: current
 capture_readiness: BLOCKED
 capture_readiness_freshness: warning_non_relevant_changes
-capture_readiness_baseline_link: match
+capture_readiness_baseline_link: mismatch
 full_live_preflight: PASS
 focus_preflight: PASS
 live_collection_allowed: false
@@ -37,12 +37,13 @@ blockers:
 - Capture Readiness is not PASS.
 - Post-update baseline is not PASS for the current client.
 - Post-update baseline display_status is not PASS.
+- Capture Readiness was generated from an older/different Post-Update Baseline; rerun Capture Readiness.
 ```
 
 ```json
 {
   "schema_version": "riftscan.operator_current_workflow_gate.v1",
-  "created_utc": "2026-05-06T03:37:16Z",
+  "created_utc": "2026-05-06T03:39:03Z",
   "metadata_capture_plan_gate": "BLOCKED",
   "live_collection_allowed": false,
   "old_offsets_trusted": false,
@@ -51,7 +52,7 @@ blockers:
     "artifact_status": "present",
     "status": "blocked_waiting_for_game_or_focus",
     "display_status": "BLOCKED",
-    "created_utc": "2026-05-06T02:53:38Z",
+    "created_utc": "2026-05-06T03:38:59Z",
     "blockers": [
       "Maintenance is not confirmed over.",
       "Login is not confirmed successful.",
@@ -63,30 +64,11 @@ blockers:
       "log": "handoffs\\current\\post-update-baseline\\post-update-baseline-log.jsonl"
     },
     "artifact_freshness": {
-      "status": "warning_non_relevant_changes",
-      "artifact_head": "870a7219add3ed3ecc62ef2dd7e3c3566e3c307d",
-      "current_head": "b3bb14df4fbce6e43cba4dece49be072684bd5ff",
-      "head_matches_current": false,
-      "changed_paths_since_artifact_head": [
-        ".gitignore",
-        "docs/helper-tooling-policy.md",
-        "handoffs/current/README_CURRENT.md",
-        "handoffs/current/RIFTSCAN_RESUME_HANDOFF_2026-05-05_TRANSFER_OPERATOR_GUIDE.md",
-        "handoffs/current/RIFTSCAN_RESUME_HANDOFF_2026-05-06_OPERATOR_GATE_WORKFLOW.md",
-        "handoffs/current/capture-readiness/CAPTURE_READINESS_REPORT.md",
-        "handoffs/current/capture-readiness/capture-readiness-log.jsonl",
-        "handoffs/current/capture-readiness/capture-readiness-summary.json",
-        "handoffs/current/operator/RIFTSCAN_OPERATOR_HANDOFF.md",
-        "handoffs/current/operator/operator-current-gate-summary.json",
-        "handoffs/current/post-update-baseline/POST_UPDATE_BASELINE_REPORT.md",
-        "handoffs/current/post-update-baseline/post-update-baseline-log.jsonl",
-        "handoffs/current/post-update-baseline/post-update-baseline-summary.json",
-        "scripts/run-riftscan-offline-workflow-check.cmd",
-        "scripts/run-riftscan-operator-report.cmd",
-        "tools/riftscan_offline_workflow_check.py",
-        "tools/riftscan_operator_app.py",
-        "tools/riftscan_patch_intake_app.py"
-      ],
+      "status": "current",
+      "artifact_head": "17d69f5076881a955b231fdab9d50915eae81889",
+      "current_head": "17d69f5076881a955b231fdab9d50915eae81889",
+      "head_matches_current": true,
+      "changed_paths_since_artifact_head": [],
       "relevant_gate_code_changed": false,
       "relevant_changed_paths": []
     }
@@ -109,7 +91,7 @@ blockers:
     "artifact_freshness": {
       "status": "warning_non_relevant_changes",
       "artifact_head": "870a7219add3ed3ecc62ef2dd7e3c3566e3c307d",
-      "current_head": "b3bb14df4fbce6e43cba4dece49be072684bd5ff",
+      "current_head": "17d69f5076881a955b231fdab9d50915eae81889",
       "head_matches_current": false,
       "changed_paths_since_artifact_head": [
         ".gitignore",
@@ -120,6 +102,9 @@ blockers:
         "handoffs/current/capture-readiness/CAPTURE_READINESS_REPORT.md",
         "handoffs/current/capture-readiness/capture-readiness-log.jsonl",
         "handoffs/current/capture-readiness/capture-readiness-summary.json",
+        "handoffs/current/offline-workflow-check/OFFLINE_WORKFLOW_CHECK_REPORT.md",
+        "handoffs/current/offline-workflow-check/offline-workflow-check-log.jsonl",
+        "handoffs/current/offline-workflow-check/offline-workflow-check-summary.json",
         "handoffs/current/operator/RIFTSCAN_OPERATOR_HANDOFF.md",
         "handoffs/current/operator/operator-current-gate-summary.json",
         "handoffs/current/post-update-baseline/POST_UPDATE_BASELINE_REPORT.md",
@@ -136,9 +121,9 @@ blockers:
     }
   },
   "capture_readiness_baseline_link": {
-    "status": "match",
+    "status": "mismatch",
     "current_baseline": {
-      "created_utc": "2026-05-06T02:53:38Z",
+      "created_utc": "2026-05-06T03:38:59Z",
       "status": "blocked_waiting_for_game_or_focus",
       "display_status": "BLOCKED",
       "runtime": {
@@ -155,7 +140,13 @@ blockers:
         "hwnd": 657876
       }
     },
-    "mismatches": []
+    "mismatches": [
+      {
+        "field": "created_utc",
+        "current_baseline": "2026-05-06T03:38:59Z",
+        "readiness_baseline": "2026-05-06T02:53:38Z"
+      }
+    ]
   },
   "full_live_preflight": "PASS",
   "focus_preflight": "PASS",
@@ -166,7 +157,8 @@ blockers:
     "Stable in-world state is not confirmed.",
     "Capture Readiness is not PASS.",
     "Post-update baseline is not PASS for the current client.",
-    "Post-update baseline display_status is not PASS."
+    "Post-update baseline display_status is not PASS.",
+    "Capture Readiness was generated from an older/different Post-Update Baseline; rerun Capture Readiness."
   ],
   "next_action": "Run Post-Update Baseline after the current updated RIFT client is confirmed stable in-world.",
   "guardrail": "No live capture, discovery, movement/input, memory scan/read, offset validation, RiftReader validation, or /reloadui until current gates pass and an explicit future live gate is added."
@@ -178,11 +170,9 @@ blockers:
 Exit code: `0`
 
 ```text
- M handoffs/current/README_CURRENT.md
- M handoffs/current/RIFTSCAN_RESUME_HANDOFF_2026-05-06_OPERATOR_GATE_WORKFLOW.md
- M handoffs/current/operator/RIFTSCAN_OPERATOR_HANDOFF.md
- M handoffs/current/operator/operator-current-gate-summary.json
-?? handoffs/current/offline-workflow-check/
+ M handoffs/current/post-update-baseline/POST_UPDATE_BASELINE_REPORT.md
+ M handoffs/current/post-update-baseline/post-update-baseline-log.jsonl
+ M handoffs/current/post-update-baseline/post-update-baseline-summary.json
 
 ```
 
@@ -191,11 +181,11 @@ Exit code: `0`
 Exit code: `0`
 
 ```text
+17d69f5 Refresh handoffs after offline workflow check
 b3bb14d Add offline workflow check helper
 0125e33 Refresh handoff after operator report wrapper
 a2cf481 Add operator report command wrapper
 a312fe1 Refresh current handoff after operator intake check
-430f0b4 Add operator self-test patch intake check
 
 ```
 
@@ -274,7 +264,7 @@ a312fe1 Refresh current handoff after operator intake check
       "Login is not confirmed successful.",
       "Stable in-world state is not confirmed."
     ],
-    "created_utc": "2026-05-06T02:53:38Z",
+    "created_utc": "2026-05-06T03:38:59Z",
     "display_status": "BLOCKED",
     "focus_command_result": {
       "args": [
@@ -285,8 +275,8 @@ a312fe1 Refresh current handoff after operator intake check
     },
     "git": {
       "branch": "main",
-      "head": "870a7219add3ed3ecc62ef2dd7e3c3566e3c307d",
-      "log_oneline_5": "870a721 Add post-update baseline self-test\n8311033 Clarify current handoff commit reference\nb4062da Refresh current RiftScan handoff pointer\na666c77 Add operator gate self-test\nb07990f Add operator current workflow gate summary",
+      "head": "17d69f5076881a955b231fdab9d50915eae81889",
+      "log_oneline_5": "17d69f5 Refresh handoffs after offline workflow check\nb3bb14d Add offline workflow check helper\n0125e33 Refresh handoff after operator report wrapper\na2cf481 Add operator report command wrapper\na312fe1 Refresh current handoff after operator intake check",
       "status_short": " M handoffs/current/post-update-baseline/post-update-baseline-log.jsonl"
     },
     "manual_state": {

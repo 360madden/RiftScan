@@ -50,7 +50,7 @@ reloadui_sent: false
 
 ```text
 branch: main
-head: 870a7219add3ed3ecc62ef2dd7e3c3566e3c307d
+head: 17d69f5076881a955b231fdab9d50915eae81889
 ```
 
 Git status:
@@ -62,11 +62,11 @@ Git status:
 Recent commits:
 
 ```text
-870a721 Add post-update baseline self-test
-8311033 Clarify current handoff commit reference
-b4062da Refresh current RiftScan handoff pointer
-a666c77 Add operator gate self-test
-b07990f Add operator current workflow gate summary
+17d69f5 Refresh handoffs after offline workflow check
+b3bb14d Add offline workflow check helper
+0125e33 Refresh handoff after operator report wrapper
+a2cf481 Add operator report command wrapper
+a312fe1 Refresh current handoff after operator intake check
 ```
 
 ## Output Paths
@@ -87,7 +87,7 @@ log: handoffs\current\post-update-baseline\post-update-baseline-log.jsonl
     "Login is not confirmed successful.",
     "Stable in-world state is not confirmed."
   ],
-  "created_utc": "2026-05-06T02:53:38Z",
+  "created_utc": "2026-05-06T03:38:59Z",
   "display_status": "BLOCKED",
   "focus_command_result": {
     "args": [
@@ -98,8 +98,8 @@ log: handoffs\current\post-update-baseline\post-update-baseline-log.jsonl
   },
   "git": {
     "branch": "main",
-    "head": "870a7219add3ed3ecc62ef2dd7e3c3566e3c307d",
-    "log_oneline_5": "870a721 Add post-update baseline self-test\n8311033 Clarify current handoff commit reference\nb4062da Refresh current RiftScan handoff pointer\na666c77 Add operator gate self-test\nb07990f Add operator current workflow gate summary",
+    "head": "17d69f5076881a955b231fdab9d50915eae81889",
+    "log_oneline_5": "17d69f5 Refresh handoffs after offline workflow check\nb3bb14d Add offline workflow check helper\n0125e33 Refresh handoff after operator report wrapper\na2cf481 Add operator report command wrapper\na312fe1 Refresh current handoff after operator intake check",
     "status_short": " M handoffs/current/post-update-baseline/post-update-baseline-log.jsonl"
   },
   "manual_state": {
