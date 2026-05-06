@@ -25,11 +25,13 @@ Use this handoff and `handoffs/current/README_CURRENT.md` as the current resume 
 
 The older 2026-05-05 handoffs are useful historical context, but their next-step lists are superseded. In particular, `Wire Post-Update Baseline into the Operator GUI` is complete.
 
-Current repo HEAD:
+Latest verified workflow-gate commit at handoff creation:
 
 ```text
 a666c77266d504ff80f0a2a601257589f88fb2af Add operator gate self-test
 ```
+
+A newer doc-only handoff-pointer commit may exist. Always verify the exact current HEAD with `git log --oneline -5` before editing.
 
 Current Operator workflow gate:
 

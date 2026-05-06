@@ -11,11 +11,13 @@ Start here for new RiftScan work:
 
 The older 2026-05-05 handoffs remain useful history, but their next-step ordering is superseded by the 2026-05-06 Operator Gate Workflow handoff and the current gate summary JSON.
 
-## Latest completed workflow milestone before this document
+## Latest verified workflow-code milestone referenced by this pointer
 
 ```text
 a666c77 Add operator gate self-test
 ```
+
+A newer doc-only handoff-pointer commit may exist; check `git log --oneline -5` for the exact current HEAD before editing.
 
 ## Completed since the 2026-05-05 workflow handoff
 
