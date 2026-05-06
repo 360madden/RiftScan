@@ -4,6 +4,10 @@
 
 Read-only RIFT memory discovery pipeline: capture once, analyze offline, compare sessions, then generate focused follow-up capture plans.
 
+## Helper/operator tooling direction
+
+RiftScan keeps the C#/.NET projects as the scanner/analyzer product core, while Python owns nontrivial helper/operator workflow logic such as the Operator app, Patch Intake Helper, post-update baseline gates, reports, and future readiness gates. Thin `.cmd` launchers are preferred for ease of use; PowerShell should stay a small Windows bridge only. Major workflow milestones should be validated, committed, pushed, and verified so GitHub stays current. See [docs/helper-tooling-policy.md](docs/helper-tooling-policy.md).
+
 ## Current working loop
 
 Use PowerShell from the repository root.
