@@ -130,6 +130,12 @@ Capture Readiness offline validation:
 python tools/riftscan_capture_readiness.py --self-test
 ```
 
+Operator gate offline validation:
+
+```text
+python tools/riftscan_operator_app.py --self-test
+```
+
 Patch Intake post-apply checks can also require:
 
 ```text

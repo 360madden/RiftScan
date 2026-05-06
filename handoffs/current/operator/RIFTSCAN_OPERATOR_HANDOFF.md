@@ -1,7 +1,7 @@
 # RiftScan Operator Handoff
 
-Created UTC: `2026-05-06T02:25:41Z`
-App version: `riftscan-operator-app-v3.8.11`
+Created UTC: `2026-05-06T02:32:38Z`
+App version: `riftscan-operator-app-v3.8.12`
 Repo root: `C:\RIFT MODDING\Riftscan`
 
 ## Operator Assessment
@@ -39,7 +39,7 @@ blockers:
 ```json
 {
   "schema_version": "riftscan.operator_current_workflow_gate.v1",
-  "created_utc": "2026-05-06T02:25:41Z",
+  "created_utc": "2026-05-06T02:32:38Z",
   "metadata_capture_plan_gate": "BLOCKED",
   "live_collection_allowed": false,
   "old_offsets_trusted": false,
@@ -99,9 +99,7 @@ Exit code: `0`
 ```text
  M docs/helper-tooling-policy.md
  M handoffs/current/README_CURRENT.md
- M handoffs/current/operator/RIFTSCAN_OPERATOR_HANDOFF.md
  M tools/riftscan_operator_app.py
-?? handoffs/current/operator/operator-current-gate-summary.json
 
 ```
 
@@ -110,11 +108,11 @@ Exit code: `0`
 Exit code: `0`
 
 ```text
+b07990f Add operator current workflow gate summary
 c95301d Add operator capture readiness self-test button
 97923b1 Add capture readiness self-test
 56dd777 Add capture readiness gate
 27ecb05 Document Python helper tooling direction
-f0f0362 Wire post-update baseline into operator app
 
 ```
 

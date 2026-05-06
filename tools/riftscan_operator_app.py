@@ -1,9 +1,10 @@
-# Version: riftscan-operator-app-v3.8.11
-# Purpose: Windows Tkinter helper app for RiftScan operator workflow: run focus preflight, run full live preflight gate, run the post-update baseline and capture-readiness gates, run offline Capture Readiness self-tests, summarize the current workflow go/no-go gate, manage focus-gated metadata workflows, validate patch-runner manifests, check the online patch inbox discovery-only from the visible Main tab, write compact AI-ready reports, clean known junk, safely commit/push allowlisted files including baseline/readiness, repo-bridge handoffs and repo inbox patch packages, and provide tabbed/wrapped controls, a guided button-pusher workflow, focus-discipline confirmation, and lightweight status highlighting.
-# Total character count: 161338
+# Version: riftscan-operator-app-v3.8.12
+# Purpose: Windows Tkinter helper app for RiftScan operator workflow: run focus preflight, run full live preflight gate, run the post-update baseline and capture-readiness gates, run offline Capture Readiness and Operator gate self-tests, summarize the current workflow go/no-go gate, manage focus-gated metadata workflows, validate patch-runner manifests, check the online patch inbox discovery-only from the visible Main tab, write compact AI-ready reports, clean known junk, safely commit/push allowlisted files including baseline/readiness, repo-bridge handoffs and repo inbox patch packages, and provide tabbed/wrapped controls, a guided button-pusher workflow, focus-discipline confirmation, and lightweight status highlighting.
+# Total character count: 168564
 
 from __future__ import annotations
 
+import argparse
 import ctypes
 import datetime as dt
 from ctypes import wintypes
@@ -12,6 +13,7 @@ import os
 import re
 import shutil
 import subprocess
+import sys
 import threading
 import time
 import tkinter as tk
@@ -20,7 +22,7 @@ from tkinter import messagebox, scrolledtext, ttk
 from typing import Any
 
 
-APP_VERSION = "riftscan-operator-app-v3.8.11"
+APP_VERSION = "riftscan-operator-app-v3.8.12"
 REPO_ROOT = Path(__file__).resolve().parents[1]
 FOCUS_SCRIPT = REPO_ROOT / "scripts" / "run-rift-focus-control.cmd"
 HANDOFF_DIR = REPO_ROOT / "handoffs" / "current" / "focus-control-local"
@@ -484,7 +486,7 @@ def build_current_workflow_gate(
         next_action = "Run Post-Update Baseline after the current updated RIFT client is confirmed stable in-world."
     elif readiness["display_status"] != "PASS":
         next_action = "Run Capture Readiness and resolve any blockers before capture-plan refresh."
-    elif not full_ok:
+    elif not full_ok or not focus_ok:
         next_action = "Run Full Live Preflight before metadata-only capture-plan refresh."
     else:
         next_action = "Refresh the metadata-only capture plan; live collection/discovery still requires an explicit future gate."
@@ -527,6 +529,142 @@ def workflow_gate_text(gate: dict[str, Any]) -> str:
     else:
         lines.append("- None")
     return "\n".join(lines)
+
+
+def operator_self_test_latest(display_status: str, status: str, blockers: list[str] | None = None) -> dict[str, Any]:
+    label = "post-update-baseline" if "baseline" in status else "capture-readiness"
+    return {
+        "status": "present",
+        "summary": {
+            "status": status,
+            "display_status": display_status,
+            "created_utc": "2026-05-06T00:00:00Z",
+            "blockers": blockers or [],
+            "paths": {
+                "report": f"handoffs/current/{label}/REPORT.md",
+                "summary": f"handoffs/current/{label}/summary.json",
+                "log": f"handoffs/current/{label}/log.jsonl",
+            },
+        },
+    }
+
+
+def run_operator_self_test() -> tuple[bool, dict[str, Any]]:
+    tests: list[dict[str, Any]] = []
+
+    def record(
+        name: str,
+        expected_gate: str,
+        *,
+        baseline: dict[str, Any],
+        readiness: dict[str, Any],
+        full_ok: bool = True,
+        focus_ok: bool = True,
+        validation_issues: list[str] | None = None,
+        expected_next_action_part: str | None = None,
+        expected_blocker_part: str | None = None,
+    ) -> None:
+        gate = build_current_workflow_gate(
+            full_ok=full_ok,
+            focus_ok=focus_ok,
+            validation_issues=validation_issues or [],
+            post_update_baseline=baseline,
+            capture_readiness=readiness,
+        )
+        blockers = gate["blockers"] if isinstance(gate.get("blockers"), list) else []
+        next_action = str(gate.get("next_action") or "")
+        gate_ok = gate.get("metadata_capture_plan_gate") == expected_gate
+        safety_ok = gate.get("live_collection_allowed") is False and gate.get("old_offsets_trusted") is False
+        next_ok = expected_next_action_part is None or expected_next_action_part in next_action
+        blocker_ok = expected_blocker_part is None or any(expected_blocker_part in str(blocker) for blocker in blockers)
+        tests.append(
+            {
+                "name": name,
+                "expected_gate": expected_gate,
+                "actual_gate": gate.get("metadata_capture_plan_gate"),
+                "next_action": next_action,
+                "blockers": blockers,
+                "live_collection_allowed": gate.get("live_collection_allowed"),
+                "old_offsets_trusted": gate.get("old_offsets_trusted"),
+                "pass": gate_ok and safety_ok and next_ok and blocker_ok,
+            }
+        )
+
+    pass_baseline = operator_self_test_latest("PASS", "pass")
+    pass_readiness = operator_self_test_latest("PASS", "pass")
+    blocked_baseline = operator_self_test_latest(
+        "BLOCKED",
+        "blocked_waiting_for_game_or_focus",
+        ["Stable in-world state is not confirmed."],
+    )
+    blocked_readiness = operator_self_test_latest(
+        "BLOCKED",
+        "blocked_waiting_for_current_baseline",
+        ["Post-update baseline is not PASS for the current client."],
+    )
+
+    record(
+        "all gates pass",
+        "PASS",
+        baseline=pass_baseline,
+        readiness=pass_readiness,
+        expected_next_action_part="Refresh the metadata-only capture plan",
+    )
+    record(
+        "baseline blocks even when preflight passes",
+        "BLOCKED",
+        baseline=blocked_baseline,
+        readiness=pass_readiness,
+        expected_next_action_part="Run Post-Update Baseline",
+        expected_blocker_part="Post-Update Baseline is not PASS",
+    )
+    record(
+        "readiness blocks after baseline pass",
+        "BLOCKED",
+        baseline=pass_baseline,
+        readiness=blocked_readiness,
+        expected_next_action_part="Run Capture Readiness",
+        expected_blocker_part="Capture Readiness is not PASS",
+    )
+    record(
+        "full live preflight blocks metadata plan",
+        "BLOCKED",
+        baseline=pass_baseline,
+        readiness=pass_readiness,
+        full_ok=False,
+        validation_issues=["Focus status is not foreground_verified."],
+        expected_next_action_part="Run Full Live Preflight",
+        expected_blocker_part="Focus status is not foreground_verified",
+    )
+    record(
+        "focus preflight blocks metadata plan",
+        "BLOCKED",
+        baseline=pass_baseline,
+        readiness=pass_readiness,
+        focus_ok=False,
+        expected_next_action_part="Run Full Live Preflight",
+        expected_blocker_part="Focus preflight is not foreground_verified",
+    )
+
+    passed = all(test["pass"] for test in tests)
+    summary = {
+        "schema_version": "riftscan.operator_self_test.v1",
+        "created_utc": utc_now(),
+        "app_version": APP_VERSION,
+        "status": "PASS" if passed else "FAIL",
+        "case_count": len(tests),
+        "tests": tests,
+        "safety": {
+            "writes_artifacts": False,
+            "launches_gui": False,
+            "runs_focus_preflight": False,
+            "capture_started": False,
+            "movement_or_input_sent": False,
+            "memory_scan_or_read_started": False,
+            "reloadui_sent": False,
+        },
+    }
+    return passed, summary
 
 
 
@@ -2756,6 +2894,7 @@ class RiftScanOperatorApp(tk.Tk):
             [
                 ("Run Full Live Preflight", self.run_full_live_preflight),
                 ("Validate Pending Patch", self.validate_pending_patch),
+                ("Operator Gate Self-Test", self.run_operator_gate_self_test),
                 ("Capture Readiness Self-Test", self.run_capture_readiness_self_test),
                 ("Run Focus Preflight", self.run_focus_preflight),
             ],
@@ -3148,6 +3287,37 @@ class RiftScanOperatorApp(tk.Tk):
         self.run_async("capture readiness", task)
 
 
+    def run_operator_gate_self_test(self) -> None:
+        def task() -> str:
+            passed, summary = run_operator_self_test()
+            tests = summary.get("tests") if isinstance(summary.get("tests"), list) else []
+            failing = [test for test in tests if not test.get("pass")]
+            safety = summary.get("safety") if isinstance(summary.get("safety"), dict) else {}
+            lines = [
+                "\n=== OPERATOR GATE SELF-TEST ===",
+                f"OPERATOR GATE SELF-TEST: {summary.get('status')}",
+                f"Cases: {summary.get('case_count')}",
+                f"Failing cases: {len(failing)}",
+                "",
+                "Safety:",
+                f"- writes_artifacts: {safety.get('writes_artifacts')}",
+                f"- launches_gui: {safety.get('launches_gui')}",
+                f"- runs_focus_preflight: {safety.get('runs_focus_preflight')}",
+                f"- movement_or_input_sent: {safety.get('movement_or_input_sent')}",
+                f"- memory_scan_or_read_started: {safety.get('memory_scan_or_read_started')}",
+                f"- reloadui_sent: {safety.get('reloadui_sent')}",
+            ]
+            if failing:
+                lines.extend(["", "Failing self-test cases:"])
+                lines.extend(f"- {test.get('name')}: {test.get('actual_gate')}" for test in failing)
+            lines.extend(["", "Self-test JSON:", json_block(summary)])
+            if not passed:
+                lines.append("FAIL: Operator gate self-test failed.")
+            return "\n".join(lines)
+
+        self.run_async("operator gate self-test", task)
+
+
     def run_capture_readiness_self_test(self) -> None:
         def task() -> str:
             if not CAPTURE_READINESS_CMD.exists():
@@ -3462,7 +3632,7 @@ class RiftScanOperatorApp(tk.Tk):
             "7. Compare Sessions\n"
             "8. Clean Known Junk, Commit Allowlist, Push\n\n"
             "After a RIFT update, treat older baselines and offsets as historical until a fresh current-client baseline passes.\n"
-            "Diagnostics > Capture Readiness Self-Test is offline and can be run anytime to check gate logic.\n"
+            "Diagnostics > Operator Gate Self-Test and Capture Readiness Self-Test are offline and can be run anytime to check gate logic.\n"
             "Capture Readiness must PASS before creating or refreshing capture plans.\n"
             "LEAVE RIFT FOREGROUND during the metadata collector.\n"
             "Do not click ChatGPT, PowerShell, the Operator window, or any other window.\n\n"
@@ -4083,13 +4253,22 @@ RiftScanOperatorApp.check_online_patch_inbox = _riftscan_check_online_patch_inbo
 RiftScanOperatorApp.__init__ = _riftscan_operator_init_with_patch_inbox
 # RIFTSCAN PATCH INBOX DISCOVERY V384 PATCH END
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description="RiftScan Operator Helper")
+    parser.add_argument("--self-test", action="store_true")
+    args = parser.parse_args(argv)
+
+    if args.self_test:
+        passed, summary = run_operator_self_test()
+        print(json_block(summary))
+        return 0 if passed else 1
+
     app = RiftScanOperatorApp()
     app.mainloop()
     return 0
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    raise SystemExit(main(sys.argv[1:]))
 
 # End of script
