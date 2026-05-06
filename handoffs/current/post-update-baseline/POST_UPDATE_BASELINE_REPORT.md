@@ -50,27 +50,23 @@ reloadui_sent: false
 
 ```text
 branch: main
-head: b9868bac4c85557ae0598cbfdeb5226b98315024
+head: 870a7219add3ed3ecc62ef2dd7e3c3566e3c307d
 ```
 
 Git status:
 
 ```text
- M handoffs/current/operator/RIFTSCAN_OPERATOR_HANDOFF.md
- M handoffs/current/post-update-baseline/POST_UPDATE_BASELINE_REPORT.md
  M handoffs/current/post-update-baseline/post-update-baseline-log.jsonl
- M handoffs/current/post-update-baseline/post-update-baseline-summary.json
- M tools/riftscan_operator_app.py
 ```
 
 Recent commits:
 
 ```text
-b9868ba Add next-step workflow handoff
-115c31a Record post-update baseline pass
-3add5fa Document post-update baseline implementation
-11380e2 Add post-update baseline launcher
-d9a43dc Add post-update baseline tool
+870a721 Add post-update baseline self-test
+8311033 Clarify current handoff commit reference
+b4062da Refresh current RiftScan handoff pointer
+a666c77 Add operator gate self-test
+b07990f Add operator current workflow gate summary
 ```
 
 ## Output Paths
@@ -85,13 +81,13 @@ log: handoffs\current\post-update-baseline\post-update-baseline-log.jsonl
 
 ```json
 {
-  "app_version": "riftscan-post-update-baseline-v1.0.0",
+  "app_version": "riftscan-post-update-baseline-v1.0.1",
   "blockers": [
     "Maintenance is not confirmed over.",
     "Login is not confirmed successful.",
     "Stable in-world state is not confirmed."
   ],
-  "created_utc": "2026-05-06T01:32:34Z",
+  "created_utc": "2026-05-06T02:53:38Z",
   "display_status": "BLOCKED",
   "focus_command_result": {
     "args": [
@@ -102,9 +98,9 @@ log: handoffs\current\post-update-baseline\post-update-baseline-log.jsonl
   },
   "git": {
     "branch": "main",
-    "head": "b9868bac4c85557ae0598cbfdeb5226b98315024",
-    "log_oneline_5": "b9868ba Add next-step workflow handoff\n115c31a Record post-update baseline pass\n3add5fa Document post-update baseline implementation\n11380e2 Add post-update baseline launcher\nd9a43dc Add post-update baseline tool",
-    "status_short": " M handoffs/current/operator/RIFTSCAN_OPERATOR_HANDOFF.md\n M handoffs/current/post-update-baseline/POST_UPDATE_BASELINE_REPORT.md\n M handoffs/current/post-update-baseline/post-update-baseline-log.jsonl\n M handoffs/current/post-update-baseline/post-update-baseline-summary.json\n M tools/riftscan_operator_app.py"
+    "head": "870a7219add3ed3ecc62ef2dd7e3c3566e3c307d",
+    "log_oneline_5": "870a721 Add post-update baseline self-test\n8311033 Clarify current handoff commit reference\nb4062da Refresh current RiftScan handoff pointer\na666c77 Add operator gate self-test\nb07990f Add operator current workflow gate summary",
+    "status_short": " M handoffs/current/post-update-baseline/post-update-baseline-log.jsonl"
   },
   "manual_state": {
     "login_successful": false,

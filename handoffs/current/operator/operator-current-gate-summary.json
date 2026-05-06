@@ -1,6 +1,6 @@
 {
   "schema_version": "riftscan.operator_current_workflow_gate.v1",
-  "created_utc": "2026-05-06T02:32:38Z",
+  "created_utc": "2026-05-06T02:53:39Z",
   "metadata_capture_plan_gate": "BLOCKED",
   "live_collection_allowed": false,
   "old_offsets_trusted": false,
@@ -9,7 +9,7 @@
     "artifact_status": "present",
     "status": "blocked_waiting_for_game_or_focus",
     "display_status": "BLOCKED",
-    "created_utc": "2026-05-06T01:32:34Z",
+    "created_utc": "2026-05-06T02:53:38Z",
     "blockers": [
       "Maintenance is not confirmed over.",
       "Login is not confirmed successful.",
@@ -26,7 +26,7 @@
     "artifact_status": "present",
     "status": "blocked_waiting_for_current_baseline",
     "display_status": "BLOCKED",
-    "created_utc": "2026-05-06T02:12:56Z",
+    "created_utc": "2026-05-06T02:53:39Z",
     "blockers": [
       "Post-update baseline is not PASS for the current client.",
       "Post-update baseline display_status is not PASS."
