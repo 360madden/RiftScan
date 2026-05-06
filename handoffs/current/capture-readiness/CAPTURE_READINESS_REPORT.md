@@ -3,20 +3,19 @@
 ## Result
 
 ```text
-CAPTURE READINESS: BLOCKED
-status: blocked_waiting_for_current_baseline
+CAPTURE READINESS: PASS
+status: pass
 ```
 
 ## Blockers
 
-- Post-update baseline is not PASS for the current client.
-- Post-update baseline display_status is not PASS.
+- None
 
 ## Gate Summary
 
 ```text
-post_update_baseline_status: blocked_waiting_for_game_or_focus
-post_update_baseline_display_status: BLOCKED
+post_update_baseline_status: pass
+post_update_baseline_display_status: PASS
 current_focus_status: foreground_verified
 selected_window_present: True
 windows_entry_count: 1
@@ -31,7 +30,7 @@ title: RIFT
 old_offsets_trusted: false
 capture_started: false
 live_collection_allowed: false
-capture_planning_allowed: false
+capture_planning_allowed: true
 movement_or_input_sent: false
 memory_scan_or_read_started: false
 reloadui_sent: false
@@ -47,19 +46,27 @@ log: handoffs/current/capture-readiness/capture-readiness-log.jsonl
 
 ## Next Step
 
-Run a fresh Post-Update Baseline after the current updated client is confirmed stable in-world.
+Create or refresh a metadata-only focus-gated capture plan.
 
 ## Git Snapshot
 
 ```text
 branch: main
-head: 870a7219add3ed3ecc62ef2dd7e3c3566e3c307d
+head: 40bbd1c62c5db71ecbe4d5931643d37619f955b3
 ```
 
 Git status:
 
 ```text
  M handoffs/current/capture-readiness/capture-readiness-log.jsonl
+ M handoffs/current/focus-control-local/focus-control-log.jsonl
+ M handoffs/current/focus-control-local/focus-control-summary.json
+ M handoffs/current/focus-control-local/process-command-result.json
+ M handoffs/current/offline-workflow-check/OFFLINE_WORKFLOW_CHECK_REPORT.md
+ M handoffs/current/offline-workflow-check/offline-workflow-check-log.jsonl
+ M handoffs/current/offline-workflow-check/offline-workflow-check-summary.json
+ M handoffs/current/operator/RIFTSCAN_OPERATOR_HANDOFF.md
+ M handoffs/current/operator/operator-current-gate-summary.json
  M handoffs/current/post-update-baseline/POST_UPDATE_BASELINE_REPORT.md
  M handoffs/current/post-update-baseline/post-update-baseline-log.jsonl
  M handoffs/current/post-update-baseline/post-update-baseline-summary.json
@@ -69,11 +76,11 @@ Git status:
 Recent commits:
 
 ```text
-870a721 Add post-update baseline self-test
-8311033 Clarify current handoff commit reference
-b4062da Refresh current RiftScan handoff pointer
-a666c77 Add operator gate self-test
-b07990f Add operator current workflow gate summary
+40bbd1c Refresh blocked post-update baseline artifacts
+17d69f5 Refresh handoffs after offline workflow check
+b3bb14d Add offline workflow check helper
+0125e33 Refresh handoff after operator report wrapper
+a2cf481 Add operator report command wrapper
 ```
 
 ## Machine-Readable Summary
@@ -82,8 +89,8 @@ b07990f Add operator current workflow gate summary
 {
   "app_version": "riftscan-capture-readiness-v1.0.1",
   "baseline": {
-    "created_utc": "2026-05-06T02:53:38Z",
-    "display_status": "BLOCKED",
+    "created_utc": "2026-05-06T04:25:10Z",
+    "display_status": "PASS",
     "runtime": {
       "character_name": null,
       "focus_status": "foreground_verified",
@@ -103,29 +110,30 @@ b07990f Add operator current workflow gate summary
       "old_offsets_trusted": false,
       "reloadui_sent": false
     },
-    "status": "blocked_waiting_for_game_or_focus",
+    "status": "pass",
     "summary_path": "handoffs/current/post-update-baseline/post-update-baseline-summary.json"
   },
-  "blockers": [
-    "Post-update baseline is not PASS for the current client.",
-    "Post-update baseline display_status is not PASS."
-  ],
-  "created_utc": "2026-05-06T02:53:39Z",
-  "display_status": "BLOCKED",
+  "blockers": [],
+  "created_utc": "2026-05-06T04:25:46Z",
+  "display_status": "PASS",
   "focus_command_result": {
     "args": [
-      "scripts/run-rift-focus-control.cmd"
+      "cmd",
+      "/c",
+      "C:\\RIFT MODDING\\Riftscan\\scripts\\run-rift-focus-control.cmd"
     ],
-    "skipped": true,
+    "returncode": 0,
+    "stderr": "",
+    "stdout": "Focus control handoff written to C:\\RIFT MODDING\\Riftscan\\handoffs\\current\\focus-control-local\n",
     "success": true
   },
   "git": {
     "branch": "main",
-    "head": "870a7219add3ed3ecc62ef2dd7e3c3566e3c307d",
-    "log_oneline_5": "870a721 Add post-update baseline self-test\n8311033 Clarify current handoff commit reference\nb4062da Refresh current RiftScan handoff pointer\na666c77 Add operator gate self-test\nb07990f Add operator current workflow gate summary",
-    "status_short": " M handoffs/current/capture-readiness/capture-readiness-log.jsonl\n M handoffs/current/post-update-baseline/POST_UPDATE_BASELINE_REPORT.md\n M handoffs/current/post-update-baseline/post-update-baseline-log.jsonl\n M handoffs/current/post-update-baseline/post-update-baseline-summary.json\n"
+    "head": "40bbd1c62c5db71ecbe4d5931643d37619f955b3",
+    "log_oneline_5": "40bbd1c Refresh blocked post-update baseline artifacts\n17d69f5 Refresh handoffs after offline workflow check\nb3bb14d Add offline workflow check helper\n0125e33 Refresh handoff after operator report wrapper\na2cf481 Add operator report command wrapper",
+    "status_short": " M handoffs/current/capture-readiness/capture-readiness-log.jsonl\n M handoffs/current/focus-control-local/focus-control-log.jsonl\n M handoffs/current/focus-control-local/focus-control-summary.json\n M handoffs/current/focus-control-local/process-command-result.json\n M handoffs/current/offline-workflow-check/OFFLINE_WORKFLOW_CHECK_REPORT.md\n M handoffs/current/offline-workflow-check/offline-workflow-check-log.jsonl\n M handoffs/current/offline-workflow-check/offline-workflow-check-summary.json\n M handoffs/current/operator/RIFTSCAN_OPERATOR_HANDOFF.md\n M handoffs/current/operator/operator-current-gate-summary.json\n M handoffs/current/post-update-baseline/POST_UPDATE_BASELINE_REPORT.md\n M handoffs/current/post-update-baseline/post-update-baseline-log.jsonl\n M handoffs/current/post-update-baseline/post-update-baseline-summary.json\n"
   },
-  "next_step": "Run a fresh Post-Update Baseline after the current updated client is confirmed stable in-world.",
+  "next_step": "Create or refresh a metadata-only focus-gated capture plan.",
   "paths": {
     "log": "handoffs/current/capture-readiness/capture-readiness-log.jsonl",
     "report": "handoffs/current/capture-readiness/CAPTURE_READINESS_REPORT.md",
@@ -140,7 +148,7 @@ b07990f Add operator current workflow gate summary
     "windows_entry_count": 1
   },
   "safety": {
-    "capture_planning_allowed": false,
+    "capture_planning_allowed": true,
     "capture_started": false,
     "live_collection_allowed": false,
     "memory_scan_or_read_started": false,
@@ -151,7 +159,7 @@ b07990f Add operator current workflow gate summary
   "schema_version": "riftscan.capture_readiness.v1",
   "source_artifacts": {
     "focus_summary": {
-      "created_utc": "2026-05-06T01:00:48Z",
+      "created_utc": "2026-05-06T04:25:46Z",
       "focus": {
         "attempts": [
           {
@@ -191,30 +199,28 @@ b07990f Add operator current workflow gate summary
     },
     "post_update_baseline_summary": {
       "app_version": "riftscan-post-update-baseline-v1.0.1",
-      "blockers": [
-        "Maintenance is not confirmed over.",
-        "Login is not confirmed successful.",
-        "Stable in-world state is not confirmed."
-      ],
-      "created_utc": "2026-05-06T02:53:38Z",
-      "display_status": "BLOCKED",
+      "blockers": [],
+      "created_utc": "2026-05-06T04:25:10Z",
+      "display_status": "PASS",
       "focus_command_result": {
         "args": [
-          "scripts\\run-rift-focus-control.cmd"
+          "C:\\RIFT MODDING\\Riftscan\\scripts\\run-rift-focus-control.cmd"
         ],
-        "skipped": true,
+        "returncode": 0,
+        "stderr": "",
+        "stdout": "Focus control handoff written to C:\\RIFT MODDING\\Riftscan\\handoffs\\current\\focus-control-local\n",
         "success": true
       },
       "git": {
         "branch": "main",
-        "head": "870a7219add3ed3ecc62ef2dd7e3c3566e3c307d",
-        "log_oneline_5": "870a721 Add post-update baseline self-test\n8311033 Clarify current handoff commit reference\nb4062da Refresh current RiftScan handoff pointer\na666c77 Add operator gate self-test\nb07990f Add operator current workflow gate summary",
-        "status_short": " M handoffs/current/post-update-baseline/post-update-baseline-log.jsonl"
+        "head": "40bbd1c62c5db71ecbe4d5931643d37619f955b3",
+        "log_oneline_5": "40bbd1c Refresh blocked post-update baseline artifacts\n17d69f5 Refresh handoffs after offline workflow check\nb3bb14d Add offline workflow check helper\n0125e33 Refresh handoff after operator report wrapper\na2cf481 Add operator report command wrapper",
+        "status_short": " M handoffs/current/focus-control-local/focus-control-log.jsonl\n M handoffs/current/focus-control-local/focus-control-summary.json\n M handoffs/current/focus-control-local/process-command-result.json\n M handoffs/current/offline-workflow-check/OFFLINE_WORKFLOW_CHECK_REPORT.md\n M handoffs/current/offline-workflow-check/offline-workflow-check-log.jsonl\n M handoffs/current/offline-workflow-check/offline-workflow-check-summary.json\n M handoffs/current/operator/RIFTSCAN_OPERATOR_HANDOFF.md\n M handoffs/current/operator/operator-current-gate-summary.json\n M handoffs/current/post-update-baseline/post-update-baseline-log.jsonl"
       },
       "manual_state": {
-        "login_successful": false,
-        "maintenance_over": false,
-        "world_loaded": false
+        "login_successful": true,
+        "maintenance_over": true,
+        "world_loaded": true
       },
       "paths": {
         "log": "handoffs\\current\\post-update-baseline\\post-update-baseline-log.jsonl",
@@ -243,7 +249,7 @@ b07990f Add operator current workflow gate summary
       "schema_version": "riftscan.post_update_baseline.v1",
       "source_artifacts": {
         "focus_summary": {
-          "created_utc": "2026-05-06T01:00:48Z",
+          "created_utc": "2026-05-06T04:25:10Z",
           "focus": {
             "attempts": [
               {
@@ -293,7 +299,7 @@ b07990f Add operator current workflow gate summary
           ]
         }
       },
-      "status": "blocked_waiting_for_game_or_focus"
+      "status": "pass"
     },
     "windows": {
       "pid": 11220,
@@ -307,6 +313,6 @@ b07990f Add operator current workflow gate summary
       ]
     }
   },
-  "status": "blocked_waiting_for_current_baseline"
+  "status": "pass"
 }
 ```

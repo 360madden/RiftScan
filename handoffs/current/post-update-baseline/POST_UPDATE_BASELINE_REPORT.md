@@ -3,15 +3,13 @@
 ## Result
 
 ```text
-POST-UPDATE BASELINE: BLOCKED
-status: blocked_waiting_for_game_or_focus
+POST-UPDATE BASELINE: PASS
+status: pass
 ```
 
 ## Blockers
 
-- Maintenance is not confirmed over.
-- Login is not confirmed successful.
-- Stable in-world state is not confirmed.
+- None
 
 ## Runtime
 
@@ -30,9 +28,9 @@ zone_or_location: None
 ## Manual State
 
 ```text
-maintenance_over: False
-login_successful: False
-world_loaded: False
+maintenance_over: True
+login_successful: True
+world_loaded: True
 ```
 
 ## Safety Boundary
@@ -50,23 +48,31 @@ reloadui_sent: false
 
 ```text
 branch: main
-head: 17d69f5076881a955b231fdab9d50915eae81889
+head: 40bbd1c62c5db71ecbe4d5931643d37619f955b3
 ```
 
 Git status:
 
 ```text
+ M handoffs/current/focus-control-local/focus-control-log.jsonl
+ M handoffs/current/focus-control-local/focus-control-summary.json
+ M handoffs/current/focus-control-local/process-command-result.json
+ M handoffs/current/offline-workflow-check/OFFLINE_WORKFLOW_CHECK_REPORT.md
+ M handoffs/current/offline-workflow-check/offline-workflow-check-log.jsonl
+ M handoffs/current/offline-workflow-check/offline-workflow-check-summary.json
+ M handoffs/current/operator/RIFTSCAN_OPERATOR_HANDOFF.md
+ M handoffs/current/operator/operator-current-gate-summary.json
  M handoffs/current/post-update-baseline/post-update-baseline-log.jsonl
 ```
 
 Recent commits:
 
 ```text
+40bbd1c Refresh blocked post-update baseline artifacts
 17d69f5 Refresh handoffs after offline workflow check
 b3bb14d Add offline workflow check helper
 0125e33 Refresh handoff after operator report wrapper
 a2cf481 Add operator report command wrapper
-a312fe1 Refresh current handoff after operator intake check
 ```
 
 ## Output Paths
@@ -82,30 +88,28 @@ log: handoffs\current\post-update-baseline\post-update-baseline-log.jsonl
 ```json
 {
   "app_version": "riftscan-post-update-baseline-v1.0.1",
-  "blockers": [
-    "Maintenance is not confirmed over.",
-    "Login is not confirmed successful.",
-    "Stable in-world state is not confirmed."
-  ],
-  "created_utc": "2026-05-06T03:38:59Z",
-  "display_status": "BLOCKED",
+  "blockers": [],
+  "created_utc": "2026-05-06T04:25:10Z",
+  "display_status": "PASS",
   "focus_command_result": {
     "args": [
-      "scripts\\run-rift-focus-control.cmd"
+      "C:\\RIFT MODDING\\Riftscan\\scripts\\run-rift-focus-control.cmd"
     ],
-    "skipped": true,
+    "returncode": 0,
+    "stderr": "",
+    "stdout": "Focus control handoff written to C:\\RIFT MODDING\\Riftscan\\handoffs\\current\\focus-control-local\n",
     "success": true
   },
   "git": {
     "branch": "main",
-    "head": "17d69f5076881a955b231fdab9d50915eae81889",
-    "log_oneline_5": "17d69f5 Refresh handoffs after offline workflow check\nb3bb14d Add offline workflow check helper\n0125e33 Refresh handoff after operator report wrapper\na2cf481 Add operator report command wrapper\na312fe1 Refresh current handoff after operator intake check",
-    "status_short": " M handoffs/current/post-update-baseline/post-update-baseline-log.jsonl"
+    "head": "40bbd1c62c5db71ecbe4d5931643d37619f955b3",
+    "log_oneline_5": "40bbd1c Refresh blocked post-update baseline artifacts\n17d69f5 Refresh handoffs after offline workflow check\nb3bb14d Add offline workflow check helper\n0125e33 Refresh handoff after operator report wrapper\na2cf481 Add operator report command wrapper",
+    "status_short": " M handoffs/current/focus-control-local/focus-control-log.jsonl\n M handoffs/current/focus-control-local/focus-control-summary.json\n M handoffs/current/focus-control-local/process-command-result.json\n M handoffs/current/offline-workflow-check/OFFLINE_WORKFLOW_CHECK_REPORT.md\n M handoffs/current/offline-workflow-check/offline-workflow-check-log.jsonl\n M handoffs/current/offline-workflow-check/offline-workflow-check-summary.json\n M handoffs/current/operator/RIFTSCAN_OPERATOR_HANDOFF.md\n M handoffs/current/operator/operator-current-gate-summary.json\n M handoffs/current/post-update-baseline/post-update-baseline-log.jsonl"
   },
   "manual_state": {
-    "login_successful": false,
-    "maintenance_over": false,
-    "world_loaded": false
+    "login_successful": true,
+    "maintenance_over": true,
+    "world_loaded": true
   },
   "paths": {
     "log": "handoffs\\current\\post-update-baseline\\post-update-baseline-log.jsonl",
@@ -134,7 +138,7 @@ log: handoffs\current\post-update-baseline\post-update-baseline-log.jsonl
   "schema_version": "riftscan.post_update_baseline.v1",
   "source_artifacts": {
     "focus_summary": {
-      "created_utc": "2026-05-06T01:00:48Z",
+      "created_utc": "2026-05-06T04:25:10Z",
       "focus": {
         "attempts": [
           {
@@ -184,6 +188,6 @@ log: handoffs\current\post-update-baseline\post-update-baseline-log.jsonl
       ]
     }
   },
-  "status": "blocked_waiting_for_game_or_focus"
+  "status": "pass"
 }
 ```

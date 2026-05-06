@@ -1,20 +1,16 @@
 {
   "schema_version": "riftscan.operator_current_workflow_gate.v1",
-  "created_utc": "2026-05-06T03:39:03Z",
-  "metadata_capture_plan_gate": "BLOCKED",
+  "created_utc": "2026-05-06T04:31:49Z",
+  "metadata_capture_plan_gate": "PASS",
   "live_collection_allowed": false,
   "old_offsets_trusted": false,
   "post_update_baseline": {
     "label": "Post-Update Baseline",
     "artifact_status": "present",
-    "status": "blocked_waiting_for_game_or_focus",
-    "display_status": "BLOCKED",
-    "created_utc": "2026-05-06T03:38:59Z",
-    "blockers": [
-      "Maintenance is not confirmed over.",
-      "Login is not confirmed successful.",
-      "Stable in-world state is not confirmed."
-    ],
+    "status": "pass",
+    "display_status": "PASS",
+    "created_utc": "2026-05-06T04:25:10Z",
+    "blockers": [],
     "paths": {
       "report": "handoffs\\current\\post-update-baseline\\POST_UPDATE_BASELINE_REPORT.md",
       "summary": "handoffs\\current\\post-update-baseline\\post-update-baseline-summary.json",
@@ -22,8 +18,8 @@
     },
     "artifact_freshness": {
       "status": "current",
-      "artifact_head": "17d69f5076881a955b231fdab9d50915eae81889",
-      "current_head": "17d69f5076881a955b231fdab9d50915eae81889",
+      "artifact_head": "40bbd1c62c5db71ecbe4d5931643d37619f955b3",
+      "current_head": "40bbd1c62c5db71ecbe4d5931643d37619f955b3",
       "head_matches_current": true,
       "changed_paths_since_artifact_head": [],
       "relevant_gate_code_changed": false,
@@ -33,90 +29,50 @@
   "capture_readiness": {
     "label": "Capture Readiness",
     "artifact_status": "present",
-    "status": "blocked_waiting_for_current_baseline",
-    "display_status": "BLOCKED",
-    "created_utc": "2026-05-06T02:53:39Z",
-    "blockers": [
-      "Post-update baseline is not PASS for the current client.",
-      "Post-update baseline display_status is not PASS."
-    ],
+    "status": "pass",
+    "display_status": "PASS",
+    "created_utc": "2026-05-06T04:25:46Z",
+    "blockers": [],
     "paths": {
       "report": "handoffs/current/capture-readiness/CAPTURE_READINESS_REPORT.md",
       "summary": "handoffs/current/capture-readiness/capture-readiness-summary.json",
       "log": "handoffs/current/capture-readiness/capture-readiness-log.jsonl"
     },
     "artifact_freshness": {
-      "status": "warning_non_relevant_changes",
-      "artifact_head": "870a7219add3ed3ecc62ef2dd7e3c3566e3c307d",
-      "current_head": "17d69f5076881a955b231fdab9d50915eae81889",
-      "head_matches_current": false,
-      "changed_paths_since_artifact_head": [
-        ".gitignore",
-        "docs/helper-tooling-policy.md",
-        "handoffs/current/README_CURRENT.md",
-        "handoffs/current/RIFTSCAN_RESUME_HANDOFF_2026-05-05_TRANSFER_OPERATOR_GUIDE.md",
-        "handoffs/current/RIFTSCAN_RESUME_HANDOFF_2026-05-06_OPERATOR_GATE_WORKFLOW.md",
-        "handoffs/current/capture-readiness/CAPTURE_READINESS_REPORT.md",
-        "handoffs/current/capture-readiness/capture-readiness-log.jsonl",
-        "handoffs/current/capture-readiness/capture-readiness-summary.json",
-        "handoffs/current/offline-workflow-check/OFFLINE_WORKFLOW_CHECK_REPORT.md",
-        "handoffs/current/offline-workflow-check/offline-workflow-check-log.jsonl",
-        "handoffs/current/offline-workflow-check/offline-workflow-check-summary.json",
-        "handoffs/current/operator/RIFTSCAN_OPERATOR_HANDOFF.md",
-        "handoffs/current/operator/operator-current-gate-summary.json",
-        "handoffs/current/post-update-baseline/POST_UPDATE_BASELINE_REPORT.md",
-        "handoffs/current/post-update-baseline/post-update-baseline-log.jsonl",
-        "handoffs/current/post-update-baseline/post-update-baseline-summary.json",
-        "scripts/run-riftscan-offline-workflow-check.cmd",
-        "scripts/run-riftscan-operator-report.cmd",
-        "tools/riftscan_offline_workflow_check.py",
-        "tools/riftscan_operator_app.py",
-        "tools/riftscan_patch_intake_app.py"
-      ],
+      "status": "current",
+      "artifact_head": "40bbd1c62c5db71ecbe4d5931643d37619f955b3",
+      "current_head": "40bbd1c62c5db71ecbe4d5931643d37619f955b3",
+      "head_matches_current": true,
+      "changed_paths_since_artifact_head": [],
       "relevant_gate_code_changed": false,
       "relevant_changed_paths": []
     }
   },
   "capture_readiness_baseline_link": {
-    "status": "mismatch",
+    "status": "match",
     "current_baseline": {
-      "created_utc": "2026-05-06T03:38:59Z",
-      "status": "blocked_waiting_for_game_or_focus",
-      "display_status": "BLOCKED",
+      "created_utc": "2026-05-06T04:25:10Z",
+      "status": "pass",
+      "display_status": "PASS",
       "runtime": {
         "pid": 11220,
         "hwnd": 657876
       }
     },
     "readiness_baseline": {
-      "created_utc": "2026-05-06T02:53:38Z",
-      "status": "blocked_waiting_for_game_or_focus",
-      "display_status": "BLOCKED",
+      "created_utc": "2026-05-06T04:25:10Z",
+      "status": "pass",
+      "display_status": "PASS",
       "runtime": {
         "pid": 11220,
         "hwnd": 657876
       }
     },
-    "mismatches": [
-      {
-        "field": "created_utc",
-        "current_baseline": "2026-05-06T03:38:59Z",
-        "readiness_baseline": "2026-05-06T02:53:38Z"
-      }
-    ]
+    "mismatches": []
   },
   "full_live_preflight": "PASS",
   "focus_preflight": "PASS",
-  "blockers": [
-    "Post-Update Baseline is not PASS for the current updated client.",
-    "Maintenance is not confirmed over.",
-    "Login is not confirmed successful.",
-    "Stable in-world state is not confirmed.",
-    "Capture Readiness is not PASS.",
-    "Post-update baseline is not PASS for the current client.",
-    "Post-update baseline display_status is not PASS.",
-    "Capture Readiness was generated from an older/different Post-Update Baseline; rerun Capture Readiness."
-  ],
-  "next_action": "Run Post-Update Baseline after the current updated RIFT client is confirmed stable in-world.",
+  "blockers": [],
+  "next_action": "Refresh the metadata-only capture plan; live collection/discovery still requires an explicit future gate.",
   "guardrail": "No live capture, discovery, movement/input, memory scan/read, offset validation, RiftReader validation, or /reloadui until current gates pass and an explicit future live gate is added."
 }

@@ -37,3 +37,18 @@
 {"args": ["git", "log", "--oneline", "-5"], "created_utc": "2026-05-06T02:53:39Z", "event": "command_start"}
 {"args": ["git", "log", "--oneline", "-5"], "created_utc": "2026-05-06T02:53:39Z", "event": "command_finish", "returncode": 0, "success": true}
 {"blocker_count": 2, "created_utc": "2026-05-06T02:53:39Z", "event": "readiness_finish", "status": "blocked_waiting_for_current_baseline"}
+{"created_utc": "2026-05-06T04:25:45Z", "event": "readiness_start", "version": "riftscan-capture-readiness-v1.0.1"}
+{"args": ["cmd", "/c", "C:\\RIFT MODDING\\Riftscan\\scripts\\run-rift-focus-control.cmd"], "created_utc": "2026-05-06T04:25:45Z", "event": "command_start"}
+{"args": ["cmd", "/c", "C:\\RIFT MODDING\\Riftscan\\scripts\\run-rift-focus-control.cmd"], "created_utc": "2026-05-06T04:25:46Z", "event": "command_finish", "returncode": 0, "success": true}
+{"created_utc": "2026-05-06T04:25:46Z", "event": "json_read", "path": "handoffs/current/post-update-baseline/post-update-baseline-summary.json"}
+{"created_utc": "2026-05-06T04:25:46Z", "event": "json_read", "path": "handoffs/current/focus-control-local/focus-control-summary.json"}
+{"created_utc": "2026-05-06T04:25:46Z", "event": "json_read", "path": "handoffs/current/focus-control-local/windows.json"}
+{"args": ["git", "rev-parse", "--abbrev-ref", "HEAD"], "created_utc": "2026-05-06T04:25:46Z", "event": "command_start"}
+{"args": ["git", "rev-parse", "--abbrev-ref", "HEAD"], "created_utc": "2026-05-06T04:25:46Z", "event": "command_finish", "returncode": 0, "success": true}
+{"args": ["git", "rev-parse", "HEAD"], "created_utc": "2026-05-06T04:25:46Z", "event": "command_start"}
+{"args": ["git", "rev-parse", "HEAD"], "created_utc": "2026-05-06T04:25:46Z", "event": "command_finish", "returncode": 0, "success": true}
+{"args": ["git", "status", "--short"], "created_utc": "2026-05-06T04:25:46Z", "event": "command_start"}
+{"args": ["git", "status", "--short"], "created_utc": "2026-05-06T04:25:46Z", "event": "command_finish", "returncode": 0, "success": true}
+{"args": ["git", "log", "--oneline", "-5"], "created_utc": "2026-05-06T04:25:46Z", "event": "command_start"}
+{"args": ["git", "log", "--oneline", "-5"], "created_utc": "2026-05-06T04:25:46Z", "event": "command_finish", "returncode": 0, "success": true}
+{"blocker_count": 0, "created_utc": "2026-05-06T04:25:46Z", "event": "readiness_finish", "status": "pass"}

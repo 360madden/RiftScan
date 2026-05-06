@@ -72,3 +72,17 @@
 {"args": ["git", "log", "--oneline", "-5"], "created_utc": "2026-05-06T03:38:59Z", "event": "command_start"}
 {"args": ["git", "log", "--oneline", "-5"], "created_utc": "2026-05-06T03:38:59Z", "event": "command_finish", "returncode": 0, "success": true}
 {"blocker_count": 3, "created_utc": "2026-05-06T03:38:59Z", "event": "baseline_finish", "status": "blocked_waiting_for_game_or_focus"}
+{"created_utc": "2026-05-06T04:25:09Z", "event": "baseline_start", "version": "riftscan-post-update-baseline-v1.0.1"}
+{"args": ["C:\\RIFT MODDING\\Riftscan\\scripts\\run-rift-focus-control.cmd"], "created_utc": "2026-05-06T04:25:09Z", "event": "command_start"}
+{"args": ["C:\\RIFT MODDING\\Riftscan\\scripts\\run-rift-focus-control.cmd"], "created_utc": "2026-05-06T04:25:10Z", "event": "command_finish", "returncode": 0, "success": true}
+{"created_utc": "2026-05-06T04:25:10Z", "event": "json_read", "path": "handoffs\\current\\focus-control-local\\focus-control-summary.json"}
+{"created_utc": "2026-05-06T04:25:10Z", "event": "json_read", "path": "handoffs\\current\\focus-control-local\\windows.json"}
+{"args": ["git", "rev-parse", "--abbrev-ref", "HEAD"], "created_utc": "2026-05-06T04:25:10Z", "event": "command_start"}
+{"args": ["git", "rev-parse", "--abbrev-ref", "HEAD"], "created_utc": "2026-05-06T04:25:10Z", "event": "command_finish", "returncode": 0, "success": true}
+{"args": ["git", "rev-parse", "HEAD"], "created_utc": "2026-05-06T04:25:10Z", "event": "command_start"}
+{"args": ["git", "rev-parse", "HEAD"], "created_utc": "2026-05-06T04:25:10Z", "event": "command_finish", "returncode": 0, "success": true}
+{"args": ["git", "status", "--short"], "created_utc": "2026-05-06T04:25:10Z", "event": "command_start"}
+{"args": ["git", "status", "--short"], "created_utc": "2026-05-06T04:25:10Z", "event": "command_finish", "returncode": 0, "success": true}
+{"args": ["git", "log", "--oneline", "-5"], "created_utc": "2026-05-06T04:25:10Z", "event": "command_start"}
+{"args": ["git", "log", "--oneline", "-5"], "created_utc": "2026-05-06T04:25:10Z", "event": "command_finish", "returncode": 0, "success": true}
+{"blocker_count": 0, "created_utc": "2026-05-06T04:25:10Z", "event": "baseline_finish", "status": "pass"}

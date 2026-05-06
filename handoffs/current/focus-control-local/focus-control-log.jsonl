@@ -1,5 +1,5 @@
-{"timestamp_utc": "2026-05-06T01:00:48Z", "event": "script_start", "script": "C:\\RIFT MODDING\\Riftscan\\tools\\rift_focus_control.py", "repo_root": "C:\\RIFT MODDING\\Riftscan", "process_name": "rift_x64", "explicit_pid": 0, "retries": 3, "settle_ms": 400}
-{"timestamp_utc": "2026-05-06T01:00:48Z", "event": "powershell_start", "command": "$items = @(Get-Process -Name 'rift_x64' -ErrorAction SilentlyContinue | Select-Object Id,ProcessName,Path,MainWindowTitle,StartTime); $items | ConvertTo-Json -Depth 4"}
-{"timestamp_utc": "2026-05-06T01:00:48Z", "event": "powershell_finish", "success": true, "returncode": 0, "elapsed_ms": 217, "stdout_length": 210, "stderr_length": 0}
-{"timestamp_utc": "2026-05-06T01:00:48Z", "event": "focus_attempt", "attempt": 1, "restore_ok": true, "set_foreground_ok": true, "foreground_hwnd": 657876, "foreground_hwnd_hex": "0xA09D4", "foreground_pid": 11220, "foreground_title": "RIFT", "verified": true}
-{"timestamp_utc": "2026-05-06T01:00:48Z", "event": "script_finish", "success": true, "status": "foreground_verified"}
+{"timestamp_utc": "2026-05-06T04:28:23Z", "event": "script_start", "script": "C:\\RIFT MODDING\\Riftscan\\tools\\rift_focus_control.py", "repo_root": "C:\\RIFT MODDING\\Riftscan", "process_name": "rift_x64", "explicit_pid": 0, "retries": 3, "settle_ms": 400}
+{"timestamp_utc": "2026-05-06T04:28:23Z", "event": "powershell_start", "command": "$items = @(Get-Process -Name 'rift_x64' -ErrorAction SilentlyContinue | Select-Object Id,ProcessName,Path,MainWindowTitle,StartTime); $items | ConvertTo-Json -Depth 4"}
+{"timestamp_utc": "2026-05-06T04:28:23Z", "event": "powershell_finish", "success": true, "returncode": 0, "elapsed_ms": 272, "stdout_length": 210, "stderr_length": 0}
+{"timestamp_utc": "2026-05-06T04:28:24Z", "event": "focus_attempt", "attempt": 1, "restore_ok": true, "set_foreground_ok": true, "foreground_hwnd": 657876, "foreground_hwnd_hex": "0xA09D4", "foreground_pid": 11220, "foreground_title": "RIFT", "verified": true}
+{"timestamp_utc": "2026-05-06T04:28:24Z", "event": "script_finish", "success": true, "status": "foreground_verified"}
