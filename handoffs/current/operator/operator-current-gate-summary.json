@@ -1,0 +1,53 @@
+{
+  "schema_version": "riftscan.operator_current_workflow_gate.v1",
+  "created_utc": "2026-05-06T02:25:41Z",
+  "metadata_capture_plan_gate": "BLOCKED",
+  "live_collection_allowed": false,
+  "old_offsets_trusted": false,
+  "post_update_baseline": {
+    "label": "Post-Update Baseline",
+    "artifact_status": "present",
+    "status": "blocked_waiting_for_game_or_focus",
+    "display_status": "BLOCKED",
+    "created_utc": "2026-05-06T01:32:34Z",
+    "blockers": [
+      "Maintenance is not confirmed over.",
+      "Login is not confirmed successful.",
+      "Stable in-world state is not confirmed."
+    ],
+    "paths": {
+      "report": "handoffs\\current\\post-update-baseline\\POST_UPDATE_BASELINE_REPORT.md",
+      "summary": "handoffs\\current\\post-update-baseline\\post-update-baseline-summary.json",
+      "log": "handoffs\\current\\post-update-baseline\\post-update-baseline-log.jsonl"
+    }
+  },
+  "capture_readiness": {
+    "label": "Capture Readiness",
+    "artifact_status": "present",
+    "status": "blocked_waiting_for_current_baseline",
+    "display_status": "BLOCKED",
+    "created_utc": "2026-05-06T02:12:56Z",
+    "blockers": [
+      "Post-update baseline is not PASS for the current client.",
+      "Post-update baseline display_status is not PASS."
+    ],
+    "paths": {
+      "report": "handoffs/current/capture-readiness/CAPTURE_READINESS_REPORT.md",
+      "summary": "handoffs/current/capture-readiness/capture-readiness-summary.json",
+      "log": "handoffs/current/capture-readiness/capture-readiness-log.jsonl"
+    }
+  },
+  "full_live_preflight": "PASS",
+  "focus_preflight": "PASS",
+  "blockers": [
+    "Post-Update Baseline is not PASS for the current updated client.",
+    "Maintenance is not confirmed over.",
+    "Login is not confirmed successful.",
+    "Stable in-world state is not confirmed.",
+    "Capture Readiness is not PASS.",
+    "Post-update baseline is not PASS for the current client.",
+    "Post-update baseline display_status is not PASS."
+  ],
+  "next_action": "Run Post-Update Baseline after the current updated RIFT client is confirmed stable in-world.",
+  "guardrail": "No live capture, discovery, movement/input, memory scan/read, offset validation, RiftReader validation, or /reloadui until current gates pass and an explicit future live gate is added."
+}

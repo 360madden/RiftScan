@@ -1,7 +1,7 @@
 # RiftScan Operator Handoff
 
-Created UTC: `2026-05-06T02:18:38Z`
-App version: `riftscan-operator-app-v3.8.10`
+Created UTC: `2026-05-06T02:25:41Z`
+App version: `riftscan-operator-app-v3.8.11`
 Repo root: `C:\RIFT MODDING\Riftscan`
 
 ## Operator Assessment
@@ -10,7 +10,87 @@ Full live preflight gate: `PASS`
 Focus preflight: `PASS`
 Summary: `status=foreground_verified pid=11220 hwnd=0xA09D4 title=RIFT`
 
-- No blocking operator issues detected.
+- No blocking focus/git issues detected; see Current Workflow Gate for baseline/readiness state.
+
+## Current Workflow Gate
+
+Summary path: `handoffs/current/operator/operator-current-gate-summary.json`
+
+```text
+metadata_capture_plan_gate: BLOCKED
+post_update_baseline: BLOCKED
+capture_readiness: BLOCKED
+full_live_preflight: PASS
+focus_preflight: PASS
+live_collection_allowed: false
+old_offsets_trusted: false
+next_action: Run Post-Update Baseline after the current updated RIFT client is confirmed stable in-world.
+
+blockers:
+- Post-Update Baseline is not PASS for the current updated client.
+- Maintenance is not confirmed over.
+- Login is not confirmed successful.
+- Stable in-world state is not confirmed.
+- Capture Readiness is not PASS.
+- Post-update baseline is not PASS for the current client.
+- Post-update baseline display_status is not PASS.
+```
+
+```json
+{
+  "schema_version": "riftscan.operator_current_workflow_gate.v1",
+  "created_utc": "2026-05-06T02:25:41Z",
+  "metadata_capture_plan_gate": "BLOCKED",
+  "live_collection_allowed": false,
+  "old_offsets_trusted": false,
+  "post_update_baseline": {
+    "label": "Post-Update Baseline",
+    "artifact_status": "present",
+    "status": "blocked_waiting_for_game_or_focus",
+    "display_status": "BLOCKED",
+    "created_utc": "2026-05-06T01:32:34Z",
+    "blockers": [
+      "Maintenance is not confirmed over.",
+      "Login is not confirmed successful.",
+      "Stable in-world state is not confirmed."
+    ],
+    "paths": {
+      "report": "handoffs\\current\\post-update-baseline\\POST_UPDATE_BASELINE_REPORT.md",
+      "summary": "handoffs\\current\\post-update-baseline\\post-update-baseline-summary.json",
+      "log": "handoffs\\current\\post-update-baseline\\post-update-baseline-log.jsonl"
+    }
+  },
+  "capture_readiness": {
+    "label": "Capture Readiness",
+    "artifact_status": "present",
+    "status": "blocked_waiting_for_current_baseline",
+    "display_status": "BLOCKED",
+    "created_utc": "2026-05-06T02:12:56Z",
+    "blockers": [
+      "Post-update baseline is not PASS for the current client.",
+      "Post-update baseline display_status is not PASS."
+    ],
+    "paths": {
+      "report": "handoffs/current/capture-readiness/CAPTURE_READINESS_REPORT.md",
+      "summary": "handoffs/current/capture-readiness/capture-readiness-summary.json",
+      "log": "handoffs/current/capture-readiness/capture-readiness-log.jsonl"
+    }
+  },
+  "full_live_preflight": "PASS",
+  "focus_preflight": "PASS",
+  "blockers": [
+    "Post-Update Baseline is not PASS for the current updated client.",
+    "Maintenance is not confirmed over.",
+    "Login is not confirmed successful.",
+    "Stable in-world state is not confirmed.",
+    "Capture Readiness is not PASS.",
+    "Post-update baseline is not PASS for the current client.",
+    "Post-update baseline display_status is not PASS."
+  ],
+  "next_action": "Run Post-Update Baseline after the current updated RIFT client is confirmed stable in-world.",
+  "guardrail": "No live capture, discovery, movement/input, memory scan/read, offset validation, RiftReader validation, or /reloadui until current gates pass and an explicit future live gate is added."
+}
+```
 
 ## Git Status
 
@@ -19,7 +99,9 @@ Exit code: `0`
 ```text
  M docs/helper-tooling-policy.md
  M handoffs/current/README_CURRENT.md
+ M handoffs/current/operator/RIFTSCAN_OPERATOR_HANDOFF.md
  M tools/riftscan_operator_app.py
+?? handoffs/current/operator/operator-current-gate-summary.json
 
 ```
 
@@ -28,11 +110,11 @@ Exit code: `0`
 Exit code: `0`
 
 ```text
+c95301d Add operator capture readiness self-test button
 97923b1 Add capture readiness self-test
 56dd777 Add capture readiness gate
 27ecb05 Document Python helper tooling direction
 f0f0362 Wire post-update baseline into operator app
-b9868ba Add next-step workflow handoff
 
 ```
 

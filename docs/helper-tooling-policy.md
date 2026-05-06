@@ -139,6 +139,8 @@ capture_readiness_self_test
 
 The Operator Diagnostics tab may expose offline self-tests when the test does not touch live RIFT state or write current handoff artifacts.
 
+Operator handoffs should include a compact current workflow gate section that reports whether Post-Update Baseline, Capture Readiness, and required preflight checks allow the next metadata-only action.
+
 ## Next preferred extension
 
 The next helper workflow should keep the same Python-first pattern and add the smallest safe post-readiness step: a metadata-only, focus-gated capture-plan refresh or GUI smoke-test flow. Do not start live capture or discovery until the current-client Post-Update Baseline and Capture Readiness gates both PASS.

@@ -21,6 +21,7 @@ Start here for new RiftScan work:
 - `Capture Readiness` is the active metadata-only gate between a fresh PASS baseline and any capture-plan refresh.
 - `Capture Readiness` has an offline self-test: `python tools/riftscan_capture_readiness.py --self-test`.
 - Operator Diagnostics has a `Capture Readiness Self-Test` button for offline GUI wiring checks.
+- Operator reports include a `Current Workflow Gate` go/no-go section and `handoffs/current/operator/operator-current-gate-summary.json` for baseline/readiness/full-preflight state.
 - Patch Intake can require `py_compile_capture_readiness` and `capture_readiness_self_test` post-apply checks for future Capture Readiness patches.
 
 ## Current direction
@@ -55,4 +56,4 @@ For meaningful workflow milestones:
 
 ## Current next recommended action
 
-GUI-smoke-test the Operator `Post-Update Baseline` and `Capture Readiness` buttons against the current updated RIFT client. If the current client is stable in-world, produce a fresh PASS baseline first, then require `CAPTURE READINESS: PASS` before any capture-plan refresh, collection, or discovery work.
+GUI-smoke-test the Operator `Post-Update Baseline` and `Capture Readiness` buttons against the current updated RIFT client. If the current client is stable in-world, produce a fresh PASS baseline first, then require the Operator `Current Workflow Gate` section to show `metadata_capture_plan_gate: PASS` before any capture-plan refresh, collection, or discovery work.

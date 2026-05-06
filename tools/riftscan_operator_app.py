@@ -1,6 +1,6 @@
-# Version: riftscan-operator-app-v3.8.10
-# Purpose: Windows Tkinter helper app for RiftScan operator workflow: run focus preflight, run full live preflight gate, run the post-update baseline and capture-readiness gates, run offline Capture Readiness self-tests, manage focus-gated metadata workflows, validate patch-runner manifests, check the online patch inbox discovery-only from the visible Main tab, write compact AI-ready reports, clean known junk, safely commit/push allowlisted files including baseline/readiness, repo-bridge handoffs and repo inbox patch packages, and provide tabbed/wrapped controls, a guided button-pusher workflow, focus-discipline confirmation, and lightweight status highlighting.
-# Total character count: 156201
+# Version: riftscan-operator-app-v3.8.11
+# Purpose: Windows Tkinter helper app for RiftScan operator workflow: run focus preflight, run full live preflight gate, run the post-update baseline and capture-readiness gates, run offline Capture Readiness self-tests, summarize the current workflow go/no-go gate, manage focus-gated metadata workflows, validate patch-runner manifests, check the online patch inbox discovery-only from the visible Main tab, write compact AI-ready reports, clean known junk, safely commit/push allowlisted files including baseline/readiness, repo-bridge handoffs and repo inbox patch packages, and provide tabbed/wrapped controls, a guided button-pusher workflow, focus-discipline confirmation, and lightweight status highlighting.
+# Total character count: 161338
 
 from __future__ import annotations
 
@@ -20,12 +20,13 @@ from tkinter import messagebox, scrolledtext, ttk
 from typing import Any
 
 
-APP_VERSION = "riftscan-operator-app-v3.8.10"
+APP_VERSION = "riftscan-operator-app-v3.8.11"
 REPO_ROOT = Path(__file__).resolve().parents[1]
 FOCUS_SCRIPT = REPO_ROOT / "scripts" / "run-rift-focus-control.cmd"
 HANDOFF_DIR = REPO_ROOT / "handoffs" / "current" / "focus-control-local"
 OPERATOR_DIR = REPO_ROOT / "handoffs" / "current" / "operator"
 REPORT_PATH = OPERATOR_DIR / "RIFTSCAN_OPERATOR_HANDOFF.md"
+OPERATOR_GATE_SUMMARY = OPERATOR_DIR / "operator-current-gate-summary.json"
 FOCUS_SUMMARY = HANDOFF_DIR / "focus-control-summary.json"
 WINDOWS_JSON = HANDOFF_DIR / "windows.json"
 FOCUS_LOG = HANDOFF_DIR / "focus-control-log.jsonl"
@@ -435,6 +436,97 @@ def latest_capture_readiness_summary() -> dict[str, Any]:
         "report_exists": CAPTURE_READINESS_REPORT.exists(),
         "log_exists": CAPTURE_READINESS_LOG.exists(),
     }
+
+
+def latest_gate_details(latest: dict[str, Any], label: str) -> dict[str, Any]:
+    summary = latest.get("summary") if isinstance(latest.get("summary"), dict) else {}
+    blockers = summary.get("blockers") if isinstance(summary.get("blockers"), list) else []
+    paths = summary.get("paths") if isinstance(summary.get("paths"), dict) else {}
+    return {
+        "label": label,
+        "artifact_status": latest.get("status"),
+        "status": summary.get("status") or latest.get("status"),
+        "display_status": summary.get("display_status") or ("NONE" if latest.get("status") == "none" else "UNKNOWN"),
+        "created_utc": summary.get("created_utc"),
+        "blockers": blockers,
+        "paths": {
+            "report": paths.get("report") or latest.get("report_path") or latest.get("expected_report_path"),
+            "summary": paths.get("summary") or latest.get("summary_path") or latest.get("expected_summary_path"),
+            "log": paths.get("log") or latest.get("log_path") or latest.get("expected_log_path"),
+        },
+    }
+
+
+def build_current_workflow_gate(
+    *,
+    full_ok: bool,
+    focus_ok: bool,
+    validation_issues: list[str],
+    post_update_baseline: dict[str, Any],
+    capture_readiness: dict[str, Any],
+) -> dict[str, Any]:
+    baseline = latest_gate_details(post_update_baseline, "Post-Update Baseline")
+    readiness = latest_gate_details(capture_readiness, "Capture Readiness")
+
+    blockers: list[str] = []
+    if baseline["display_status"] != "PASS":
+        blockers.append("Post-Update Baseline is not PASS for the current updated client.")
+        blockers.extend(str(blocker) for blocker in baseline["blockers"])
+    if readiness["display_status"] != "PASS":
+        blockers.append("Capture Readiness is not PASS.")
+        blockers.extend(str(blocker) for blocker in readiness["blockers"])
+    if not focus_ok:
+        blockers.append("Focus preflight is not foreground_verified.")
+    if not full_ok:
+        blockers.extend(validation_issues or ["Full live preflight gate is not PASS."])
+
+    if baseline["display_status"] != "PASS":
+        next_action = "Run Post-Update Baseline after the current updated RIFT client is confirmed stable in-world."
+    elif readiness["display_status"] != "PASS":
+        next_action = "Run Capture Readiness and resolve any blockers before capture-plan refresh."
+    elif not full_ok:
+        next_action = "Run Full Live Preflight before metadata-only capture-plan refresh."
+    else:
+        next_action = "Refresh the metadata-only capture plan; live collection/discovery still requires an explicit future gate."
+
+    metadata_capture_plan_gate = "PASS" if not blockers else "BLOCKED"
+    return {
+        "schema_version": "riftscan.operator_current_workflow_gate.v1",
+        "created_utc": utc_now(),
+        "metadata_capture_plan_gate": metadata_capture_plan_gate,
+        "live_collection_allowed": False,
+        "old_offsets_trusted": False,
+        "post_update_baseline": baseline,
+        "capture_readiness": readiness,
+        "full_live_preflight": "PASS" if full_ok else "FAIL",
+        "focus_preflight": "PASS" if focus_ok else "FAIL",
+        "blockers": blockers,
+        "next_action": next_action,
+        "guardrail": "No live capture, discovery, movement/input, memory scan/read, offset validation, RiftReader validation, or /reloadui until current gates pass and an explicit future live gate is added.",
+    }
+
+
+def workflow_gate_text(gate: dict[str, Any]) -> str:
+    blockers = gate.get("blockers") if isinstance(gate.get("blockers"), list) else []
+    baseline = gate.get("post_update_baseline") if isinstance(gate.get("post_update_baseline"), dict) else {}
+    readiness = gate.get("capture_readiness") if isinstance(gate.get("capture_readiness"), dict) else {}
+    lines = [
+        f"metadata_capture_plan_gate: {gate.get('metadata_capture_plan_gate')}",
+        f"post_update_baseline: {baseline.get('display_status')}",
+        f"capture_readiness: {readiness.get('display_status')}",
+        f"full_live_preflight: {gate.get('full_live_preflight')}",
+        f"focus_preflight: {gate.get('focus_preflight')}",
+        "live_collection_allowed: false",
+        "old_offsets_trusted: false",
+        f"next_action: {gate.get('next_action')}",
+        "",
+        "blockers:",
+    ]
+    if blockers:
+        lines.extend(f"- {blocker}" for blocker in blockers)
+    else:
+        lines.append("- None")
+    return "\n".join(lines)
 
 
 
@@ -1973,6 +2065,14 @@ def write_operator_report() -> Path:
 
     focus_ok = summary.get("status") == "foreground_verified"
     full_ok, validation_issues = validate_full_live_preflight(summary, windows)
+    workflow_gate = build_current_workflow_gate(
+        full_ok=full_ok and status_code == 0 and log_code == 0,
+        focus_ok=focus_ok,
+        validation_issues=validation_issues,
+        post_update_baseline=post_update_baseline,
+        capture_readiness=capture_readiness,
+    )
+    write_json(OPERATOR_GATE_SUMMARY, workflow_gate)
     issues: list[str] = [f"- {issue}" for issue in validation_issues]
 
     if status_code != 0:
@@ -1980,7 +2080,7 @@ def write_operator_report() -> Path:
     if log_code != 0:
         issues.append("- git log command failed.")
     if not issues:
-        issues.append("- No blocking operator issues detected.")
+        issues.append("- No blocking focus/git issues detected; see Current Workflow Gate for baseline/readiness state.")
 
     report = f"""# RiftScan Operator Handoff
 
@@ -1995,6 +2095,18 @@ Focus preflight: `{"PASS" if focus_ok else "FAIL"}`
 Summary: `{focus_line(summary)}`
 
 {chr(10).join(issues)}
+
+## Current Workflow Gate
+
+Summary path: `{rel(OPERATOR_GATE_SUMMARY)}`
+
+```text
+{workflow_gate_text(workflow_gate)}
+```
+
+```json
+{json_block(workflow_gate)}
+```
 
 ## Git Status
 
