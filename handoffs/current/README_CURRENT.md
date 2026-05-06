@@ -14,7 +14,7 @@ The older 2026-05-05 handoffs remain useful history, but their next-step orderin
 ## Latest verified workflow-code milestone referenced by this pointer
 
 ```text
-a666c77 Add operator gate self-test
+870a721 Add post-update baseline self-test
 ```
 
 A newer doc-only handoff-pointer commit may exist; check `git log --oneline -5` for the exact current HEAD before editing.
