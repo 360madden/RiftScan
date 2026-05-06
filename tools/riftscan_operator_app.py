@@ -1,5 +1,5 @@
-# Version: riftscan-operator-app-v3.8.20
-# Purpose: Windows Tkinter helper app for RiftScan operator workflow: run focus preflight, run full live preflight gate, run the post-update baseline and capture-readiness gates, run offline workflow checks and Post-Update Baseline, Capture Readiness, Operator gate, and movement gate self-tests, summarize the current workflow go/no-go gate with artifact freshness/linkage checks and movement execution gate references, manage focus-gated metadata workflows, validate patch-runner manifests, check the online patch inbox discovery-only from the visible Main tab, write compact AI-ready reports, clean known junk, safely commit/push allowlisted files including baseline/readiness/movement-gate, repo-bridge handoffs and repo inbox patch packages, and provide tabbed/wrapped controls, a guided button-pusher workflow, focus-discipline confirmation, and lightweight status highlighting.
+# Version: riftscan-operator-app-v3.8.21
+# Purpose: Windows Tkinter helper app for RiftScan operator workflow: run focus preflight, run full live preflight gate, run the post-update baseline and capture-readiness gates, run offline workflow checks and Post-Update Baseline, Capture Readiness, Operator gate, and movement gate self-tests, summarize the current workflow go/no-go gate with artifact freshness/linkage checks plus coord/API truth and movement execution gate references, manage focus-gated metadata workflows, validate patch-runner manifests, check the online patch inbox discovery-only from the visible Main tab, write compact AI-ready reports, clean known junk, safely commit/push allowlisted files including baseline/readiness/coord-truth/movement-gate, repo-bridge handoffs and repo inbox patch packages, and provide tabbed/wrapped controls, a guided button-pusher workflow, focus-discipline confirmation, and lightweight status highlighting.
 # Total character count: 204218
 
 from __future__ import annotations
@@ -22,7 +22,7 @@ from tkinter import messagebox, scrolledtext, ttk
 from typing import Any
 
 
-APP_VERSION = "riftscan-operator-app-v3.8.20"
+APP_VERSION = "riftscan-operator-app-v3.8.21"
 REPO_ROOT = Path(__file__).resolve().parents[1]
 FOCUS_SCRIPT = REPO_ROOT / "scripts" / "run-rift-focus-control.cmd"
 HANDOFF_DIR = REPO_ROOT / "handoffs" / "current" / "focus-control-local"
@@ -62,6 +62,10 @@ MOVEMENT_EXECUTION_GATE_DIR = REPO_ROOT / "handoffs" / "current" / "movement-exe
 MOVEMENT_EXECUTION_GATE_REPORT = MOVEMENT_EXECUTION_GATE_DIR / "MOVEMENT_EXECUTION_GATE_REPORT.md"
 MOVEMENT_EXECUTION_GATE_SUMMARY = MOVEMENT_EXECUTION_GATE_DIR / "movement-execution-gate-summary.json"
 MOVEMENT_EXECUTION_GATE_LOG = MOVEMENT_EXECUTION_GATE_DIR / "movement-execution-gate-log.jsonl"
+COORD_API_TRUTH_DIR = REPO_ROOT / "handoffs" / "current" / "coord-api-truth"
+COORD_API_TRUTH_REPORT = COORD_API_TRUTH_DIR / "COORD_API_TRUTH_REPORT.md"
+COORD_API_TRUTH_SUMMARY = COORD_API_TRUTH_DIR / "coord-api-truth-summary.json"
+COORD_API_TRUTH_LOG = COORD_API_TRUTH_DIR / "coord-api-truth-log.jsonl"
 POST_UPDATE_BASELINE_RELEVANT_PATHS = {
     "tools/riftscan_post_update_baseline.py",
     "scripts/run-riftscan-post-update-baseline.cmd",
@@ -100,6 +104,7 @@ ALLOWLIST = [
     "handoffs/current/capture-plan-check",
     "handoffs/current/movement-test-readiness",
     "handoffs/current/movement-execution-gate",
+    "handoffs/current/coord-api-truth",
     "handoffs/current/patch-intake",
     "handoffs/current/repo-bridge",
     ".riftscan/inbox/patch-packages",
@@ -600,6 +605,35 @@ def latest_movement_execution_gate_summary() -> dict[str, Any]:
         "summary": summary,
         "report_exists": MOVEMENT_EXECUTION_GATE_REPORT.exists(),
         "log_exists": MOVEMENT_EXECUTION_GATE_LOG.exists(),
+    }
+
+
+def latest_coord_api_truth_summary() -> dict[str, Any]:
+    if not COORD_API_TRUTH_SUMMARY.exists():
+        return {
+            "status": "none",
+            "reason": "coord API truth summary has not been generated",
+            "expected_report_path": rel(COORD_API_TRUTH_REPORT),
+            "expected_summary_path": rel(COORD_API_TRUTH_SUMMARY),
+            "expected_log_path": rel(COORD_API_TRUTH_LOG),
+        }
+
+    summary = load_json(COORD_API_TRUTH_SUMMARY)
+    if summary.get("_missing") or summary.get("_error"):
+        return {
+            "status": "error",
+            "summary_path": rel(COORD_API_TRUTH_SUMMARY),
+            "summary": summary,
+        }
+
+    return {
+        "status": "present",
+        "report_path": rel(COORD_API_TRUTH_REPORT),
+        "summary_path": rel(COORD_API_TRUTH_SUMMARY),
+        "log_path": rel(COORD_API_TRUTH_LOG),
+        "summary": summary,
+        "report_exists": COORD_API_TRUTH_REPORT.exists(),
+        "log_exists": COORD_API_TRUTH_LOG.exists(),
     }
 
 
@@ -2792,6 +2826,7 @@ def write_operator_report() -> Path:
     capture_plan_check = latest_capture_plan_check_summary()
     movement_test_readiness = latest_movement_test_readiness_summary()
     movement_execution_gate = latest_movement_execution_gate_summary()
+    coord_api_truth = latest_coord_api_truth_summary()
     dry_run = latest_dry_run_summary()
     capture_plan = latest_capture_plan_summary()
     capture_session = latest_capture_session_summary()
@@ -2909,6 +2944,12 @@ Exit code: `{log_code}`
 
 ```json
 {json_block(movement_execution_gate)}
+```
+
+## Latest Coord API Truth
+
+```json
+{json_block(coord_api_truth)}
 ```
 
 ## Latest Focus-Gated Session Dry Run

@@ -1,7 +1,7 @@
 # RiftScan Operator Handoff
 
-Created UTC: `2026-05-06T05:54:39Z`
-App version: `riftscan-operator-app-v3.8.20`
+Created UTC: `2026-05-06T10:55:16Z`
+App version: `riftscan-operator-app-v3.8.21`
 Repo root: `C:\RIFT MODDING\Riftscan`
 
 ## Operator Assessment
@@ -43,7 +43,7 @@ blockers:
 ```json
 {
   "schema_version": "riftscan.operator_current_workflow_gate.v1",
-  "created_utc": "2026-05-06T05:54:39Z",
+  "created_utc": "2026-05-06T10:55:16Z",
   "metadata_capture_plan_gate": "PASS",
   "live_collection_allowed": false,
   "old_offsets_trusted": false,
@@ -62,7 +62,7 @@ blockers:
     "artifact_freshness": {
       "status": "warning_non_relevant_changes",
       "artifact_head": "40bbd1c62c5db71ecbe4d5931643d37619f955b3",
-      "current_head": "b7bd739d3da8d9d5ec1c0e02241590e6dde682af",
+      "current_head": "4d7a06b15cd2a443060fe32142490ac5186f2401",
       "head_matches_current": false,
       "changed_paths_since_artifact_head": [
         "docs/helper-tooling-policy.md",
@@ -79,6 +79,9 @@ blockers:
         "handoffs/current/focus-control-local/process-command-result.json",
         "handoffs/current/live-collection-gate/LIVE_COLLECTION_GATE_CHECKLIST.md",
         "handoffs/current/live-collection-gate/live-collection-gate-summary.json",
+        "handoffs/current/movement-execution-gate/MOVEMENT_EXECUTION_GATE_REPORT.md",
+        "handoffs/current/movement-execution-gate/movement-execution-gate-log.jsonl",
+        "handoffs/current/movement-execution-gate/movement-execution-gate-summary.json",
         "handoffs/current/movement-test-readiness/MOVEMENT_TEST_READINESS_REPORT.md",
         "handoffs/current/movement-test-readiness/movement-test-readiness-log.jsonl",
         "handoffs/current/movement-test-readiness/movement-test-readiness-summary.json",
@@ -93,10 +96,13 @@ blockers:
         "plans/focus-gated-capture-plans/20260506T042824Z_focus_gated_capture_plan/CAPTURE_PLAN_HANDOFF.md",
         "plans/focus-gated-capture-plans/20260506T042824Z_focus_gated_capture_plan/capture-plan.json",
         "plans/focus-gated-capture-plans/LATEST_CAPTURE_PLAN.txt",
+        "scripts/live-test-riftscan.ps1",
         "scripts/run-riftscan-capture-plan-check.cmd",
+        "scripts/run-riftscan-movement-execution-gate.cmd",
         "scripts/run-riftscan-movement-test-readiness.cmd",
         "scripts/run-riftscan-operator-offline-diagnostics.cmd",
         "tools/riftscan_capture_plan_check.py",
+        "tools/riftscan_movement_execution_gate.py",
         "tools/riftscan_movement_test_readiness.py",
         "tools/riftscan_offline_workflow_check.py",
         "tools/riftscan_operator_app.py"
@@ -120,7 +126,7 @@ blockers:
     "artifact_freshness": {
       "status": "warning_non_relevant_changes",
       "artifact_head": "40bbd1c62c5db71ecbe4d5931643d37619f955b3",
-      "current_head": "b7bd739d3da8d9d5ec1c0e02241590e6dde682af",
+      "current_head": "4d7a06b15cd2a443060fe32142490ac5186f2401",
       "head_matches_current": false,
       "changed_paths_since_artifact_head": [
         "docs/helper-tooling-policy.md",
@@ -137,6 +143,9 @@ blockers:
         "handoffs/current/focus-control-local/process-command-result.json",
         "handoffs/current/live-collection-gate/LIVE_COLLECTION_GATE_CHECKLIST.md",
         "handoffs/current/live-collection-gate/live-collection-gate-summary.json",
+        "handoffs/current/movement-execution-gate/MOVEMENT_EXECUTION_GATE_REPORT.md",
+        "handoffs/current/movement-execution-gate/movement-execution-gate-log.jsonl",
+        "handoffs/current/movement-execution-gate/movement-execution-gate-summary.json",
         "handoffs/current/movement-test-readiness/MOVEMENT_TEST_READINESS_REPORT.md",
         "handoffs/current/movement-test-readiness/movement-test-readiness-log.jsonl",
         "handoffs/current/movement-test-readiness/movement-test-readiness-summary.json",
@@ -151,10 +160,13 @@ blockers:
         "plans/focus-gated-capture-plans/20260506T042824Z_focus_gated_capture_plan/CAPTURE_PLAN_HANDOFF.md",
         "plans/focus-gated-capture-plans/20260506T042824Z_focus_gated_capture_plan/capture-plan.json",
         "plans/focus-gated-capture-plans/LATEST_CAPTURE_PLAN.txt",
+        "scripts/live-test-riftscan.ps1",
         "scripts/run-riftscan-capture-plan-check.cmd",
+        "scripts/run-riftscan-movement-execution-gate.cmd",
         "scripts/run-riftscan-movement-test-readiness.cmd",
         "scripts/run-riftscan-operator-offline-diagnostics.cmd",
         "tools/riftscan_capture_plan_check.py",
+        "tools/riftscan_movement_execution_gate.py",
         "tools/riftscan_movement_test_readiness.py",
         "tools/riftscan_offline_workflow_check.py",
         "tools/riftscan_operator_app.py"
@@ -228,10 +240,9 @@ blockers:
     "artifact_status": "present",
     "status": "blocked_movement_execution_not_allowed",
     "display_status": "BLOCKED",
-    "created_utc": "2026-05-06T05:54:33Z",
+    "created_utc": "2026-05-06T10:38:19Z",
     "blockers": [
       "live-test-riftscan preflight failed for move_forward.",
-      "live-test-riftscan preflight issue: ReaderBridgeExport.lua is stale by file time: age 51143s > max 300s.",
       "live-test-riftscan preflight issue: RiftReader anchor TraceMatchesProcess is not true.",
       "live-test-riftscan preflight issue: Source object coordinate sample does not match ReaderBridge within tolerance."
     ],
@@ -256,31 +267,17 @@ blockers:
 Exit code: `0`
 
 ```text
- M docs/helper-tooling-policy.md
- M handoffs/current/README_CURRENT.md
- M handoffs/current/RIFTSCAN_RESUME_HANDOFF_2026-05-06_OPERATOR_GATE_WORKFLOW.md
- M handoffs/current/capture-plan-check/CAPTURE_PLAN_CHECK_REPORT.md
- M handoffs/current/capture-plan-check/capture-plan-check-log.jsonl
- M handoffs/current/capture-plan-check/capture-plan-check-summary.json
  M handoffs/current/focus-control-local/focus-control-log.jsonl
  M handoffs/current/focus-control-local/focus-control-summary.json
  M handoffs/current/focus-control-local/process-command-result.json
- M handoffs/current/live-collection-gate/LIVE_COLLECTION_GATE_CHECKLIST.md
- M handoffs/current/live-collection-gate/live-collection-gate-summary.json
- M handoffs/current/movement-test-readiness/MOVEMENT_TEST_READINESS_REPORT.md
- M handoffs/current/movement-test-readiness/movement-test-readiness-log.jsonl
- M handoffs/current/movement-test-readiness/movement-test-readiness-summary.json
- M handoffs/current/offline-workflow-check/OFFLINE_WORKFLOW_CHECK_REPORT.md
- M handoffs/current/offline-workflow-check/offline-workflow-check-log.jsonl
- M handoffs/current/offline-workflow-check/offline-workflow-check-summary.json
+ M handoffs/current/movement-execution-gate/MOVEMENT_EXECUTION_GATE_REPORT.md
+ M handoffs/current/movement-execution-gate/movement-execution-gate-log.jsonl
+ M handoffs/current/movement-execution-gate/movement-execution-gate-summary.json
  M handoffs/current/operator/RIFTSCAN_OPERATOR_HANDOFF.md
  M handoffs/current/operator/operator-current-gate-summary.json
- M scripts/live-test-riftscan.ps1
- M tools/riftscan_offline_workflow_check.py
  M tools/riftscan_operator_app.py
-?? handoffs/current/movement-execution-gate/
-?? scripts/run-riftscan-movement-execution-gate.cmd
-?? tools/riftscan_movement_execution_gate.py
+?? handoffs/current/RIFTSCAN_RESUME_HANDOFF_2026-05-06_0650_COORD_API_TRUTH_TRACE_BLOCKED.md
+?? handoffs/current/coord-api-truth/
 
 ```
 
@@ -289,11 +286,11 @@ Exit code: `0`
 Exit code: `0`
 
 ```text
+4d7a06b Add movement execution gate
 b7bd739 Add movement test readiness gate
 e3992a5 Add capture plan check workflow
 3ae21d7 Record current-client gate pass and capture plan
 40bbd1c Refresh blocked post-update baseline artifacts
-17d69f5 Refresh handoffs after offline workflow check
 
 ```
 
@@ -302,7 +299,7 @@ e3992a5 Add capture plan check workflow
 ```json
 {
   "schema_version": "riftscan.local_focus_control_summary.v1",
-  "created_utc": "2026-05-06T05:54:30Z",
+  "created_utc": "2026-05-06T10:38:15Z",
   "status": "foreground_verified",
   "process": {
     "Id": 11220,
@@ -1092,7 +1089,6 @@ e3992a5 Add capture plan check workflow
     "app_version": "riftscan-movement-execution-gate-v1.0.0",
     "blockers": [
       "live-test-riftscan preflight failed for move_forward.",
-      "live-test-riftscan preflight issue: ReaderBridgeExport.lua is stale by file time: age 51143s > max 300s.",
       "live-test-riftscan preflight issue: RiftReader anchor TraceMatchesProcess is not true.",
       "live-test-riftscan preflight issue: Source object coordinate sample does not match ReaderBridge within tolerance."
     ],
@@ -1122,7 +1118,7 @@ e3992a5 Add capture plan check workflow
           "error": null,
           "returncode": 2,
           "stderr_tail": "",
-          "stdout_tail": "BLOCKED: freshness checks failed. No capture started.\nVerdict: C:\\RIFT MODDING\\Riftscan\\reports\\generated\\manual-live-test-20260506-015430\\freshness-verdict.json\n - ReaderBridgeExport.lua is stale by file time: age 51143s > max 300s.\n - RiftReader anchor TraceMatchesProcess is not true.\n - Source object coordinate sample does not match ReaderBridge within tolerance.\n",
+          "stdout_tail": "BLOCKED: freshness checks failed. No capture started.\nVerdict: C:\\RIFT MODDING\\Riftscan\\reports\\generated\\manual-live-test-20260506-063816\\freshness-verdict.json\n - RiftReader anchor TraceMatchesProcess is not true.\n - Source object coordinate sample does not match ReaderBridge within tolerance.\n",
           "success": false
         }
       },
@@ -1143,7 +1139,7 @@ e3992a5 Add capture plan check workflow
         "old_offsets_trusted": false
       }
     },
-    "created_utc": "2026-05-06T05:54:33Z",
+    "created_utc": "2026-05-06T10:38:19Z",
     "display_status": "BLOCKED",
     "expires_utc": null,
     "movement_execution_allowed": false,
@@ -1167,6 +1163,146 @@ e3992a5 Add capture plan check workflow
     "schema_version": "riftscan.movement_execution_gate.v1",
     "status": "blocked_movement_execution_not_allowed",
     "warnings": []
+  },
+  "report_exists": true,
+  "log_exists": true
+}
+```
+
+## Latest Coord API Truth
+
+```json
+{
+  "status": "present",
+  "report_path": "handoffs/current/coord-api-truth/COORD_API_TRUTH_REPORT.md",
+  "summary_path": "handoffs/current/coord-api-truth/coord-api-truth-summary.json",
+  "log_path": "handoffs/current/coord-api-truth/coord-api-truth-log.jsonl",
+  "summary": {
+    "addon_api_scan": {
+      "observation_count": 383,
+      "observation_kind_counts": {
+        "current_player": 378,
+        "player_loc": 1,
+        "target": 3,
+        "waypoint_status": 1
+      },
+      "truth_record_count": 4,
+      "warnings": [
+        "addon_api_truth_summary_is_snapshot_evidence_not_memory_truth",
+        "no_focus_coordinate_truth_observed",
+        "no_focus_target_coordinate_truth_observed",
+        "no_player_waypoint_anchor_truth_observed",
+        "no_waypoint_coordinate_truth_observed",
+        "source_scan_warning:addon_api_observations_filtered_by_addon_name",
+        "source_scan_warning:addon_api_observations_filtered_by_min_file_write_utc"
+      ]
+    },
+    "coordinate_truth_level": "current_api_plus_readonly_memory_candidate",
+    "created_utc": "2026-05-06T10:45:20Z",
+    "current_player": {
+      "api_source": "Inspect.Unit.Detail",
+      "confidence_level": "addon_api_direct_savedvariables",
+      "coordinate_x": 7511.5297851562,
+      "coordinate_y": 904.47998046875,
+      "coordinate_z": 3040.2800292969,
+      "file_last_write_utc": "2026-05-06T10:34:50.511034+00:00",
+      "location_name": "Sanctum of the Vigil",
+      "source_addon": "ReaderBridgeExport",
+      "source_file_name": "ReaderBridgeExport.lua",
+      "source_mode": "DirectAPI",
+      "unit_id": "u035400012FA2D207",
+      "unit_name": "Atank",
+      "zone_id": "z487C9102D2EA79BE"
+    },
+    "display_status": "PARTIAL_PASS_TRACE_BLOCKED",
+    "live_collection_allowed": false,
+    "movement_execution_allowed": false,
+    "movement_execution_gate": {
+      "blockers": [
+        "live-test-riftscan preflight failed for move_forward.",
+        "live-test-riftscan preflight issue: RiftReader anchor TraceMatchesProcess is not true.",
+        "live-test-riftscan preflight issue: Source object coordinate sample does not match ReaderBridge within tolerance."
+      ],
+      "display_status": "BLOCKED",
+      "movement_execution_allowed": false,
+      "summary_path": "handoffs/current/movement-execution-gate/movement-execution-gate-summary.json"
+    },
+    "next_action": "Rebuild/refresh RiftReader coord-trace proof anchor for current PID before movement; do not use the old 0x216... trace addresses as current truth.",
+    "old_offsets_trusted": false,
+    "paths": {
+      "addon_api_scan": "reports/generated/addon-api-observation-scan-current-coords-fresh-20260506-103803.json",
+      "addon_api_truth": "reports/generated/addon-api-truth-current-coords-fresh-20260506-103803.json",
+      "log": "handoffs/current/coord-api-truth/coord-api-truth-log.jsonl",
+      "report": "handoffs/current/coord-api-truth/COORD_API_TRUTH_REPORT.md",
+      "riftreader_coord_anchor": "reports/generated/riftreader-read-player-coord-anchor-20260506-104154.json",
+      "riftreader_current": "reports/generated/riftreader-read-player-current-20260506-104154.json",
+      "riftreader_snapshot": "reports/generated/riftreader-readerbridge-snapshot-20260506-104154.json",
+      "riftscan_addon_match": "reports/generated/current-api-coord-readonly-20260506-064252-addon-coordinate-matches.json",
+      "riftscan_addon_match_report": "reports/generated/current-api-coord-readonly-20260506-064252-addon-coordinate-matches.md",
+      "riftscan_session": "sessions/current-api-coord-readonly-20260506-064252",
+      "summary": "handoffs/current/coord-api-truth/coord-api-truth-summary.json"
+    },
+    "riftreader_coord_trace_anchor": {
+      "blocked_reason": "old coord-trace artifact is from PID 41220 and does not match current PID 11220",
+      "object_base_address": "0x216F2F26068",
+      "process_id": 11220,
+      "source_coord_relative_offset": 72,
+      "source_file": "C:\\RIFT MODDING\\RiftReader\\scripts\\captures\\player-coord-write-trace.json",
+      "source_object_address": "0x216F2F26020",
+      "trace_matches_process": false,
+      "trace_process_id": 41220
+    },
+    "riftreader_current": {
+      "anchor_provenance": "heuristic",
+      "coord_matches_within_tolerance": true,
+      "delta_x": 0,
+      "delta_y": 0,
+      "delta_z": 0,
+      "expected_coord_x": 7511.5297851562,
+      "expected_coord_y": 904.47998046875,
+      "expected_coord_z": 3040.2800292969,
+      "memory_address_hex": "0x1DA682DF690",
+      "memory_coord_x": 7511.53,
+      "memory_coord_y": 904.48,
+      "memory_coord_z": 3040.28,
+      "process_id": 11220,
+      "process_name": "rift_x64",
+      "proof_grade": false,
+      "proof_grade_blocker": "read-player-current is heuristic/current sanity evidence; coord-trace anchor does not match current process",
+      "selection_source": "heuristic"
+    },
+    "riftscan_readonly_capture": {
+      "axis_order": "xyz",
+      "best_addon_x": 7511.5297851562,
+      "best_addon_y": 904.47998046875,
+      "best_addon_z": 3040.2800292969,
+      "best_max_abs_distance": 5.002220859751105e-11,
+      "best_memory_x": 7511.52978515625,
+      "best_memory_y": 904.47998046875,
+      "best_memory_z": 3040.280029296875,
+      "bytes_captured": 4096,
+      "candidate_count": 1,
+      "candidate_id": "rift-addon-coordinate-candidate-000001",
+      "candidate_source_absolute_address_hex": "0x1DA682DF690",
+      "match_count": 8,
+      "movement_or_input_sent": false,
+      "samples_captured": 8,
+      "session_id": "current-api-coord-readonly-20260506-064252",
+      "session_path": "sessions/current-api-coord-readonly-20260506-064252",
+      "stimulus": "passive_idle",
+      "support_count": 8,
+      "target_base_address_hex": "0x1DA682DF690",
+      "warning": "addon_coordinate_matches_are_validation_evidence_not_final_truth"
+    },
+    "safety": {
+      "coord_trace_anchor_rebuilt": false,
+      "movement_or_input_sent": false,
+      "offset_validation_or_trust_promoted": false,
+      "read_only_memory_capture_started": true,
+      "reloadui_sent": false
+    },
+    "schema_version": "riftscan.coord_api_truth_current.v1",
+    "status": "api_and_riftscan_memory_candidate_matched_trace_anchor_blocked"
   },
   "report_exists": true,
   "log_exists": true
@@ -1429,11 +1565,11 @@ e3992a5 Add capture plan check workflow
 ## Focus Log Tail
 
 ```jsonl
-{"timestamp_utc": "2026-05-06T05:54:29Z", "event": "script_start", "script": "C:\\RIFT MODDING\\Riftscan\\tools\\rift_focus_control.py", "repo_root": "C:\\RIFT MODDING\\Riftscan", "process_name": "rift_x64", "explicit_pid": 0, "retries": 3, "settle_ms": 400}
-{"timestamp_utc": "2026-05-06T05:54:29Z", "event": "powershell_start", "command": "$items = @(Get-Process -Name 'rift_x64' -ErrorAction SilentlyContinue | Select-Object Id,ProcessName,Path,MainWindowTitle,StartTime); $items | ConvertTo-Json -Depth 4"}
-{"timestamp_utc": "2026-05-06T05:54:29Z", "event": "powershell_finish", "success": true, "returncode": 0, "elapsed_ms": 345, "stdout_length": 210, "stderr_length": 0}
-{"timestamp_utc": "2026-05-06T05:54:30Z", "event": "focus_attempt", "attempt": 1, "restore_ok": true, "set_foreground_ok": true, "foreground_hwnd": 657876, "foreground_hwnd_hex": "0xA09D4", "foreground_pid": 11220, "foreground_title": "RIFT", "verified": true}
-{"timestamp_utc": "2026-05-06T05:54:30Z", "event": "script_finish", "success": true, "status": "foreground_verified"}
+{"timestamp_utc": "2026-05-06T10:38:14Z", "event": "script_start", "script": "C:\\RIFT MODDING\\Riftscan\\tools\\rift_focus_control.py", "repo_root": "C:\\RIFT MODDING\\Riftscan", "process_name": "rift_x64", "explicit_pid": 0, "retries": 3, "settle_ms": 400}
+{"timestamp_utc": "2026-05-06T10:38:14Z", "event": "powershell_start", "command": "$items = @(Get-Process -Name 'rift_x64' -ErrorAction SilentlyContinue | Select-Object Id,ProcessName,Path,MainWindowTitle,StartTime); $items | ConvertTo-Json -Depth 4"}
+{"timestamp_utc": "2026-05-06T10:38:15Z", "event": "powershell_finish", "success": true, "returncode": 0, "elapsed_ms": 571, "stdout_length": 210, "stderr_length": 0}
+{"timestamp_utc": "2026-05-06T10:38:15Z", "event": "focus_attempt", "attempt": 1, "restore_ok": true, "set_foreground_ok": true, "foreground_hwnd": 657876, "foreground_hwnd_hex": "0xA09D4", "foreground_pid": 11220, "foreground_title": "RIFT", "verified": true}
+{"timestamp_utc": "2026-05-06T10:38:15Z", "event": "script_finish", "success": true, "status": "foreground_verified"}
 ```
 
 ## AI Review Prompt

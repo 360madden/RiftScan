@@ -25,3 +25,12 @@
 {"created_utc": "2026-05-06T05:54:33Z", "event": "json_read", "path": "handoffs/current/operator/operator-current-gate-summary.json"}
 {"created_utc": "2026-05-06T05:54:33Z", "event": "json_read", "path": "handoffs/current/focus-control-local/focus-control-summary.json"}
 {"blocker_count": 4, "created_utc": "2026-05-06T05:54:33Z", "event": "movement_execution_gate_finish", "status": "blocked_movement_execution_not_allowed"}
+{"created_utc": "2026-05-06T10:38:14Z", "event": "movement_execution_gate_start", "version": "riftscan-movement-execution-gate-v1.0.0"}
+{"args": ["cmd", "/c", "C:\\RIFT MODDING\\Riftscan\\scripts\\run-rift-focus-control.cmd"], "created_utc": "2026-05-06T10:38:14Z", "event": "command_start", "name": "focus_preflight"}
+{"created_utc": "2026-05-06T10:38:15Z", "event": "command_finish", "name": "focus_preflight", "returncode": 0, "success": true}
+{"args": ["cmd", "/c", "C:\\RIFT MODDING\\Riftscan\\scripts\\live-test-riftscan.cmd", "-Stimulus", "move_forward", "-PreflightOnly"], "created_utc": "2026-05-06T10:38:15Z", "event": "command_start", "name": "live_test_wrapper_preflight"}
+{"created_utc": "2026-05-06T10:38:19Z", "event": "command_finish", "name": "live_test_wrapper_preflight", "returncode": 2, "success": false}
+{"created_utc": "2026-05-06T10:38:19Z", "event": "json_read", "path": "handoffs/current/movement-test-readiness/movement-test-readiness-summary.json"}
+{"created_utc": "2026-05-06T10:38:19Z", "event": "json_read", "path": "handoffs/current/operator/operator-current-gate-summary.json"}
+{"created_utc": "2026-05-06T10:38:19Z", "event": "json_read", "path": "handoffs/current/focus-control-local/focus-control-summary.json"}
+{"blocker_count": 3, "created_utc": "2026-05-06T10:38:19Z", "event": "movement_execution_gate_finish", "status": "blocked_movement_execution_not_allowed"}

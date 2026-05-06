@@ -12,7 +12,6 @@ expires_utc: None
 ## Blockers
 
 - live-test-riftscan preflight failed for move_forward.
-- live-test-riftscan preflight issue: ReaderBridgeExport.lua is stale by file time: age 51143s > max 300s.
 - live-test-riftscan preflight issue: RiftReader anchor TraceMatchesProcess is not true.
 - live-test-riftscan preflight issue: Source object coordinate sample does not match ReaderBridge within tolerance.
 
@@ -46,8 +45,7 @@ stdout:
 
 ```text
 BLOCKED: freshness checks failed. No capture started.
-Verdict: C:\RIFT MODDING\Riftscan\reports\generated\manual-live-test-20260506-015430\freshness-verdict.json
- - ReaderBridgeExport.lua is stale by file time: age 51143s > max 300s.
+Verdict: C:\RIFT MODDING\Riftscan\reports\generated\manual-live-test-20260506-063816\freshness-verdict.json
  - RiftReader anchor TraceMatchesProcess is not true.
  - Source object coordinate sample does not match ReaderBridge within tolerance.
 
@@ -74,7 +72,6 @@ log: handoffs/current/movement-execution-gate/movement-execution-gate-log.jsonl
   "app_version": "riftscan-movement-execution-gate-v1.0.0",
   "blockers": [
     "live-test-riftscan preflight failed for move_forward.",
-    "live-test-riftscan preflight issue: ReaderBridgeExport.lua is stale by file time: age 51143s > max 300s.",
     "live-test-riftscan preflight issue: RiftReader anchor TraceMatchesProcess is not true.",
     "live-test-riftscan preflight issue: Source object coordinate sample does not match ReaderBridge within tolerance."
   ],
@@ -104,7 +101,7 @@ log: handoffs/current/movement-execution-gate/movement-execution-gate-log.jsonl
         "error": null,
         "returncode": 2,
         "stderr_tail": "",
-        "stdout_tail": "BLOCKED: freshness checks failed. No capture started.\nVerdict: C:\\RIFT MODDING\\Riftscan\\reports\\generated\\manual-live-test-20260506-015430\\freshness-verdict.json\n - ReaderBridgeExport.lua is stale by file time: age 51143s > max 300s.\n - RiftReader anchor TraceMatchesProcess is not true.\n - Source object coordinate sample does not match ReaderBridge within tolerance.\n",
+        "stdout_tail": "BLOCKED: freshness checks failed. No capture started.\nVerdict: C:\\RIFT MODDING\\Riftscan\\reports\\generated\\manual-live-test-20260506-063816\\freshness-verdict.json\n - RiftReader anchor TraceMatchesProcess is not true.\n - Source object coordinate sample does not match ReaderBridge within tolerance.\n",
         "success": false
       }
     },
@@ -125,7 +122,7 @@ log: handoffs/current/movement-execution-gate/movement-execution-gate-log.jsonl
       "old_offsets_trusted": false
     }
   },
-  "created_utc": "2026-05-06T05:54:33Z",
+  "created_utc": "2026-05-06T10:38:19Z",
   "display_status": "BLOCKED",
   "expires_utc": null,
   "movement_execution_allowed": false,

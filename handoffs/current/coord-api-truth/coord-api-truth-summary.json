@@ -1,0 +1,127 @@
+{
+  "addon_api_scan": {
+    "observation_count": 383,
+    "observation_kind_counts": {
+      "current_player": 378,
+      "player_loc": 1,
+      "target": 3,
+      "waypoint_status": 1
+    },
+    "truth_record_count": 4,
+    "warnings": [
+      "addon_api_truth_summary_is_snapshot_evidence_not_memory_truth",
+      "no_focus_coordinate_truth_observed",
+      "no_focus_target_coordinate_truth_observed",
+      "no_player_waypoint_anchor_truth_observed",
+      "no_waypoint_coordinate_truth_observed",
+      "source_scan_warning:addon_api_observations_filtered_by_addon_name",
+      "source_scan_warning:addon_api_observations_filtered_by_min_file_write_utc"
+    ]
+  },
+  "coordinate_truth_level": "current_api_plus_readonly_memory_candidate",
+  "created_utc": "2026-05-06T10:45:20Z",
+  "current_player": {
+    "api_source": "Inspect.Unit.Detail",
+    "confidence_level": "addon_api_direct_savedvariables",
+    "coordinate_x": 7511.5297851562,
+    "coordinate_y": 904.47998046875,
+    "coordinate_z": 3040.2800292969,
+    "file_last_write_utc": "2026-05-06T10:34:50.511034+00:00",
+    "location_name": "Sanctum of the Vigil",
+    "source_addon": "ReaderBridgeExport",
+    "source_file_name": "ReaderBridgeExport.lua",
+    "source_mode": "DirectAPI",
+    "unit_id": "u035400012FA2D207",
+    "unit_name": "Atank",
+    "zone_id": "z487C9102D2EA79BE"
+  },
+  "display_status": "PARTIAL_PASS_TRACE_BLOCKED",
+  "live_collection_allowed": false,
+  "movement_execution_allowed": false,
+  "movement_execution_gate": {
+    "blockers": [
+      "live-test-riftscan preflight failed for move_forward.",
+      "live-test-riftscan preflight issue: RiftReader anchor TraceMatchesProcess is not true.",
+      "live-test-riftscan preflight issue: Source object coordinate sample does not match ReaderBridge within tolerance."
+    ],
+    "display_status": "BLOCKED",
+    "movement_execution_allowed": false,
+    "summary_path": "handoffs/current/movement-execution-gate/movement-execution-gate-summary.json"
+  },
+  "next_action": "Rebuild/refresh RiftReader coord-trace proof anchor for current PID before movement; do not use the old 0x216... trace addresses as current truth.",
+  "old_offsets_trusted": false,
+  "paths": {
+    "addon_api_scan": "reports/generated/addon-api-observation-scan-current-coords-fresh-20260506-103803.json",
+    "addon_api_truth": "reports/generated/addon-api-truth-current-coords-fresh-20260506-103803.json",
+    "log": "handoffs/current/coord-api-truth/coord-api-truth-log.jsonl",
+    "report": "handoffs/current/coord-api-truth/COORD_API_TRUTH_REPORT.md",
+    "riftreader_coord_anchor": "reports/generated/riftreader-read-player-coord-anchor-20260506-104154.json",
+    "riftreader_current": "reports/generated/riftreader-read-player-current-20260506-104154.json",
+    "riftreader_snapshot": "reports/generated/riftreader-readerbridge-snapshot-20260506-104154.json",
+    "riftscan_addon_match": "reports/generated/current-api-coord-readonly-20260506-064252-addon-coordinate-matches.json",
+    "riftscan_addon_match_report": "reports/generated/current-api-coord-readonly-20260506-064252-addon-coordinate-matches.md",
+    "riftscan_session": "sessions/current-api-coord-readonly-20260506-064252",
+    "summary": "handoffs/current/coord-api-truth/coord-api-truth-summary.json"
+  },
+  "riftreader_coord_trace_anchor": {
+    "blocked_reason": "old coord-trace artifact is from PID 41220 and does not match current PID 11220",
+    "object_base_address": "0x216F2F26068",
+    "process_id": 11220,
+    "source_coord_relative_offset": 72,
+    "source_file": "C:\\RIFT MODDING\\RiftReader\\scripts\\captures\\player-coord-write-trace.json",
+    "source_object_address": "0x216F2F26020",
+    "trace_matches_process": false,
+    "trace_process_id": 41220
+  },
+  "riftreader_current": {
+    "anchor_provenance": "heuristic",
+    "coord_matches_within_tolerance": true,
+    "delta_x": 0,
+    "delta_y": 0,
+    "delta_z": 0,
+    "expected_coord_x": 7511.5297851562,
+    "expected_coord_y": 904.47998046875,
+    "expected_coord_z": 3040.2800292969,
+    "memory_address_hex": "0x1DA682DF690",
+    "memory_coord_x": 7511.53,
+    "memory_coord_y": 904.48,
+    "memory_coord_z": 3040.28,
+    "process_id": 11220,
+    "process_name": "rift_x64",
+    "proof_grade": false,
+    "proof_grade_blocker": "read-player-current is heuristic/current sanity evidence; coord-trace anchor does not match current process",
+    "selection_source": "heuristic"
+  },
+  "riftscan_readonly_capture": {
+    "axis_order": "xyz",
+    "best_addon_x": 7511.5297851562,
+    "best_addon_y": 904.47998046875,
+    "best_addon_z": 3040.2800292969,
+    "best_max_abs_distance": 5.002220859751105e-11,
+    "best_memory_x": 7511.52978515625,
+    "best_memory_y": 904.47998046875,
+    "best_memory_z": 3040.280029296875,
+    "bytes_captured": 4096,
+    "candidate_count": 1,
+    "candidate_id": "rift-addon-coordinate-candidate-000001",
+    "candidate_source_absolute_address_hex": "0x1DA682DF690",
+    "match_count": 8,
+    "movement_or_input_sent": false,
+    "samples_captured": 8,
+    "session_id": "current-api-coord-readonly-20260506-064252",
+    "session_path": "sessions/current-api-coord-readonly-20260506-064252",
+    "stimulus": "passive_idle",
+    "support_count": 8,
+    "target_base_address_hex": "0x1DA682DF690",
+    "warning": "addon_coordinate_matches_are_validation_evidence_not_final_truth"
+  },
+  "safety": {
+    "coord_trace_anchor_rebuilt": false,
+    "movement_or_input_sent": false,
+    "offset_validation_or_trust_promoted": false,
+    "read_only_memory_capture_started": true,
+    "reloadui_sent": false
+  },
+  "schema_version": "riftscan.coord_api_truth_current.v1",
+  "status": "api_and_riftscan_memory_candidate_matched_trace_anchor_blocked"
+}

@@ -1,6 +1,6 @@
 {
   "schema_version": "riftscan.operator_current_workflow_gate.v1",
-  "created_utc": "2026-05-06T05:54:39Z",
+  "created_utc": "2026-05-06T10:55:16Z",
   "metadata_capture_plan_gate": "PASS",
   "live_collection_allowed": false,
   "old_offsets_trusted": false,
@@ -19,7 +19,7 @@
     "artifact_freshness": {
       "status": "warning_non_relevant_changes",
       "artifact_head": "40bbd1c62c5db71ecbe4d5931643d37619f955b3",
-      "current_head": "b7bd739d3da8d9d5ec1c0e02241590e6dde682af",
+      "current_head": "4d7a06b15cd2a443060fe32142490ac5186f2401",
       "head_matches_current": false,
       "changed_paths_since_artifact_head": [
         "docs/helper-tooling-policy.md",
@@ -36,6 +36,9 @@
         "handoffs/current/focus-control-local/process-command-result.json",
         "handoffs/current/live-collection-gate/LIVE_COLLECTION_GATE_CHECKLIST.md",
         "handoffs/current/live-collection-gate/live-collection-gate-summary.json",
+        "handoffs/current/movement-execution-gate/MOVEMENT_EXECUTION_GATE_REPORT.md",
+        "handoffs/current/movement-execution-gate/movement-execution-gate-log.jsonl",
+        "handoffs/current/movement-execution-gate/movement-execution-gate-summary.json",
         "handoffs/current/movement-test-readiness/MOVEMENT_TEST_READINESS_REPORT.md",
         "handoffs/current/movement-test-readiness/movement-test-readiness-log.jsonl",
         "handoffs/current/movement-test-readiness/movement-test-readiness-summary.json",
@@ -50,10 +53,13 @@
         "plans/focus-gated-capture-plans/20260506T042824Z_focus_gated_capture_plan/CAPTURE_PLAN_HANDOFF.md",
         "plans/focus-gated-capture-plans/20260506T042824Z_focus_gated_capture_plan/capture-plan.json",
         "plans/focus-gated-capture-plans/LATEST_CAPTURE_PLAN.txt",
+        "scripts/live-test-riftscan.ps1",
         "scripts/run-riftscan-capture-plan-check.cmd",
+        "scripts/run-riftscan-movement-execution-gate.cmd",
         "scripts/run-riftscan-movement-test-readiness.cmd",
         "scripts/run-riftscan-operator-offline-diagnostics.cmd",
         "tools/riftscan_capture_plan_check.py",
+        "tools/riftscan_movement_execution_gate.py",
         "tools/riftscan_movement_test_readiness.py",
         "tools/riftscan_offline_workflow_check.py",
         "tools/riftscan_operator_app.py"
@@ -77,7 +83,7 @@
     "artifact_freshness": {
       "status": "warning_non_relevant_changes",
       "artifact_head": "40bbd1c62c5db71ecbe4d5931643d37619f955b3",
-      "current_head": "b7bd739d3da8d9d5ec1c0e02241590e6dde682af",
+      "current_head": "4d7a06b15cd2a443060fe32142490ac5186f2401",
       "head_matches_current": false,
       "changed_paths_since_artifact_head": [
         "docs/helper-tooling-policy.md",
@@ -94,6 +100,9 @@
         "handoffs/current/focus-control-local/process-command-result.json",
         "handoffs/current/live-collection-gate/LIVE_COLLECTION_GATE_CHECKLIST.md",
         "handoffs/current/live-collection-gate/live-collection-gate-summary.json",
+        "handoffs/current/movement-execution-gate/MOVEMENT_EXECUTION_GATE_REPORT.md",
+        "handoffs/current/movement-execution-gate/movement-execution-gate-log.jsonl",
+        "handoffs/current/movement-execution-gate/movement-execution-gate-summary.json",
         "handoffs/current/movement-test-readiness/MOVEMENT_TEST_READINESS_REPORT.md",
         "handoffs/current/movement-test-readiness/movement-test-readiness-log.jsonl",
         "handoffs/current/movement-test-readiness/movement-test-readiness-summary.json",
@@ -108,10 +117,13 @@
         "plans/focus-gated-capture-plans/20260506T042824Z_focus_gated_capture_plan/CAPTURE_PLAN_HANDOFF.md",
         "plans/focus-gated-capture-plans/20260506T042824Z_focus_gated_capture_plan/capture-plan.json",
         "plans/focus-gated-capture-plans/LATEST_CAPTURE_PLAN.txt",
+        "scripts/live-test-riftscan.ps1",
         "scripts/run-riftscan-capture-plan-check.cmd",
+        "scripts/run-riftscan-movement-execution-gate.cmd",
         "scripts/run-riftscan-movement-test-readiness.cmd",
         "scripts/run-riftscan-operator-offline-diagnostics.cmd",
         "tools/riftscan_capture_plan_check.py",
+        "tools/riftscan_movement_execution_gate.py",
         "tools/riftscan_movement_test_readiness.py",
         "tools/riftscan_offline_workflow_check.py",
         "tools/riftscan_operator_app.py"
@@ -185,10 +197,9 @@
     "artifact_status": "present",
     "status": "blocked_movement_execution_not_allowed",
     "display_status": "BLOCKED",
-    "created_utc": "2026-05-06T05:54:33Z",
+    "created_utc": "2026-05-06T10:38:19Z",
     "blockers": [
       "live-test-riftscan preflight failed for move_forward.",
-      "live-test-riftscan preflight issue: ReaderBridgeExport.lua is stale by file time: age 51143s > max 300s.",
       "live-test-riftscan preflight issue: RiftReader anchor TraceMatchesProcess is not true.",
       "live-test-riftscan preflight issue: Source object coordinate sample does not match ReaderBridge within tolerance."
     ],
