@@ -1,14 +1,14 @@
 # RiftScan Operator Handoff
 
-Created UTC: `2026-05-05T00:47:20Z`
-App version: `riftscan-operator-app-v3.8.6`
+Created UTC: `2026-05-06T01:32:40Z`
+App version: `riftscan-operator-app-v3.8.8`
 Repo root: `C:\RIFT MODDING\Riftscan`
 
 ## Operator Assessment
 
 Full live preflight gate: `PASS`
 Focus preflight: `PASS`
-Summary: `status=foreground_verified pid=29420 hwnd=0x4E0F42 title=RIFT`
+Summary: `status=foreground_verified pid=11220 hwnd=0xA09D4 title=RIFT`
 
 - No blocking operator issues detected.
 
@@ -17,13 +17,11 @@ Summary: `status=foreground_verified pid=29420 hwnd=0x4E0F42 title=RIFT`
 Exit code: `0`
 
 ```text
- M handoffs/current/focus-control-local/focus-control-log.jsonl
- M handoffs/current/focus-control-local/focus-control-summary.json
- M handoffs/current/focus-control-local/process-command-result.json
  M handoffs/current/operator/RIFTSCAN_OPERATOR_HANDOFF.md
- M plans/focus-gated-capture-plans/LATEST_CAPTURE_PLAN.txt
- M sessions/focus-gated-captures/LATEST_CAPTURE_SESSION.txt
-?? plans/focus-gated-capture-plans/20260505T003511Z_focus_gated_capture_plan/
+ M handoffs/current/post-update-baseline/POST_UPDATE_BASELINE_REPORT.md
+ M handoffs/current/post-update-baseline/post-update-baseline-log.jsonl
+ M handoffs/current/post-update-baseline/post-update-baseline-summary.json
+ M tools/riftscan_operator_app.py
 
 ```
 
@@ -32,11 +30,11 @@ Exit code: `0`
 Exit code: `0`
 
 ```text
-90f9397 Fix patch intake push verification false failure
-5a0577f Implement patch intake helper v1.1
-a7f0561 Allow operator commit allowlist for repo bridge inbox
-f8a1ff0 Add patch intake GUI test report
-374cb36 Add patch intake helper v1
+b9868ba Add next-step workflow handoff
+115c31a Record post-update baseline pass
+3add5fa Document post-update baseline implementation
+11380e2 Add post-update baseline launcher
+d9a43dc Add post-update baseline tool
 
 ```
 
@@ -45,19 +43,19 @@ f8a1ff0 Add patch intake GUI test report
 ```json
 {
   "schema_version": "riftscan.local_focus_control_summary.v1",
-  "created_utc": "2026-05-05T00:40:46Z",
+  "created_utc": "2026-05-06T01:00:48Z",
   "status": "foreground_verified",
   "process": {
-    "Id": 29420,
+    "Id": 11220,
     "ProcessName": "rift_x64",
     "Path": "C:\\Program Files (x86)\\Glyph\\Games\\RIFT\\Live\\rift_x64.exe",
     "MainWindowTitle": "RIFT",
-    "StartTime": "/Date(1777764916054)/"
+    "StartTime": "/Date(1778027723258)/"
   },
   "selected_window": {
-    "hwnd": 5115714,
-    "hwnd_hex": "0x4E0F42",
-    "pid": 29420,
+    "hwnd": 657876,
+    "hwnd_hex": "0xA09D4",
+    "pid": 11220,
     "title": "RIFT"
   },
   "focus": {
@@ -67,9 +65,9 @@ f8a1ff0 Add patch intake GUI test report
         "attempt": 1,
         "restore_ok": true,
         "set_foreground_ok": true,
-        "foreground_hwnd": 5115714,
-        "foreground_hwnd_hex": "0x4E0F42",
-        "foreground_pid": 29420,
+        "foreground_hwnd": 657876,
+        "foreground_hwnd_hex": "0xA09D4",
+        "foreground_pid": 11220,
         "foreground_title": "RIFT",
         "verified": true
       }
@@ -88,15 +86,134 @@ f8a1ff0 Add patch intake GUI test report
 
 ```json
 {
-  "pid": 29420,
+  "pid": 11220,
   "windows": [
     {
-      "hwnd": 5115714,
-      "hwnd_hex": "0x4E0F42",
-      "pid": 29420,
+      "hwnd": 657876,
+      "hwnd_hex": "0xA09D4",
+      "pid": 11220,
       "title": "RIFT"
     }
   ]
+}
+```
+
+## Latest Post-Update Baseline
+
+```json
+{
+  "status": "present",
+  "report_path": "handoffs/current/post-update-baseline/POST_UPDATE_BASELINE_REPORT.md",
+  "summary_path": "handoffs/current/post-update-baseline/post-update-baseline-summary.json",
+  "log_path": "handoffs/current/post-update-baseline/post-update-baseline-log.jsonl",
+  "summary": {
+    "app_version": "riftscan-post-update-baseline-v1.0.0",
+    "blockers": [
+      "Maintenance is not confirmed over.",
+      "Login is not confirmed successful.",
+      "Stable in-world state is not confirmed."
+    ],
+    "created_utc": "2026-05-06T01:32:34Z",
+    "display_status": "BLOCKED",
+    "focus_command_result": {
+      "args": [
+        "scripts\\run-rift-focus-control.cmd"
+      ],
+      "skipped": true,
+      "success": true
+    },
+    "git": {
+      "branch": "main",
+      "head": "b9868bac4c85557ae0598cbfdeb5226b98315024",
+      "log_oneline_5": "b9868ba Add next-step workflow handoff\n115c31a Record post-update baseline pass\n3add5fa Document post-update baseline implementation\n11380e2 Add post-update baseline launcher\nd9a43dc Add post-update baseline tool",
+      "status_short": " M handoffs/current/operator/RIFTSCAN_OPERATOR_HANDOFF.md\n M handoffs/current/post-update-baseline/POST_UPDATE_BASELINE_REPORT.md\n M handoffs/current/post-update-baseline/post-update-baseline-log.jsonl\n M handoffs/current/post-update-baseline/post-update-baseline-summary.json\n M tools/riftscan_operator_app.py"
+    },
+    "manual_state": {
+      "login_successful": false,
+      "maintenance_over": false,
+      "world_loaded": false
+    },
+    "paths": {
+      "log": "handoffs\\current\\post-update-baseline\\post-update-baseline-log.jsonl",
+      "report": "handoffs\\current\\post-update-baseline\\POST_UPDATE_BASELINE_REPORT.md",
+      "summary": "handoffs\\current\\post-update-baseline\\post-update-baseline-summary.json"
+    },
+    "runtime": {
+      "character_name": null,
+      "focus_status": "foreground_verified",
+      "hwnd": 657876,
+      "pid": 11220,
+      "selected_window_present": true,
+      "shard": null,
+      "title": "RIFT",
+      "windows_entry_count": 1,
+      "zone_or_location": null
+    },
+    "safety": {
+      "capture_started": false,
+      "live_capture_allowed": false,
+      "memory_scan_or_read_started": false,
+      "movement_or_input_sent": false,
+      "old_offsets_trusted": false,
+      "reloadui_sent": false
+    },
+    "schema_version": "riftscan.post_update_baseline.v1",
+    "source_artifacts": {
+      "focus_summary": {
+        "created_utc": "2026-05-06T01:00:48Z",
+        "focus": {
+          "attempts": [
+            {
+              "attempt": 1,
+              "foreground_hwnd": 657876,
+              "foreground_hwnd_hex": "0xA09D4",
+              "foreground_pid": 11220,
+              "foreground_title": "RIFT",
+              "restore_ok": true,
+              "set_foreground_ok": true,
+              "verified": true
+            }
+          ],
+          "success": true
+        },
+        "notes": [
+          "This local probe uses Win32 foreground APIs.",
+          "It does not click the mouse.",
+          "It does not send keyboard input.",
+          "It does not run /reloadui."
+        ],
+        "process": {
+          "Id": 11220,
+          "MainWindowTitle": "RIFT",
+          "Path": "C:\\Program Files (x86)\\Glyph\\Games\\RIFT\\Live\\rift_x64.exe",
+          "ProcessName": "rift_x64",
+          "StartTime": "/Date(1778027723258)/"
+        },
+        "schema_version": "riftscan.local_focus_control_summary.v1",
+        "selected_window": {
+          "hwnd": 657876,
+          "hwnd_hex": "0xA09D4",
+          "pid": 11220,
+          "title": "RIFT"
+        },
+        "status": "foreground_verified"
+      },
+      "windows": {
+        "pid": 11220,
+        "windows": [
+          {
+            "hwnd": 657876,
+            "hwnd_hex": "0xA09D4",
+            "pid": 11220,
+            "title": "RIFT"
+          }
+        ]
+      }
+    },
+    "status": "blocked_waiting_for_game_or_focus"
+  },
+  "report_exists": true,
+  "log_exists": true
 }
 ```
 
@@ -356,11 +473,11 @@ f8a1ff0 Add patch intake GUI test report
 ## Focus Log Tail
 
 ```jsonl
-{"timestamp_utc": "2026-05-05T00:40:45Z", "event": "script_start", "script": "C:\\RIFT MODDING\\Riftscan\\tools\\rift_focus_control.py", "repo_root": "C:\\RIFT MODDING\\Riftscan", "process_name": "rift_x64", "explicit_pid": 0, "retries": 3, "settle_ms": 400}
-{"timestamp_utc": "2026-05-05T00:40:45Z", "event": "powershell_start", "command": "$items = @(Get-Process -Name 'rift_x64' -ErrorAction SilentlyContinue | Select-Object Id,ProcessName,Path,MainWindowTitle,StartTime); $items | ConvertTo-Json -Depth 4"}
-{"timestamp_utc": "2026-05-05T00:40:45Z", "event": "powershell_finish", "success": true, "returncode": 0, "elapsed_ms": 420, "stdout_length": 210, "stderr_length": 0}
-{"timestamp_utc": "2026-05-05T00:40:46Z", "event": "focus_attempt", "attempt": 1, "restore_ok": true, "set_foreground_ok": true, "foreground_hwnd": 5115714, "foreground_hwnd_hex": "0x4E0F42", "foreground_pid": 29420, "foreground_title": "RIFT", "verified": true}
-{"timestamp_utc": "2026-05-05T00:40:46Z", "event": "script_finish", "success": true, "status": "foreground_verified"}
+{"timestamp_utc": "2026-05-06T01:00:48Z", "event": "script_start", "script": "C:\\RIFT MODDING\\Riftscan\\tools\\rift_focus_control.py", "repo_root": "C:\\RIFT MODDING\\Riftscan", "process_name": "rift_x64", "explicit_pid": 0, "retries": 3, "settle_ms": 400}
+{"timestamp_utc": "2026-05-06T01:00:48Z", "event": "powershell_start", "command": "$items = @(Get-Process -Name 'rift_x64' -ErrorAction SilentlyContinue | Select-Object Id,ProcessName,Path,MainWindowTitle,StartTime); $items | ConvertTo-Json -Depth 4"}
+{"timestamp_utc": "2026-05-06T01:00:48Z", "event": "powershell_finish", "success": true, "returncode": 0, "elapsed_ms": 217, "stdout_length": 210, "stderr_length": 0}
+{"timestamp_utc": "2026-05-06T01:00:48Z", "event": "focus_attempt", "attempt": 1, "restore_ok": true, "set_foreground_ok": true, "foreground_hwnd": 657876, "foreground_hwnd_hex": "0xA09D4", "foreground_pid": 11220, "foreground_title": "RIFT", "verified": true}
+{"timestamp_utc": "2026-05-06T01:00:48Z", "event": "script_finish", "success": true, "status": "foreground_verified"}
 ```
 
 ## AI Review Prompt

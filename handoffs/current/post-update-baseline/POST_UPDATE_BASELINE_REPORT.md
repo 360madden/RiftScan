@@ -3,13 +3,15 @@
 ## Result
 
 ```text
-POST-UPDATE BASELINE: PASS
-status: pass
+POST-UPDATE BASELINE: BLOCKED
+status: blocked_waiting_for_game_or_focus
 ```
 
 ## Blockers
 
-- None
+- Maintenance is not confirmed over.
+- Login is not confirmed successful.
+- Stable in-world state is not confirmed.
 
 ## Runtime
 
@@ -20,17 +22,17 @@ windows_entry_count: 1
 pid: 11220
 hwnd: 657876
 title: RIFT
-character_name: Atank
-shard: Deepwood
-zone_or_location: Sanctum of the Vigil
+character_name: None
+shard: None
+zone_or_location: None
 ```
 
 ## Manual State
 
 ```text
-maintenance_over: True
-login_successful: True
-world_loaded: True
+maintenance_over: False
+login_successful: False
+world_loaded: False
 ```
 
 ## Safety Boundary
@@ -48,30 +50,27 @@ reloadui_sent: false
 
 ```text
 branch: main
-head: 3add5fa4b5c094373cd69ab7e778d66a3eb8afb3
+head: b9868bac4c85557ae0598cbfdeb5226b98315024
 ```
 
 Git status:
 
 ```text
- M handoffs/current/focus-control-local/FOCUS_CONTROL_HANDOFF.md
- M handoffs/current/focus-control-local/focus-control-log.jsonl
- M handoffs/current/focus-control-local/focus-control-summary.json
- M handoffs/current/focus-control-local/focus-result.json
- M handoffs/current/focus-control-local/process-command-result.json
- M handoffs/current/focus-control-local/process-info.json
- M handoffs/current/focus-control-local/windows.json
-?? handoffs/current/post-update-baseline/post-update-baseline-log.jsonl
+ M handoffs/current/operator/RIFTSCAN_OPERATOR_HANDOFF.md
+ M handoffs/current/post-update-baseline/POST_UPDATE_BASELINE_REPORT.md
+ M handoffs/current/post-update-baseline/post-update-baseline-log.jsonl
+ M handoffs/current/post-update-baseline/post-update-baseline-summary.json
+ M tools/riftscan_operator_app.py
 ```
 
 Recent commits:
 
 ```text
+b9868ba Add next-step workflow handoff
+115c31a Record post-update baseline pass
 3add5fa Document post-update baseline implementation
 11380e2 Add post-update baseline launcher
 d9a43dc Add post-update baseline tool
-ea4c950 Add post-update baseline handoff
-1cf6759 Add RiftScan resume handoff for transfer/operator guide
 ```
 
 ## Output Paths
@@ -87,28 +86,30 @@ log: handoffs\current\post-update-baseline\post-update-baseline-log.jsonl
 ```json
 {
   "app_version": "riftscan-post-update-baseline-v1.0.0",
-  "blockers": [],
-  "created_utc": "2026-05-06T01:00:48Z",
-  "display_status": "PASS",
+  "blockers": [
+    "Maintenance is not confirmed over.",
+    "Login is not confirmed successful.",
+    "Stable in-world state is not confirmed."
+  ],
+  "created_utc": "2026-05-06T01:32:34Z",
+  "display_status": "BLOCKED",
   "focus_command_result": {
     "args": [
-      "C:\\RIFT MODDING\\Riftscan\\scripts\\run-rift-focus-control.cmd"
+      "scripts\\run-rift-focus-control.cmd"
     ],
-    "returncode": 0,
-    "stderr": "",
-    "stdout": "Focus control handoff written to C:\\RIFT MODDING\\Riftscan\\handoffs\\current\\focus-control-local\n",
+    "skipped": true,
     "success": true
   },
   "git": {
     "branch": "main",
-    "head": "3add5fa4b5c094373cd69ab7e778d66a3eb8afb3",
-    "log_oneline_5": "3add5fa Document post-update baseline implementation\n11380e2 Add post-update baseline launcher\nd9a43dc Add post-update baseline tool\nea4c950 Add post-update baseline handoff\n1cf6759 Add RiftScan resume handoff for transfer/operator guide",
-    "status_short": " M handoffs/current/focus-control-local/FOCUS_CONTROL_HANDOFF.md\n M handoffs/current/focus-control-local/focus-control-log.jsonl\n M handoffs/current/focus-control-local/focus-control-summary.json\n M handoffs/current/focus-control-local/focus-result.json\n M handoffs/current/focus-control-local/process-command-result.json\n M handoffs/current/focus-control-local/process-info.json\n M handoffs/current/focus-control-local/windows.json\n?? handoffs/current/post-update-baseline/post-update-baseline-log.jsonl"
+    "head": "b9868bac4c85557ae0598cbfdeb5226b98315024",
+    "log_oneline_5": "b9868ba Add next-step workflow handoff\n115c31a Record post-update baseline pass\n3add5fa Document post-update baseline implementation\n11380e2 Add post-update baseline launcher\nd9a43dc Add post-update baseline tool",
+    "status_short": " M handoffs/current/operator/RIFTSCAN_OPERATOR_HANDOFF.md\n M handoffs/current/post-update-baseline/POST_UPDATE_BASELINE_REPORT.md\n M handoffs/current/post-update-baseline/post-update-baseline-log.jsonl\n M handoffs/current/post-update-baseline/post-update-baseline-summary.json\n M tools/riftscan_operator_app.py"
   },
   "manual_state": {
-    "login_successful": true,
-    "maintenance_over": true,
-    "world_loaded": true
+    "login_successful": false,
+    "maintenance_over": false,
+    "world_loaded": false
   },
   "paths": {
     "log": "handoffs\\current\\post-update-baseline\\post-update-baseline-log.jsonl",
@@ -116,15 +117,15 @@ log: handoffs\current\post-update-baseline\post-update-baseline-log.jsonl
     "summary": "handoffs\\current\\post-update-baseline\\post-update-baseline-summary.json"
   },
   "runtime": {
-    "character_name": "Atank",
+    "character_name": null,
     "focus_status": "foreground_verified",
     "hwnd": 657876,
     "pid": 11220,
     "selected_window_present": true,
-    "shard": "Deepwood",
+    "shard": null,
     "title": "RIFT",
     "windows_entry_count": 1,
-    "zone_or_location": "Sanctum of the Vigil"
+    "zone_or_location": null
   },
   "safety": {
     "capture_started": false,
@@ -187,6 +188,6 @@ log: handoffs\current\post-update-baseline\post-update-baseline-log.jsonl
       ]
     }
   },
-  "status": "pass"
+  "status": "blocked_waiting_for_game_or_focus"
 }
 ```
