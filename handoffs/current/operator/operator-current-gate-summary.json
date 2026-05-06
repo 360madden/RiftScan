@@ -1,6 +1,6 @@
 {
   "schema_version": "riftscan.operator_current_workflow_gate.v1",
-  "created_utc": "2026-05-06T03:24:00Z",
+  "created_utc": "2026-05-06T03:37:16Z",
   "metadata_capture_plan_gate": "BLOCKED",
   "live_collection_allowed": false,
   "old_offsets_trusted": false,
@@ -23,9 +23,10 @@
     "artifact_freshness": {
       "status": "warning_non_relevant_changes",
       "artifact_head": "870a7219add3ed3ecc62ef2dd7e3c3566e3c307d",
-      "current_head": "a2cf4815bb491f994d1cc9dd52f6cdd354b8bfa2",
+      "current_head": "b3bb14df4fbce6e43cba4dece49be072684bd5ff",
       "head_matches_current": false,
       "changed_paths_since_artifact_head": [
+        ".gitignore",
         "docs/helper-tooling-policy.md",
         "handoffs/current/README_CURRENT.md",
         "handoffs/current/RIFTSCAN_RESUME_HANDOFF_2026-05-05_TRANSFER_OPERATOR_GUIDE.md",
@@ -38,7 +39,9 @@
         "handoffs/current/post-update-baseline/POST_UPDATE_BASELINE_REPORT.md",
         "handoffs/current/post-update-baseline/post-update-baseline-log.jsonl",
         "handoffs/current/post-update-baseline/post-update-baseline-summary.json",
+        "scripts/run-riftscan-offline-workflow-check.cmd",
         "scripts/run-riftscan-operator-report.cmd",
+        "tools/riftscan_offline_workflow_check.py",
         "tools/riftscan_operator_app.py",
         "tools/riftscan_patch_intake_app.py"
       ],
@@ -64,9 +67,10 @@
     "artifact_freshness": {
       "status": "warning_non_relevant_changes",
       "artifact_head": "870a7219add3ed3ecc62ef2dd7e3c3566e3c307d",
-      "current_head": "a2cf4815bb491f994d1cc9dd52f6cdd354b8bfa2",
+      "current_head": "b3bb14df4fbce6e43cba4dece49be072684bd5ff",
       "head_matches_current": false,
       "changed_paths_since_artifact_head": [
+        ".gitignore",
         "docs/helper-tooling-policy.md",
         "handoffs/current/README_CURRENT.md",
         "handoffs/current/RIFTSCAN_RESUME_HANDOFF_2026-05-05_TRANSFER_OPERATOR_GUIDE.md",
@@ -79,7 +83,9 @@
         "handoffs/current/post-update-baseline/POST_UPDATE_BASELINE_REPORT.md",
         "handoffs/current/post-update-baseline/post-update-baseline-log.jsonl",
         "handoffs/current/post-update-baseline/post-update-baseline-summary.json",
+        "scripts/run-riftscan-offline-workflow-check.cmd",
         "scripts/run-riftscan-operator-report.cmd",
+        "tools/riftscan_offline_workflow_check.py",
         "tools/riftscan_operator_app.py",
         "tools/riftscan_patch_intake_app.py"
       ],
