@@ -9,6 +9,7 @@
     "fresh Post-Update Baseline PASS",
     "fresh Capture Readiness PASS",
     "fresh Capture Plan Check PASS",
+    "Movement Test Readiness PASS before movement-labeled testing",
     "Operator report refreshed after checks",
     "explicit operator approval for the exact live slice"
   ],
@@ -32,9 +33,18 @@
     "append_only_artifacts": true,
     "abort_on_focus_drift": true
   },
+  "first_movement_labeled_live_slice_shape_after_passive_proof": {
+    "exact_target_pid_hwnd_verified_immediately_before_input": true,
+    "stimulus": "move_forward",
+    "bounded_duration": true,
+    "mixed_turn_camera_reloadui": false,
+    "abort_on_focus_drift": true,
+    "wrapper": "scripts/live-test-riftscan.cmd -Stimulus move_forward",
+    "required_delta_summary_interpretation": "stimulus_observed_primary_triplet_changed"
+  },
   "paths": {
     "checklist": "handoffs/current/live-collection-gate/LIVE_COLLECTION_GATE_CHECKLIST.md",
     "summary": "handoffs/current/live-collection-gate/live-collection-gate-summary.json"
   },
-  "next_action": "Review checklist only; do not run live collection from this milestone."
+  "next_action": "Run Movement Test Readiness and review checklist only; do not run live collection from this milestone."
 }

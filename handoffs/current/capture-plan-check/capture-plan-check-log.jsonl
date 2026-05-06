@@ -28,3 +28,13 @@
 {"args": ["git", "log", "--oneline", "-5"], "created_utc": "2026-05-06T05:04:31Z", "event": "command_start"}
 {"args": ["git", "log", "--oneline", "-5"], "created_utc": "2026-05-06T05:04:31Z", "event": "command_finish", "returncode": 0, "success": true}
 {"blocker_count": 0, "created_utc": "2026-05-06T05:04:32Z", "event": "capture_plan_check_finish", "status": "pass"}
+{"created_utc": "2026-05-06T05:35:48Z", "event": "capture_plan_check_start", "version": "riftscan-capture-plan-check-v1.0.0"}
+{"created_utc": "2026-05-06T05:35:48Z", "event": "json_read", "path": "plans/focus-gated-capture-plans/20260506T042824Z_focus_gated_capture_plan/capture-plan.json"}
+{"created_utc": "2026-05-06T05:35:48Z", "event": "json_read", "path": "handoffs/current/operator/operator-current-gate-summary.json"}
+{"args": ["git", "rev-parse", "HEAD"], "created_utc": "2026-05-06T05:35:48Z", "event": "command_start"}
+{"args": ["git", "rev-parse", "HEAD"], "created_utc": "2026-05-06T05:35:48Z", "event": "command_finish", "returncode": 0, "success": true}
+{"args": ["git", "status", "--short"], "created_utc": "2026-05-06T05:35:48Z", "event": "command_start"}
+{"args": ["git", "status", "--short"], "created_utc": "2026-05-06T05:35:49Z", "event": "command_finish", "returncode": 0, "success": true}
+{"args": ["git", "log", "--oneline", "-5"], "created_utc": "2026-05-06T05:35:49Z", "event": "command_start"}
+{"args": ["git", "log", "--oneline", "-5"], "created_utc": "2026-05-06T05:35:49Z", "event": "command_finish", "returncode": 0, "success": true}
+{"blocker_count": 0, "created_utc": "2026-05-06T05:35:49Z", "event": "capture_plan_check_finish", "status": "pass"}

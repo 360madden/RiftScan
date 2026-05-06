@@ -35,7 +35,7 @@ capture_readiness: PASS
 capture_readiness_baseline_link: match
 live_collection_allowed: False
 old_offsets_trusted: False
-next_action: Run Capture Plan Check and review the latest metadata-only capture plan; live collection/discovery still requires an explicit future gate.
+next_action: Stage the final current-window movement execution gate; live movement still requires immediate PID/HWND/focus revalidation and abort controls.
 ```
 
 ## PASS-but-not-live Meaning
@@ -74,7 +74,7 @@ Review/refine the latest metadata-only capture plan. Real live collection remain
 ## Git Snapshot
 
 ```text
-head: 3ae21d7d758861c26aa7140067f999279bac8525
+head: e3992a59837ad2b84a8d26331b6b261106f29702
 ```
 
 Git status:
@@ -83,29 +83,31 @@ Git status:
  M docs/helper-tooling-policy.md
  M handoffs/current/README_CURRENT.md
  M handoffs/current/RIFTSCAN_RESUME_HANDOFF_2026-05-06_OPERATOR_GATE_WORKFLOW.md
+ M handoffs/current/capture-plan-check/capture-plan-check-log.jsonl
+ M handoffs/current/live-collection-gate/LIVE_COLLECTION_GATE_CHECKLIST.md
+ M handoffs/current/live-collection-gate/live-collection-gate-summary.json
  M handoffs/current/offline-workflow-check/OFFLINE_WORKFLOW_CHECK_REPORT.md
  M handoffs/current/offline-workflow-check/offline-workflow-check-log.jsonl
  M handoffs/current/offline-workflow-check/offline-workflow-check-summary.json
  M handoffs/current/operator/RIFTSCAN_OPERATOR_HANDOFF.md
  M handoffs/current/operator/operator-current-gate-summary.json
+ M scripts/run-riftscan-operator-offline-diagnostics.cmd
  M tools/riftscan_offline_workflow_check.py
  M tools/riftscan_operator_app.py
-?? handoffs/current/capture-plan-check/
-?? handoffs/current/live-collection-gate/
-?? scripts/run-riftscan-capture-plan-check.cmd
-?? scripts/run-riftscan-operator-offline-diagnostics.cmd
-?? tools/riftscan_capture_plan_check.py
+?? handoffs/current/movement-test-readiness/
+?? scripts/run-riftscan-movement-test-readiness.cmd
+?? tools/riftscan_movement_test_readiness.py
 
 ```
 
 Recent commits:
 
 ```text
+e3992a5 Add capture plan check workflow
 3ae21d7 Record current-client gate pass and capture plan
 40bbd1c Refresh blocked post-update baseline artifacts
 17d69f5 Refresh handoffs after offline workflow check
 b3bb14d Add offline workflow check helper
-0125e33 Refresh handoff after operator report wrapper
 ```
 
 ## Machine-Readable Summary
@@ -146,12 +148,12 @@ b3bb14d Add offline workflow check helper
       "windows_json": "handoffs/current/focus-control-local/windows.json"
     }
   },
-  "created_utc": "2026-05-06T05:04:31Z",
+  "created_utc": "2026-05-06T05:35:48Z",
   "display_status": "PASS",
   "git": {
-    "head": "3ae21d7d758861c26aa7140067f999279bac8525",
-    "log_oneline_5": "3ae21d7 Record current-client gate pass and capture plan\n40bbd1c Refresh blocked post-update baseline artifacts\n17d69f5 Refresh handoffs after offline workflow check\nb3bb14d Add offline workflow check helper\n0125e33 Refresh handoff after operator report wrapper",
-    "status_short": " M docs/helper-tooling-policy.md\n M handoffs/current/README_CURRENT.md\n M handoffs/current/RIFTSCAN_RESUME_HANDOFF_2026-05-06_OPERATOR_GATE_WORKFLOW.md\n M handoffs/current/offline-workflow-check/OFFLINE_WORKFLOW_CHECK_REPORT.md\n M handoffs/current/offline-workflow-check/offline-workflow-check-log.jsonl\n M handoffs/current/offline-workflow-check/offline-workflow-check-summary.json\n M handoffs/current/operator/RIFTSCAN_OPERATOR_HANDOFF.md\n M handoffs/current/operator/operator-current-gate-summary.json\n M tools/riftscan_offline_workflow_check.py\n M tools/riftscan_operator_app.py\n?? handoffs/current/capture-plan-check/\n?? handoffs/current/live-collection-gate/\n?? scripts/run-riftscan-capture-plan-check.cmd\n?? scripts/run-riftscan-operator-offline-diagnostics.cmd\n?? tools/riftscan_capture_plan_check.py\n"
+    "head": "e3992a59837ad2b84a8d26331b6b261106f29702",
+    "log_oneline_5": "e3992a5 Add capture plan check workflow\n3ae21d7 Record current-client gate pass and capture plan\n40bbd1c Refresh blocked post-update baseline artifacts\n17d69f5 Refresh handoffs after offline workflow check\nb3bb14d Add offline workflow check helper",
+    "status_short": " M docs/helper-tooling-policy.md\n M handoffs/current/README_CURRENT.md\n M handoffs/current/RIFTSCAN_RESUME_HANDOFF_2026-05-06_OPERATOR_GATE_WORKFLOW.md\n M handoffs/current/capture-plan-check/capture-plan-check-log.jsonl\n M handoffs/current/live-collection-gate/LIVE_COLLECTION_GATE_CHECKLIST.md\n M handoffs/current/live-collection-gate/live-collection-gate-summary.json\n M handoffs/current/offline-workflow-check/OFFLINE_WORKFLOW_CHECK_REPORT.md\n M handoffs/current/offline-workflow-check/offline-workflow-check-log.jsonl\n M handoffs/current/offline-workflow-check/offline-workflow-check-summary.json\n M handoffs/current/operator/RIFTSCAN_OPERATOR_HANDOFF.md\n M handoffs/current/operator/operator-current-gate-summary.json\n M scripts/run-riftscan-operator-offline-diagnostics.cmd\n M tools/riftscan_offline_workflow_check.py\n M tools/riftscan_operator_app.py\n?? handoffs/current/movement-test-readiness/\n?? scripts/run-riftscan-movement-test-readiness.cmd\n?? tools/riftscan_movement_test_readiness.py\n"
   },
   "latest_capture_plan": {
     "handoff_exists": true,
@@ -168,7 +170,7 @@ b3bb14d Add offline workflow check helper
     "capture_readiness_display_status": "PASS",
     "live_collection_allowed": false,
     "metadata_capture_plan_gate": "PASS",
-    "next_action": "Run Capture Plan Check and review the latest metadata-only capture plan; live collection/discovery still requires an explicit future gate.",
+    "next_action": "Stage the final current-window movement execution gate; live movement still requires immediate PID/HWND/focus revalidation and abort controls.",
     "old_offsets_trusted": false,
     "post_update_baseline_display_status": "PASS",
     "summary_path": "handoffs/current/operator/operator-current-gate-summary.json"

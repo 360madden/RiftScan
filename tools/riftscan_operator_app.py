@@ -1,6 +1,6 @@
-# Version: riftscan-operator-app-v3.8.18
+# Version: riftscan-operator-app-v3.8.19
 # Purpose: Windows Tkinter helper app for RiftScan operator workflow: run focus preflight, run full live preflight gate, run the post-update baseline and capture-readiness gates, run offline workflow checks and Post-Update Baseline, Capture Readiness, and Operator gate self-tests, summarize the current workflow go/no-go gate with artifact freshness/linkage checks, manage focus-gated metadata workflows, validate patch-runner manifests, check the online patch inbox discovery-only from the visible Main tab, write compact AI-ready reports, clean known junk, safely commit/push allowlisted files including baseline/readiness, repo-bridge handoffs and repo inbox patch packages, and provide tabbed/wrapped controls, a guided button-pusher workflow, focus-discipline confirmation, and lightweight status highlighting.
-# Total character count: 195123
+# Total character count: 204218
 
 from __future__ import annotations
 
@@ -22,7 +22,7 @@ from tkinter import messagebox, scrolledtext, ttk
 from typing import Any
 
 
-APP_VERSION = "riftscan-operator-app-v3.8.18"
+APP_VERSION = "riftscan-operator-app-v3.8.19"
 REPO_ROOT = Path(__file__).resolve().parents[1]
 FOCUS_SCRIPT = REPO_ROOT / "scripts" / "run-rift-focus-control.cmd"
 HANDOFF_DIR = REPO_ROOT / "handoffs" / "current" / "focus-control-local"
@@ -52,6 +52,11 @@ CAPTURE_PLAN_CHECK_DIR = REPO_ROOT / "handoffs" / "current" / "capture-plan-chec
 CAPTURE_PLAN_CHECK_REPORT = CAPTURE_PLAN_CHECK_DIR / "CAPTURE_PLAN_CHECK_REPORT.md"
 CAPTURE_PLAN_CHECK_SUMMARY = CAPTURE_PLAN_CHECK_DIR / "capture-plan-check-summary.json"
 CAPTURE_PLAN_CHECK_LOG = CAPTURE_PLAN_CHECK_DIR / "capture-plan-check-log.jsonl"
+MOVEMENT_TEST_READINESS_CMD = REPO_ROOT / "scripts" / "run-riftscan-movement-test-readiness.cmd"
+MOVEMENT_TEST_READINESS_DIR = REPO_ROOT / "handoffs" / "current" / "movement-test-readiness"
+MOVEMENT_TEST_READINESS_REPORT = MOVEMENT_TEST_READINESS_DIR / "MOVEMENT_TEST_READINESS_REPORT.md"
+MOVEMENT_TEST_READINESS_SUMMARY = MOVEMENT_TEST_READINESS_DIR / "movement-test-readiness-summary.json"
+MOVEMENT_TEST_READINESS_LOG = MOVEMENT_TEST_READINESS_DIR / "movement-test-readiness-log.jsonl"
 POST_UPDATE_BASELINE_RELEVANT_PATHS = {
     "tools/riftscan_post_update_baseline.py",
     "scripts/run-riftscan-post-update-baseline.cmd",
@@ -88,6 +93,7 @@ ALLOWLIST = [
     "handoffs/current/capture-readiness",
     "handoffs/current/offline-workflow-check",
     "handoffs/current/capture-plan-check",
+    "handoffs/current/movement-test-readiness",
     "handoffs/current/patch-intake",
     "handoffs/current/repo-bridge",
     ".riftscan/inbox/patch-packages",
@@ -98,6 +104,7 @@ ALLOWLIST = [
     "scripts/run-riftscan-capture-readiness.cmd",
     "scripts/run-riftscan-offline-workflow-check.cmd",
     "scripts/run-riftscan-capture-plan-check.cmd",
+    "scripts/run-riftscan-movement-test-readiness.cmd",
     "scripts/run-riftscan-operator-offline-diagnostics.cmd",
     "tools/rift_focus_control.py",
     "tools/riftscan_operator_app.py",
@@ -105,6 +112,7 @@ ALLOWLIST = [
     "tools/riftscan_capture_readiness.py",
     "tools/riftscan_offline_workflow_check.py",
     "tools/riftscan_capture_plan_check.py",
+    "tools/riftscan_movement_test_readiness.py",
     "plans/focus-gated-capture-plans",
     "handoffs/current/patch-runner",
     "patches/README.md",
@@ -527,6 +535,35 @@ def latest_capture_plan_check_summary() -> dict[str, Any]:
     }
 
 
+def latest_movement_test_readiness_summary() -> dict[str, Any]:
+    if not MOVEMENT_TEST_READINESS_SUMMARY.exists():
+        return {
+            "status": "none",
+            "reason": "movement test readiness summary has not been generated",
+            "expected_report_path": rel(MOVEMENT_TEST_READINESS_REPORT),
+            "expected_summary_path": rel(MOVEMENT_TEST_READINESS_SUMMARY),
+            "expected_log_path": rel(MOVEMENT_TEST_READINESS_LOG),
+        }
+
+    summary = load_json(MOVEMENT_TEST_READINESS_SUMMARY)
+    if summary.get("_missing") or summary.get("_error"):
+        return {
+            "status": "error",
+            "summary_path": rel(MOVEMENT_TEST_READINESS_SUMMARY),
+            "summary": summary,
+        }
+
+    return {
+        "status": "present",
+        "report_path": rel(MOVEMENT_TEST_READINESS_REPORT),
+        "summary_path": rel(MOVEMENT_TEST_READINESS_SUMMARY),
+        "log_path": rel(MOVEMENT_TEST_READINESS_LOG),
+        "summary": summary,
+        "report_exists": MOVEMENT_TEST_READINESS_REPORT.exists(),
+        "log_exists": MOVEMENT_TEST_READINESS_LOG.exists(),
+    }
+
+
 def latest_gate_details(latest: dict[str, Any], label: str) -> dict[str, Any]:
     summary = latest.get("summary") if isinstance(latest.get("summary"), dict) else {}
     blockers = summary.get("blockers") if isinstance(summary.get("blockers"), list) else []
@@ -568,6 +605,25 @@ def latest_capture_plan_gate_details(capture_plan: dict[str, Any] | None) -> dic
         "metadata_only": manifest.get("metadata_only"),
         "capture_started": manifest.get("capture_started"),
         "capture_completed": manifest.get("capture_completed"),
+    }
+
+
+def latest_simple_check_gate_details(latest: dict[str, Any] | None, label: str) -> dict[str, Any]:
+    latest = latest if isinstance(latest, dict) else {"status": "none"}
+    summary = latest.get("summary") if isinstance(latest.get("summary"), dict) else {}
+    paths = summary.get("paths") if isinstance(summary.get("paths"), dict) else {}
+    return {
+        "label": label,
+        "artifact_status": latest.get("status"),
+        "status": summary.get("status") or latest.get("status"),
+        "display_status": summary.get("display_status") or ("NONE" if latest.get("status") == "none" else "UNKNOWN"),
+        "created_utc": summary.get("created_utc"),
+        "blockers": summary.get("blockers") if isinstance(summary.get("blockers"), list) else [],
+        "paths": {
+            "report": paths.get("report") or latest.get("report_path") or latest.get("expected_report_path"),
+            "summary": paths.get("summary") or latest.get("summary_path") or latest.get("expected_summary_path"),
+            "log": paths.get("log") or latest.get("log_path") or latest.get("expected_log_path"),
+        },
     }
 
 
@@ -743,10 +799,14 @@ def build_current_workflow_gate(
     post_update_baseline: dict[str, Any],
     capture_readiness: dict[str, Any],
     capture_plan: dict[str, Any] | None = None,
+    capture_plan_check: dict[str, Any] | None = None,
+    movement_test_readiness: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     baseline = latest_gate_details(post_update_baseline, "Post-Update Baseline")
     readiness = latest_gate_details(capture_readiness, "Capture Readiness")
     capture_plan_details = latest_capture_plan_gate_details(capture_plan)
+    capture_plan_check_details = latest_simple_check_gate_details(capture_plan_check, "Capture Plan Check")
+    movement_test_readiness_details = latest_simple_check_gate_details(movement_test_readiness, "Movement Test Readiness")
     baseline_summary = post_update_baseline.get("summary") if isinstance(post_update_baseline.get("summary"), dict) else {}
     readiness_summary = capture_readiness.get("summary") if isinstance(capture_readiness.get("summary"), dict) else {}
     baseline["artifact_freshness"] = artifact_freshness(baseline_summary, POST_UPDATE_BASELINE_RELEVANT_PATHS)
@@ -783,10 +843,14 @@ def build_current_workflow_gate(
         next_action = "Rerun Capture Readiness because relevant baseline/readiness helper files changed."
     elif not full_ok or not focus_ok:
         next_action = "Run Full Live Preflight before metadata-only capture-plan refresh."
-    elif capture_plan_details.get("status") == "valid_metadata_only":
-        next_action = "Run Capture Plan Check and review the latest metadata-only capture plan; live collection/discovery still requires an explicit future gate."
-    else:
+    elif capture_plan_details.get("status") != "valid_metadata_only":
         next_action = "Refresh the metadata-only capture plan; live collection/discovery still requires an explicit future gate."
+    elif capture_plan_check_details.get("display_status") != "PASS":
+        next_action = "Run Capture Plan Check and review the latest metadata-only capture plan; live collection/discovery still requires an explicit future gate."
+    elif movement_test_readiness_details.get("display_status") != "PASS":
+        next_action = "Run Movement Test Readiness before staging any live game-world movement test."
+    else:
+        next_action = "Stage the final current-window movement execution gate; live movement still requires immediate PID/HWND/focus revalidation and abort controls."
 
     metadata_capture_plan_gate = "PASS" if not blockers else "BLOCKED"
     return {
@@ -799,6 +863,8 @@ def build_current_workflow_gate(
         "capture_readiness": readiness,
         "capture_readiness_baseline_link": readiness_baseline_link,
         "latest_capture_plan": capture_plan_details,
+        "capture_plan_check": capture_plan_check_details,
+        "movement_test_readiness": movement_test_readiness_details,
         "full_live_preflight": "PASS" if full_ok else "FAIL",
         "focus_preflight": "PASS" if focus_ok else "FAIL",
         "blockers": blockers,
@@ -813,6 +879,8 @@ def workflow_gate_text(gate: dict[str, Any]) -> str:
     readiness = gate.get("capture_readiness") if isinstance(gate.get("capture_readiness"), dict) else {}
     readiness_baseline_link = gate.get("capture_readiness_baseline_link") if isinstance(gate.get("capture_readiness_baseline_link"), dict) else {}
     latest_plan = gate.get("latest_capture_plan") if isinstance(gate.get("latest_capture_plan"), dict) else {}
+    capture_plan_check = gate.get("capture_plan_check") if isinstance(gate.get("capture_plan_check"), dict) else {}
+    movement_test_readiness = gate.get("movement_test_readiness") if isinstance(gate.get("movement_test_readiness"), dict) else {}
     baseline_freshness = baseline.get("artifact_freshness") if isinstance(baseline.get("artifact_freshness"), dict) else {}
     readiness_freshness = readiness.get("artifact_freshness") if isinstance(readiness.get("artifact_freshness"), dict) else {}
     lines = [
@@ -824,6 +892,8 @@ def workflow_gate_text(gate: dict[str, Any]) -> str:
         f"capture_readiness_baseline_link: {readiness_baseline_link.get('status')}",
         f"latest_metadata_capture_plan: {latest_plan.get('status')}",
         f"latest_capture_plan: {latest_plan.get('latest_plan')}",
+        f"capture_plan_check: {capture_plan_check.get('display_status')}",
+        f"movement_test_readiness: {movement_test_readiness.get('display_status')}",
         f"full_live_preflight: {gate.get('full_live_preflight')}",
         f"focus_preflight: {gate.get('focus_preflight')}",
         "live_collection_allowed: false",
@@ -893,6 +963,23 @@ def operator_self_test_capture_plan(
     }
 
 
+def operator_self_test_simple_check(display_status: str = "PASS", status: str = "pass") -> dict[str, Any]:
+    return {
+        "status": "present",
+        "summary": {
+            "status": status,
+            "display_status": display_status,
+            "created_utc": "2026-05-06T00:02:00Z",
+            "blockers": [],
+            "paths": {
+                "report": "handoffs/current/simple-check/REPORT.md",
+                "summary": "handoffs/current/simple-check/summary.json",
+                "log": "handoffs/current/simple-check/log.jsonl",
+            },
+        },
+    }
+
+
 def run_operator_self_test() -> tuple[bool, dict[str, Any]]:
     tests: list[dict[str, Any]] = []
 
@@ -905,6 +992,8 @@ def run_operator_self_test() -> tuple[bool, dict[str, Any]]:
         full_ok: bool = True,
         focus_ok: bool = True,
         capture_plan: dict[str, Any] | None = None,
+        capture_plan_check: dict[str, Any] | None = None,
+        movement_test_readiness: dict[str, Any] | None = None,
         validation_issues: list[str] | None = None,
         expected_next_action_part: str | None = None,
         expected_blocker_part: str | None = None,
@@ -916,6 +1005,8 @@ def run_operator_self_test() -> tuple[bool, dict[str, Any]]:
             post_update_baseline=baseline,
             capture_readiness=readiness,
             capture_plan=capture_plan,
+            capture_plan_check=capture_plan_check,
+            movement_test_readiness=movement_test_readiness,
         )
         blockers = gate["blockers"] if isinstance(gate.get("blockers"), list) else []
         next_action = str(gate.get("next_action") or "")
@@ -972,6 +1063,25 @@ def run_operator_self_test() -> tuple[bool, dict[str, Any]]:
         readiness=pass_readiness,
         capture_plan=operator_self_test_capture_plan(),
         expected_next_action_part="Run Capture Plan Check",
+    )
+    record(
+        "all gates pass with capture plan check",
+        "PASS",
+        baseline=pass_baseline,
+        readiness=pass_readiness,
+        capture_plan=operator_self_test_capture_plan(),
+        capture_plan_check=operator_self_test_simple_check(),
+        expected_next_action_part="Run Movement Test Readiness",
+    )
+    record(
+        "all gates pass with movement test readiness",
+        "PASS",
+        baseline=pass_baseline,
+        readiness=pass_readiness,
+        capture_plan=operator_self_test_capture_plan(),
+        capture_plan_check=operator_self_test_simple_check(),
+        movement_test_readiness=operator_self_test_simple_check(),
+        expected_next_action_part="Stage the final current-window movement execution gate",
     )
     record(
         "baseline blocks even when preflight passes",
@@ -2568,6 +2678,7 @@ def write_operator_report() -> Path:
     capture_readiness = latest_capture_readiness_summary()
     offline_workflow_check = latest_offline_workflow_check_summary()
     capture_plan_check = latest_capture_plan_check_summary()
+    movement_test_readiness = latest_movement_test_readiness_summary()
     dry_run = latest_dry_run_summary()
     capture_plan = latest_capture_plan_summary()
     capture_session = latest_capture_session_summary()
@@ -2583,6 +2694,8 @@ def write_operator_report() -> Path:
         post_update_baseline=post_update_baseline,
         capture_readiness=capture_readiness,
         capture_plan=capture_plan,
+        capture_plan_check=capture_plan_check,
+        movement_test_readiness=movement_test_readiness,
     )
     write_json(OPERATOR_GATE_SUMMARY, workflow_gate)
     issues: list[str] = [f"- {issue}" for issue in validation_issues]
@@ -2670,6 +2783,12 @@ Exit code: `{log_code}`
 
 ```json
 {json_block(capture_plan_check)}
+```
+
+## Latest Movement Test Readiness
+
+```json
+{json_block(movement_test_readiness)}
 ```
 
 ## Latest Focus-Gated Session Dry Run
@@ -3283,6 +3402,7 @@ class RiftScanOperatorApp(tk.Tk):
                 ("Operator Gate Self-Test", self.run_operator_gate_self_test),
                 ("Offline Workflow Check", self.run_offline_workflow_check),
                 ("Capture Plan Check", self.run_capture_plan_check),
+                ("Movement Test Readiness", self.run_movement_test_readiness),
                 ("Post-Update Baseline Self-Test", self.run_post_update_baseline_self_test),
                 ("Capture Readiness Self-Test", self.run_capture_readiness_self_test),
                 ("Run Focus Preflight", self.run_focus_preflight),
@@ -3811,6 +3931,75 @@ class RiftScanOperatorApp(tk.Tk):
         self.run_async("capture plan check", task)
 
 
+    def run_movement_test_readiness(self) -> None:
+        def task() -> str:
+            if not MOVEMENT_TEST_READINESS_CMD.exists():
+                return f"ERROR: missing {rel(MOVEMENT_TEST_READINESS_CMD)}"
+
+            exit_code, stdout, stderr = run_command(
+                ["cmd", "/c", str(MOVEMENT_TEST_READINESS_CMD), "--strict-exit-code"],
+                timeout=120,
+            )
+            summary = load_json(MOVEMENT_TEST_READINESS_SUMMARY)
+            report_path = write_operator_report()
+
+            if summary.get("_missing") or summary.get("_error"):
+                display_status = "FAIL"
+                status = "summary_unavailable"
+                blockers = [summary.get("_error") or f"Missing summary: {rel(MOVEMENT_TEST_READINESS_SUMMARY)}"]
+                paths = {
+                    "report": rel(MOVEMENT_TEST_READINESS_REPORT),
+                    "summary": rel(MOVEMENT_TEST_READINESS_SUMMARY),
+                    "log": rel(MOVEMENT_TEST_READINESS_LOG),
+                }
+            else:
+                display_status = str(summary.get("display_status") or "UNKNOWN")
+                status = str(summary.get("status") or "unknown")
+                blockers = list(summary.get("blockers") or [])
+                paths = summary.get("paths") or {}
+
+            if exit_code not in (0, 2) and display_status not in ("PASS", "BLOCKED"):
+                display_status = "FAIL"
+
+            lines = [
+                "\n=== MOVEMENT TEST READINESS ===",
+                f"MOVEMENT TEST READINESS: {display_status}",
+                f"status: {status}",
+                f"Exit code: {exit_code}",
+                "",
+                "Blockers:",
+            ]
+            if blockers:
+                lines.extend(f"- {blocker}" for blocker in blockers)
+            else:
+                lines.append("- None")
+
+            lines.extend(
+                [
+                    "",
+                    f"Report: {paths.get('report') or rel(MOVEMENT_TEST_READINESS_REPORT)}",
+                    f"Summary: {paths.get('summary') or rel(MOVEMENT_TEST_READINESS_SUMMARY)}",
+                    f"Log: {paths.get('log') or rel(MOVEMENT_TEST_READINESS_LOG)}",
+                    f"Operator report: {rel(report_path)}",
+                ]
+            )
+
+            if stdout.strip():
+                lines.extend(["", "Launcher stdout:", stdout.strip()])
+            if stderr.strip():
+                lines.extend(["", "Launcher stderr:", stderr.strip()])
+
+            lines.extend(
+                [
+                    "",
+                    "Safety: movement readiness validation only; no focus preflight, capture, movement/input, memory scan/read, offset validation, RiftReader validation, or /reloadui was run.",
+                ]
+            )
+            return "\n".join(lines)
+
+        self.run_async("movement test readiness", task)
+
+
     def run_operator_gate_self_test(self) -> None:
         def task() -> str:
             passed, summary = run_operator_self_test()
@@ -4202,13 +4391,14 @@ class RiftScanOperatorApp(tk.Tk):
             "3. Run Full Live Preflight\n"
             "4. Create Capture Plan\n"
             "5. Capture Plan Check\n"
-            "6. Run Window/Process Metadata Collector\n"
-            "7. Analyze Latest Session\n"
-            "8. Compare Sessions\n"
-            "9. Clean Known Junk, Commit Allowlist, Push\n\n"
+            "6. Movement Test Readiness\n"
+            "7. Run Window/Process Metadata Collector\n"
+            "8. Analyze Latest Session\n"
+            "9. Compare Sessions\n"
+            "10. Clean Known Junk, Commit Allowlist, Push\n\n"
             "After a RIFT update, treat older baselines and offsets as historical until a fresh current-client baseline passes.\n"
-            "Diagnostics > Operator Gate Self-Test, Offline Workflow Check, Capture Plan Check, Post-Update Baseline Self-Test, and Capture Readiness Self-Test are safe helper checks; self-tests are offline and Capture Plan Check only reads existing metadata artifacts.\n"
-            "Capture Readiness must PASS before creating or refreshing capture plans, and Capture Plan Check must PASS before any future live-collection gate review.\n"
+            "Diagnostics > Operator Gate Self-Test, Offline Workflow Check, Capture Plan Check, Movement Test Readiness, Post-Update Baseline Self-Test, and Capture Readiness Self-Test are safe helper checks; self-tests are offline and Capture Plan Check/Movement Test Readiness only read existing metadata artifacts.\n"
+            "Capture Readiness must PASS before creating or refreshing capture plans; Capture Plan Check and Movement Test Readiness must PASS before any future live movement gate review.\n"
             "LEAVE RIFT FOREGROUND during the metadata collector.\n"
             "Do not click ChatGPT, PowerShell, the Operator window, or any other window.\n\n"
             "Guardrails: metadata only; no movement, input, memory read, memory scan, /reloadui, service, listener, polling, auto-commit, auto-push, or git add dot.\n"

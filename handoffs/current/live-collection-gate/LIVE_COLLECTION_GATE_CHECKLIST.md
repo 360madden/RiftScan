@@ -22,10 +22,13 @@ Before any real collection command exists or runs, require all of these fresh cu
 3. `Capture Plan Check: PASS`
    - Report: `handoffs/current/capture-plan-check/CAPTURE_PLAN_CHECK_REPORT.md`
    - Summary: `handoffs/current/capture-plan-check/capture-plan-check-summary.json`
-4. Operator report refreshed after the checks:
+4. `Movement Test Readiness: PASS` before any movement-labeled test is staged:
+   - Report: `handoffs/current/movement-test-readiness/MOVEMENT_TEST_READINESS_REPORT.md`
+   - Summary: `handoffs/current/movement-test-readiness/movement-test-readiness-summary.json`
+5. Operator report refreshed after the checks:
    - `handoffs/current/operator/RIFTSCAN_OPERATOR_HANDOFF.md`
    - `handoffs/current/operator/operator-current-gate-summary.json`
-5. Explicit operator approval in the current session for the exact next live-collection slice.
+6. Explicit operator approval in the current session for the exact next live-collection slice.
 
 ## Still forbidden in this future gate unless separately approved
 
@@ -52,6 +55,18 @@ If this gate is explicitly approved later, the first live slice should be:
 - strict abort on focus drift
 - explicit report/summary/log output
 
+## First movement-labeled live slice shape after passive proof
+
+Movement-labeled testing remains a later step after passive live proof. When allowed, it should be:
+
+- exact target PID/HWND verified immediately before input
+- one short `move_forward` stimulus only
+- bounded duration
+- no turn/camera/reloadui mixed into the same run
+- abort if focus drifts
+- use `scripts/live-test-riftscan.cmd` with explicit `-Stimulus move_forward`
+- require delta-summary proof: `stimulus_observed_primary_triplet_changed`
+
 ## Abort conditions
 
 Abort immediately if any of these occur:
@@ -59,6 +74,7 @@ Abort immediately if any of these occur:
 - Post-Update Baseline is not fresh PASS.
 - Capture Readiness is not fresh PASS.
 - Capture Plan Check is not PASS.
+- Movement Test Readiness is not PASS before a movement-labeled run.
 - Operator approval is absent or ambiguous.
 - Focus is not foreground-verified for the target RIFT window.
 - PID/HWND changes relative to the fresh baseline/readiness artifacts.

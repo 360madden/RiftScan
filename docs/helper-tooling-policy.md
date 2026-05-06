@@ -23,6 +23,7 @@ This applies to:
 - Capture Readiness gate
 - Offline Workflow Check runners
 - Capture Plan Check and other metadata-plan validators
+- Movement Test Readiness and other future live-test readiness validators
 - no-GUI Operator diagnostics wrappers
 - report and handoff writers
 - local validation runners
@@ -133,6 +134,9 @@ scripts/run-riftscan-offline-workflow-check.cmd
 tools/riftscan_capture_plan_check.py
 scripts/run-riftscan-capture-plan-check.cmd
 
+tools/riftscan_movement_test_readiness.py
+scripts/run-riftscan-movement-test-readiness.cmd
+
 scripts/run-riftscan-operator-offline-diagnostics.cmd
 ```
 
@@ -168,6 +172,13 @@ python tools/riftscan_capture_plan_check.py --self-test
 .\scripts\run-riftscan-capture-plan-check.cmd --strict-exit-code
 ```
 
+Movement test readiness validation:
+
+```text
+python tools/riftscan_movement_test_readiness.py --self-test
+.\scripts\run-riftscan-movement-test-readiness.cmd --strict-exit-code
+```
+
 No-GUI Operator diagnostics:
 
 ```text
@@ -194,9 +205,11 @@ py_compile_offline_workflow_check
 offline_workflow_check_self_test
 py_compile_capture_plan_check
 capture_plan_check_self_test
+py_compile_movement_test_readiness
+movement_test_readiness_self_test
 ```
 
-The Operator Diagnostics tab may expose offline self-tests, Offline Workflow Check, and Capture Plan Check when the action does not touch live RIFT state, capture, input, memory scan/read, offsets, RiftReader validation, or `/reloadui`. Capture Plan Check reads existing metadata artifacts only.
+The Operator Diagnostics tab may expose offline self-tests, Offline Workflow Check, Capture Plan Check, and Movement Test Readiness when the action does not touch live RIFT state, capture, input, memory scan/read, offsets, RiftReader validation, or `/reloadui`. Capture Plan Check and Movement Test Readiness read existing metadata artifacts only.
 
 Operator handoffs should include a compact current workflow gate section that reports whether Post-Update Baseline, Capture Readiness, and required preflight checks allow the next metadata-only action.
 
@@ -221,6 +234,8 @@ Still blocked:
 - `/reloadui`
 - offset validation
 - RiftReader anchor/orientation validation
+
+`MOVEMENT TEST READINESS: PASS` means the repo control-plane is ready to stage a separately gated movement live test. It does not mean movement was sent, capture was started, or old offsets are trusted.
 
 ## Next preferred extension
 

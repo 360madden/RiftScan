@@ -1,7 +1,7 @@
 @echo off
 rem RiftScan script metadata
 rem Version: run-riftscan-operator-offline-diagnostics-v1.0.0
-rem Total character count: 1734
+rem Total character count: 1899
 rem Purpose: Run no-GUI RiftScan Operator diagnostics and refresh the Operator report.
 rem Safety boundary: Safe helper diagnostics only; no live capture, input, movement, memory scan/read, offset validation, RiftReader validation, or /reloadui.
 
@@ -36,6 +36,12 @@ set STEP=Capture Plan Check
 echo.
 echo === %STEP% ===
 call ".\scripts\run-riftscan-capture-plan-check.cmd" --strict-exit-code
+if errorlevel 1 goto failed
+
+set STEP=Movement Test Readiness
+echo.
+echo === %STEP% ===
+call ".\scripts\run-riftscan-movement-test-readiness.cmd" --strict-exit-code
 if errorlevel 1 goto failed
 
 set STEP=Operator report refresh
