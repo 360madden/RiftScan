@@ -1,6 +1,6 @@
-# Version: riftscan-patch-intake-v1.2.1
+# Version: riftscan-patch-intake-v1.2.2
 # Purpose: Local RiftScan Patch Intake Helper. Provides an always-on-top paste GUI plus gated validate/dry-run/apply/process/commit/push controls for machine-readable RiftScan clipboard patch payloads. No clipboard watcher, no service, no listener, no polling, no dot staging, no automatic commit, no automatic push.
-# Total character count: 84636
+# Total character count: 86349
 
 from __future__ import annotations
 
@@ -24,7 +24,7 @@ from tkinter import messagebox, scrolledtext, ttk
 from typing import Any, Callable
 
 
-APP_VERSION = "riftscan-patch-intake-v1.2.1"
+APP_VERSION = "riftscan-patch-intake-v1.2.2"
 MAGIC = "RIFTSCAN_CLIPBOARD_PATCH_V1"
 MAGIC_CHUNKED = "RIFTSCAN_CHUNKED_PATCH_V1"
 DEFAULT_REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -66,7 +66,9 @@ ALLOWED_POST_APPLY_CHECKS = {
     "py_compile_target",
     "py_compile_operator",
     "py_compile_patch_intake",
+    "py_compile_capture_readiness",
     "patch_intake_self_test",
+    "capture_readiness_self_test",
     "operator_marker_verify",
     "git_status_check",
 }
@@ -832,9 +834,17 @@ def run_named_checks(parsed: ParsedPayload, repo_root: Path) -> list[dict[str, A
             target = repo_root / "tools" / "riftscan_patch_intake_app.py"
             code, out, err = run_command([sys.executable, "-m", "py_compile", str(target)], cwd=repo_root, timeout=60)
             item.update({"exit_code": code, "stdout": out, "stderr": err, "status": "pass" if code == 0 else "fail", "code": "PASS_CHECK" if code == 0 else "FAIL_CHECK"})
+        elif check == "py_compile_capture_readiness":
+            target = repo_root / "tools" / "riftscan_capture_readiness.py"
+            code, out, err = run_command([sys.executable, "-m", "py_compile", str(target)], cwd=repo_root, timeout=60)
+            item.update({"exit_code": code, "stdout": out, "stderr": err, "status": "pass" if code == 0 else "fail", "code": "PASS_CHECK" if code == 0 else "FAIL_CHECK"})
         elif check == "patch_intake_self_test":
             target = repo_root / "tools" / "riftscan_patch_intake_app.py"
             code, out, err = run_command([sys.executable, str(target), "--self-test"], cwd=repo_root, timeout=180)
+            item.update({"exit_code": code, "stdout": out, "stderr": err, "status": "pass" if code == 0 else "fail", "code": "PASS_CHECK" if code == 0 else "FAIL_CHECK"})
+        elif check == "capture_readiness_self_test":
+            target = repo_root / "tools" / "riftscan_capture_readiness.py"
+            code, out, err = run_command([sys.executable, str(target), "--self-test"], cwd=repo_root, timeout=60)
             item.update({"exit_code": code, "stdout": out, "stderr": err, "status": "pass" if code == 0 else "fail", "code": "PASS_CHECK" if code == 0 else "FAIL_CHECK"})
         elif check == "operator_marker_verify":
             target = repo_root / "tools" / "riftscan_operator_app.py"
@@ -1373,6 +1383,8 @@ def run_self_test() -> tuple[bool, dict[str, Any]]:
         tools.mkdir(parents=True)
         target = tools / "dummy_target.py"
         target.write_text("# Version: riftscan-dummy-v1.0.0\nprint('dummy')\n", encoding="utf-8")
+        capture_readiness_source = Path(__file__).with_name("riftscan_capture_readiness.py")
+        shutil.copy2(capture_readiness_source, tools / "riftscan_capture_readiness.py")
         handoff_root = repo / "handoffs" / "current"
         handoff_root.mkdir(parents=True, exist_ok=True)
         (handoff_root / ".gitkeep").write_text("", encoding="utf-8")
@@ -1380,7 +1392,7 @@ def run_self_test() -> tuple[bool, dict[str, Any]]:
         run_command(["git", "init"], cwd=repo, timeout=30)
         run_command(["git", "config", "user.email", "selftest@example.local"], cwd=repo, timeout=30)
         run_command(["git", "config", "user.name", "Self Test"], cwd=repo, timeout=30)
-        run_command(["git", "add", "--", "tools/dummy_target.py", "handoffs/current/.gitkeep"], cwd=repo, timeout=30)
+        run_command(["git", "add", "--", "tools/dummy_target.py", "tools/riftscan_capture_readiness.py", "handoffs/current/.gitkeep"], cwd=repo, timeout=30)
         run_command(["git", "commit", "-m", "init"], cwd=repo, timeout=30)
 
         base_manifest = {
@@ -1414,6 +1426,9 @@ def run_self_test() -> tuple[bool, dict[str, Any]]:
             "stage_paths": ["."],
             "push": False,
         }
+        capture_checks_manifest = dict(base_manifest)
+        capture_checks_manifest["package_id"] = "dummy-capture-readiness-checks"
+        capture_checks_manifest["post_apply_checks"] = ["py_compile_capture_readiness", "capture_readiness_self_test"]
         missing_commit_manifest = dict(base_manifest)
         missing_commit_manifest["package_id"] = "dummy-missing-commit"
 
@@ -1472,6 +1487,10 @@ def run_self_test() -> tuple[bool, dict[str, Any]]:
         target.write_text("# Version: riftscan-dummy-v1.0.0\nprint('dummy')\n", encoding="utf-8")
         save_ledger(repo, {"accepted": [], "last_accepted_created_utc": None})
         record("unsafe commit stage path validation", "FAIL_COMMIT_UNSAFE_STAGE_PATH", validate_payload_text(unsafe_commit_payload, repo))
+
+        target.write_text("# Version: riftscan-dummy-v1.0.0\nprint('dummy')\n", encoding="utf-8")
+        save_ledger(repo, {"accepted": [], "last_accepted_created_utc": None})
+        record("process payload with capture readiness checks", "PASS_PROCESSED", process_payload_text(make_payload(capture_checks_manifest, applier), repo))
 
         target.write_text("# Version: riftscan-dummy-v1.0.0\nprint('dummy')\n", encoding="utf-8")
         save_ledger(repo, {"accepted": [], "last_accepted_created_utc": None})

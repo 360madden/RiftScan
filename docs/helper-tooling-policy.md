@@ -124,6 +124,19 @@ tools/riftscan_capture_readiness.py
 scripts/run-riftscan-capture-readiness.cmd
 ```
 
+Capture Readiness offline validation:
+
+```text
+python tools/riftscan_capture_readiness.py --self-test
+```
+
+Patch Intake post-apply checks can also require:
+
+```text
+py_compile_capture_readiness
+capture_readiness_self_test
+```
+
 ## Next preferred extension
 
 The next helper workflow should keep the same Python-first pattern and add the smallest safe post-readiness step: a metadata-only, focus-gated capture-plan refresh or GUI smoke-test flow. Do not start live capture or discovery until the current-client Post-Update Baseline and Capture Readiness gates both PASS.

@@ -53,36 +53,36 @@ Run a fresh Post-Update Baseline after the current updated client is confirmed s
 
 ```text
 branch: main
-head: 27ecb05d766213c356d9c708a6ce735fa708f05e
+head: 56dd777ea1f3c7900a18816dd31f3fb569f11cc5
 ```
 
 Git status:
 
 ```text
+ M README.md
  M docs/helper-tooling-policy.md
  M handoffs/current/README_CURRENT.md
- M tools/riftscan_operator_app.py
-?? handoffs/current/capture-readiness/
-?? scripts/run-riftscan-capture-readiness.cmd
-?? tools/riftscan_capture_readiness.py
+ M handoffs/current/capture-readiness/capture-readiness-log.jsonl
+ M tools/riftscan_capture_readiness.py
+ M tools/riftscan_patch_intake_app.py
 
 ```
 
 Recent commits:
 
 ```text
+56dd777 Add capture readiness gate
 27ecb05 Document Python helper tooling direction
 f0f0362 Wire post-update baseline into operator app
 b9868ba Add next-step workflow handoff
 115c31a Record post-update baseline pass
-3add5fa Document post-update baseline implementation
 ```
 
 ## Machine-Readable Summary
 
 ```json
 {
-  "app_version": "riftscan-capture-readiness-v1.0.0",
+  "app_version": "riftscan-capture-readiness-v1.0.1",
   "baseline": {
     "created_utc": "2026-05-06T01:32:34Z",
     "display_status": "BLOCKED",
@@ -112,7 +112,7 @@ b9868ba Add next-step workflow handoff
     "Post-update baseline is not PASS for the current client.",
     "Post-update baseline display_status is not PASS."
   ],
-  "created_utc": "2026-05-06T01:57:17Z",
+  "created_utc": "2026-05-06T02:12:56Z",
   "display_status": "BLOCKED",
   "focus_command_result": {
     "args": [
@@ -123,9 +123,9 @@ b9868ba Add next-step workflow handoff
   },
   "git": {
     "branch": "main",
-    "head": "27ecb05d766213c356d9c708a6ce735fa708f05e",
-    "log_oneline_5": "27ecb05 Document Python helper tooling direction\nf0f0362 Wire post-update baseline into operator app\nb9868ba Add next-step workflow handoff\n115c31a Record post-update baseline pass\n3add5fa Document post-update baseline implementation",
-    "status_short": " M docs/helper-tooling-policy.md\n M handoffs/current/README_CURRENT.md\n M tools/riftscan_operator_app.py\n?? handoffs/current/capture-readiness/\n?? scripts/run-riftscan-capture-readiness.cmd\n?? tools/riftscan_capture_readiness.py\n"
+    "head": "56dd777ea1f3c7900a18816dd31f3fb569f11cc5",
+    "log_oneline_5": "56dd777 Add capture readiness gate\n27ecb05 Document Python helper tooling direction\nf0f0362 Wire post-update baseline into operator app\nb9868ba Add next-step workflow handoff\n115c31a Record post-update baseline pass",
+    "status_short": " M README.md\n M docs/helper-tooling-policy.md\n M handoffs/current/README_CURRENT.md\n M handoffs/current/capture-readiness/capture-readiness-log.jsonl\n M tools/riftscan_capture_readiness.py\n M tools/riftscan_patch_intake_app.py\n"
   },
   "next_step": "Run a fresh Post-Update Baseline after the current updated client is confirmed stable in-world.",
   "paths": {
