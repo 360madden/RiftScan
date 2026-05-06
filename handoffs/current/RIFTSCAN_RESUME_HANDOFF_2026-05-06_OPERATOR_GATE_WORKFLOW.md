@@ -5,8 +5,8 @@ created_utc: 2026-05-06T02:45:00Z
 repo: 360madden/RiftScan
 branch: main
 local_repo_root: "C:\\RIFT MODDING\\Riftscan"
-latest_verified_commit: "b3bb14df4fbce6e43cba4dece49be072684bd5ff"
-latest_verified_commit_subject: "Add offline workflow check helper"
+latest_verified_commit: "b7bd739d3da8d9d5ec1c0e02241590e6dde682af"
+latest_verified_commit_subject: "Add movement test readiness gate"
 current_gate_artifact: "handoffs/current/operator/operator-current-gate-summary.json"
 metadata_capture_plan_gate: "PASS"
 live_collection_allowed_now: false
@@ -28,7 +28,7 @@ The older 2026-05-05 handoffs are useful historical context, but their next-step
 Latest verified workflow-code commit:
 
 ```text
-b3bb14df4fbce6e43cba4dece49be072684bd5ff Add offline workflow check helper
+b7bd739d3da8d9d5ec1c0e02241590e6dde682af Add movement test readiness gate
 ```
 
 Newer generated-artifact or doc-only commits may exist. Always verify the exact current HEAD with `git log --oneline -5` before editing.
@@ -43,10 +43,11 @@ full_live_preflight: PASS
 focus_preflight: PASS
 live_collection_allowed: false
 old_offsets_trusted: false
-next_action: Run Movement Test Readiness and review the future live-collection gate; live movement still requires a final current-window execution gate.
+next_action: Run/refresh Movement Execution Gate; if BLOCKED, resolve the listed live-wrapper freshness blockers before any movement.
 latest_metadata_capture_plan: valid_metadata_only
 capture_plan_check: PASS
 movement_test_readiness: PASS
+movement_execution_gate: BLOCKED (stale ReaderBridgeExport.lua; TraceMatchesProcess not true; source object sample mismatch)
 ```
 
 Source artifacts:
@@ -60,13 +61,14 @@ plans/focus-gated-capture-plans/20260506T042824Z_focus_gated_capture_plan/CAPTUR
 ## Current tool versions
 
 ```text
-Operator Helper App: riftscan-operator-app-v3.8.19
+Operator Helper App: riftscan-operator-app-v3.8.20
 Capture Readiness: riftscan-capture-readiness-v1.0.1
 Patch Intake Helper: riftscan-patch-intake-v1.2.5
 Post-Update Baseline: riftscan-post-update-baseline-v1.0.1
-Offline Workflow Check: riftscan-offline-workflow-check-v1.0.2
+Offline Workflow Check: riftscan-offline-workflow-check-v1.0.3
 Capture Plan Check: riftscan-capture-plan-check-v1.0.0
 Movement Test Readiness: riftscan-movement-test-readiness-v1.0.0
+Movement Execution Gate: riftscan-movement-execution-gate-v1.0.0
 ```
 
 ## What changed since the 2026-05-05 handoffs
@@ -137,7 +139,7 @@ The future live-collection gate is documented but not satisfied:
 
 - Checklist path: `handoffs/current/live-collection-gate/LIVE_COLLECTION_GATE_CHECKLIST.md`.
 - Summary path: `handoffs/current/live-collection-gate/live-collection-gate-summary.json`.
-- It requires fresh Post-Update Baseline PASS, Capture Readiness PASS, Capture Plan Check PASS, Movement Test Readiness PASS before movement-labeled testing, explicit operator approval, no `/reloadui`, no offset trust, exact PID/HWND revalidation, and clear abort conditions.
+- It requires fresh Post-Update Baseline PASS, Capture Readiness PASS, Capture Plan Check PASS, Movement Test Readiness PASS, Movement Execution Gate PASS immediately before movement/input, explicit operator approval, no `/reloadui`, no offset trust, exact PID/HWND revalidation, and clear abort conditions.
 
 Movement Test Readiness now has:
 
@@ -145,6 +147,14 @@ Movement Test Readiness now has:
 - Markdown, JSON, and JSONL artifacts under `handoffs/current/movement-test-readiness/`.
 - Validation that the existing `scripts/live-test-riftscan.cmd` / `.ps1` movement wrapper is present and still contains guard features for `move_forward`, `-PreflightOnly`, ReaderBridge freshness, RiftReader anchor reads, RiftScan passive capture, and delta-summary proof.
 - Conservative PASS/BLOCKED behavior; it does not run focus preflight, capture, input, movement, RiftReader validation, memory scan/read, offset validation, or `/reloadui`.
+
+Movement Execution Gate now has:
+
+- Python-first implementation with a thin CMD wrapper.
+- Markdown, JSON, and JSONL artifacts under `handoffs/current/movement-execution-gate/`.
+- Final no-input current-window validation before a future bounded `move_forward` command.
+- It may run focus preflight and `scripts/live-test-riftscan.cmd -Stimulus move_forward -PreflightOnly`, which can invoke RiftReader anchor checks.
+- Conservative PASS/BLOCKED behavior; it must not start capture, send movement/input, validate offsets, or run `/reloadui`.
 
 Capture Readiness now has:
 
@@ -173,6 +183,8 @@ py_compile_capture_plan_check
 capture_plan_check_self_test
 py_compile_movement_test_readiness
 movement_test_readiness_self_test
+py_compile_movement_execution_gate
+movement_execution_gate_self_test
 ```
 
 ## Current-client gate pass and capture plan
@@ -191,6 +203,7 @@ metadata_capture_plan_gate: PASS
 metadata-only capture plan: plans/focus-gated-capture-plans/20260506T042824Z_focus_gated_capture_plan
 Capture Plan Check: PASS
 Movement Test Readiness: PASS
+Movement Execution Gate: BLOCKED until current ReaderBridge/RiftReader anchor freshness passes
 live_collection_allowed: false
 ```
 
@@ -200,7 +213,13 @@ The capture plan is metadata-only. It records `capture_started=false`, `capture_
 
 There are no current metadata capture-plan blockers. `metadata_capture_plan_gate` is PASS.
 
-Important: `live_collection_allowed` remains false. The PASS gate, Capture Plan Check, and Movement Test Readiness authorize planning/readiness only, not real capture/discovery/movement/input/offset work.
+Important: `live_collection_allowed` remains false. The PASS gate, Capture Plan Check, and Movement Test Readiness authorize planning/readiness only, not real capture/discovery/movement/input/offset work. The Movement Execution Gate is the final no-input current-window check; if it is BLOCKED, do not send movement/input.
+
+Current Movement Execution Gate blockers:
+
+- `ReaderBridgeExport.lua` is stale by file time.
+- RiftReader anchor `TraceMatchesProcess` is not true.
+- Source object coordinate sample does not match ReaderBridge within tolerance.
 
 ## Hard safety boundary
 
@@ -234,8 +253,9 @@ python tools\riftscan_capture_plan_check.py --self-test
 .\scripts\run-riftscan-capture-plan-check.cmd --strict-exit-code
 python tools\riftscan_movement_test_readiness.py --self-test
 .\scripts\run-riftscan-movement-test-readiness.cmd --strict-exit-code
+python tools\riftscan_movement_execution_gate.py --self-test
 .\scripts\run-riftscan-operator-offline-diagnostics.cmd
-python -m py_compile tools\riftscan_operator_app.py tools\riftscan_capture_readiness.py tools\riftscan_post_update_baseline.py tools\riftscan_patch_intake_app.py tools\riftscan_offline_workflow_check.py tools\riftscan_capture_plan_check.py tools\riftscan_movement_test_readiness.py
+python -m py_compile tools\riftscan_operator_app.py tools\riftscan_capture_readiness.py tools\riftscan_post_update_baseline.py tools\riftscan_patch_intake_app.py tools\riftscan_offline_workflow_check.py tools\riftscan_capture_plan_check.py tools\riftscan_movement_test_readiness.py tools\riftscan_movement_execution_gate.py
 ```
 
 Expected self-test results:
@@ -252,6 +272,8 @@ Capture Plan Check self-test: PASS
 Capture Plan Check: PASS
 Movement Test Readiness self-test: PASS
 Movement Test Readiness: PASS
+Movement Execution Gate self-test: PASS
+Movement Execution Gate: PASS or BLOCKED with exact blockers and no movement/input/capture
 Operator offline diagnostics: PASS
 ```
 
@@ -273,31 +295,32 @@ Recommended button order:
 4. Diagnostics -> Offline Workflow Check
 5. Diagnostics -> Capture Plan Check
 6. Diagnostics -> Movement Test Readiness
-7. Main -> Open Report
-8. Main -> Post-Update Baseline only after the current updated RIFT client is truly stable in-world
-9. Main -> Capture Readiness
-10. Main -> Open Report and require metadata_capture_plan_gate: PASS plus Capture Plan Check PASS plus Movement Test Readiness PASS before any future movement live-test gate review
+7. Diagnostics -> Movement Execution Gate
+8. Main -> Open Report
+9. Main -> Post-Update Baseline only after the current updated RIFT client is truly stable in-world
+10. Main -> Capture Readiness
+11. Main -> Open Report and require metadata_capture_plan_gate: PASS plus Capture Plan Check PASS plus Movement Test Readiness PASS plus Movement Execution Gate PASS before any future bounded movement command
 ```
 
 ## Current next best action
 
-Review the Movement Test Readiness report and the future live-collection gate checklist. The next implementation slice can stage a final current-window movement execution gate, but actual movement/input must still revalidate exact PID/HWND/focus immediately before execution.
+Review the Movement Execution Gate report and resolve only the listed no-input freshness blockers. Actual movement/input must still use the exact command from a PASS gate before `expires_utc`.
 
 ## Top 10 next recommended actions
 
-1. Review `handoffs/current/movement-test-readiness/MOVEMENT_TEST_READINESS_REPORT.md`.
-2. Add a final current-window movement execution gate that revalidates focus/PID/HWND immediately before input.
-3. Keep the first execution path bounded to one short `move_forward` stimulus only.
-4. Require `scripts/live-test-riftscan.cmd -Stimulus move_forward -PreflightOnly` to pass immediately before any movement capture.
-5. Keep `/reloadui`, turn/camera mixing, offset validation, and RiftReader anchor/orientation promotion out of the first movement run.
-6. Preserve current PASS artifacts; do not overwrite them with exploratory runs unless intentionally refreshing.
-7. Run a passive no-stimulus live proof before movement if current-client live collection has not been freshly exercised.
-8. Extend Patch Intake post-apply checks to include Movement Test Readiness when future patches touch plan/gate code.
-9. Add stale banners to old April movement docs/reports before using them for comparison.
+1. Review `handoffs/current/movement-execution-gate/MOVEMENT_EXECUTION_GATE_REPORT.md`.
+2. If BLOCKED, resolve ReaderBridge/RiftReader anchor freshness blockers without sending movement/input.
+3. Rerun `.\scripts\run-riftscan-movement-execution-gate.cmd --strict-exit-code`.
+4. Keep the first execution path bounded to one short `move_forward` stimulus only.
+5. Require `scripts/live-test-riftscan.cmd -Stimulus move_forward -PreflightOnly` to pass immediately before any movement capture.
+6. Keep `/reloadui`, turn/camera mixing, offset validation, and RiftReader anchor/orientation promotion out of the first movement run.
+7. Preserve current PASS artifacts; do not overwrite them with exploratory runs unless intentionally refreshing.
+8. Run a passive no-stimulus live proof before movement if current-client live collection has not been freshly exercised.
+9. Add Patch Intake post-apply checks for Movement Execution Gate py_compile/self-test if future patches touch this gate.
 10. Commit and push every coherent milestone promptly with explicit staging only.
 
 ## Ready-to-paste resume prompt
 
 ```text
-Resume RiftScan from C:\RIFT MODDING\Riftscan on main. Read handoffs/current/README_CURRENT.md and handoffs/current/RIFTSCAN_RESUME_HANDOFF_2026-05-06_OPERATOR_GATE_WORKFLOW.md first. Treat older 2026-05-05 handoffs as historical/superseded for next-step ordering. Current HEAD should be e3992a5 Add capture plan check workflow or newer. Current Operator gate should show metadata_capture_plan_gate: PASS, post_update_baseline: PASS, capture_readiness: PASS, capture_readiness_baseline_link: match, latest_metadata_capture_plan: valid_metadata_only, and live_collection_allowed: false. Latest metadata-only capture plan should be plans/focus-gated-capture-plans/20260506T042824Z_focus_gated_capture_plan. Capture Plan Check artifacts should be under handoffs/current/capture-plan-check/. Movement Test Readiness artifacts should be under handoffs/current/movement-test-readiness/. Do not run live capture, movement/input, /reloadui, scanner probes, offset validation, or RiftReader validation without a final current-window execution gate. First safe actions: inspect handoffs/current/operator/operator-current-gate-summary.json, handoffs/current/movement-test-readiness/MOVEMENT_TEST_READINESS_REPORT.md, and handoffs/current/live-collection-gate/LIVE_COLLECTION_GATE_CHECKLIST.md.
+Resume RiftScan from C:\RIFT MODDING\Riftscan on main. Read handoffs/current/README_CURRENT.md and handoffs/current/RIFTSCAN_RESUME_HANDOFF_2026-05-06_OPERATOR_GATE_WORKFLOW.md first. Treat older 2026-05-05 handoffs as historical/superseded for next-step ordering. Current HEAD should be b7bd739 Add movement test readiness gate or newer. Current Operator gate should show metadata_capture_plan_gate: PASS, post_update_baseline: PASS, capture_readiness: PASS, capture_readiness_baseline_link: match, latest_metadata_capture_plan: valid_metadata_only, capture_plan_check: PASS, movement_test_readiness: PASS, and live_collection_allowed: false. Latest metadata-only capture plan should be plans/focus-gated-capture-plans/20260506T042824Z_focus_gated_capture_plan. Capture Plan Check artifacts should be under handoffs/current/capture-plan-check/. Movement Test Readiness artifacts should be under handoffs/current/movement-test-readiness/. Movement Execution Gate artifacts should be under handoffs/current/movement-execution-gate/ and may be BLOCKED by current ReaderBridge/RiftReader anchor freshness. Do not run live capture, movement/input, /reloadui, scanner probes, offset validation, or RiftReader validation unless Movement Execution Gate is PASS and not expired. First safe actions: inspect handoffs/current/operator/operator-current-gate-summary.json, handoffs/current/movement-execution-gate/MOVEMENT_EXECUTION_GATE_REPORT.md, and handoffs/current/live-collection-gate/LIVE_COLLECTION_GATE_CHECKLIST.md.
 ```

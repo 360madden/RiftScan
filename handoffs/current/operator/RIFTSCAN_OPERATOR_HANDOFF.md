@@ -1,7 +1,7 @@
 # RiftScan Operator Handoff
 
-Created UTC: `2026-05-06T05:35:50Z`
-App version: `riftscan-operator-app-v3.8.19`
+Created UTC: `2026-05-06T05:54:39Z`
+App version: `riftscan-operator-app-v3.8.20`
 Repo root: `C:\RIFT MODDING\Riftscan`
 
 ## Operator Assessment
@@ -27,11 +27,14 @@ latest_metadata_capture_plan: valid_metadata_only
 latest_capture_plan: plans/focus-gated-capture-plans/20260506T042824Z_focus_gated_capture_plan
 capture_plan_check: PASS
 movement_test_readiness: PASS
+movement_execution_gate: BLOCKED
+movement_execution_allowed: False
+movement_execution_expires_utc: None
 full_live_preflight: PASS
 focus_preflight: PASS
 live_collection_allowed: false
 old_offsets_trusted: false
-next_action: Stage the final current-window movement execution gate; live movement still requires immediate PID/HWND/focus revalidation and abort controls.
+next_action: Resolve Movement Execution Gate blockers and rerun it; do not send movement/input.
 
 blockers:
 - None
@@ -40,7 +43,7 @@ blockers:
 ```json
 {
   "schema_version": "riftscan.operator_current_workflow_gate.v1",
-  "created_utc": "2026-05-06T05:35:50Z",
+  "created_utc": "2026-05-06T05:54:39Z",
   "metadata_capture_plan_gate": "PASS",
   "live_collection_allowed": false,
   "old_offsets_trusted": false,
@@ -59,7 +62,7 @@ blockers:
     "artifact_freshness": {
       "status": "warning_non_relevant_changes",
       "artifact_head": "40bbd1c62c5db71ecbe4d5931643d37619f955b3",
-      "current_head": "e3992a59837ad2b84a8d26331b6b261106f29702",
+      "current_head": "b7bd739d3da8d9d5ec1c0e02241590e6dde682af",
       "head_matches_current": false,
       "changed_paths_since_artifact_head": [
         "docs/helper-tooling-policy.md",
@@ -76,6 +79,9 @@ blockers:
         "handoffs/current/focus-control-local/process-command-result.json",
         "handoffs/current/live-collection-gate/LIVE_COLLECTION_GATE_CHECKLIST.md",
         "handoffs/current/live-collection-gate/live-collection-gate-summary.json",
+        "handoffs/current/movement-test-readiness/MOVEMENT_TEST_READINESS_REPORT.md",
+        "handoffs/current/movement-test-readiness/movement-test-readiness-log.jsonl",
+        "handoffs/current/movement-test-readiness/movement-test-readiness-summary.json",
         "handoffs/current/offline-workflow-check/OFFLINE_WORKFLOW_CHECK_REPORT.md",
         "handoffs/current/offline-workflow-check/offline-workflow-check-log.jsonl",
         "handoffs/current/offline-workflow-check/offline-workflow-check-summary.json",
@@ -88,8 +94,10 @@ blockers:
         "plans/focus-gated-capture-plans/20260506T042824Z_focus_gated_capture_plan/capture-plan.json",
         "plans/focus-gated-capture-plans/LATEST_CAPTURE_PLAN.txt",
         "scripts/run-riftscan-capture-plan-check.cmd",
+        "scripts/run-riftscan-movement-test-readiness.cmd",
         "scripts/run-riftscan-operator-offline-diagnostics.cmd",
         "tools/riftscan_capture_plan_check.py",
+        "tools/riftscan_movement_test_readiness.py",
         "tools/riftscan_offline_workflow_check.py",
         "tools/riftscan_operator_app.py"
       ],
@@ -112,7 +120,7 @@ blockers:
     "artifact_freshness": {
       "status": "warning_non_relevant_changes",
       "artifact_head": "40bbd1c62c5db71ecbe4d5931643d37619f955b3",
-      "current_head": "e3992a59837ad2b84a8d26331b6b261106f29702",
+      "current_head": "b7bd739d3da8d9d5ec1c0e02241590e6dde682af",
       "head_matches_current": false,
       "changed_paths_since_artifact_head": [
         "docs/helper-tooling-policy.md",
@@ -129,6 +137,9 @@ blockers:
         "handoffs/current/focus-control-local/process-command-result.json",
         "handoffs/current/live-collection-gate/LIVE_COLLECTION_GATE_CHECKLIST.md",
         "handoffs/current/live-collection-gate/live-collection-gate-summary.json",
+        "handoffs/current/movement-test-readiness/MOVEMENT_TEST_READINESS_REPORT.md",
+        "handoffs/current/movement-test-readiness/movement-test-readiness-log.jsonl",
+        "handoffs/current/movement-test-readiness/movement-test-readiness-summary.json",
         "handoffs/current/offline-workflow-check/OFFLINE_WORKFLOW_CHECK_REPORT.md",
         "handoffs/current/offline-workflow-check/offline-workflow-check-log.jsonl",
         "handoffs/current/offline-workflow-check/offline-workflow-check-summary.json",
@@ -141,8 +152,10 @@ blockers:
         "plans/focus-gated-capture-plans/20260506T042824Z_focus_gated_capture_plan/capture-plan.json",
         "plans/focus-gated-capture-plans/LATEST_CAPTURE_PLAN.txt",
         "scripts/run-riftscan-capture-plan-check.cmd",
+        "scripts/run-riftscan-movement-test-readiness.cmd",
         "scripts/run-riftscan-operator-offline-diagnostics.cmd",
         "tools/riftscan_capture_plan_check.py",
+        "tools/riftscan_movement_test_readiness.py",
         "tools/riftscan_offline_workflow_check.py",
         "tools/riftscan_operator_app.py"
       ],
@@ -189,7 +202,7 @@ blockers:
     "artifact_status": "present",
     "status": "pass",
     "display_status": "PASS",
-    "created_utc": "2026-05-06T05:35:48Z",
+    "created_utc": "2026-05-06T05:54:06Z",
     "blockers": [],
     "paths": {
       "report": "handoffs/current/capture-plan-check/CAPTURE_PLAN_CHECK_REPORT.md",
@@ -202,7 +215,7 @@ blockers:
     "artifact_status": "present",
     "status": "pass",
     "display_status": "PASS",
-    "created_utc": "2026-05-06T05:35:49Z",
+    "created_utc": "2026-05-06T05:54:07Z",
     "blockers": [],
     "paths": {
       "report": "handoffs/current/movement-test-readiness/MOVEMENT_TEST_READINESS_REPORT.md",
@@ -210,10 +223,30 @@ blockers:
       "log": "handoffs/current/movement-test-readiness/movement-test-readiness-log.jsonl"
     }
   },
+  "movement_execution_gate": {
+    "label": "Movement Execution Gate",
+    "artifact_status": "present",
+    "status": "blocked_movement_execution_not_allowed",
+    "display_status": "BLOCKED",
+    "created_utc": "2026-05-06T05:54:33Z",
+    "blockers": [
+      "live-test-riftscan preflight failed for move_forward.",
+      "live-test-riftscan preflight issue: ReaderBridgeExport.lua is stale by file time: age 51143s > max 300s.",
+      "live-test-riftscan preflight issue: RiftReader anchor TraceMatchesProcess is not true.",
+      "live-test-riftscan preflight issue: Source object coordinate sample does not match ReaderBridge within tolerance."
+    ],
+    "paths": {
+      "report": "handoffs/current/movement-execution-gate/MOVEMENT_EXECUTION_GATE_REPORT.md",
+      "summary": "handoffs/current/movement-execution-gate/movement-execution-gate-summary.json",
+      "log": "handoffs/current/movement-execution-gate/movement-execution-gate-log.jsonl"
+    },
+    "movement_execution_allowed": false,
+    "expires_utc": null
+  },
   "full_live_preflight": "PASS",
   "focus_preflight": "PASS",
   "blockers": [],
-  "next_action": "Stage the final current-window movement execution gate; live movement still requires immediate PID/HWND/focus revalidation and abort controls.",
+  "next_action": "Resolve Movement Execution Gate blockers and rerun it; do not send movement/input.",
   "guardrail": "No live capture, discovery, movement/input, memory scan/read, offset validation, RiftReader validation, or /reloadui until current gates pass and an explicit future live gate is added."
 }
 ```
@@ -229,19 +262,25 @@ Exit code: `0`
  M handoffs/current/capture-plan-check/CAPTURE_PLAN_CHECK_REPORT.md
  M handoffs/current/capture-plan-check/capture-plan-check-log.jsonl
  M handoffs/current/capture-plan-check/capture-plan-check-summary.json
+ M handoffs/current/focus-control-local/focus-control-log.jsonl
+ M handoffs/current/focus-control-local/focus-control-summary.json
+ M handoffs/current/focus-control-local/process-command-result.json
  M handoffs/current/live-collection-gate/LIVE_COLLECTION_GATE_CHECKLIST.md
  M handoffs/current/live-collection-gate/live-collection-gate-summary.json
+ M handoffs/current/movement-test-readiness/MOVEMENT_TEST_READINESS_REPORT.md
+ M handoffs/current/movement-test-readiness/movement-test-readiness-log.jsonl
+ M handoffs/current/movement-test-readiness/movement-test-readiness-summary.json
  M handoffs/current/offline-workflow-check/OFFLINE_WORKFLOW_CHECK_REPORT.md
  M handoffs/current/offline-workflow-check/offline-workflow-check-log.jsonl
  M handoffs/current/offline-workflow-check/offline-workflow-check-summary.json
  M handoffs/current/operator/RIFTSCAN_OPERATOR_HANDOFF.md
  M handoffs/current/operator/operator-current-gate-summary.json
- M scripts/run-riftscan-operator-offline-diagnostics.cmd
+ M scripts/live-test-riftscan.ps1
  M tools/riftscan_offline_workflow_check.py
  M tools/riftscan_operator_app.py
-?? handoffs/current/movement-test-readiness/
-?? scripts/run-riftscan-movement-test-readiness.cmd
-?? tools/riftscan_movement_test_readiness.py
+?? handoffs/current/movement-execution-gate/
+?? scripts/run-riftscan-movement-execution-gate.cmd
+?? tools/riftscan_movement_execution_gate.py
 
 ```
 
@@ -250,11 +289,11 @@ Exit code: `0`
 Exit code: `0`
 
 ```text
+b7bd739 Add movement test readiness gate
 e3992a5 Add capture plan check workflow
 3ae21d7 Record current-client gate pass and capture plan
 40bbd1c Refresh blocked post-update baseline artifacts
 17d69f5 Refresh handoffs after offline workflow check
-b3bb14d Add offline workflow check helper
 
 ```
 
@@ -263,7 +302,7 @@ b3bb14d Add offline workflow check helper
 ```json
 {
   "schema_version": "riftscan.local_focus_control_summary.v1",
-  "created_utc": "2026-05-06T04:28:24Z",
+  "created_utc": "2026-05-06T05:54:30Z",
   "status": "foreground_verified",
   "process": {
     "Id": 11220,
@@ -686,7 +725,7 @@ b3bb14d Add offline workflow check helper
   "summary_path": "handoffs/current/offline-workflow-check/offline-workflow-check-summary.json",
   "log_path": "handoffs/current/offline-workflow-check/offline-workflow-check-log.jsonl",
   "summary": {
-    "app_version": "riftscan-offline-workflow-check-v1.0.2",
+    "app_version": "riftscan-offline-workflow-check-v1.0.3",
     "checks": [
       {
         "args": [
@@ -699,7 +738,8 @@ b3bb14d Add offline workflow check helper
           "tools/riftscan_patch_intake_app.py",
           "tools/riftscan_offline_workflow_check.py",
           "tools/riftscan_capture_plan_check.py",
-          "tools/riftscan_movement_test_readiness.py"
+          "tools/riftscan_movement_test_readiness.py",
+          "tools/riftscan_movement_execution_gate.py"
         ],
         "exit_code": 0,
         "name": "py_compile_helpers",
@@ -717,7 +757,7 @@ b3bb14d Add offline workflow check helper
         "name": "offline_workflow_check_self_test",
         "status": "pass",
         "stderr": "",
-        "stdout": "{\n  \"app_version\": \"riftscan-offline-workflow-check-v1.0.2\",\n  \"case_count\": 2,\n  \"created_utc\": \"2026-05-06T05:35:39Z\",\n  \"safety\": {\n    \"capture_started\": false,\n    \"memory_scan_or_read_started\": false,\n    \"movement_or_input_sent\": false,\n    \"reloadui_sent\": false,\n    \"runs_focus_preflight\": false,\n    \"writes_artifacts\": false\n  },\n  \"schema_version\": \"riftscan.offline_workflow_check_self_test.v1\",\n  \"status\": \"PASS\",\n  \"tests\": [\n    {\n      \"actual\": \"pass\",\n      \"expected\": \"pass\",\n      \"failed_checks\": [],\n      \"name\": \"all pass\",\n      \"pass\": true\n    },\n    {\n      \"actual\": \"fail\",\n      \"expected\": \"fail\",\n      \"failed_checks\": [\n        \"b\"\n      ],\n      \"name\": \"one fail\",\n      \"pass\": true\n    }\n  ]\n}\n"
+        "stdout": "{\n  \"app_version\": \"riftscan-offline-workflow-check-v1.0.3\",\n  \"case_count\": 2,\n  \"created_utc\": \"2026-05-06T05:53:56Z\",\n  \"safety\": {\n    \"capture_started\": false,\n    \"memory_scan_or_read_started\": false,\n    \"movement_or_input_sent\": false,\n    \"reloadui_sent\": false,\n    \"runs_focus_preflight\": false,\n    \"writes_artifacts\": false\n  },\n  \"schema_version\": \"riftscan.offline_workflow_check_self_test.v1\",\n  \"status\": \"PASS\",\n  \"tests\": [\n    {\n      \"actual\": \"pass\",\n      \"expected\": \"pass\",\n      \"failed_checks\": [],\n      \"name\": \"all pass\",\n      \"pass\": true\n    },\n    {\n      \"actual\": \"fail\",\n      \"expected\": \"fail\",\n      \"failed_checks\": [\n        \"b\"\n      ],\n      \"name\": \"one fail\",\n      \"pass\": true\n    }\n  ]\n}\n"
       },
       {
         "args": [
@@ -729,7 +769,7 @@ b3bb14d Add offline workflow check helper
         "name": "operator_self_test",
         "status": "pass",
         "stderr": "",
-        "stdout": "{\n  \"schema_version\": \"riftscan.operator_self_test.v1\",\n  \"created_utc\": \"2026-05-06T05:35:40Z\",\n  \"app_version\": \"riftscan-operator-app-v3.8.19\",\n  \"status\": \"PASS\",\n  \"case_count\": 9,\n  \"tests\": [\n    {\n      \"name\": \"all gates pass without latest capture plan\",\n      \"expected_gate\": \"PASS\",\n      \"actual_gate\": \"PASS\",\n      \"next_action\": \"Refresh the metadata-only capture plan; live collection/discovery still requires an explicit future gate.\",\n      \"blockers\": [],\n      \"live_collection_allowed\": false,\n      \"old_offsets_trusted\": false,\n      \"pass\": true\n    },\n    {\n      \"name\": \"all gates pass with latest metadata-only capture plan\",\n      \"expected_gate\": \"PASS\",\n      \"actual_gate\": \"PASS\",\n      \"next_action\": \"Run Capture Plan Check and review the latest metadata-only capture plan; live collection/discovery still requires an explicit future gate.\",\n      \"blockers\": [],\n      \"live_collection_allowed\": false,\n      \"old_offsets_trusted\": false,\n      \"pass\": true\n    },\n    {\n      \"name\": \"all gates pass with capture plan check\",\n      \"expected_gate\": \"PASS\",\n      \"actual_gate\": \"PASS\",\n      \"next_action\": \"Run Movement Test Readiness before staging any live game-world movement test.\",\n      \"blockers\": [],\n      \"live_collection_allowed\": false,\n      \"old_offsets_trusted\": false,\n      \"pass\": true\n    },\n    {\n      \"name\": \"all gates pass with movement test readiness\",\n      \"expected_gate\": \"PASS\",\n      \"actual_gate\": \"PASS\",\n      \"next_action\": \"Stage the final current-window movement execution gate; live movement still requires immediate PID/HWND/focus revalidation and abort controls.\",\n      \"blockers\": [],\n      \"live_collection_allowed\": false,\n      \"old_offsets_trusted\": false,\n      \"pass\": true\n    },\n    {\n      \"name\": \"baseline blocks even when preflight passes\",\n      \"expected_gate\": \"BLOCKED\",\n      \"actual_gate\": \"BLOCKED\",\n      \"next_action\": \"Run Post-Update Baseline after the current updated RIFT client is confirmed stable in-world.\",\n      \"blockers\": [\n        \"Post-Update Baseline is not PASS for the current updated client.\",\n        \"Stable in-world state is not confirmed.\",\n        \"Capture Readiness was generated from an older/different Post-Update Baseline; rerun Capture Readiness.\"\n      ],\n      \"live_collection_allowed\": false,\n      \"old_offsets_trusted\": false,\n      \"pass\": true\n    },\n    {\n      \"name\": \"readiness blocks after baseline pass\",\n      \"expected_gate\": \"BLOCKED\",\n      \"actual_gate\": \"BLOCKED\",\n      \"next_action\": \"Run Capture Readiness and resolve any blockers before capture-plan refresh.\",\n      \"blockers\": [\n        \"Capture Readiness is not PASS.\",\n        \"Post-update baseline is not PASS for the current client.\"\n      ],\n      \"live_collection_allowed\": false,\n      \"old_offsets_trusted\": false,\n      \"pass\": true\n    },\n    {\n      \"name\": \"stale readiness baseline link blocks metadata plan\",\n      \"expected_gate\": \"BLOCKED\",\n      \"actual_gate\": \"BLOCKED\",\n      \"next_action\": \"Run Capture Readiness again against the latest Post-Update Baseline.\",\n      \"blockers\": [\n        \"Capture Readiness was generated from an older/different Post-Update Baseline; rerun Capture Readiness.\"\n      ],\n      \"live_collection_allowed\": false,\n      \"old_offsets_trusted\": false,\n      \"pass\": true\n    },\n    {\n      \"name\": \"full live preflight blocks metadata plan\",\n      \"expected_gate\": \"BLOCKED\",\n      \"actual_gate\": \"BLOCKED\",\n      \"next_action\": \"Run Full Live Preflight before metadata-only capture-plan refresh.\",\n      \"blockers\": [\n        \"Focus status is not foreground_verified.\"\n      ],\n      \"live_collection_allowed\": false,\n      \"old_offsets_trusted\": false,\n      \"pass\": true\n    },\n    {\n      \"name\": \"focus preflight blocks metadata plan\",\n      \"expected_gate\": \"BLOCKED\",\n      \"actual_gate\": \"BLOCKED\",\n      \"next_action\": \"Run Full Live Preflight before metadata-only capture-plan refresh.\",\n      \"blockers\": [\n        \"Focus preflight is not foreground_verified.\"\n      ],\n      \"live_collection_allowed\": false,\n      \"old_offsets_trusted\": false,\n      \"pass\": true\n    }\n  ],\n  \"safety\": {\n    \"writes_artifacts\": false,\n    \"launches_gui\": false,\n    \"runs_focus_preflight\": false,\n    \"capture_started\": false,\n    \"movement_or_input_sent\": false,\n    \"memory_scan_or_read_started\": false,\n    \"reloadui_sent\": false\n  }\n}\n"
+        "stdout": "{\n  \"schema_version\": \"riftscan.operator_self_test.v1\",\n  \"created_utc\": \"2026-05-06T05:53:57Z\",\n  \"app_version\": \"riftscan-operator-app-v3.8.20\",\n  \"status\": \"PASS\",\n  \"case_count\": 11,\n  \"tests\": [\n    {\n      \"name\": \"all gates pass without latest capture plan\",\n      \"expected_gate\": \"PASS\",\n      \"actual_gate\": \"PASS\",\n      \"next_action\": \"Refresh the metadata-only capture plan; live collection/discovery still requires an explicit future gate.\",\n      \"blockers\": [],\n      \"live_collection_allowed\": false,\n      \"old_offsets_trusted\": false,\n      \"pass\": true\n    },\n    {\n      \"name\": \"all gates pass with latest metadata-only capture plan\",\n      \"expected_gate\": \"PASS\",\n      \"actual_gate\": \"PASS\",\n      \"next_action\": \"Run Capture Plan Check and review the latest metadata-only capture plan; live collection/discovery still requires an explicit future gate.\",\n      \"blockers\": [],\n      \"live_collection_allowed\": false,\n      \"old_offsets_trusted\": false,\n      \"pass\": true\n    },\n    {\n      \"name\": \"all gates pass with capture plan check\",\n      \"expected_gate\": \"PASS\",\n      \"actual_gate\": \"PASS\",\n      \"next_action\": \"Run Movement Test Readiness before staging any live game-world movement test.\",\n      \"blockers\": [],\n      \"live_collection_allowed\": false,\n      \"old_offsets_trusted\": false,\n      \"pass\": true\n    },\n    {\n      \"name\": \"all gates pass with movement test readiness\",\n      \"expected_gate\": \"PASS\",\n      \"actual_gate\": \"PASS\",\n      \"next_action\": \"Run the final current-window Movement Execution Gate; live movement still requires immediate PID/HWND/focus revalidation and abort controls.\",\n      \"blockers\": [],\n      \"live_collection_allowed\": false,\n      \"old_offsets_trusted\": false,\n      \"pass\": true\n    },\n    {\n      \"name\": \"all gates pass with blocked movement execution gate\",\n      \"expected_gate\": \"PASS\",\n      \"actual_gate\": \"PASS\",\n      \"next_action\": \"Resolve Movement Execution Gate blockers and rerun it; do not send movement/input.\",\n      \"blockers\": [],\n      \"live_collection_allowed\": false,\n      \"old_offsets_trusted\": false,\n      \"pass\": true\n    },\n    {\n      \"name\": \"all gates pass with movement execution gate pass\",\n      \"expected_gate\": \"PASS\",\n      \"actual_gate\": \"PASS\",\n      \"next_action\": \"Movement Execution Gate is PASS; if still before expires_utc, run only the exact bounded move_forward command from that gate.\",\n      \"blockers\": [],\n      \"live_collection_allowed\": false,\n      \"old_offsets_trusted\": false,\n      \"pass\": true\n    },\n    {\n      \"name\": \"baseline blocks even when preflight passes\",\n      \"expected_gate\": \"BLOCKED\",\n      \"actual_gate\": \"BLOCKED\",\n      \"next_action\": \"Run Post-Update Baseline after the current updated RIFT client is confirmed stable in-world.\",\n      \"blockers\": [\n        \"Post-Update Baseline is not PASS for the current updated client.\",\n        \"Stable in-world state is not confirmed.\",\n        \"Capture Readiness was generated from an older/different Post-Update Baseline; rerun Capture Readiness.\"\n      ],\n      \"live_collection_allowed\": false,\n      \"old_offsets_trusted\": false,\n      \"pass\": true\n    },\n    {\n      \"name\": \"readiness blocks after baseline pass\",\n      \"expected_gate\": \"BLOCKED\",\n      \"actual_gate\": \"BLOCKED\",\n      \"next_action\": \"Run Capture Readiness and resolve any blockers before capture-plan refresh.\",\n      \"blockers\": [\n        \"Capture Readiness is not PASS.\",\n        \"Post-update baseline is not PASS for the current client.\"\n      ],\n      \"live_collection_allowed\": false,\n      \"old_offsets_trusted\": false,\n      \"pass\": true\n    },\n    {\n      \"name\": \"stale readiness baseline link blocks metadata plan\",\n      \"expected_gate\": \"BLOCKED\",\n      \"actual_gate\": \"BLOCKED\",\n      \"next_action\": \"Run Capture Readiness again against the latest Post-Update Baseline.\",\n      \"blockers\": [\n        \"Capture Readiness was generated from an older/different Post-Update Baseline; rerun Capture Readiness.\"\n      ],\n      \"live_collection_allowed\": false,\n      \"old_offsets_trusted\": false,\n      \"pass\": true\n    },\n    {\n      \"name\": \"full live preflight blocks metadata plan\",\n      \"expected_gate\": \"BLOCKED\",\n      \"actual_gate\": \"BLOCKED\",\n      \"next_action\": \"Run Full Live Preflight before metadata-only capture-plan refresh.\",\n      \"blockers\": [\n        \"Focus status is not foreground_verified.\"\n      ],\n      \"live_collection_allowed\": false,\n      \"old_offsets_trusted\": false,\n      \"pass\": true\n    },\n    {\n      \"name\": \"focus preflight blocks metadata plan\",\n      \"expected_gate\": \"BLOCKED\",\n      \"actual_gate\": \"BLOCKED\",\n      \"next_action\": \"Run Full Live Preflight before metadata-only capture-plan refresh.\",\n      \"blockers\": [\n        \"Focus preflight is not foreground_verified.\"\n      ],\n      \"live_collection_allowed\": false,\n      \"old_offsets_trusted\": false,\n      \"pass\": true\n    }\n  ],\n  \"safety\": {\n    \"writes_artifacts\": false,\n    \"launches_gui\": false,\n    \"runs_focus_preflight\": false,\n    \"capture_started\": false,\n    \"movement_or_input_sent\": false,\n    \"memory_scan_or_read_started\": false,\n    \"reloadui_sent\": false\n  }\n}\n"
       },
       {
         "args": [
@@ -741,7 +781,7 @@ b3bb14d Add offline workflow check helper
         "name": "post_update_baseline_self_test",
         "status": "pass",
         "stderr": "",
-        "stdout": "{\n  \"app_version\": \"riftscan-post-update-baseline-v1.0.1\",\n  \"case_count\": 6,\n  \"created_utc\": \"2026-05-06T05:35:40Z\",\n  \"safety\": {\n    \"capture_started\": false,\n    \"memory_scan_or_read_started\": false,\n    \"movement_or_input_sent\": false,\n    \"reloadui_sent\": false,\n    \"runs_focus_preflight\": false,\n    \"writes_artifacts\": false\n  },\n  \"schema_version\": \"riftscan.post_update_baseline_self_test.v1\",\n  \"status\": \"PASS\",\n  \"tests\": [\n    {\n      \"actual_display_status\": \"PASS\",\n      \"actual_status\": \"pass\",\n      \"blockers\": [],\n      \"expected_blocker_substrings\": [],\n      \"expected_display_status\": \"PASS\",\n      \"expected_status\": \"pass\",\n      \"name\": \"pass baseline\",\n      \"pass\": true\n    },\n    {\n      \"actual_display_status\": \"BLOCKED\",\n      \"actual_status\": \"blocked_waiting_for_game_or_focus\",\n      \"blockers\": [\n        \"Maintenance is not confirmed over.\",\n        \"Login is not confirmed successful.\",\n        \"Stable in-world state is not confirmed.\"\n      ],\n      \"expected_blocker_substrings\": [\n        \"Maintenance is not confirmed over\",\n        \"Login is not confirmed successful\",\n        \"Stable in-world state is not confirmed\"\n      ],\n      \"expected_display_status\": \"BLOCKED\",\n      \"expected_status\": \"blocked_waiting_for_game_or_focus\",\n      \"name\": \"blocked manual state\",\n      \"pass\": true\n    },\n    {\n      \"actual_display_status\": \"BLOCKED\",\n      \"actual_status\": \"blocked_waiting_for_game_or_focus\",\n      \"blockers\": [\n        \"Focus preflight command did not complete successfully.\"\n      ],\n      \"expected_blocker_substrings\": [\n        \"Focus preflight command did not complete successfully\"\n      ],\n      \"expected_display_status\": \"BLOCKED\",\n      \"expected_status\": \"blocked_waiting_for_game_or_focus\",\n      \"name\": \"blocked focus command failure\",\n      \"pass\": true\n    },\n    {\n      \"actual_display_status\": \"PASS\",\n      \"actual_status\": \"pass\",\n      \"blockers\": [],\n      \"expected_blocker_substrings\": [],\n      \"expected_display_status\": \"PASS\",\n      \"expected_status\": \"pass\",\n      \"name\": \"skip focus command failure for offline check\",\n      \"pass\": true\n    },\n    {\n      \"actual_display_status\": \"BLOCKED\",\n      \"actual_status\": \"blocked_waiting_for_game_or_focus\",\n      \"blockers\": [\n        \"selected_window is missing or null.\"\n      ],\n      \"expected_blocker_substrings\": [\n        \"selected_window is missing or null\"\n      ],\n      \"expected_display_status\": \"BLOCKED\",\n      \"expected_status\": \"blocked_waiting_for_game_or_focus\",\n      \"name\": \"blocked missing selected window\",\n      \"pass\": true\n    },\n    {\n      \"actual_display_status\": \"BLOCKED\",\n      \"actual_status\": \"blocked_waiting_for_game_or_focus\",\n      \"blockers\": [\n        \"windows.json has no window entries.\"\n      ],\n      \"expected_blocker_substrings\": [\n        \"windows.json has no window entries\"\n      ],\n      \"expected_display_status\": \"BLOCKED\",\n      \"expected_status\": \"blocked_waiting_for_game_or_focus\",\n      \"name\": \"blocked empty windows list\",\n      \"pass\": true\n    }\n  ]\n}\n"
+        "stdout": "{\n  \"app_version\": \"riftscan-post-update-baseline-v1.0.1\",\n  \"case_count\": 6,\n  \"created_utc\": \"2026-05-06T05:53:57Z\",\n  \"safety\": {\n    \"capture_started\": false,\n    \"memory_scan_or_read_started\": false,\n    \"movement_or_input_sent\": false,\n    \"reloadui_sent\": false,\n    \"runs_focus_preflight\": false,\n    \"writes_artifacts\": false\n  },\n  \"schema_version\": \"riftscan.post_update_baseline_self_test.v1\",\n  \"status\": \"PASS\",\n  \"tests\": [\n    {\n      \"actual_display_status\": \"PASS\",\n      \"actual_status\": \"pass\",\n      \"blockers\": [],\n      \"expected_blocker_substrings\": [],\n      \"expected_display_status\": \"PASS\",\n      \"expected_status\": \"pass\",\n      \"name\": \"pass baseline\",\n      \"pass\": true\n    },\n    {\n      \"actual_display_status\": \"BLOCKED\",\n      \"actual_status\": \"blocked_waiting_for_game_or_focus\",\n      \"blockers\": [\n        \"Maintenance is not confirmed over.\",\n        \"Login is not confirmed successful.\",\n        \"Stable in-world state is not confirmed.\"\n      ],\n      \"expected_blocker_substrings\": [\n        \"Maintenance is not confirmed over\",\n        \"Login is not confirmed successful\",\n        \"Stable in-world state is not confirmed\"\n      ],\n      \"expected_display_status\": \"BLOCKED\",\n      \"expected_status\": \"blocked_waiting_for_game_or_focus\",\n      \"name\": \"blocked manual state\",\n      \"pass\": true\n    },\n    {\n      \"actual_display_status\": \"BLOCKED\",\n      \"actual_status\": \"blocked_waiting_for_game_or_focus\",\n      \"blockers\": [\n        \"Focus preflight command did not complete successfully.\"\n      ],\n      \"expected_blocker_substrings\": [\n        \"Focus preflight command did not complete successfully\"\n      ],\n      \"expected_display_status\": \"BLOCKED\",\n      \"expected_status\": \"blocked_waiting_for_game_or_focus\",\n      \"name\": \"blocked focus command failure\",\n      \"pass\": true\n    },\n    {\n      \"actual_display_status\": \"PASS\",\n      \"actual_status\": \"pass\",\n      \"blockers\": [],\n      \"expected_blocker_substrings\": [],\n      \"expected_display_status\": \"PASS\",\n      \"expected_status\": \"pass\",\n      \"name\": \"skip focus command failure for offline check\",\n      \"pass\": true\n    },\n    {\n      \"actual_display_status\": \"BLOCKED\",\n      \"actual_status\": \"blocked_waiting_for_game_or_focus\",\n      \"blockers\": [\n        \"selected_window is missing or null.\"\n      ],\n      \"expected_blocker_substrings\": [\n        \"selected_window is missing or null\"\n      ],\n      \"expected_display_status\": \"BLOCKED\",\n      \"expected_status\": \"blocked_waiting_for_game_or_focus\",\n      \"name\": \"blocked missing selected window\",\n      \"pass\": true\n    },\n    {\n      \"actual_display_status\": \"BLOCKED\",\n      \"actual_status\": \"blocked_waiting_for_game_or_focus\",\n      \"blockers\": [\n        \"windows.json has no window entries.\"\n      ],\n      \"expected_blocker_substrings\": [\n        \"windows.json has no window entries\"\n      ],\n      \"expected_display_status\": \"BLOCKED\",\n      \"expected_status\": \"blocked_waiting_for_game_or_focus\",\n      \"name\": \"blocked empty windows list\",\n      \"pass\": true\n    }\n  ]\n}\n"
       },
       {
         "args": [
@@ -753,7 +793,7 @@ b3bb14d Add offline workflow check helper
         "name": "capture_readiness_self_test",
         "status": "pass",
         "stderr": "",
-        "stdout": "{\n  \"app_version\": \"riftscan-capture-readiness-v1.0.1\",\n  \"case_count\": 7,\n  \"created_utc\": \"2026-05-06T05:35:40Z\",\n  \"safety\": {\n    \"capture_started\": false,\n    \"memory_scan_or_read_started\": false,\n    \"movement_or_input_sent\": false,\n    \"reloadui_sent\": false,\n    \"runs_focus_preflight\": false,\n    \"writes_artifacts\": false\n  },\n  \"schema_version\": \"riftscan.capture_readiness_self_test.v1\",\n  \"status\": \"PASS\",\n  \"tests\": [\n    {\n      \"actual_display_status\": \"PASS\",\n      \"actual_status\": \"pass\",\n      \"blockers\": [],\n      \"capture_planning_allowed\": true,\n      \"expected_blocker_substrings\": [],\n      \"expected_display_status\": \"PASS\",\n      \"expected_status\": \"pass\",\n      \"name\": \"pass gate\",\n      \"pass\": true\n    },\n    {\n      \"actual_display_status\": \"BLOCKED\",\n      \"actual_status\": \"blocked_waiting_for_current_baseline\",\n      \"blockers\": [\n        \"Post-update baseline is not PASS for the current client.\",\n        \"Post-update baseline display_status is not PASS.\"\n      ],\n      \"capture_planning_allowed\": false,\n      \"expected_blocker_substrings\": [\n        \"Post-update baseline is not PASS\",\n        \"display_status is not PASS\"\n      ],\n      \"expected_display_status\": \"BLOCKED\",\n      \"expected_status\": \"blocked_waiting_for_current_baseline\",\n      \"name\": \"blocked baseline status\",\n      \"pass\": true\n    },\n    {\n      \"actual_display_status\": \"BLOCKED\",\n      \"actual_status\": \"blocked_waiting_for_current_baseline\",\n      \"blockers\": [\n        \"Safety field baseline.safety.old_offsets_trusted is not false.\"\n      ],\n      \"capture_planning_allowed\": false,\n      \"expected_blocker_substrings\": [\n        \"baseline.safety.old_offsets_trusted\"\n      ],\n      \"expected_display_status\": \"BLOCKED\",\n      \"expected_status\": \"blocked_waiting_for_current_baseline\",\n      \"name\": \"blocked unsafe baseline safety\",\n      \"pass\": true\n    },\n    {\n      \"actual_display_status\": \"BLOCKED\",\n      \"actual_status\": \"blocked_waiting_for_current_baseline\",\n      \"blockers\": [\n        \"Current focus status is not foreground_verified.\"\n      ],\n      \"capture_planning_allowed\": false,\n      \"expected_blocker_substrings\": [\n        \"Current focus status is not foreground_verified\"\n      ],\n      \"expected_display_status\": \"BLOCKED\",\n      \"expected_status\": \"blocked_waiting_for_current_baseline\",\n      \"name\": \"blocked current focus lost\",\n      \"pass\": true\n    },\n    {\n      \"actual_display_status\": \"BLOCKED\",\n      \"actual_status\": \"blocked_waiting_for_current_baseline\",\n      \"blockers\": [\n        \"Current RIFT PID differs from the post-update baseline; rerun Post-Update Baseline.\"\n      ],\n      \"capture_planning_allowed\": false,\n      \"expected_blocker_substrings\": [\n        \"Current RIFT PID differs\"\n      ],\n      \"expected_display_status\": \"BLOCKED\",\n      \"expected_status\": \"blocked_waiting_for_current_baseline\",\n      \"name\": \"blocked pid drift\",\n      \"pass\": true\n    },\n    {\n      \"actual_display_status\": \"BLOCKED\",\n      \"actual_status\": \"blocked_waiting_for_current_baseline\",\n      \"blockers\": [\n        \"Current focus preflight command did not complete successfully.\"\n      ],\n      \"capture_planning_allowed\": false,\n      \"expected_blocker_substrings\": [\n        \"Current focus preflight command did not complete successfully\"\n      ],\n      \"expected_display_status\": \"BLOCKED\",\n      \"expected_status\": \"blocked_waiting_for_current_baseline\",\n      \"name\": \"blocked focus command failure\",\n      \"pass\": true\n    },\n    {\n      \"actual_display_status\": \"PASS\",\n      \"actual_status\": \"pass\",\n      \"blockers\": [],\n      \"capture_planning_allowed\": true,\n      \"expected_blocker_substrings\": [],\n      \"expected_display_status\": \"PASS\",\n      \"expected_status\": \"pass\",\n      \"name\": \"skip focus command failure for offline check\",\n      \"pass\": true\n    }\n  ]\n}\n"
+        "stdout": "{\n  \"app_version\": \"riftscan-capture-readiness-v1.0.1\",\n  \"case_count\": 7,\n  \"created_utc\": \"2026-05-06T05:53:57Z\",\n  \"safety\": {\n    \"capture_started\": false,\n    \"memory_scan_or_read_started\": false,\n    \"movement_or_input_sent\": false,\n    \"reloadui_sent\": false,\n    \"runs_focus_preflight\": false,\n    \"writes_artifacts\": false\n  },\n  \"schema_version\": \"riftscan.capture_readiness_self_test.v1\",\n  \"status\": \"PASS\",\n  \"tests\": [\n    {\n      \"actual_display_status\": \"PASS\",\n      \"actual_status\": \"pass\",\n      \"blockers\": [],\n      \"capture_planning_allowed\": true,\n      \"expected_blocker_substrings\": [],\n      \"expected_display_status\": \"PASS\",\n      \"expected_status\": \"pass\",\n      \"name\": \"pass gate\",\n      \"pass\": true\n    },\n    {\n      \"actual_display_status\": \"BLOCKED\",\n      \"actual_status\": \"blocked_waiting_for_current_baseline\",\n      \"blockers\": [\n        \"Post-update baseline is not PASS for the current client.\",\n        \"Post-update baseline display_status is not PASS.\"\n      ],\n      \"capture_planning_allowed\": false,\n      \"expected_blocker_substrings\": [\n        \"Post-update baseline is not PASS\",\n        \"display_status is not PASS\"\n      ],\n      \"expected_display_status\": \"BLOCKED\",\n      \"expected_status\": \"blocked_waiting_for_current_baseline\",\n      \"name\": \"blocked baseline status\",\n      \"pass\": true\n    },\n    {\n      \"actual_display_status\": \"BLOCKED\",\n      \"actual_status\": \"blocked_waiting_for_current_baseline\",\n      \"blockers\": [\n        \"Safety field baseline.safety.old_offsets_trusted is not false.\"\n      ],\n      \"capture_planning_allowed\": false,\n      \"expected_blocker_substrings\": [\n        \"baseline.safety.old_offsets_trusted\"\n      ],\n      \"expected_display_status\": \"BLOCKED\",\n      \"expected_status\": \"blocked_waiting_for_current_baseline\",\n      \"name\": \"blocked unsafe baseline safety\",\n      \"pass\": true\n    },\n    {\n      \"actual_display_status\": \"BLOCKED\",\n      \"actual_status\": \"blocked_waiting_for_current_baseline\",\n      \"blockers\": [\n        \"Current focus status is not foreground_verified.\"\n      ],\n      \"capture_planning_allowed\": false,\n      \"expected_blocker_substrings\": [\n        \"Current focus status is not foreground_verified\"\n      ],\n      \"expected_display_status\": \"BLOCKED\",\n      \"expected_status\": \"blocked_waiting_for_current_baseline\",\n      \"name\": \"blocked current focus lost\",\n      \"pass\": true\n    },\n    {\n      \"actual_display_status\": \"BLOCKED\",\n      \"actual_status\": \"blocked_waiting_for_current_baseline\",\n      \"blockers\": [\n        \"Current RIFT PID differs from the post-update baseline; rerun Post-Update Baseline.\"\n      ],\n      \"capture_planning_allowed\": false,\n      \"expected_blocker_substrings\": [\n        \"Current RIFT PID differs\"\n      ],\n      \"expected_display_status\": \"BLOCKED\",\n      \"expected_status\": \"blocked_waiting_for_current_baseline\",\n      \"name\": \"blocked pid drift\",\n      \"pass\": true\n    },\n    {\n      \"actual_display_status\": \"BLOCKED\",\n      \"actual_status\": \"blocked_waiting_for_current_baseline\",\n      \"blockers\": [\n        \"Current focus preflight command did not complete successfully.\"\n      ],\n      \"capture_planning_allowed\": false,\n      \"expected_blocker_substrings\": [\n        \"Current focus preflight command did not complete successfully\"\n      ],\n      \"expected_display_status\": \"BLOCKED\",\n      \"expected_status\": \"blocked_waiting_for_current_baseline\",\n      \"name\": \"blocked focus command failure\",\n      \"pass\": true\n    },\n    {\n      \"actual_display_status\": \"PASS\",\n      \"actual_status\": \"pass\",\n      \"blockers\": [],\n      \"capture_planning_allowed\": true,\n      \"expected_blocker_substrings\": [],\n      \"expected_display_status\": \"PASS\",\n      \"expected_status\": \"pass\",\n      \"name\": \"skip focus command failure for offline check\",\n      \"pass\": true\n    }\n  ]\n}\n"
       },
       {
         "args": [
@@ -765,7 +805,7 @@ b3bb14d Add offline workflow check helper
         "name": "capture_plan_check_self_test",
         "status": "pass",
         "stderr": "",
-        "stdout": "{\n  \"app_version\": \"riftscan-capture-plan-check-v1.0.0\",\n  \"case_count\": 5,\n  \"created_utc\": \"2026-05-06T05:35:41Z\",\n  \"safety\": {\n    \"capture_started\": false,\n    \"memory_scan_or_read_started\": false,\n    \"movement_or_input_sent\": false,\n    \"reloadui_sent\": false,\n    \"runs_focus_preflight\": false,\n    \"writes_current_artifacts\": false\n  },\n  \"schema_version\": \"riftscan.capture_plan_check_self_test.v1\",\n  \"status\": \"PASS\",\n  \"tests\": [\n    {\n      \"actual_display_status\": \"PASS\",\n      \"actual_status\": \"pass\",\n      \"blockers\": [],\n      \"expected_display_status\": \"PASS\",\n      \"expected_status\": \"pass\",\n      \"name\": \"valid metadata-only plan\",\n      \"pass\": true\n    },\n    {\n      \"actual_display_status\": \"BLOCKED\",\n      \"actual_status\": \"blocked_capture_plan_not_valid\",\n      \"blockers\": [\n        \"capture-plan capture_started is not false.\"\n      ],\n      \"expected_display_status\": \"BLOCKED\",\n      \"expected_status\": \"blocked_capture_plan_not_valid\",\n      \"name\": \"blocked capture_started true\",\n      \"pass\": true\n    },\n    {\n      \"actual_display_status\": \"BLOCKED\",\n      \"actual_status\": \"blocked_capture_plan_not_valid\",\n      \"blockers\": [\n        \"Capture-plan expected_files is missing required metadata outputs: capture-log.jsonl, focus-summary-after.json, focus-summary-before.json, operator-report.md.\"\n      ],\n      \"expected_display_status\": \"BLOCKED\",\n      \"expected_status\": \"blocked_capture_plan_not_valid\",\n      \"name\": \"blocked missing expected files\",\n      \"pass\": true\n    },\n    {\n      \"actual_display_status\": \"BLOCKED\",\n      \"actual_status\": \"blocked_capture_plan_not_valid\",\n      \"blockers\": [\n        \"Capture-plan focus/preflight source artifacts are missing: windows_json=handoffs/current/focus-control-local/windows.json.\"\n      ],\n      \"expected_display_status\": \"BLOCKED\",\n      \"expected_status\": \"blocked_capture_plan_not_valid\",\n      \"name\": \"blocked missing source artifact\",\n      \"pass\": true\n    },\n    {\n      \"actual_display_status\": \"BLOCKED\",\n      \"actual_status\": \"blocked_capture_plan_not_valid\",\n      \"blockers\": [\n        \"Operator gate live_collection_allowed is not false.\"\n      ],\n      \"expected_display_status\": \"BLOCKED\",\n      \"expected_status\": \"blocked_capture_plan_not_valid\",\n      \"name\": \"blocked operator live collection allowed\",\n      \"pass\": true\n    }\n  ]\n}\n"
+        "stdout": "{\n  \"app_version\": \"riftscan-capture-plan-check-v1.0.0\",\n  \"case_count\": 5,\n  \"created_utc\": \"2026-05-06T05:53:58Z\",\n  \"safety\": {\n    \"capture_started\": false,\n    \"memory_scan_or_read_started\": false,\n    \"movement_or_input_sent\": false,\n    \"reloadui_sent\": false,\n    \"runs_focus_preflight\": false,\n    \"writes_current_artifacts\": false\n  },\n  \"schema_version\": \"riftscan.capture_plan_check_self_test.v1\",\n  \"status\": \"PASS\",\n  \"tests\": [\n    {\n      \"actual_display_status\": \"PASS\",\n      \"actual_status\": \"pass\",\n      \"blockers\": [],\n      \"expected_display_status\": \"PASS\",\n      \"expected_status\": \"pass\",\n      \"name\": \"valid metadata-only plan\",\n      \"pass\": true\n    },\n    {\n      \"actual_display_status\": \"BLOCKED\",\n      \"actual_status\": \"blocked_capture_plan_not_valid\",\n      \"blockers\": [\n        \"capture-plan capture_started is not false.\"\n      ],\n      \"expected_display_status\": \"BLOCKED\",\n      \"expected_status\": \"blocked_capture_plan_not_valid\",\n      \"name\": \"blocked capture_started true\",\n      \"pass\": true\n    },\n    {\n      \"actual_display_status\": \"BLOCKED\",\n      \"actual_status\": \"blocked_capture_plan_not_valid\",\n      \"blockers\": [\n        \"Capture-plan expected_files is missing required metadata outputs: capture-log.jsonl, focus-summary-after.json, focus-summary-before.json, operator-report.md.\"\n      ],\n      \"expected_display_status\": \"BLOCKED\",\n      \"expected_status\": \"blocked_capture_plan_not_valid\",\n      \"name\": \"blocked missing expected files\",\n      \"pass\": true\n    },\n    {\n      \"actual_display_status\": \"BLOCKED\",\n      \"actual_status\": \"blocked_capture_plan_not_valid\",\n      \"blockers\": [\n        \"Capture-plan focus/preflight source artifacts are missing: windows_json=handoffs/current/focus-control-local/windows.json.\"\n      ],\n      \"expected_display_status\": \"BLOCKED\",\n      \"expected_status\": \"blocked_capture_plan_not_valid\",\n      \"name\": \"blocked missing source artifact\",\n      \"pass\": true\n    },\n    {\n      \"actual_display_status\": \"BLOCKED\",\n      \"actual_status\": \"blocked_capture_plan_not_valid\",\n      \"blockers\": [\n        \"Operator gate live_collection_allowed is not false.\"\n      ],\n      \"expected_display_status\": \"BLOCKED\",\n      \"expected_status\": \"blocked_capture_plan_not_valid\",\n      \"name\": \"blocked operator live collection allowed\",\n      \"pass\": true\n    }\n  ]\n}\n"
       },
       {
         "args": [
@@ -777,7 +817,19 @@ b3bb14d Add offline workflow check helper
         "name": "movement_test_readiness_self_test",
         "status": "pass",
         "stderr": "",
-        "stdout": "{\n  \"app_version\": \"riftscan-movement-test-readiness-v1.0.0\",\n  \"case_count\": 5,\n  \"created_utc\": \"2026-05-06T05:35:41Z\",\n  \"safety\": {\n    \"capture_started\": false,\n    \"memory_scan_or_read_started\": false,\n    \"movement_or_input_sent\": false,\n    \"reloadui_sent\": false,\n    \"runs_focus_preflight\": false,\n    \"writes_current_artifacts\": false\n  },\n  \"schema_version\": \"riftscan.movement_test_readiness_self_test.v1\",\n  \"status\": \"PASS\",\n  \"tests\": [\n    {\n      \"actual_display_status\": \"PASS\",\n      \"actual_status\": \"pass\",\n      \"blockers\": [],\n      \"expected_display_status\": \"PASS\",\n      \"expected_status\": \"pass\",\n      \"name\": \"all readiness inputs pass\",\n      \"pass\": true\n    },\n    {\n      \"actual_display_status\": \"BLOCKED\",\n      \"actual_status\": \"blocked_movement_test_not_ready\",\n      \"blockers\": [\n        \"Operator metadata_capture_plan_gate is not PASS.\"\n      ],\n      \"expected_display_status\": \"BLOCKED\",\n      \"expected_status\": \"blocked_movement_test_not_ready\",\n      \"name\": \"blocked operator gate\",\n      \"pass\": true\n    },\n    {\n      \"actual_display_status\": \"BLOCKED\",\n      \"actual_status\": \"blocked_movement_test_not_ready\",\n      \"blockers\": [\n        \"Capture Plan Check is not PASS.\"\n      ],\n      \"expected_display_status\": \"BLOCKED\",\n      \"expected_status\": \"blocked_movement_test_not_ready\",\n      \"name\": \"blocked capture plan check\",\n      \"pass\": true\n    },\n    {\n      \"actual_display_status\": \"BLOCKED\",\n      \"actual_status\": \"blocked_movement_test_not_ready\",\n      \"blockers\": [\n        \"Movement live-test wrapper is missing required guard features: move_forward stimulus, pre-capture wait, ReaderBridge freshness, RiftReader anchor read, RiftScan passive capture, delta summary, movement-proof interpretation.\"\n      ],\n      \"expected_display_status\": \"BLOCKED\",\n      \"expected_status\": \"blocked_movement_test_not_ready\",\n      \"name\": \"blocked wrapper missing movement support\",\n      \"pass\": true\n    },\n    {\n      \"actual_display_status\": \"BLOCKED\",\n      \"actual_status\": \"blocked_movement_test_not_ready\",\n      \"blockers\": [\n        \"RiftReader run-reader.cmd is missing; movement wrapper cannot refresh proof-grade coordinate anchors.\"\n      ],\n      \"expected_display_status\": \"BLOCKED\",\n      \"expected_status\": \"blocked_movement_test_not_ready\",\n      \"name\": \"blocked missing RiftReader\",\n      \"pass\": true\n    }\n  ]\n}\n"
+        "stdout": "{\n  \"app_version\": \"riftscan-movement-test-readiness-v1.0.0\",\n  \"case_count\": 5,\n  \"created_utc\": \"2026-05-06T05:53:58Z\",\n  \"safety\": {\n    \"capture_started\": false,\n    \"memory_scan_or_read_started\": false,\n    \"movement_or_input_sent\": false,\n    \"reloadui_sent\": false,\n    \"runs_focus_preflight\": false,\n    \"writes_current_artifacts\": false\n  },\n  \"schema_version\": \"riftscan.movement_test_readiness_self_test.v1\",\n  \"status\": \"PASS\",\n  \"tests\": [\n    {\n      \"actual_display_status\": \"PASS\",\n      \"actual_status\": \"pass\",\n      \"blockers\": [],\n      \"expected_display_status\": \"PASS\",\n      \"expected_status\": \"pass\",\n      \"name\": \"all readiness inputs pass\",\n      \"pass\": true\n    },\n    {\n      \"actual_display_status\": \"BLOCKED\",\n      \"actual_status\": \"blocked_movement_test_not_ready\",\n      \"blockers\": [\n        \"Operator metadata_capture_plan_gate is not PASS.\"\n      ],\n      \"expected_display_status\": \"BLOCKED\",\n      \"expected_status\": \"blocked_movement_test_not_ready\",\n      \"name\": \"blocked operator gate\",\n      \"pass\": true\n    },\n    {\n      \"actual_display_status\": \"BLOCKED\",\n      \"actual_status\": \"blocked_movement_test_not_ready\",\n      \"blockers\": [\n        \"Capture Plan Check is not PASS.\"\n      ],\n      \"expected_display_status\": \"BLOCKED\",\n      \"expected_status\": \"blocked_movement_test_not_ready\",\n      \"name\": \"blocked capture plan check\",\n      \"pass\": true\n    },\n    {\n      \"actual_display_status\": \"BLOCKED\",\n      \"actual_status\": \"blocked_movement_test_not_ready\",\n      \"blockers\": [\n        \"Movement live-test wrapper is missing required guard features: move_forward stimulus, pre-capture wait, ReaderBridge freshness, RiftReader anchor read, RiftScan passive capture, delta summary, movement-proof interpretation.\"\n      ],\n      \"expected_display_status\": \"BLOCKED\",\n      \"expected_status\": \"blocked_movement_test_not_ready\",\n      \"name\": \"blocked wrapper missing movement support\",\n      \"pass\": true\n    },\n    {\n      \"actual_display_status\": \"BLOCKED\",\n      \"actual_status\": \"blocked_movement_test_not_ready\",\n      \"blockers\": [\n        \"RiftReader run-reader.cmd is missing; movement wrapper cannot refresh proof-grade coordinate anchors.\"\n      ],\n      \"expected_display_status\": \"BLOCKED\",\n      \"expected_status\": \"blocked_movement_test_not_ready\",\n      \"name\": \"blocked missing RiftReader\",\n      \"pass\": true\n    }\n  ]\n}\n"
+      },
+      {
+        "args": [
+          "C:\\Users\\mrkoo\\AppData\\Local\\Programs\\Python\\Python314\\python.exe",
+          "tools/riftscan_movement_execution_gate.py",
+          "--self-test"
+        ],
+        "exit_code": 0,
+        "name": "movement_execution_gate_self_test",
+        "status": "pass",
+        "stderr": "",
+        "stdout": "{\n  \"app_version\": \"riftscan-movement-execution-gate-v1.0.0\",\n  \"case_count\": 5,\n  \"created_utc\": \"2026-05-06T05:53:58Z\",\n  \"safety\": {\n    \"capture_started\": false,\n    \"memory_scan_or_read_started_by_riftscan\": false,\n    \"movement_or_input_sent\": false,\n    \"reloadui_sent\": false,\n    \"writes_current_artifacts\": false\n  },\n  \"schema_version\": \"riftscan.movement_execution_gate_self_test.v1\",\n  \"status\": \"PASS\",\n  \"tests\": [\n    {\n      \"actual\": \"pass\",\n      \"blockers\": [],\n      \"expected\": \"pass\",\n      \"name\": \"pass\",\n      \"pass\": true\n    },\n    {\n      \"actual\": \"blocked_movement_execution_not_allowed\",\n      \"blockers\": [\n        \"Movement Test Readiness is not PASS.\"\n      ],\n      \"expected\": \"blocked_movement_execution_not_allowed\",\n      \"name\": \"blocked readiness\",\n      \"pass\": true\n    },\n    {\n      \"actual\": \"blocked_movement_execution_not_allowed\",\n      \"blockers\": [\n        \"Focus summary status is not foreground_verified.\",\n        \"Focus summary selected_window is missing.\"\n      ],\n      \"expected\": \"blocked_movement_execution_not_allowed\",\n      \"name\": \"blocked focus\",\n      \"pass\": true\n    },\n    {\n      \"actual\": \"blocked_movement_execution_not_allowed\",\n      \"blockers\": [\n        \"live-test-riftscan preflight failed for move_forward.\"\n      ],\n      \"expected\": \"blocked_movement_execution_not_allowed\",\n      \"name\": \"blocked wrapper\",\n      \"pass\": true\n    },\n    {\n      \"actual\": \"blocked_movement_execution_not_allowed\",\n      \"blockers\": [],\n      \"expected\": \"blocked_movement_execution_not_allowed\",\n      \"name\": \"blocked skipped wrapper\",\n      \"pass\": true\n    }\n  ]\n}\n"
       },
       {
         "args": [
@@ -789,10 +841,10 @@ b3bb14d Add offline workflow check helper
         "name": "patch_intake_self_test",
         "status": "pass",
         "stderr": "",
-        "stdout": "{\n  \"app_version\": \"riftscan-patch-intake-v1.2.5\",\n  \"created_utc\": \"2026-05-06T05:35:46Z\",\n  \"schema_version\": \"riftscan.patch_intake_self_test.v1\",\n  \"status\": \"PASS\",\n  \"tests\": [\n    {\n      \"actual\": \"FAIL_BAD_HEADER\",\n      \"expected\": \"FAIL_BAD_HEADER\",\n      \"issues\": [\n        \"Payload must start with RIFTSCAN_CLIPBOARD_PATCH_V1 or RIFTSCAN_CHUNKED_PATCH_V1.\"\n      ],\n      \"name\": \"empty payload\",\n      \"pass\": true\n    },\n    {\n      \"actual\": \"FAIL_BAD_HEADER\",\n      \"expected\": \"FAIL_BAD_HEADER\",\n      \"issues\": [\n        \"Payload must start with RIFTSCAN_CLIPBOARD_PATCH_V1 or RIFTSCAN_CHUNKED_PATCH_V1.\"\n      ],\n      \"name\": \"wrong header\",\n      \"pass\": true\n    },\n    {\n      \"actual\": \"FAIL_BAD_MANIFEST\",\n      \"expected\": \"FAIL_BAD_MANIFEST\",\n      \"issues\": [\n        \"JSONDecodeError: Expecting property name enclosed in double quotes: line 1 column 2 (char 1)\"\n      ],\n      \"name\": \"bad json\",\n      \"pass\": true\n    },\n    {\n      \"actual\": \"FAIL_MISSING_PAYLOAD\",\n      \"expected\": \"FAIL_MISSING_PAYLOAD\",\n      \"issues\": [\n        \"Payload block markers are missing.\"\n      ],\n      \"name\": \"missing payload\",\n      \"pass\": true\n    },\n    {\n      \"actual\": \"FAIL_HASH_MISMATCH\",\n      \"expected\": \"FAIL_HASH_MISMATCH\",\n      \"issues\": [],\n      \"name\": \"hash mismatch\",\n      \"pass\": true\n    },\n    {\n      \"actual\": \"FAIL_STALE_PATCH\",\n      \"expected\": \"FAIL_STALE_PATCH\",\n      \"issues\": [\n        \"Patch timestamp is not newer than last accepted patch.\"\n      ],\n      \"name\": \"stale timestamp\",\n      \"pass\": true\n    },\n    {\n      \"actual\": \"FAIL_WRONG_REPO\",\n      \"expected\": \"FAIL_WRONG_REPO\",\n      \"issues\": [\n        \"target_repo_root does not match selected repo root.\"\n      ],\n      \"name\": \"wrong repo\",\n      \"pass\": true\n    },\n    {\n      \"actual\": \"PASS_DRY_RUN\",\n      \"expected\": \"PASS_DRY_RUN\",\n      \"issues\": [],\n      \"name\": \"valid dry run\",\n      \"pass\": true\n    },\n    {\n      \"actual\": \"FAIL_COMMIT_WITHOUT_APPLY\",\n      \"expected\": \"FAIL_COMMIT_WITHOUT_APPLY\",\n      \"issues\": [\n        \"No successful process/apply result exists.\"\n      ],\n      \"name\": \"commit without apply\",\n      \"pass\": true\n    },\n    {\n      \"actual\": \"PASS_PROCESSED\",\n      \"expected\": \"PASS_PROCESSED\",\n      \"issues\": [],\n      \"name\": \"process payload without commit metadata\",\n      \"pass\": true\n    },\n    {\n      \"actual\": \"FAIL_COMMIT_MISSING_METADATA\",\n      \"expected\": \"FAIL_COMMIT_MISSING_METADATA\",\n      \"issues\": [\n        \"Manifest commit block is required.\"\n      ],\n      \"name\": \"commit missing metadata\",\n      \"pass\": true\n    },\n    {\n      \"actual\": \"FAIL_COMMIT_UNSAFE_STAGE_PATH\",\n      \"expected\": \"FAIL_COMMIT_UNSAFE_STAGE_PATH\",\n      \"issues\": [\n        \"Unsafe commit.stage_paths entry: .\"\n      ],\n      \"name\": \"unsafe commit stage path validation\",\n      \"pass\": true\n    },\n    {\n      \"actual\": \"PASS_PROCESSED\",\n      \"expected\": \"PASS_PROCESSED\",\n      \"issues\": [],\n      \"name\": \"process payload with capture readiness checks\",\n      \"pass\": true\n    },\n    {\n      \"actual\": \"PASS_PROCESSED\",\n      \"expected\": \"PASS_PROCESSED\",\n      \"issues\": [],\n      \"name\": \"process payload\",\n      \"pass\": true\n    },\n    {\n      \"actual\": \"PASS_COMMITTED\",\n      \"expected\": \"PASS_COMMITTED\",\n      \"issues\": [],\n      \"name\": \"commit in temp repo\",\n      \"pass\": true\n    },\n    {\n      \"actual\": \"PASS_PUSH_VERIFY_SIMULATED_OR_SKIPPED\",\n      \"expected\": \"PASS_PUSH_VERIFY_SIMULATED_OR_SKIPPED\",\n      \"issues\": [],\n      \"name\": \"push verify simulated\",\n      \"pass\": true\n    },\n    {\n      \"actual\": \"PASS_DRY_RUN\",\n      \"expected\": \"PASS_DRY_RUN\",\n      \"issues\": [],\n      \"name\": \"chunked dry run\",\n      \"pass\": true\n    },\n    {\n      \"actual\": \"FAIL_CHUNK_HASH_MISMATCH\",\n      \"expected\": \"FAIL_CHUNK_HASH_MISMATCH\",\n      \"issues\": [\n        \"chunk 1 hash mismatch\"\n      ],\n      \"name\": \"chunked bad chunk hash\",\n      \"pass\": true\n    },\n    {\n      \"actual\": \"FAIL_MISSING_CHUNK\",\n      \"expected\": \"FAIL_MISSING_CHUNK\",\n      \"issues\": [\n        \"missing chunks: 1\"\n      ],\n      \"name\": \"chunked missing chunk\",\n      \"pass\": true\n    }\n  ]\n}\n"
+        "stdout": "{\n  \"app_version\": \"riftscan-patch-intake-v1.2.5\",\n  \"created_utc\": \"2026-05-06T05:54:04Z\",\n  \"schema_version\": \"riftscan.patch_intake_self_test.v1\",\n  \"status\": \"PASS\",\n  \"tests\": [\n    {\n      \"actual\": \"FAIL_BAD_HEADER\",\n      \"expected\": \"FAIL_BAD_HEADER\",\n      \"issues\": [\n        \"Payload must start with RIFTSCAN_CLIPBOARD_PATCH_V1 or RIFTSCAN_CHUNKED_PATCH_V1.\"\n      ],\n      \"name\": \"empty payload\",\n      \"pass\": true\n    },\n    {\n      \"actual\": \"FAIL_BAD_HEADER\",\n      \"expected\": \"FAIL_BAD_HEADER\",\n      \"issues\": [\n        \"Payload must start with RIFTSCAN_CLIPBOARD_PATCH_V1 or RIFTSCAN_CHUNKED_PATCH_V1.\"\n      ],\n      \"name\": \"wrong header\",\n      \"pass\": true\n    },\n    {\n      \"actual\": \"FAIL_BAD_MANIFEST\",\n      \"expected\": \"FAIL_BAD_MANIFEST\",\n      \"issues\": [\n        \"JSONDecodeError: Expecting property name enclosed in double quotes: line 1 column 2 (char 1)\"\n      ],\n      \"name\": \"bad json\",\n      \"pass\": true\n    },\n    {\n      \"actual\": \"FAIL_MISSING_PAYLOAD\",\n      \"expected\": \"FAIL_MISSING_PAYLOAD\",\n      \"issues\": [\n        \"Payload block markers are missing.\"\n      ],\n      \"name\": \"missing payload\",\n      \"pass\": true\n    },\n    {\n      \"actual\": \"FAIL_HASH_MISMATCH\",\n      \"expected\": \"FAIL_HASH_MISMATCH\",\n      \"issues\": [],\n      \"name\": \"hash mismatch\",\n      \"pass\": true\n    },\n    {\n      \"actual\": \"FAIL_STALE_PATCH\",\n      \"expected\": \"FAIL_STALE_PATCH\",\n      \"issues\": [\n        \"Patch timestamp is not newer than last accepted patch.\"\n      ],\n      \"name\": \"stale timestamp\",\n      \"pass\": true\n    },\n    {\n      \"actual\": \"FAIL_WRONG_REPO\",\n      \"expected\": \"FAIL_WRONG_REPO\",\n      \"issues\": [\n        \"target_repo_root does not match selected repo root.\"\n      ],\n      \"name\": \"wrong repo\",\n      \"pass\": true\n    },\n    {\n      \"actual\": \"PASS_DRY_RUN\",\n      \"expected\": \"PASS_DRY_RUN\",\n      \"issues\": [],\n      \"name\": \"valid dry run\",\n      \"pass\": true\n    },\n    {\n      \"actual\": \"FAIL_COMMIT_WITHOUT_APPLY\",\n      \"expected\": \"FAIL_COMMIT_WITHOUT_APPLY\",\n      \"issues\": [\n        \"No successful process/apply result exists.\"\n      ],\n      \"name\": \"commit without apply\",\n      \"pass\": true\n    },\n    {\n      \"actual\": \"PASS_PROCESSED\",\n      \"expected\": \"PASS_PROCESSED\",\n      \"issues\": [],\n      \"name\": \"process payload without commit metadata\",\n      \"pass\": true\n    },\n    {\n      \"actual\": \"FAIL_COMMIT_MISSING_METADATA\",\n      \"expected\": \"FAIL_COMMIT_MISSING_METADATA\",\n      \"issues\": [\n        \"Manifest commit block is required.\"\n      ],\n      \"name\": \"commit missing metadata\",\n      \"pass\": true\n    },\n    {\n      \"actual\": \"FAIL_COMMIT_UNSAFE_STAGE_PATH\",\n      \"expected\": \"FAIL_COMMIT_UNSAFE_STAGE_PATH\",\n      \"issues\": [\n        \"Unsafe commit.stage_paths entry: .\"\n      ],\n      \"name\": \"unsafe commit stage path validation\",\n      \"pass\": true\n    },\n    {\n      \"actual\": \"PASS_PROCESSED\",\n      \"expected\": \"PASS_PROCESSED\",\n      \"issues\": [],\n      \"name\": \"process payload with capture readiness checks\",\n      \"pass\": true\n    },\n    {\n      \"actual\": \"PASS_PROCESSED\",\n      \"expected\": \"PASS_PROCESSED\",\n      \"issues\": [],\n      \"name\": \"process payload\",\n      \"pass\": true\n    },\n    {\n      \"actual\": \"PASS_COMMITTED\",\n      \"expected\": \"PASS_COMMITTED\",\n      \"issues\": [],\n      \"name\": \"commit in temp repo\",\n      \"pass\": true\n    },\n    {\n      \"actual\": \"PASS_PUSH_VERIFY_SIMULATED_OR_SKIPPED\",\n      \"expected\": \"PASS_PUSH_VERIFY_SIMULATED_OR_SKIPPED\",\n      \"issues\": [],\n      \"name\": \"push verify simulated\",\n      \"pass\": true\n    },\n    {\n      \"actual\": \"PASS_DRY_RUN\",\n      \"expected\": \"PASS_DRY_RUN\",\n      \"issues\": [],\n      \"name\": \"chunked dry run\",\n      \"pass\": true\n    },\n    {\n      \"actual\": \"FAIL_CHUNK_HASH_MISMATCH\",\n      \"expected\": \"FAIL_CHUNK_HASH_MISMATCH\",\n      \"issues\": [\n        \"chunk 1 hash mismatch\"\n      ],\n      \"name\": \"chunked bad chunk hash\",\n      \"pass\": true\n    },\n    {\n      \"actual\": \"FAIL_MISSING_CHUNK\",\n      \"expected\": \"FAIL_MISSING_CHUNK\",\n      \"issues\": [\n        \"missing chunks: 1\"\n      ],\n      \"name\": \"chunked missing chunk\",\n      \"pass\": true\n    }\n  ]\n}\n"
       }
     ],
-    "created_utc": "2026-05-06T05:35:46Z",
+    "created_utc": "2026-05-06T05:54:04Z",
     "display_status": "PASS",
     "failed_check_count": 0,
     "failed_checks": [],
@@ -802,9 +854,9 @@ b3bb14d Add offline workflow check helper
         "log": "pass",
         "status": "pass"
       },
-      "head": "e3992a59837ad2b84a8d26331b6b261106f29702",
-      "log_oneline_5": "e3992a5 Add capture plan check workflow\n3ae21d7 Record current-client gate pass and capture plan\n40bbd1c Refresh blocked post-update baseline artifacts\n17d69f5 Refresh handoffs after offline workflow check\nb3bb14d Add offline workflow check helper",
-      "status_short": " M docs/helper-tooling-policy.md\n M handoffs/current/README_CURRENT.md\n M handoffs/current/RIFTSCAN_RESUME_HANDOFF_2026-05-06_OPERATOR_GATE_WORKFLOW.md\n M handoffs/current/live-collection-gate/LIVE_COLLECTION_GATE_CHECKLIST.md\n M handoffs/current/live-collection-gate/live-collection-gate-summary.json\n M handoffs/current/offline-workflow-check/offline-workflow-check-log.jsonl\n M handoffs/current/operator/RIFTSCAN_OPERATOR_HANDOFF.md\n M handoffs/current/operator/operator-current-gate-summary.json\n M scripts/run-riftscan-operator-offline-diagnostics.cmd\n M tools/riftscan_offline_workflow_check.py\n M tools/riftscan_operator_app.py\n?? handoffs/current/movement-test-readiness/\n?? scripts/run-riftscan-movement-test-readiness.cmd\n?? tools/riftscan_movement_test_readiness.py\n"
+      "head": "b7bd739d3da8d9d5ec1c0e02241590e6dde682af",
+      "log_oneline_5": "b7bd739 Add movement test readiness gate\ne3992a5 Add capture plan check workflow\n3ae21d7 Record current-client gate pass and capture plan\n40bbd1c Refresh blocked post-update baseline artifacts\n17d69f5 Refresh handoffs after offline workflow check",
+      "status_short": " M docs/helper-tooling-policy.md\n M handoffs/current/README_CURRENT.md\n M handoffs/current/RIFTSCAN_RESUME_HANDOFF_2026-05-06_OPERATOR_GATE_WORKFLOW.md\n M handoffs/current/focus-control-local/focus-control-log.jsonl\n M handoffs/current/focus-control-local/focus-control-summary.json\n M handoffs/current/focus-control-local/process-command-result.json\n M handoffs/current/live-collection-gate/LIVE_COLLECTION_GATE_CHECKLIST.md\n M handoffs/current/live-collection-gate/live-collection-gate-summary.json\n M handoffs/current/offline-workflow-check/offline-workflow-check-log.jsonl\n M handoffs/current/operator/RIFTSCAN_OPERATOR_HANDOFF.md\n M handoffs/current/operator/operator-current-gate-summary.json\n M scripts/live-test-riftscan.ps1\n M tools/riftscan_offline_workflow_check.py\n M tools/riftscan_operator_app.py\n?? handoffs/current/movement-execution-gate/\n?? scripts/run-riftscan-movement-execution-gate.cmd\n?? tools/riftscan_movement_execution_gate.py\n"
     },
     "paths": {
       "log": "handoffs/current/offline-workflow-check/offline-workflow-check-log.jsonl",
@@ -872,12 +924,12 @@ b3bb14d Add offline workflow check helper
         "windows_json": "handoffs/current/focus-control-local/windows.json"
       }
     },
-    "created_utc": "2026-05-06T05:35:48Z",
+    "created_utc": "2026-05-06T05:54:06Z",
     "display_status": "PASS",
     "git": {
-      "head": "e3992a59837ad2b84a8d26331b6b261106f29702",
-      "log_oneline_5": "e3992a5 Add capture plan check workflow\n3ae21d7 Record current-client gate pass and capture plan\n40bbd1c Refresh blocked post-update baseline artifacts\n17d69f5 Refresh handoffs after offline workflow check\nb3bb14d Add offline workflow check helper",
-      "status_short": " M docs/helper-tooling-policy.md\n M handoffs/current/README_CURRENT.md\n M handoffs/current/RIFTSCAN_RESUME_HANDOFF_2026-05-06_OPERATOR_GATE_WORKFLOW.md\n M handoffs/current/capture-plan-check/capture-plan-check-log.jsonl\n M handoffs/current/live-collection-gate/LIVE_COLLECTION_GATE_CHECKLIST.md\n M handoffs/current/live-collection-gate/live-collection-gate-summary.json\n M handoffs/current/offline-workflow-check/OFFLINE_WORKFLOW_CHECK_REPORT.md\n M handoffs/current/offline-workflow-check/offline-workflow-check-log.jsonl\n M handoffs/current/offline-workflow-check/offline-workflow-check-summary.json\n M handoffs/current/operator/RIFTSCAN_OPERATOR_HANDOFF.md\n M handoffs/current/operator/operator-current-gate-summary.json\n M scripts/run-riftscan-operator-offline-diagnostics.cmd\n M tools/riftscan_offline_workflow_check.py\n M tools/riftscan_operator_app.py\n?? handoffs/current/movement-test-readiness/\n?? scripts/run-riftscan-movement-test-readiness.cmd\n?? tools/riftscan_movement_test_readiness.py\n"
+      "head": "b7bd739d3da8d9d5ec1c0e02241590e6dde682af",
+      "log_oneline_5": "b7bd739 Add movement test readiness gate\ne3992a5 Add capture plan check workflow\n3ae21d7 Record current-client gate pass and capture plan\n40bbd1c Refresh blocked post-update baseline artifacts\n17d69f5 Refresh handoffs after offline workflow check",
+      "status_short": " M docs/helper-tooling-policy.md\n M handoffs/current/README_CURRENT.md\n M handoffs/current/RIFTSCAN_RESUME_HANDOFF_2026-05-06_OPERATOR_GATE_WORKFLOW.md\n M handoffs/current/capture-plan-check/capture-plan-check-log.jsonl\n M handoffs/current/focus-control-local/focus-control-log.jsonl\n M handoffs/current/focus-control-local/focus-control-summary.json\n M handoffs/current/focus-control-local/process-command-result.json\n M handoffs/current/live-collection-gate/LIVE_COLLECTION_GATE_CHECKLIST.md\n M handoffs/current/live-collection-gate/live-collection-gate-summary.json\n M handoffs/current/offline-workflow-check/OFFLINE_WORKFLOW_CHECK_REPORT.md\n M handoffs/current/offline-workflow-check/offline-workflow-check-log.jsonl\n M handoffs/current/offline-workflow-check/offline-workflow-check-summary.json\n M handoffs/current/operator/RIFTSCAN_OPERATOR_HANDOFF.md\n M handoffs/current/operator/operator-current-gate-summary.json\n M scripts/live-test-riftscan.ps1\n M tools/riftscan_offline_workflow_check.py\n M tools/riftscan_operator_app.py\n?? handoffs/current/movement-execution-gate/\n?? scripts/run-riftscan-movement-execution-gate.cmd\n?? tools/riftscan_movement_execution_gate.py\n"
     },
     "latest_capture_plan": {
       "handoff_exists": true,
@@ -894,7 +946,7 @@ b3bb14d Add offline workflow check helper
       "capture_readiness_display_status": "PASS",
       "live_collection_allowed": false,
       "metadata_capture_plan_gate": "PASS",
-      "next_action": "Stage the final current-window movement execution gate; live movement still requires immediate PID/HWND/focus revalidation and abort controls.",
+      "next_action": "Resolve Movement Execution Gate blockers and rerun it; do not send movement/input.",
       "old_offsets_trusted": false,
       "post_update_baseline_display_status": "PASS",
       "summary_path": "handoffs/current/operator/operator-current-gate-summary.json"
@@ -977,12 +1029,12 @@ b3bb14d Add offline workflow check helper
         "post_update_baseline": "PASS"
       }
     },
-    "created_utc": "2026-05-06T05:35:49Z",
+    "created_utc": "2026-05-06T05:54:07Z",
     "display_status": "PASS",
     "git": {
-      "head": "e3992a59837ad2b84a8d26331b6b261106f29702",
-      "log_oneline_5": "e3992a5 Add capture plan check workflow\n3ae21d7 Record current-client gate pass and capture plan\n40bbd1c Refresh blocked post-update baseline artifacts\n17d69f5 Refresh handoffs after offline workflow check\nb3bb14d Add offline workflow check helper",
-      "status_short": " M docs/helper-tooling-policy.md\n M handoffs/current/README_CURRENT.md\n M handoffs/current/RIFTSCAN_RESUME_HANDOFF_2026-05-06_OPERATOR_GATE_WORKFLOW.md\n M handoffs/current/capture-plan-check/CAPTURE_PLAN_CHECK_REPORT.md\n M handoffs/current/capture-plan-check/capture-plan-check-log.jsonl\n M handoffs/current/capture-plan-check/capture-plan-check-summary.json\n M handoffs/current/live-collection-gate/LIVE_COLLECTION_GATE_CHECKLIST.md\n M handoffs/current/live-collection-gate/live-collection-gate-summary.json\n M handoffs/current/offline-workflow-check/OFFLINE_WORKFLOW_CHECK_REPORT.md\n M handoffs/current/offline-workflow-check/offline-workflow-check-log.jsonl\n M handoffs/current/offline-workflow-check/offline-workflow-check-summary.json\n M handoffs/current/operator/RIFTSCAN_OPERATOR_HANDOFF.md\n M handoffs/current/operator/operator-current-gate-summary.json\n M scripts/run-riftscan-operator-offline-diagnostics.cmd\n M tools/riftscan_offline_workflow_check.py\n M tools/riftscan_operator_app.py\n?? handoffs/current/movement-test-readiness/\n?? scripts/run-riftscan-movement-test-readiness.cmd\n?? tools/riftscan_movement_test_readiness.py\n"
+      "head": "b7bd739d3da8d9d5ec1c0e02241590e6dde682af",
+      "log_oneline_5": "b7bd739 Add movement test readiness gate\ne3992a5 Add capture plan check workflow\n3ae21d7 Record current-client gate pass and capture plan\n40bbd1c Refresh blocked post-update baseline artifacts\n17d69f5 Refresh handoffs after offline workflow check",
+      "status_short": " M docs/helper-tooling-policy.md\n M handoffs/current/README_CURRENT.md\n M handoffs/current/RIFTSCAN_RESUME_HANDOFF_2026-05-06_OPERATOR_GATE_WORKFLOW.md\n M handoffs/current/capture-plan-check/CAPTURE_PLAN_CHECK_REPORT.md\n M handoffs/current/capture-plan-check/capture-plan-check-log.jsonl\n M handoffs/current/capture-plan-check/capture-plan-check-summary.json\n M handoffs/current/focus-control-local/focus-control-log.jsonl\n M handoffs/current/focus-control-local/focus-control-summary.json\n M handoffs/current/focus-control-local/process-command-result.json\n M handoffs/current/live-collection-gate/LIVE_COLLECTION_GATE_CHECKLIST.md\n M handoffs/current/live-collection-gate/live-collection-gate-summary.json\n M handoffs/current/movement-test-readiness/movement-test-readiness-log.jsonl\n M handoffs/current/offline-workflow-check/OFFLINE_WORKFLOW_CHECK_REPORT.md\n M handoffs/current/offline-workflow-check/offline-workflow-check-log.jsonl\n M handoffs/current/offline-workflow-check/offline-workflow-check-summary.json\n M handoffs/current/operator/RIFTSCAN_OPERATOR_HANDOFF.md\n M handoffs/current/operator/operator-current-gate-summary.json\n M scripts/live-test-riftscan.ps1\n M tools/riftscan_offline_workflow_check.py\n M tools/riftscan_operator_app.py\n?? handoffs/current/movement-execution-gate/\n?? scripts/run-riftscan-movement-execution-gate.cmd\n?? tools/riftscan_movement_execution_gate.py\n"
     },
     "paths": {
       "log": "handoffs/current/movement-test-readiness/movement-test-readiness-log.jsonl",
@@ -1021,6 +1073,99 @@ b3bb14d Add offline workflow check helper
       "riftreader_run_cmd": "C:\\RIFT MODDING\\RiftReader\\scripts\\run-reader.cmd"
     },
     "status": "pass",
+    "warnings": []
+  },
+  "report_exists": true,
+  "log_exists": true
+}
+```
+
+## Latest Movement Execution Gate
+
+```json
+{
+  "status": "present",
+  "report_path": "handoffs/current/movement-execution-gate/MOVEMENT_EXECUTION_GATE_REPORT.md",
+  "summary_path": "handoffs/current/movement-execution-gate/movement-execution-gate-summary.json",
+  "log_path": "handoffs/current/movement-execution-gate/movement-execution-gate-log.jsonl",
+  "summary": {
+    "app_version": "riftscan-movement-execution-gate-v1.0.0",
+    "blockers": [
+      "live-test-riftscan preflight failed for move_forward.",
+      "live-test-riftscan preflight issue: ReaderBridgeExport.lua is stale by file time: age 51143s > max 300s.",
+      "live-test-riftscan preflight issue: RiftReader anchor TraceMatchesProcess is not true.",
+      "live-test-riftscan preflight issue: Source object coordinate sample does not match ReaderBridge within tolerance."
+    ],
+    "checks": {
+      "commands": {
+        "focus_preflight": {
+          "args": [
+            "cmd",
+            "/c",
+            "C:\\RIFT MODDING\\Riftscan\\scripts\\run-rift-focus-control.cmd"
+          ],
+          "error": null,
+          "returncode": 0,
+          "stderr_tail": "",
+          "stdout_tail": "Focus control handoff written to C:\\RIFT MODDING\\Riftscan\\handoffs\\current\\focus-control-local\n",
+          "success": true
+        },
+        "wrapper_preflight": {
+          "args": [
+            "cmd",
+            "/c",
+            "C:\\RIFT MODDING\\Riftscan\\scripts\\live-test-riftscan.cmd",
+            "-Stimulus",
+            "move_forward",
+            "-PreflightOnly"
+          ],
+          "error": null,
+          "returncode": 2,
+          "stderr_tail": "",
+          "stdout_tail": "BLOCKED: freshness checks failed. No capture started.\nVerdict: C:\\RIFT MODDING\\Riftscan\\reports\\generated\\manual-live-test-20260506-015430\\freshness-verdict.json\n - ReaderBridgeExport.lua is stale by file time: age 51143s > max 300s.\n - RiftReader anchor TraceMatchesProcess is not true.\n - Source object coordinate sample does not match ReaderBridge within tolerance.\n",
+          "success": false
+        }
+      },
+      "focus": {
+        "hwnd": 657876,
+        "pid": 11220,
+        "status": "foreground_verified",
+        "title": "RIFT"
+      },
+      "movement_test_readiness": {
+        "display_status": "PASS",
+        "status": "pass"
+      },
+      "operator_gate": {
+        "live_collection_allowed": false,
+        "metadata_capture_plan_gate": "PASS",
+        "movement_test_readiness": "PASS",
+        "old_offsets_trusted": false
+      }
+    },
+    "created_utc": "2026-05-06T05:54:33Z",
+    "display_status": "BLOCKED",
+    "expires_utc": null,
+    "movement_execution_allowed": false,
+    "paths": {
+      "log": "handoffs/current/movement-execution-gate/movement-execution-gate-log.jsonl",
+      "report": "handoffs/current/movement-execution-gate/MOVEMENT_EXECUTION_GATE_REPORT.md",
+      "summary": "handoffs/current/movement-execution-gate/movement-execution-gate-summary.json"
+    },
+    "recommended_command": ".\\scripts\\live-test-riftscan.cmd -Stimulus move_forward -PreCaptureWaitMilliseconds 3000 -Samples 40 -IntervalMilliseconds 100",
+    "safety": {
+      "capture_started": false,
+      "focus_preflight_started": true,
+      "memory_scan_or_read_started_by_riftscan": false,
+      "movement_execution_gate_only": true,
+      "movement_or_input_sent": false,
+      "offset_validation_started": false,
+      "reloadui_sent": false,
+      "riftreader_anchor_preflight_started": true,
+      "wrapper_preflight_started": true
+    },
+    "schema_version": "riftscan.movement_execution_gate.v1",
+    "status": "blocked_movement_execution_not_allowed",
     "warnings": []
   },
   "report_exists": true,
@@ -1284,11 +1429,11 @@ b3bb14d Add offline workflow check helper
 ## Focus Log Tail
 
 ```jsonl
-{"timestamp_utc": "2026-05-06T04:28:23Z", "event": "script_start", "script": "C:\\RIFT MODDING\\Riftscan\\tools\\rift_focus_control.py", "repo_root": "C:\\RIFT MODDING\\Riftscan", "process_name": "rift_x64", "explicit_pid": 0, "retries": 3, "settle_ms": 400}
-{"timestamp_utc": "2026-05-06T04:28:23Z", "event": "powershell_start", "command": "$items = @(Get-Process -Name 'rift_x64' -ErrorAction SilentlyContinue | Select-Object Id,ProcessName,Path,MainWindowTitle,StartTime); $items | ConvertTo-Json -Depth 4"}
-{"timestamp_utc": "2026-05-06T04:28:23Z", "event": "powershell_finish", "success": true, "returncode": 0, "elapsed_ms": 272, "stdout_length": 210, "stderr_length": 0}
-{"timestamp_utc": "2026-05-06T04:28:24Z", "event": "focus_attempt", "attempt": 1, "restore_ok": true, "set_foreground_ok": true, "foreground_hwnd": 657876, "foreground_hwnd_hex": "0xA09D4", "foreground_pid": 11220, "foreground_title": "RIFT", "verified": true}
-{"timestamp_utc": "2026-05-06T04:28:24Z", "event": "script_finish", "success": true, "status": "foreground_verified"}
+{"timestamp_utc": "2026-05-06T05:54:29Z", "event": "script_start", "script": "C:\\RIFT MODDING\\Riftscan\\tools\\rift_focus_control.py", "repo_root": "C:\\RIFT MODDING\\Riftscan", "process_name": "rift_x64", "explicit_pid": 0, "retries": 3, "settle_ms": 400}
+{"timestamp_utc": "2026-05-06T05:54:29Z", "event": "powershell_start", "command": "$items = @(Get-Process -Name 'rift_x64' -ErrorAction SilentlyContinue | Select-Object Id,ProcessName,Path,MainWindowTitle,StartTime); $items | ConvertTo-Json -Depth 4"}
+{"timestamp_utc": "2026-05-06T05:54:29Z", "event": "powershell_finish", "success": true, "returncode": 0, "elapsed_ms": 345, "stdout_length": 210, "stderr_length": 0}
+{"timestamp_utc": "2026-05-06T05:54:30Z", "event": "focus_attempt", "attempt": 1, "restore_ok": true, "set_foreground_ok": true, "foreground_hwnd": 657876, "foreground_hwnd_hex": "0xA09D4", "foreground_pid": 11220, "foreground_title": "RIFT", "verified": true}
+{"timestamp_utc": "2026-05-06T05:54:30Z", "event": "script_finish", "success": true, "status": "foreground_verified"}
 ```
 
 ## AI Review Prompt

@@ -10,6 +10,7 @@
     "fresh Capture Readiness PASS",
     "fresh Capture Plan Check PASS",
     "Movement Test Readiness PASS before movement-labeled testing",
+    "Movement Execution Gate PASS immediately before movement/input",
     "Operator report refreshed after checks",
     "explicit operator approval for the exact live slice"
   ],
@@ -40,11 +41,14 @@
     "mixed_turn_camera_reloadui": false,
     "abort_on_focus_drift": true,
     "wrapper": "scripts/live-test-riftscan.cmd -Stimulus move_forward",
-    "required_delta_summary_interpretation": "stimulus_observed_primary_triplet_changed"
+    "required_delta_summary_interpretation": "stimulus_observed_primary_triplet_changed",
+    "movement_execution_gate_required": true,
+    "movement_execution_allowed_required": true,
+    "expires_utc_must_be_current": true
   },
   "paths": {
     "checklist": "handoffs/current/live-collection-gate/LIVE_COLLECTION_GATE_CHECKLIST.md",
     "summary": "handoffs/current/live-collection-gate/live-collection-gate-summary.json"
   },
-  "next_action": "Run Movement Test Readiness and review checklist only; do not run live collection from this milestone."
+  "next_action": "Run Movement Execution Gate only as a no-input final gate; if BLOCKED, resolve listed freshness blockers and do not run movement."
 }

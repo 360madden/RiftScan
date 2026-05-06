@@ -1,4 +1,4 @@
-# version: 0.1.0
+# version: 0.1.1
 # purpose: Stale-guarded manual live-testing wrapper for RiftScan without adding core capture features.
 [CmdletBinding()]
 param(
@@ -169,6 +169,24 @@ function Invoke-RiftScanJson {
     return Invoke-JsonCommand -FilePath "dotnet" -Arguments (@("run", "--project", $script:RiftScanCliProjectFull, "--") + $Arguments) -StdoutPath $StdoutPath
 }
 
+function Get-ObjectPropertyValue {
+    param(
+        $Object,
+        [Parameter(Mandatory)][string]$Name
+    )
+
+    if ($null -eq $Object) {
+        return $null
+    }
+
+    $property = $Object.PSObject.Properties | Where-Object { $_.Name -eq $Name } | Select-Object -First 1
+    if ($null -eq $property) {
+        return $null
+    }
+
+    return $property.Value
+}
+
 function ConvertTo-Float32 {
     param([byte[]]$Bytes, [int]$Offset)
     if ($Offset + 4 -gt $Bytes.Length) {
@@ -310,27 +328,31 @@ try {
     $anchor = $null
     $sourceObjectAddress = $null
     $traceObjectAddress = $null
+    $sourceObjectMatchesReaderBridge = $false
+    $traceMatchesProcess = $false
 
     if (Test-Path -LiteralPath $readerRunCmd) {
         $anchorPath = Join-Path $runDirectory "riftreader-read-player-coord-anchor.json"
         $anchor = Invoke-JsonCommand -FilePath $readerRunCmd -Arguments @("--pid", "$($process.Id)", "--read-player-coord-anchor", "--json") -StdoutPath $anchorPath -WorkingDirectory $RiftReaderRepo
 
-        if ($anchor.ProcessId -ne $process.Id) {
-            $issues.Add("RiftReader anchor PID $($anchor.ProcessId) does not match live PID $($process.Id).")
+        $anchorProcessId = Get-ObjectPropertyValue -Object $anchor -Name "ProcessId"
+        $traceMatchesProcess = (Get-ObjectPropertyValue -Object $anchor -Name "TraceMatchesProcess") -eq $true
+        $sourceObjectMatch = Get-ObjectPropertyValue -Object $anchor -Name "SourceObjectMatch"
+        $sourceObjectMatchesReaderBridge = (Get-ObjectPropertyValue -Object $sourceObjectMatch -Name "CoordMatchesWithinTolerance") -eq $true
+        $sourceObjectAddress = Get-ObjectPropertyValue -Object $anchor -Name "SourceObjectAddress"
+        $traceObjectAddress = Get-ObjectPropertyValue -Object $anchor -Name "ObjectBaseAddress"
+
+        if ($anchorProcessId -ne $process.Id) {
+            $issues.Add("RiftReader anchor PID $anchorProcessId does not match live PID $($process.Id).")
         }
-        if ($anchor.TraceMatchesProcess -ne $true) {
+        if ($traceMatchesProcess -ne $true) {
             $issues.Add("RiftReader anchor TraceMatchesProcess is not true.")
         }
-        if ($null -eq $anchor.SourceObjectMatch -or $anchor.SourceObjectMatch.CoordMatchesWithinTolerance -ne $true) {
+        if ($sourceObjectMatchesReaderBridge -ne $true) {
             $issues.Add("Source object coordinate sample does not match ReaderBridge within tolerance.")
         }
-        if ([string]::IsNullOrWhiteSpace($anchor.SourceObjectAddress)) {
+        if ([string]::IsNullOrWhiteSpace($sourceObjectAddress)) {
             $issues.Add("RiftReader anchor did not emit SourceObjectAddress.")
-        } else {
-            $sourceObjectAddress = $anchor.SourceObjectAddress
-        }
-        if (-not [string]::IsNullOrWhiteSpace($anchor.ObjectBaseAddress)) {
-            $traceObjectAddress = $anchor.ObjectBaseAddress
         }
     }
 
@@ -375,8 +397,8 @@ try {
         riftreader_anchor = if ($null -eq $anchor) { $null } else { [pscustomobject]@{
             source_object_address = $sourceObjectAddress
             trace_object_address = $traceObjectAddress
-            source_object_matches_readerbridge = $anchor.SourceObjectMatch.CoordMatchesWithinTolerance
-            trace_matches_process = $anchor.TraceMatchesProcess
+            source_object_matches_readerbridge = $sourceObjectMatchesReaderBridge
+            trace_matches_process = $traceMatchesProcess
         }}
         capture_plan = [pscustomobject]@{
             stimulus = $Stimulus

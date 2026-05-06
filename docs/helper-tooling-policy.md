@@ -24,6 +24,7 @@ This applies to:
 - Offline Workflow Check runners
 - Capture Plan Check and other metadata-plan validators
 - Movement Test Readiness and other future live-test readiness validators
+- Movement Execution Gate and other final no-input live-adjacent gate validators
 - no-GUI Operator diagnostics wrappers
 - report and handoff writers
 - local validation runners
@@ -137,6 +138,9 @@ scripts/run-riftscan-capture-plan-check.cmd
 tools/riftscan_movement_test_readiness.py
 scripts/run-riftscan-movement-test-readiness.cmd
 
+tools/riftscan_movement_execution_gate.py
+scripts/run-riftscan-movement-execution-gate.cmd
+
 scripts/run-riftscan-operator-offline-diagnostics.cmd
 ```
 
@@ -179,6 +183,15 @@ python tools/riftscan_movement_test_readiness.py --self-test
 .\scripts\run-riftscan-movement-test-readiness.cmd --strict-exit-code
 ```
 
+Movement execution gate validation:
+
+```text
+python tools/riftscan_movement_execution_gate.py --self-test
+.\scripts\run-riftscan-movement-execution-gate.cmd --strict-exit-code
+```
+
+The self-test is offline. The CMD gate is live-adjacent but no-input: it may run focus preflight and `scripts/live-test-riftscan.cmd -Stimulus move_forward -PreflightOnly`, which can invoke RiftReader anchor checks. It must not start capture, send movement/input, validate offsets, or run `/reloadui`.
+
 No-GUI Operator diagnostics:
 
 ```text
@@ -207,9 +220,13 @@ py_compile_capture_plan_check
 capture_plan_check_self_test
 py_compile_movement_test_readiness
 movement_test_readiness_self_test
+py_compile_movement_execution_gate
+movement_execution_gate_self_test
 ```
 
 The Operator Diagnostics tab may expose offline self-tests, Offline Workflow Check, Capture Plan Check, and Movement Test Readiness when the action does not touch live RIFT state, capture, input, memory scan/read, offsets, RiftReader validation, or `/reloadui`. Capture Plan Check and Movement Test Readiness read existing metadata artifacts only.
+
+The Operator Diagnostics tab may also expose `Movement Execution Gate`. Treat it differently from the offline diagnostics: it is a no-input final gate that revalidates current focus/PID/HWND and the live wrapper preflight immediately before any bounded movement command. A BLOCKED result is the expected safe state when ReaderBridge/RiftReader freshness does not prove the current client.
 
 Operator handoffs should include a compact current workflow gate section that reports whether Post-Update Baseline, Capture Readiness, and required preflight checks allow the next metadata-only action.
 
@@ -237,6 +254,8 @@ Still blocked:
 
 `MOVEMENT TEST READINESS: PASS` means the repo control-plane is ready to stage a separately gated movement live test. It does not mean movement was sent, capture was started, or old offsets are trusted.
 
+`MOVEMENT EXECUTION GATE: PASS` is narrower and short-lived. It means the exact bounded movement command printed by that gate may be run only before its `expires_utc`. `MOVEMENT EXECUTION GATE: BLOCKED` means do not send movement/input; resolve the listed current-window/live-wrapper blockers first.
+
 ## Next preferred extension
 
-The next helper workflow should keep the same Python-first pattern. Prefer capture-plan review/checking and a formal future live-collection gate first. Do not start live capture or discovery until Post-Update Baseline, Capture Readiness, Capture Plan Check, and explicit operator approval all pass under that separate future gate.
+The next helper workflow should keep the same Python-first pattern. Prefer current-window gate repair and proof-quality stale-data blockers before any movement. Do not start live capture or discovery until Post-Update Baseline, Capture Readiness, Capture Plan Check, Movement Test Readiness, Movement Execution Gate, and explicit operator approval all pass under that separate future gate.

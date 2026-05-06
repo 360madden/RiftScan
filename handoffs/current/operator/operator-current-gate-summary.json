@@ -1,6 +1,6 @@
 {
   "schema_version": "riftscan.operator_current_workflow_gate.v1",
-  "created_utc": "2026-05-06T05:35:50Z",
+  "created_utc": "2026-05-06T05:54:39Z",
   "metadata_capture_plan_gate": "PASS",
   "live_collection_allowed": false,
   "old_offsets_trusted": false,
@@ -19,7 +19,7 @@
     "artifact_freshness": {
       "status": "warning_non_relevant_changes",
       "artifact_head": "40bbd1c62c5db71ecbe4d5931643d37619f955b3",
-      "current_head": "e3992a59837ad2b84a8d26331b6b261106f29702",
+      "current_head": "b7bd739d3da8d9d5ec1c0e02241590e6dde682af",
       "head_matches_current": false,
       "changed_paths_since_artifact_head": [
         "docs/helper-tooling-policy.md",
@@ -36,6 +36,9 @@
         "handoffs/current/focus-control-local/process-command-result.json",
         "handoffs/current/live-collection-gate/LIVE_COLLECTION_GATE_CHECKLIST.md",
         "handoffs/current/live-collection-gate/live-collection-gate-summary.json",
+        "handoffs/current/movement-test-readiness/MOVEMENT_TEST_READINESS_REPORT.md",
+        "handoffs/current/movement-test-readiness/movement-test-readiness-log.jsonl",
+        "handoffs/current/movement-test-readiness/movement-test-readiness-summary.json",
         "handoffs/current/offline-workflow-check/OFFLINE_WORKFLOW_CHECK_REPORT.md",
         "handoffs/current/offline-workflow-check/offline-workflow-check-log.jsonl",
         "handoffs/current/offline-workflow-check/offline-workflow-check-summary.json",
@@ -48,8 +51,10 @@
         "plans/focus-gated-capture-plans/20260506T042824Z_focus_gated_capture_plan/capture-plan.json",
         "plans/focus-gated-capture-plans/LATEST_CAPTURE_PLAN.txt",
         "scripts/run-riftscan-capture-plan-check.cmd",
+        "scripts/run-riftscan-movement-test-readiness.cmd",
         "scripts/run-riftscan-operator-offline-diagnostics.cmd",
         "tools/riftscan_capture_plan_check.py",
+        "tools/riftscan_movement_test_readiness.py",
         "tools/riftscan_offline_workflow_check.py",
         "tools/riftscan_operator_app.py"
       ],
@@ -72,7 +77,7 @@
     "artifact_freshness": {
       "status": "warning_non_relevant_changes",
       "artifact_head": "40bbd1c62c5db71ecbe4d5931643d37619f955b3",
-      "current_head": "e3992a59837ad2b84a8d26331b6b261106f29702",
+      "current_head": "b7bd739d3da8d9d5ec1c0e02241590e6dde682af",
       "head_matches_current": false,
       "changed_paths_since_artifact_head": [
         "docs/helper-tooling-policy.md",
@@ -89,6 +94,9 @@
         "handoffs/current/focus-control-local/process-command-result.json",
         "handoffs/current/live-collection-gate/LIVE_COLLECTION_GATE_CHECKLIST.md",
         "handoffs/current/live-collection-gate/live-collection-gate-summary.json",
+        "handoffs/current/movement-test-readiness/MOVEMENT_TEST_READINESS_REPORT.md",
+        "handoffs/current/movement-test-readiness/movement-test-readiness-log.jsonl",
+        "handoffs/current/movement-test-readiness/movement-test-readiness-summary.json",
         "handoffs/current/offline-workflow-check/OFFLINE_WORKFLOW_CHECK_REPORT.md",
         "handoffs/current/offline-workflow-check/offline-workflow-check-log.jsonl",
         "handoffs/current/offline-workflow-check/offline-workflow-check-summary.json",
@@ -101,8 +109,10 @@
         "plans/focus-gated-capture-plans/20260506T042824Z_focus_gated_capture_plan/capture-plan.json",
         "plans/focus-gated-capture-plans/LATEST_CAPTURE_PLAN.txt",
         "scripts/run-riftscan-capture-plan-check.cmd",
+        "scripts/run-riftscan-movement-test-readiness.cmd",
         "scripts/run-riftscan-operator-offline-diagnostics.cmd",
         "tools/riftscan_capture_plan_check.py",
+        "tools/riftscan_movement_test_readiness.py",
         "tools/riftscan_offline_workflow_check.py",
         "tools/riftscan_operator_app.py"
       ],
@@ -149,7 +159,7 @@
     "artifact_status": "present",
     "status": "pass",
     "display_status": "PASS",
-    "created_utc": "2026-05-06T05:35:48Z",
+    "created_utc": "2026-05-06T05:54:06Z",
     "blockers": [],
     "paths": {
       "report": "handoffs/current/capture-plan-check/CAPTURE_PLAN_CHECK_REPORT.md",
@@ -162,7 +172,7 @@
     "artifact_status": "present",
     "status": "pass",
     "display_status": "PASS",
-    "created_utc": "2026-05-06T05:35:49Z",
+    "created_utc": "2026-05-06T05:54:07Z",
     "blockers": [],
     "paths": {
       "report": "handoffs/current/movement-test-readiness/MOVEMENT_TEST_READINESS_REPORT.md",
@@ -170,9 +180,29 @@
       "log": "handoffs/current/movement-test-readiness/movement-test-readiness-log.jsonl"
     }
   },
+  "movement_execution_gate": {
+    "label": "Movement Execution Gate",
+    "artifact_status": "present",
+    "status": "blocked_movement_execution_not_allowed",
+    "display_status": "BLOCKED",
+    "created_utc": "2026-05-06T05:54:33Z",
+    "blockers": [
+      "live-test-riftscan preflight failed for move_forward.",
+      "live-test-riftscan preflight issue: ReaderBridgeExport.lua is stale by file time: age 51143s > max 300s.",
+      "live-test-riftscan preflight issue: RiftReader anchor TraceMatchesProcess is not true.",
+      "live-test-riftscan preflight issue: Source object coordinate sample does not match ReaderBridge within tolerance."
+    ],
+    "paths": {
+      "report": "handoffs/current/movement-execution-gate/MOVEMENT_EXECUTION_GATE_REPORT.md",
+      "summary": "handoffs/current/movement-execution-gate/movement-execution-gate-summary.json",
+      "log": "handoffs/current/movement-execution-gate/movement-execution-gate-log.jsonl"
+    },
+    "movement_execution_allowed": false,
+    "expires_utc": null
+  },
   "full_live_preflight": "PASS",
   "focus_preflight": "PASS",
   "blockers": [],
-  "next_action": "Stage the final current-window movement execution gate; live movement still requires immediate PID/HWND/focus revalidation and abort controls.",
+  "next_action": "Resolve Movement Execution Gate blockers and rerun it; do not send movement/input.",
   "guardrail": "No live capture, discovery, movement/input, memory scan/read, offset validation, RiftReader validation, or /reloadui until current gates pass and an explicit future live gate is added."
 }

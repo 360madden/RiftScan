@@ -25,10 +25,15 @@ Before any real collection command exists or runs, require all of these fresh cu
 4. `Movement Test Readiness: PASS` before any movement-labeled test is staged:
    - Report: `handoffs/current/movement-test-readiness/MOVEMENT_TEST_READINESS_REPORT.md`
    - Summary: `handoffs/current/movement-test-readiness/movement-test-readiness-summary.json`
-5. Operator report refreshed after the checks:
+5. `Movement Execution Gate: PASS` immediately before any movement/input command:
+   - Report: `handoffs/current/movement-execution-gate/MOVEMENT_EXECUTION_GATE_REPORT.md`
+   - Summary: `handoffs/current/movement-execution-gate/movement-execution-gate-summary.json`
+   - Must show `movement_execution_allowed=true`
+   - Must still be before `expires_utc`
+6. Operator report refreshed after the checks:
    - `handoffs/current/operator/RIFTSCAN_OPERATOR_HANDOFF.md`
    - `handoffs/current/operator/operator-current-gate-summary.json`
-6. Explicit operator approval in the current session for the exact next live-collection slice.
+7. Explicit operator approval in the current session for the exact next live-collection slice.
 
 ## Still forbidden in this future gate unless separately approved
 
@@ -75,6 +80,8 @@ Abort immediately if any of these occur:
 - Capture Readiness is not fresh PASS.
 - Capture Plan Check is not PASS.
 - Movement Test Readiness is not PASS before a movement-labeled run.
+- Movement Execution Gate is not PASS immediately before a movement/input command.
+- Movement Execution Gate is PASS but `expires_utc` has passed.
 - Operator approval is absent or ambiguous.
 - Focus is not foreground-verified for the target RIFT window.
 - PID/HWND changes relative to the fresh baseline/readiness artifacts.
