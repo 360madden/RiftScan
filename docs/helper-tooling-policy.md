@@ -151,6 +151,8 @@ python tools/riftscan_operator_app.py --write-report
 Patch Intake post-apply checks can also require:
 
 ```text
+py_compile_post_update_baseline
+post_update_baseline_self_test
 py_compile_capture_readiness
 capture_readiness_self_test
 ```
