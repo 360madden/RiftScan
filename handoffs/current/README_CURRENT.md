@@ -20,6 +20,7 @@ Start here for new RiftScan work:
 - Python-first helper tooling direction is documented.
 - `Capture Readiness` is the active metadata-only gate between a fresh PASS baseline and any capture-plan refresh.
 - `Capture Readiness` has an offline self-test: `python tools/riftscan_capture_readiness.py --self-test`.
+- Operator Diagnostics has a `Capture Readiness Self-Test` button for offline GUI wiring checks.
 - Patch Intake can require `py_compile_capture_readiness` and `capture_readiness_self_test` post-apply checks for future Capture Readiness patches.
 
 ## Current direction

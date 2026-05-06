@@ -1,7 +1,7 @@
 # RiftScan Operator Handoff
 
-Created UTC: `2026-05-06T02:13:03Z`
-App version: `riftscan-operator-app-v3.8.9`
+Created UTC: `2026-05-06T02:18:38Z`
+App version: `riftscan-operator-app-v3.8.10`
 Repo root: `C:\RIFT MODDING\Riftscan`
 
 ## Operator Assessment
@@ -17,14 +17,9 @@ Summary: `status=foreground_verified pid=11220 hwnd=0xA09D4 title=RIFT`
 Exit code: `0`
 
 ```text
- M README.md
  M docs/helper-tooling-policy.md
  M handoffs/current/README_CURRENT.md
- M handoffs/current/capture-readiness/CAPTURE_READINESS_REPORT.md
- M handoffs/current/capture-readiness/capture-readiness-log.jsonl
- M handoffs/current/capture-readiness/capture-readiness-summary.json
- M tools/riftscan_capture_readiness.py
- M tools/riftscan_patch_intake_app.py
+ M tools/riftscan_operator_app.py
 
 ```
 
@@ -33,11 +28,11 @@ Exit code: `0`
 Exit code: `0`
 
 ```text
+97923b1 Add capture readiness self-test
 56dd777 Add capture readiness gate
 27ecb05 Document Python helper tooling direction
 f0f0362 Wire post-update baseline into operator app
 b9868ba Add next-step workflow handoff
-115c31a Record post-update baseline pass
 
 ```
 

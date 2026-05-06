@@ -1,6 +1,6 @@
-# Version: riftscan-operator-app-v3.8.9
-# Purpose: Windows Tkinter helper app for RiftScan operator workflow: run focus preflight, run full live preflight gate, run the post-update baseline and capture-readiness gates, manage focus-gated metadata workflows, validate patch-runner manifests, check the online patch inbox discovery-only from the visible Main tab, write compact AI-ready reports, clean known junk, safely commit/push allowlisted files including baseline/readiness, repo-bridge handoffs and repo inbox patch packages, and provide tabbed/wrapped controls, a guided button-pusher workflow, focus-discipline confirmation, and lightweight status highlighting.
-# Total character count: 153518
+# Version: riftscan-operator-app-v3.8.10
+# Purpose: Windows Tkinter helper app for RiftScan operator workflow: run focus preflight, run full live preflight gate, run the post-update baseline and capture-readiness gates, run offline Capture Readiness self-tests, manage focus-gated metadata workflows, validate patch-runner manifests, check the online patch inbox discovery-only from the visible Main tab, write compact AI-ready reports, clean known junk, safely commit/push allowlisted files including baseline/readiness, repo-bridge handoffs and repo inbox patch packages, and provide tabbed/wrapped controls, a guided button-pusher workflow, focus-discipline confirmation, and lightweight status highlighting.
+# Total character count: 156201
 
 from __future__ import annotations
 
@@ -20,7 +20,7 @@ from tkinter import messagebox, scrolledtext, ttk
 from typing import Any
 
 
-APP_VERSION = "riftscan-operator-app-v3.8.9"
+APP_VERSION = "riftscan-operator-app-v3.8.10"
 REPO_ROOT = Path(__file__).resolve().parents[1]
 FOCUS_SCRIPT = REPO_ROOT / "scripts" / "run-rift-focus-control.cmd"
 HANDOFF_DIR = REPO_ROOT / "handoffs" / "current" / "focus-control-local"
@@ -2644,6 +2644,7 @@ class RiftScanOperatorApp(tk.Tk):
             [
                 ("Run Full Live Preflight", self.run_full_live_preflight),
                 ("Validate Pending Patch", self.validate_pending_patch),
+                ("Capture Readiness Self-Test", self.run_capture_readiness_self_test),
                 ("Run Focus Preflight", self.run_focus_preflight),
             ],
             columns=3,
@@ -3035,6 +3036,56 @@ class RiftScanOperatorApp(tk.Tk):
         self.run_async("capture readiness", task)
 
 
+    def run_capture_readiness_self_test(self) -> None:
+        def task() -> str:
+            if not CAPTURE_READINESS_CMD.exists():
+                return f"ERROR: missing {rel(CAPTURE_READINESS_CMD)}"
+
+            exit_code, stdout, stderr = run_command(
+                ["cmd", "/c", str(CAPTURE_READINESS_CMD), "--self-test"],
+                timeout=90,
+            )
+            summary: dict[str, Any] = {}
+            json_start = stdout.find("{")
+            json_end = stdout.rfind("}")
+            if json_start >= 0 and json_end > json_start:
+                try:
+                    summary = json.loads(stdout[json_start : json_end + 1])
+                except Exception as exc:
+                    summary = {"_error": f"{type(exc).__name__}: {exc}"}
+
+            display_status = str(summary.get("status") or ("PASS" if exit_code == 0 else "FAIL"))
+            case_count = summary.get("case_count", "unknown")
+            tests = summary.get("tests") if isinstance(summary.get("tests"), list) else []
+            failing = [test for test in tests if not test.get("pass")]
+            safety = summary.get("safety") if isinstance(summary.get("safety"), dict) else {}
+
+            lines = [
+                "\n=== CAPTURE READINESS SELF-TEST ===",
+                f"CAPTURE READINESS SELF-TEST: {display_status}",
+                f"Exit code: {exit_code}",
+                f"Cases: {case_count}",
+                f"Failing cases: {len(failing)}",
+                "",
+                "Safety:",
+                f"- writes_artifacts: {safety.get('writes_artifacts')}",
+                f"- runs_focus_preflight: {safety.get('runs_focus_preflight')}",
+                f"- movement_or_input_sent: {safety.get('movement_or_input_sent')}",
+                f"- memory_scan_or_read_started: {safety.get('memory_scan_or_read_started')}",
+                f"- reloadui_sent: {safety.get('reloadui_sent')}",
+            ]
+            if failing:
+                lines.extend(["", "Failing self-test cases:"])
+                lines.extend(f"- {test.get('name')}: {test.get('actual_status') or test.get('actual')}" for test in failing)
+            if stdout.strip():
+                lines.extend(["", "Launcher stdout:", stdout.strip()])
+            if stderr.strip():
+                lines.extend(["", "Launcher stderr:", stderr.strip()])
+            return "\n".join(lines)
+
+        self.run_async("capture readiness self-test", task)
+
+
     def validate_pending_patch(self) -> None:
         def task() -> str:
             lines: list[str] = [
@@ -3299,6 +3350,7 @@ class RiftScanOperatorApp(tk.Tk):
             "7. Compare Sessions\n"
             "8. Clean Known Junk, Commit Allowlist, Push\n\n"
             "After a RIFT update, treat older baselines and offsets as historical until a fresh current-client baseline passes.\n"
+            "Diagnostics > Capture Readiness Self-Test is offline and can be run anytime to check gate logic.\n"
             "Capture Readiness must PASS before creating or refreshing capture plans.\n"
             "LEAVE RIFT FOREGROUND during the metadata collector.\n"
             "Do not click ChatGPT, PowerShell, the Operator window, or any other window.\n\n"
