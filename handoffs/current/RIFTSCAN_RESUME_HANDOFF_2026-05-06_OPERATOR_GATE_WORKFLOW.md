@@ -55,7 +55,7 @@ handoffs/current/operator/operator-current-gate-summary.json
 ## Current tool versions
 
 ```text
-Operator Helper App: riftscan-operator-app-v3.8.14
+Operator Helper App: riftscan-operator-app-v3.8.15
 Capture Readiness: riftscan-capture-readiness-v1.0.1
 Patch Intake Helper: riftscan-patch-intake-v1.2.2
 Post-Update Baseline: riftscan-post-update-baseline-v1.0.1
@@ -92,6 +92,7 @@ The Operator now has:
 - `Current Workflow Gate` section in `handoffs/current/operator/RIFTSCAN_OPERATOR_HANDOFF.md`.
 - Machine-readable gate summary at `handoffs/current/operator/operator-current-gate-summary.json`.
 - `capture_readiness_baseline_link` stale-chain check in the machine-readable gate summary.
+- Artifact freshness classification for Post-Update Baseline and Capture Readiness summaries.
 
 Capture Readiness now has:
 

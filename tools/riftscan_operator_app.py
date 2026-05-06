@@ -1,6 +1,6 @@
-# Version: riftscan-operator-app-v3.8.14
-# Purpose: Windows Tkinter helper app for RiftScan operator workflow: run focus preflight, run full live preflight gate, run the post-update baseline and capture-readiness gates, run offline Post-Update Baseline, Capture Readiness, and Operator gate self-tests, summarize the current workflow go/no-go gate, manage focus-gated metadata workflows, validate patch-runner manifests, check the online patch inbox discovery-only from the visible Main tab, write compact AI-ready reports, clean known junk, safely commit/push allowlisted files including baseline/readiness, repo-bridge handoffs and repo inbox patch packages, and provide tabbed/wrapped controls, a guided button-pusher workflow, focus-discipline confirmation, and lightweight status highlighting.
-# Total character count: 176031
+# Version: riftscan-operator-app-v3.8.15
+# Purpose: Windows Tkinter helper app for RiftScan operator workflow: run focus preflight, run full live preflight gate, run the post-update baseline and capture-readiness gates, run offline Post-Update Baseline, Capture Readiness, and Operator gate self-tests, summarize the current workflow go/no-go gate with artifact freshness/linkage checks, manage focus-gated metadata workflows, validate patch-runner manifests, check the online patch inbox discovery-only from the visible Main tab, write compact AI-ready reports, clean known junk, safely commit/push allowlisted files including baseline/readiness, repo-bridge handoffs and repo inbox patch packages, and provide tabbed/wrapped controls, a guided button-pusher workflow, focus-discipline confirmation, and lightweight status highlighting.
+# Total character count: 182194
 
 from __future__ import annotations
 
@@ -22,7 +22,7 @@ from tkinter import messagebox, scrolledtext, ttk
 from typing import Any
 
 
-APP_VERSION = "riftscan-operator-app-v3.8.14"
+APP_VERSION = "riftscan-operator-app-v3.8.15"
 REPO_ROOT = Path(__file__).resolve().parents[1]
 FOCUS_SCRIPT = REPO_ROOT / "scripts" / "run-rift-focus-control.cmd"
 HANDOFF_DIR = REPO_ROOT / "handoffs" / "current" / "focus-control-local"
@@ -42,6 +42,17 @@ CAPTURE_READINESS_DIR = REPO_ROOT / "handoffs" / "current" / "capture-readiness"
 CAPTURE_READINESS_REPORT = CAPTURE_READINESS_DIR / "CAPTURE_READINESS_REPORT.md"
 CAPTURE_READINESS_SUMMARY = CAPTURE_READINESS_DIR / "capture-readiness-summary.json"
 CAPTURE_READINESS_LOG = CAPTURE_READINESS_DIR / "capture-readiness-log.jsonl"
+POST_UPDATE_BASELINE_RELEVANT_PATHS = {
+    "tools/riftscan_post_update_baseline.py",
+    "scripts/run-riftscan-post-update-baseline.cmd",
+    "tools/rift_focus_control.py",
+    "scripts/run-rift-focus-control.cmd",
+}
+CAPTURE_READINESS_RELEVANT_PATHS = {
+    *POST_UPDATE_BASELINE_RELEVANT_PATHS,
+    "tools/riftscan_capture_readiness.py",
+    "scripts/run-riftscan-capture-readiness.cmd",
+}
 DRY_RUN_ROOT = REPO_ROOT / "sessions" / "focus-gated-dry-runs"
 LATEST_DRY_RUN = DRY_RUN_ROOT / "LATEST_DRY_RUN.txt"
 CAPTURE_PLAN_ROOT = REPO_ROOT / "plans" / "focus-gated-capture-plans"
@@ -472,6 +483,110 @@ def baseline_link(summary: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def normalize_repo_path(path: str) -> str:
+    return path.replace("\\", "/").strip("/")
+
+
+def doc_or_handoff_path(path: str) -> bool:
+    normalized = normalize_repo_path(path)
+    return (
+        normalized.startswith("docs/")
+        or normalized.startswith("handoffs/")
+        or normalized in {"README.md", "AGENTS.md"}
+    )
+
+
+def path_is_relevant(changed_path: str, relevant_paths: set[str]) -> bool:
+    normalized = normalize_repo_path(changed_path)
+    for relevant_path in relevant_paths:
+        relevant = normalize_repo_path(relevant_path)
+        if normalized == relevant or normalized.startswith(relevant.rstrip("/") + "/"):
+            return True
+    return False
+
+
+def current_git_head() -> tuple[str | None, str | None]:
+    code, out, err = run_command(["git", "rev-parse", "HEAD"], timeout=15)
+    if code != 0:
+        return None, err.strip() or out.strip() or f"git rev-parse HEAD exited {code}"
+    return out.strip(), None
+
+
+def changed_paths_since_head(artifact_head: str) -> tuple[list[str], str | None]:
+    code, out, err = run_command(["git", "diff", "--name-only", f"{artifact_head}..HEAD"], timeout=30)
+    if code != 0:
+        return [], err.strip() or out.strip() or f"git diff --name-only {artifact_head}..HEAD exited {code}"
+    return sorted(path for path in (line.strip() for line in out.splitlines()) if path), None
+
+
+def artifact_freshness(summary: dict[str, Any], relevant_paths: set[str]) -> dict[str, Any]:
+    git = summary.get("git") if isinstance(summary.get("git"), dict) else {}
+    artifact_head = str(git.get("head") or "").strip()
+    current_head, head_error = current_git_head()
+    if not artifact_head:
+        return {
+            "status": "unknown_missing_artifact_head",
+            "artifact_head": None,
+            "current_head": current_head,
+            "head_matches_current": False,
+            "changed_paths_since_artifact_head": [],
+            "relevant_gate_code_changed": False,
+            "relevant_changed_paths": [],
+            "error": "artifact git.head is missing",
+        }
+    if head_error or not current_head:
+        return {
+            "status": "unknown_git_head",
+            "artifact_head": artifact_head,
+            "current_head": current_head,
+            "head_matches_current": False,
+            "changed_paths_since_artifact_head": [],
+            "relevant_gate_code_changed": False,
+            "relevant_changed_paths": [],
+            "error": head_error,
+        }
+    if artifact_head == current_head:
+        return {
+            "status": "current",
+            "artifact_head": artifact_head,
+            "current_head": current_head,
+            "head_matches_current": True,
+            "changed_paths_since_artifact_head": [],
+            "relevant_gate_code_changed": False,
+            "relevant_changed_paths": [],
+        }
+
+    changed_paths, diff_error = changed_paths_since_head(artifact_head)
+    if diff_error:
+        return {
+            "status": "unknown_git_diff",
+            "artifact_head": artifact_head,
+            "current_head": current_head,
+            "head_matches_current": False,
+            "changed_paths_since_artifact_head": [],
+            "relevant_gate_code_changed": False,
+            "relevant_changed_paths": [],
+            "error": diff_error,
+        }
+
+    relevant_changed = [path for path in changed_paths if path_is_relevant(path, relevant_paths)]
+    if relevant_changed:
+        status = "blocked_relevant_tool_changed"
+    elif changed_paths and all(doc_or_handoff_path(path) for path in changed_paths):
+        status = "warning_doc_or_handoff_only"
+    else:
+        status = "warning_non_relevant_changes"
+    return {
+        "status": status,
+        "artifact_head": artifact_head,
+        "current_head": current_head,
+        "head_matches_current": False,
+        "changed_paths_since_artifact_head": changed_paths,
+        "relevant_gate_code_changed": bool(relevant_changed),
+        "relevant_changed_paths": relevant_changed,
+    }
+
+
 def capture_readiness_baseline_link_status(
     post_update_baseline: dict[str, Any],
     capture_readiness: dict[str, Any],
@@ -529,6 +644,10 @@ def build_current_workflow_gate(
 ) -> dict[str, Any]:
     baseline = latest_gate_details(post_update_baseline, "Post-Update Baseline")
     readiness = latest_gate_details(capture_readiness, "Capture Readiness")
+    baseline_summary = post_update_baseline.get("summary") if isinstance(post_update_baseline.get("summary"), dict) else {}
+    readiness_summary = capture_readiness.get("summary") if isinstance(capture_readiness.get("summary"), dict) else {}
+    baseline["artifact_freshness"] = artifact_freshness(baseline_summary, POST_UPDATE_BASELINE_RELEVANT_PATHS)
+    readiness["artifact_freshness"] = artifact_freshness(readiness_summary, CAPTURE_READINESS_RELEVANT_PATHS)
     readiness_baseline_link = capture_readiness_baseline_link_status(post_update_baseline, capture_readiness)
 
     blockers: list[str] = []
@@ -540,6 +659,10 @@ def build_current_workflow_gate(
         blockers.extend(str(blocker) for blocker in readiness["blockers"])
     if readiness_baseline_link.get("status") in {"mismatch", "missing_readiness_baseline_link"}:
         blockers.append("Capture Readiness was generated from an older/different Post-Update Baseline; rerun Capture Readiness.")
+    if baseline["artifact_freshness"].get("status") == "blocked_relevant_tool_changed":
+        blockers.append("Post-Update Baseline artifact is stale because relevant helper/focus files changed; rerun Post-Update Baseline.")
+    if readiness["artifact_freshness"].get("status") == "blocked_relevant_tool_changed":
+        blockers.append("Capture Readiness artifact is stale because relevant baseline/readiness helper files changed; rerun Capture Readiness.")
     if not focus_ok:
         blockers.append("Focus preflight is not foreground_verified.")
     if not full_ok:
@@ -551,6 +674,10 @@ def build_current_workflow_gate(
         next_action = "Run Capture Readiness and resolve any blockers before capture-plan refresh."
     elif readiness_baseline_link.get("status") in {"mismatch", "missing_readiness_baseline_link"}:
         next_action = "Run Capture Readiness again against the latest Post-Update Baseline."
+    elif baseline["artifact_freshness"].get("status") == "blocked_relevant_tool_changed":
+        next_action = "Rerun Post-Update Baseline because relevant helper/focus files changed."
+    elif readiness["artifact_freshness"].get("status") == "blocked_relevant_tool_changed":
+        next_action = "Rerun Capture Readiness because relevant baseline/readiness helper files changed."
     elif not full_ok or not focus_ok:
         next_action = "Run Full Live Preflight before metadata-only capture-plan refresh."
     else:
@@ -579,10 +706,14 @@ def workflow_gate_text(gate: dict[str, Any]) -> str:
     baseline = gate.get("post_update_baseline") if isinstance(gate.get("post_update_baseline"), dict) else {}
     readiness = gate.get("capture_readiness") if isinstance(gate.get("capture_readiness"), dict) else {}
     readiness_baseline_link = gate.get("capture_readiness_baseline_link") if isinstance(gate.get("capture_readiness_baseline_link"), dict) else {}
+    baseline_freshness = baseline.get("artifact_freshness") if isinstance(baseline.get("artifact_freshness"), dict) else {}
+    readiness_freshness = readiness.get("artifact_freshness") if isinstance(readiness.get("artifact_freshness"), dict) else {}
     lines = [
         f"metadata_capture_plan_gate: {gate.get('metadata_capture_plan_gate')}",
         f"post_update_baseline: {baseline.get('display_status')}",
+        f"post_update_baseline_freshness: {baseline_freshness.get('status')}",
         f"capture_readiness: {readiness.get('display_status')}",
+        f"capture_readiness_freshness: {readiness_freshness.get('status')}",
         f"capture_readiness_baseline_link: {readiness_baseline_link.get('status')}",
         f"full_live_preflight: {gate.get('full_live_preflight')}",
         f"focus_preflight: {gate.get('focus_preflight')}",

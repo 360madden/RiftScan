@@ -3,7 +3,7 @@
 > **Historical / superseded notice — 2026-05-06**
 >
 > This transfer guide is preserved for context on Operator v3.8.7 and Patch Intake v1.2.1.
-> Current workflow state has advanced to Operator v3.8.14, Post-Update Baseline v1.0.1, Capture Readiness v1.0.1, and Patch Intake v1.2.2.
+> Current workflow state has advanced to Operator v3.8.15, Post-Update Baseline v1.0.1, Capture Readiness v1.0.1, and Patch Intake v1.2.2.
 >
 > Current resume entry point:
 >

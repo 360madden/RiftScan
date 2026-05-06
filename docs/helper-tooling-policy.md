@@ -159,6 +159,8 @@ The Operator Diagnostics tab may expose offline self-tests when the test does no
 
 Operator handoffs should include a compact current workflow gate section that reports whether Post-Update Baseline, Capture Readiness, and required preflight checks allow the next metadata-only action.
 
+Gate summaries should distinguish harmless doc/handoff-only artifact HEAD drift from relevant helper-code drift that requires rerunning the affected gate.
+
 ## Next preferred extension
 
 The next helper workflow should keep the same Python-first pattern and add the smallest safe post-readiness step: a metadata-only, focus-gated capture-plan refresh or GUI smoke-test flow. Do not start live capture or discovery until the current-client Post-Update Baseline and Capture Readiness gates both PASS.
