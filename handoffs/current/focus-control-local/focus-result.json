@@ -5,9 +5,9 @@
       "attempt": 1,
       "restore_ok": true,
       "set_foreground_ok": true,
-      "foreground_hwnd": 5115714,
-      "foreground_hwnd_hex": "0x4E0F42",
-      "foreground_pid": 29420,
+      "foreground_hwnd": 657876,
+      "foreground_hwnd_hex": "0xA09D4",
+      "foreground_pid": 11220,
       "foreground_title": "RIFT",
       "verified": true
     }

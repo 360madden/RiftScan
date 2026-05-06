@@ -1,18 +1,18 @@
 {
   "schema_version": "riftscan.local_focus_control_summary.v1",
-  "created_utc": "2026-05-05T00:40:46Z",
+  "created_utc": "2026-05-06T01:00:48Z",
   "status": "foreground_verified",
   "process": {
-    "Id": 29420,
+    "Id": 11220,
     "ProcessName": "rift_x64",
     "Path": "C:\\Program Files (x86)\\Glyph\\Games\\RIFT\\Live\\rift_x64.exe",
     "MainWindowTitle": "RIFT",
-    "StartTime": "/Date(1777764916054)/"
+    "StartTime": "/Date(1778027723258)/"
   },
   "selected_window": {
-    "hwnd": 5115714,
-    "hwnd_hex": "0x4E0F42",
-    "pid": 29420,
+    "hwnd": 657876,
+    "hwnd_hex": "0xA09D4",
+    "pid": 11220,
     "title": "RIFT"
   },
   "focus": {
@@ -22,9 +22,9 @@
         "attempt": 1,
         "restore_ok": true,
         "set_foreground_ok": true,
-        "foreground_hwnd": 5115714,
-        "foreground_hwnd_hex": "0x4E0F42",
-        "foreground_pid": 29420,
+        "foreground_hwnd": 657876,
+        "foreground_hwnd_hex": "0xA09D4",
+        "foreground_pid": 11220,
         "foreground_title": "RIFT",
         "verified": true
       }

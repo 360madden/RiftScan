@@ -1,10 +1,10 @@
 {
-  "pid": 29420,
+  "pid": 11220,
   "windows": [
     {
-      "hwnd": 5115714,
-      "hwnd_hex": "0x4E0F42",
-      "pid": 29420,
+      "hwnd": 657876,
+      "hwnd_hex": "0xA09D4",
+      "pid": 11220,
       "title": "RIFT"
     }
   ]

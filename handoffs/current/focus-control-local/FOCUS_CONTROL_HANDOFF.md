@@ -7,8 +7,8 @@ Local-only probe that requests foreground for the RIFT window using Win32 APIs.
 ## Result
 
 - Status: `foreground_verified`
-- Process ID: `29420`
-- Selected HWND: `0x4E0F42`
+- Process ID: `11220`
+- Selected HWND: `0xA09D4`
 - Focus verified: `True`
 
 ## Safety
