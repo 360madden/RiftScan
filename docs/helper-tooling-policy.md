@@ -216,7 +216,8 @@ python tools/riftscan_ai_workflow_packet.py --show-existing-diff
 `--print-diff` refreshes packet artifacts first; `--show-existing-diff` is read-only and prints the saved summary diff without appending logs.
 
 Each packet refresh archives the prior `ai-workflow-summary.json` and previous Markdown packet under `handoffs/current/ai-workflow/history/` before overwriting current files.
-Offline Workflow Check validates that archive metadata and archived paths remain usable.
+It also appends `handoffs/current/ai-workflow/history/index.jsonl` so offline agents can enumerate prior packet checkpoints without guessing filenames.
+Offline Workflow Check validates that archive metadata, archived paths, and the history index remain usable.
 
 Capture plan validation:
 

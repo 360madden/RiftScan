@@ -55,3 +55,9 @@
 {"created_utc": "2026-05-07T17:44:10Z", "event": "build_start"}
 {"blocker_count": 0, "created_utc": "2026-05-07T17:44:10Z", "event": "build_finish", "previous_packet_change_count": 0, "previous_packet_diff_status": "UNCHANGED", "status": "PASS", "warning_count": 1}
 {"created_utc": "2026-05-07T17:44:10Z", "event": "outputs_written", "previous_packet_archive_status": "ARCHIVED", "report": "handoffs/current/ai-workflow/AI_WORKFLOW_PACKET.md", "status": "PASS", "summary": "handoffs/current/ai-workflow/ai-workflow-summary.json"}
+{"created_utc": "2026-05-07T17:51:25Z", "event": "build_start"}
+{"blocker_count": 0, "created_utc": "2026-05-07T17:51:26Z", "event": "build_finish", "previous_packet_change_count": 1, "previous_packet_diff_status": "CHANGED", "status": "PASS", "warning_count": 1}
+{"created_utc": "2026-05-07T17:51:26Z", "event": "outputs_written", "packet_history_index_path": "handoffs/current/ai-workflow/history/index.jsonl", "packet_history_index_status": "APPENDED", "previous_packet_archive_status": "ARCHIVED", "report": "handoffs/current/ai-workflow/AI_WORKFLOW_PACKET.md", "status": "PASS", "summary": "handoffs/current/ai-workflow/ai-workflow-summary.json"}
+{"created_utc": "2026-05-07T17:52:03Z", "event": "build_start"}
+{"blocker_count": 0, "created_utc": "2026-05-07T17:52:03Z", "event": "build_finish", "previous_packet_change_count": 0, "previous_packet_diff_status": "UNCHANGED", "status": "PASS", "warning_count": 1}
+{"created_utc": "2026-05-07T17:52:03Z", "event": "outputs_written", "packet_history_index_path": "handoffs/current/ai-workflow/history/index.jsonl", "packet_history_index_status": "APPENDED", "previous_packet_archive_status": "ARCHIVED", "report": "handoffs/current/ai-workflow/AI_WORKFLOW_PACKET.md", "status": "PASS", "summary": "handoffs/current/ai-workflow/ai-workflow-summary.json"}

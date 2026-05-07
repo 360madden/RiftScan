@@ -1,6 +1,6 @@
 # RiftScan Offline AI Workflow Packet
 
-Created UTC: `2026-05-07T17:52:03Z`
+Created UTC: `2026-05-07T17:51:26Z`
 App version: `riftscan-ai-workflow-packet-v1.8.0`
 
 ## Result
@@ -44,11 +44,15 @@ current_best_missing_count: 0
 ## Previous packet diff
 
 ```text
-status: UNCHANGED
-previous_created_utc: 2026-05-07T17:51:26Z
-previous_app_version: riftscan-ai-workflow-packet-v1.8.0
-change_count: 0
+status: CHANGED
+previous_created_utc: 2026-05-07T17:44:10Z
+previous_app_version: riftscan-ai-workflow-packet-v1.7.0
+change_count: 1
 ```
+
+| Field | Before | After |
+|---|---|---|
+| `app_version` | `riftscan-ai-workflow-packet-v1.7.0` | `riftscan-ai-workflow-packet-v1.8.0` |
 
 Compared fields are listed in JSON at `previous_packet_diff_compared_fields` and documented in `docs/ai-workflow-packet-schema.md`.
 
@@ -56,15 +60,15 @@ Compared fields are listed in JSON at `previous_packet_diff_compared_fields` and
 
 ```json
 {
-  "archive_stem": "2026-05-07T17-51-26Z-riftscan-ai-workflow-packet-v1-8-0",
+  "archive_stem": "2026-05-07T17-44-10Z-riftscan-ai-workflow-packet-v1-7-0",
   "artifacts": {
-    "report": "handoffs/current/ai-workflow/history/AI_WORKFLOW_PACKET-2026-05-07T17-51-26Z-riftscan-ai-workflow-packet-v1-8-0.md",
-    "summary": "handoffs/current/ai-workflow/history/ai-workflow-summary-2026-05-07T17-51-26Z-riftscan-ai-workflow-packet-v1-8-0.json"
+    "report": "handoffs/current/ai-workflow/history/AI_WORKFLOW_PACKET-2026-05-07T17-44-10Z-riftscan-ai-workflow-packet-v1-7-0.md",
+    "summary": "handoffs/current/ai-workflow/history/ai-workflow-summary-2026-05-07T17-44-10Z-riftscan-ai-workflow-packet-v1-7-0.json"
   },
   "history_dir": "handoffs/current/ai-workflow/history",
   "history_index": "handoffs/current/ai-workflow/history/index.jsonl",
-  "source_app_version": "riftscan-ai-workflow-packet-v1.8.0",
-  "source_created_utc": "2026-05-07T17:51:26Z",
+  "source_app_version": "riftscan-ai-workflow-packet-v1.7.0",
+  "source_created_utc": "2026-05-07T17:44:10Z",
   "status": "ARCHIVED"
 }
 ```
@@ -74,15 +78,15 @@ Compared fields are listed in JSON at `previous_packet_diff_compared_fields` and
 ```json
 {
   "entry": {
-    "archive_stem": "2026-05-07T17-51-26Z-riftscan-ai-workflow-packet-v1-8-0",
+    "archive_stem": "2026-05-07T17-44-10Z-riftscan-ai-workflow-packet-v1-7-0",
     "artifacts": {
-      "report": "handoffs/current/ai-workflow/history/AI_WORKFLOW_PACKET-2026-05-07T17-51-26Z-riftscan-ai-workflow-packet-v1-8-0.md",
-      "summary": "handoffs/current/ai-workflow/history/ai-workflow-summary-2026-05-07T17-51-26Z-riftscan-ai-workflow-packet-v1-8-0.json"
+      "report": "handoffs/current/ai-workflow/history/AI_WORKFLOW_PACKET-2026-05-07T17-44-10Z-riftscan-ai-workflow-packet-v1-7-0.md",
+      "summary": "handoffs/current/ai-workflow/history/ai-workflow-summary-2026-05-07T17-44-10Z-riftscan-ai-workflow-packet-v1-7-0.json"
     },
-    "indexed_utc": "2026-05-07T17:52:03Z",
+    "indexed_utc": "2026-05-07T17:51:26Z",
     "schema_version": "riftscan.ai_workflow_packet_history_index.v1",
-    "source_app_version": "riftscan-ai-workflow-packet-v1.8.0",
-    "source_created_utc": "2026-05-07T17:51:26Z"
+    "source_app_version": "riftscan-ai-workflow-packet-v1.7.0",
+    "source_created_utc": "2026-05-07T17:44:10Z"
   },
   "path": "handoffs/current/ai-workflow/history/index.jsonl",
   "status": "APPENDED"

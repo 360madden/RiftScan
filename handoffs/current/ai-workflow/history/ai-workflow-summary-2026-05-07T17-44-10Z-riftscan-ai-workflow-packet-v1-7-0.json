@@ -1,6 +1,6 @@
 {
   "ai_resume_prompt": "Resume RiftScan in offline AI workflow mode. Read handoffs/current/ai-workflow/AI_WORKFLOW_PACKET.md, then the Candidate Ledger Consumer and Discovery Ledger artifacts. Do not touch live RIFT, focus preflight, capture, process attach/memory reads, movement/input, RiftReader commands, offset validation, or /reloadui unless the user explicitly authorizes live work.",
-  "app_version": "riftscan-ai-workflow-packet-v1.8.0",
+  "app_version": "riftscan-ai-workflow-packet-v1.7.0",
   "blockers": [],
   "candidate_ledger_consumer": {
     "artifact_age": {
@@ -17,7 +17,7 @@
     "safe_candidate_count": 3,
     "status": "PASS"
   },
-  "created_utc": "2026-05-07T17:52:03Z",
+  "created_utc": "2026-05-07T17:44:10Z",
   "current_best_candidate": {
     "allowed_downstream_uses": [
       "offline_review",
@@ -78,10 +78,10 @@
       "origin_main_parity": "pass",
       "status": "pass"
     },
-    "head": "d0d0e9294273c7a9e00c2d850662539a86fd4ca6",
-    "log_oneline_5": "d0d0e92 Validate AI packet archive offline\n6bef855 Archive AI workflow packet history\n19fb85b Add read-only AI packet diff view\nc99da28 Add AI packet print diff mode\n5c3ff94 Validate AI packet contract offline",
+    "head": "6bef8557354627315baa6eb8f9610b26ad9cf94b",
+    "log_oneline_5": "6bef855 Archive AI workflow packet history\n19fb85b Add read-only AI packet diff view\nc99da28 Add AI packet print diff mode\n5c3ff94 Validate AI packet contract offline\nc9c00cd Document AI workflow packet schema",
     "origin_main_left_right_count": "0\t0",
-    "status_short_branch": "## main...origin/main\n M docs/ai-workflow-packet-schema.md\n M docs/helper-tooling-policy.md\n M handoffs/current/ai-workflow/AI_WORKFLOW_PACKET.md\n M handoffs/current/ai-workflow/ai-workflow-log.jsonl\n M handoffs/current/ai-workflow/ai-workflow-summary.json\n M handoffs/current/candidate-ledger-consumer/CANDIDATE_LEDGER_CONSUMER_REPORT.md\n M handoffs/current/candidate-ledger-consumer/candidate-ledger-consumer-log.jsonl\n M handoffs/current/candidate-ledger-consumer/candidate-ledger-consumer-summary.json\n M handoffs/current/capture-plan-check/CAPTURE_PLAN_CHECK_REPORT.md\n M handoffs/current/capture-plan-check/capture-plan-check-log.jsonl\n M handoffs/current/capture-plan-check/capture-plan-check-summary.json\n M handoffs/current/discovery-ledger/DISCOVERY_LEDGER_REPORT.md\n M handoffs/current/discovery-ledger/discovery-ledger-log.jsonl\n M handoffs/current/discovery-ledger/discovery-ledger-summary.json\n M handoffs/current/movement-test-readiness/MOVEMENT_TEST_READINESS_REPORT.md\n M handoffs/current/movement-test-readiness/movement-test-readiness-log.jsonl\n M handoffs/current/movement-test-readiness/movement-test-readiness-summary.json\n M handoffs/current/offline-workflow-check/OFFLINE_WORKFLOW_CHECK_REPORT.md\n M handoffs/current/offline-workflow-check/offline-workflow-check-log.jsonl\n M handoffs/current/offline-workflow-check/offline-workflow-check-summary.json\n M handoffs/current/operator/RIFTSCAN_OPERATOR_HANDOFF.md\n M handoffs/current/operator/operator-current-gate-summary.json\n M tools/riftscan_ai_workflow_packet.py\n M tools/riftscan_offline_workflow_check.py\n?? handoffs/current/ai-workflow/history/AI_WORKFLOW_PACKET-2026-05-07T17-44-10Z-riftscan-ai-workflow-packet-v1-7-0.md\n?? handoffs/current/ai-workflow/history/ai-workflow-summary-2026-05-07T17-44-10Z-riftscan-ai-workflow-packet-v1-7-0.json\n?? handoffs/current/ai-workflow/history/index.jsonl"
+    "status_short_branch": "## main...origin/main\n M docs/ai-workflow-packet-schema.md\n M docs/helper-tooling-policy.md\n M handoffs/current/ai-workflow/ai-workflow-log.jsonl\n M handoffs/current/candidate-ledger-consumer/CANDIDATE_LEDGER_CONSUMER_REPORT.md\n M handoffs/current/candidate-ledger-consumer/candidate-ledger-consumer-log.jsonl\n M handoffs/current/candidate-ledger-consumer/candidate-ledger-consumer-summary.json\n M handoffs/current/capture-plan-check/CAPTURE_PLAN_CHECK_REPORT.md\n M handoffs/current/capture-plan-check/capture-plan-check-log.jsonl\n M handoffs/current/capture-plan-check/capture-plan-check-summary.json\n M handoffs/current/discovery-ledger/DISCOVERY_LEDGER_REPORT.md\n M handoffs/current/discovery-ledger/discovery-ledger-log.jsonl\n M handoffs/current/discovery-ledger/discovery-ledger-summary.json\n M handoffs/current/movement-test-readiness/MOVEMENT_TEST_READINESS_REPORT.md\n M handoffs/current/movement-test-readiness/movement-test-readiness-log.jsonl\n M handoffs/current/movement-test-readiness/movement-test-readiness-summary.json\n M handoffs/current/offline-workflow-check/OFFLINE_WORKFLOW_CHECK_REPORT.md\n M handoffs/current/offline-workflow-check/offline-workflow-check-log.jsonl\n M handoffs/current/offline-workflow-check/offline-workflow-check-summary.json\n M handoffs/current/operator/RIFTSCAN_OPERATOR_HANDOFF.md\n M handoffs/current/operator/operator-current-gate-summary.json\n M tools/riftscan_offline_workflow_check.py"
   },
   "mode": "offline_ai_workflow",
   "offline_workflow_check": {
@@ -96,47 +96,28 @@
     "next_action": "Resolve Movement Execution Gate blockers and rerun it; do not send movement/input.",
     "status": null
   },
-  "packet_history_index": {
-    "entry": {
-      "archive_stem": "2026-05-07T17-51-26Z-riftscan-ai-workflow-packet-v1-8-0",
-      "artifacts": {
-        "report": "handoffs/current/ai-workflow/history/AI_WORKFLOW_PACKET-2026-05-07T17-51-26Z-riftscan-ai-workflow-packet-v1-8-0.md",
-        "summary": "handoffs/current/ai-workflow/history/ai-workflow-summary-2026-05-07T17-51-26Z-riftscan-ai-workflow-packet-v1-8-0.json"
-      },
-      "indexed_utc": "2026-05-07T17:52:03Z",
-      "schema_version": "riftscan.ai_workflow_packet_history_index.v1",
-      "source_app_version": "riftscan-ai-workflow-packet-v1.8.0",
-      "source_created_utc": "2026-05-07T17:51:26Z"
-    },
-    "path": "handoffs/current/ai-workflow/history/index.jsonl",
-    "status": "APPENDED"
-  },
   "paths": {
     "history_dir": "handoffs/current/ai-workflow/history",
-    "history_index": "handoffs/current/ai-workflow/history/index.jsonl",
     "log": "handoffs/current/ai-workflow/ai-workflow-log.jsonl",
     "report": "handoffs/current/ai-workflow/AI_WORKFLOW_PACKET.md",
     "summary": "handoffs/current/ai-workflow/ai-workflow-summary.json"
   },
   "previous_packet_archive": {
-    "archive_stem": "2026-05-07T17-51-26Z-riftscan-ai-workflow-packet-v1-8-0",
+    "archive_stem": "2026-05-07T17-38-44Z-riftscan-ai-workflow-packet-v1-7-0",
     "artifacts": {
-      "report": "handoffs/current/ai-workflow/history/AI_WORKFLOW_PACKET-2026-05-07T17-51-26Z-riftscan-ai-workflow-packet-v1-8-0.md",
-      "summary": "handoffs/current/ai-workflow/history/ai-workflow-summary-2026-05-07T17-51-26Z-riftscan-ai-workflow-packet-v1-8-0.json"
+      "report": "handoffs/current/ai-workflow/history/AI_WORKFLOW_PACKET-2026-05-07T17-38-44Z-riftscan-ai-workflow-packet-v1-7-0.md",
+      "summary": "handoffs/current/ai-workflow/history/ai-workflow-summary-2026-05-07T17-38-44Z-riftscan-ai-workflow-packet-v1-7-0.json"
     },
     "history_dir": "handoffs/current/ai-workflow/history",
-    "history_index": "handoffs/current/ai-workflow/history/index.jsonl",
-    "source_app_version": "riftscan-ai-workflow-packet-v1.8.0",
-    "source_created_utc": "2026-05-07T17:51:26Z",
     "status": "ARCHIVED"
   },
   "previous_packet_diff": {
     "change_count": 0,
     "changes": [],
-    "current_app_version": "riftscan-ai-workflow-packet-v1.8.0",
-    "current_created_utc": "2026-05-07T17:52:03Z",
-    "previous_app_version": "riftscan-ai-workflow-packet-v1.8.0",
-    "previous_created_utc": "2026-05-07T17:51:26Z",
+    "current_app_version": "riftscan-ai-workflow-packet-v1.7.0",
+    "current_created_utc": "2026-05-07T17:44:10Z",
+    "previous_app_version": "riftscan-ai-workflow-packet-v1.7.0",
+    "previous_created_utc": "2026-05-07T17:38:44Z",
     "previous_packet_available": true,
     "schema_version": "riftscan.ai_workflow_packet_diff.v1",
     "status": "UNCHANGED"

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # RiftScan script metadata
-# Version: riftscan-ai-workflow-packet-v1.7.0
+# Version: riftscan-ai-workflow-packet-v1.8.0
 # Total character count: 000000
 # Purpose: Build a compact offline AI workflow packet from current RiftScan handoff and gate artifacts.
 # Safety boundary: Reads existing artifacts and local git metadata only. No focus preflight, live capture, input, movement, memory scan/read, process attach, offset validation, RiftReader command execution, or /reloadui.
@@ -16,13 +16,14 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-APP_VERSION = "riftscan-ai-workflow-packet-v1.7.0"
+APP_VERSION = "riftscan-ai-workflow-packet-v1.8.0"
 REPO_ROOT = Path(__file__).resolve().parents[1]
 OUT_DIR = REPO_ROOT / "handoffs" / "current" / "ai-workflow"
 REPORT = OUT_DIR / "AI_WORKFLOW_PACKET.md"
 SUMMARY = OUT_DIR / "ai-workflow-summary.json"
 LOG = OUT_DIR / "ai-workflow-log.jsonl"
 HISTORY_DIR = OUT_DIR / "history"
+HISTORY_INDEX = HISTORY_DIR / "index.jsonl"
 
 README_CURRENT = REPO_ROOT / "handoffs" / "current" / "README_CURRENT.md"
 DISCOVERY_LEDGER_REPORT = REPO_ROOT / "handoffs" / "current" / "discovery-ledger" / "DISCOVERY_LEDGER_REPORT.md"
@@ -98,6 +99,7 @@ def archive_existing_outputs(previous_packet: dict[str, Any] | None) -> dict[str
         return {
             "status": "NO_PREVIOUS_PACKET",
             "history_dir": rel(HISTORY_DIR),
+            "history_index": rel(HISTORY_INDEX),
             "artifacts": {},
         }
 
@@ -121,8 +123,42 @@ def archive_existing_outputs(previous_packet: dict[str, Any] | None) -> dict[str
     return {
         "status": "ARCHIVED",
         "history_dir": rel(HISTORY_DIR),
+        "history_index": rel(HISTORY_INDEX),
         "archive_stem": archive_stem,
+        "source_created_utc": packet.get("created_utc"),
+        "source_app_version": packet.get("app_version"),
         "artifacts": artifacts,
+    }
+
+
+def build_history_index_entry(archive: dict[str, Any], *, indexed_utc: str | None = None) -> dict[str, Any]:
+    return {
+        "schema_version": "riftscan.ai_workflow_packet_history_index.v1",
+        "indexed_utc": indexed_utc or utc(),
+        "archive_stem": archive.get("archive_stem"),
+        "source_created_utc": archive.get("source_created_utc"),
+        "source_app_version": archive.get("source_app_version"),
+        "artifacts": archive.get("artifacts") if isinstance(archive.get("artifacts"), dict) else {},
+    }
+
+
+def append_history_index(archive: dict[str, Any]) -> dict[str, Any]:
+    if archive.get("status") != "ARCHIVED":
+        return {
+            "status": "SKIPPED",
+            "path": rel(HISTORY_INDEX),
+            "reason": str(archive.get("status") or "not_archived"),
+        }
+
+    HISTORY_DIR.mkdir(parents=True, exist_ok=True)
+    entry = build_history_index_entry(archive)
+    with HISTORY_INDEX.open("a", encoding="utf-8", newline="\n") as f:
+        f.write(json.dumps(entry, sort_keys=True) + "\n")
+
+    return {
+        "status": "APPENDED",
+        "path": rel(HISTORY_INDEX),
+        "entry": entry,
     }
 
 
@@ -435,6 +471,7 @@ def build_packet_from_artifacts(
             "summary": rel(SUMMARY),
             "log": rel(LOG),
             "history_dir": rel(HISTORY_DIR),
+            "history_index": rel(HISTORY_INDEX),
         },
         "safety": {
             "offline_only": True,
@@ -584,6 +621,19 @@ def report_lines(data: dict[str, Any]) -> list[str]:
             ]
         )
 
+    history_index = data.get("packet_history_index") if isinstance(data.get("packet_history_index"), dict) else {}
+    if history_index:
+        lines.extend(
+            [
+                "",
+                "## Packet history index",
+                "",
+                "```json",
+                json.dumps(history_index, indent=2, sort_keys=True),
+                "```",
+            ]
+        )
+
     lines.extend(["", "## Warnings", ""])
     warnings = data.get("warnings") if isinstance(data.get("warnings"), list) else []
     if warnings:
@@ -627,10 +677,20 @@ def report_lines(data: dict[str, Any]) -> list[str]:
 
 def write_outputs(data: dict[str, Any], previous_packet: dict[str, Any] | None = None) -> None:
     archive = archive_existing_outputs(previous_packet)
+    history_index = append_history_index(archive)
     data["previous_packet_archive"] = archive
+    data["packet_history_index"] = history_index
     write_json(SUMMARY, data)
     write_text(REPORT, "\n".join(report_lines(data)))
-    append_log("outputs_written", report=rel(REPORT), summary=rel(SUMMARY), status=data["status"], previous_packet_archive_status=archive.get("status"))
+    append_log(
+        "outputs_written",
+        report=rel(REPORT),
+        summary=rel(SUMMARY),
+        status=data["status"],
+        previous_packet_archive_status=archive.get("status"),
+        packet_history_index_status=history_index.get("status"),
+        packet_history_index_path=history_index.get("path"),
+    )
 
 
 def format_diff_value(value: Any) -> str:
@@ -663,6 +723,7 @@ def packet_diff_lines(data: dict[str, Any], *, source_label: str = "refreshed") 
         f"report: {rel(REPORT)}",
         f"previous_packet_archive_status: {archive.get('status', 'unknown')}",
         f"history_dir: {archive.get('history_dir', rel(HISTORY_DIR))}",
+        f"history_index: {archive.get('history_index', rel(HISTORY_INDEX))}",
         "changes:",
     ]
     if changes:
@@ -754,12 +815,25 @@ def run_self_test() -> int:
     if "safe_candidate_count" not in diff_text or "1 -> 2" not in diff_text:
         failures.append("print_diff_changed_field_missing")
     passing["previous_packet_diff"] = unchanged_diff
-    passing["previous_packet_archive"] = {"status": "NO_PREVIOUS_PACKET", "history_dir": rel(HISTORY_DIR), "artifacts": {}}
+    passing["previous_packet_archive"] = {"status": "NO_PREVIOUS_PACKET", "history_dir": rel(HISTORY_DIR), "history_index": rel(HISTORY_INDEX), "artifacts": {}}
     saved_diff_text = "\n".join(packet_diff_lines(passing, source_label="saved_existing_no_refresh"))
     if "- none" not in saved_diff_text:
         failures.append("print_diff_unchanged_missing_none")
     if "source: saved_existing_no_refresh" not in saved_diff_text:
         failures.append("show_existing_diff_source_missing")
+    history_entry = build_history_index_entry(
+        {
+            "archive_stem": "fixture-stem",
+            "source_created_utc": "2026-01-01T00:00:00Z",
+            "source_app_version": "fixture-version",
+            "artifacts": {"summary": "handoffs/current/ai-workflow/history/summary.json", "report": "handoffs/current/ai-workflow/history/report.md"},
+        },
+        indexed_utc="2026-01-01T00:00:01Z",
+    )
+    if history_entry.get("schema_version") != "riftscan.ai_workflow_packet_history_index.v1":
+        failures.append("history_index_entry_schema_missing")
+    if get_nested(passing, "paths", "history_index") != rel(HISTORY_INDEX):
+        failures.append("packet_paths_missing_history_index")
     token = safe_history_token("2026-05-07T17:32:05Z")
     if ":" in token or token != "2026-05-07T17-32-05Z":
         failures.append("history_token_not_windows_safe")

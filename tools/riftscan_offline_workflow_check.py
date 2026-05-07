@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # RiftScan script metadata
-# Version: riftscan-offline-workflow-check-v1.0.9
+# Version: riftscan-offline-workflow-check-v1.0.10
 # Total character count: 000000
 # Purpose: Run conservative offline helper workflow checks, refresh the offline discovery ledger, and write deterministic report artifacts.
 # Safety boundary: Offline validation only. No RIFT focus preflight, live capture, input, movement, memory scan/read, offset validation, RiftReader validation, or /reloadui.
@@ -16,7 +16,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-APP_VERSION = "riftscan-offline-workflow-check-v1.0.9"
+APP_VERSION = "riftscan-offline-workflow-check-v1.0.10"
 REPO_ROOT = Path(__file__).resolve().parents[1]
 OUT_DIR = REPO_ROOT / "handoffs" / "current" / "offline-workflow-check"
 REPORT = OUT_DIR / "OFFLINE_WORKFLOW_CHECK_REPORT.md"
@@ -146,6 +146,28 @@ def read_json_file(path: Path) -> tuple[dict[str, Any] | None, str | None]:
     return data, None
 
 
+def read_jsonl_file(path: Path) -> tuple[list[dict[str, Any]] | None, str | None]:
+    entries: list[dict[str, Any]] = []
+    try:
+        lines = path.read_text(encoding="utf-8").splitlines()
+    except FileNotFoundError:
+        return None, f"missing file: {rel(path)}"
+    except OSError as exc:
+        return None, f"unable to read {rel(path)}: {exc}"
+
+    for line_number, line in enumerate(lines, start=1):
+        if not line.strip():
+            continue
+        try:
+            data = json.loads(line)
+        except json.JSONDecodeError as exc:
+            return None, f"invalid jsonl in {rel(path)} line {line_number}: {exc}"
+        if not isinstance(data, dict):
+            return None, f"jsonl row is not an object in {rel(path)} line {line_number}"
+        entries.append(data)
+    return entries, None
+
+
 def repo_artifact_path(value: Any) -> Path | None:
     if not isinstance(value, str) or not value:
         return None
@@ -220,6 +242,21 @@ def validate_ai_workflow_packet_contract(summary: dict[str, Any], schema_doc_tex
 
         artifacts = archive.get("artifacts")
         if archive_status == "ARCHIVED":
+            history_index = repo_artifact_path(archive.get("history_index"))
+            if history_index is None:
+                errors.append("previous_packet_archive.history_index is missing or outside the repo")
+            elif not history_index.is_file():
+                errors.append(f"previous_packet_archive.history_index does not exist: {archive.get('history_index')}")
+
+            packet_history_index = summary.get("packet_history_index")
+            if not isinstance(packet_history_index, dict):
+                errors.append("packet_history_index is missing or not an object")
+            else:
+                if packet_history_index.get("status") != "APPENDED":
+                    errors.append("packet_history_index.status is not APPENDED for an archived packet")
+                if packet_history_index.get("path") != archive.get("history_index"):
+                    errors.append("packet_history_index.path does not match previous_packet_archive.history_index")
+
             if not isinstance(artifacts, dict):
                 errors.append("previous_packet_archive.artifacts is missing or not an object")
             else:
@@ -239,8 +276,29 @@ def validate_ai_workflow_packet_contract(summary: dict[str, Any], schema_doc_tex
                     elif not isinstance(archived_summary, dict):
                         errors.append("previous_packet_archive.artifacts.summary is not a JSON object")
 
+                if history_index and history_index.is_file():
+                    index_entries, index_error = read_jsonl_file(history_index)
+                    if index_error:
+                        errors.append(f"previous_packet_archive.history_index is invalid: {index_error}")
+                    else:
+                        expected_summary = artifacts.get("summary")
+                        expected_report = artifacts.get("report")
+                        matching_entries = [
+                            entry
+                            for entry in index_entries or []
+                            if isinstance(entry.get("artifacts"), dict)
+                            and entry["artifacts"].get("summary") == expected_summary
+                            and entry["artifacts"].get("report") == expected_report
+                        ]
+                        if not matching_entries:
+                            errors.append("previous_packet_archive.history_index has no entry for the archived summary/report")
+
     if "previous_packet_archive" not in schema_doc_text:
         errors.append("schema doc does not mention previous_packet_archive")
+    if "history_index" not in schema_doc_text:
+        errors.append("schema doc does not mention history_index")
+    if "packet_history_index" not in schema_doc_text:
+        errors.append("schema doc does not mention packet_history_index")
 
     return errors
 
@@ -525,10 +583,11 @@ def run_self_test() -> tuple[bool, dict[str, Any]]:
         "previous_packet_archive": {
             "status": "NO_PREVIOUS_PACKET",
             "history_dir": "handoffs/current/ai-workflow/history",
+            "history_index": "handoffs/current/ai-workflow/history/index.jsonl",
             "artifacts": {},
         },
     }
-    valid_doc = "previous_packet_diff_compared_fields\nprevious_packet_archive\n" + "\n".join(f"`{field}`" for field in REQUIRED_AI_PACKET_DIFF_FIELDS)
+    valid_doc = "previous_packet_diff_compared_fields\nprevious_packet_archive\nhistory_index\npacket_history_index\n" + "\n".join(f"`{field}`" for field in REQUIRED_AI_PACKET_DIFF_FIELDS)
     valid_errors = validate_ai_workflow_packet_contract(valid_summary, valid_doc)
     tests.append(
         {
@@ -552,6 +611,7 @@ def run_self_test() -> tuple[bool, dict[str, Any]]:
         "previous_packet_archive": {
             "status": "NO_PREVIOUS_PACKET",
             "history_dir": "handoffs/current/ai-workflow/history",
+            "history_index": "handoffs/current/ai-workflow/history/index.jsonl",
             "artifacts": {},
         },
     }

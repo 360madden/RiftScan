@@ -17,6 +17,7 @@ Packet generation must not start focus preflight, live capture, scanner probes a
 | `handoffs/current/ai-workflow/AI_WORKFLOW_PACKET.md` | Compact human resume packet. |
 | `handoffs/current/ai-workflow/ai-workflow-summary.json` | Machine-readable packet. |
 | `handoffs/current/ai-workflow/ai-workflow-log.jsonl` | Append-only helper log. |
+| `handoffs/current/ai-workflow/history/index.jsonl` | Append-only index of archived prior packet summaries/reports. |
 
 ## Required summary fields
 
@@ -39,6 +40,7 @@ Packet generation must not start focus preflight, live capture, scanner probes a
 | `previous_packet_diff` | Selected-field comparison against the previous packet summary. |
 | `previous_packet_diff_compared_fields` | Machine-readable contract for fields compared by `previous_packet_diff`. |
 | `previous_packet_archive` | Archive result for the packet summary/report that existed before the current overwrite. |
+| `packet_history_index` | Append result for the packet history index row associated with the latest archive operation. |
 | `top_next_actions` | Ordered offline-only next actions. |
 | `ai_resume_prompt` | Ready-to-paste resume prompt for the next offline agent. |
 | `source_artifacts` | Paths used to build the packet. |
@@ -59,9 +61,11 @@ Use `python tools/riftscan_ai_workflow_packet.py --show-existing-diff` when you 
 
 Before overwriting `ai-workflow-summary.json`, packet generation copies the prior summary into `handoffs/current/ai-workflow/history/`. If the prior Markdown report exists, it is copied there too.
 
-The current packet records this under `previous_packet_archive` with `status`, `history_dir`, and `artifacts` paths. The archive is append-only for normal packet generation; do not delete historical packet files just to reduce noise.
+The current packet records this under `previous_packet_archive` with `status`, `history_dir`, `history_index`, source packet metadata, and `artifacts` paths. The archive is append-only for normal packet generation; do not delete historical packet files just to reduce noise.
 
-Offline Workflow Check validates `previous_packet_archive.status`, verifies archived summary/report files exist when the status is `ARCHIVED`, and confirms the archived summary is valid JSON.
+When `status` is `ARCHIVED`, packet generation appends one JSON object to `handoffs/current/ai-workflow/history/index.jsonl` with schema `riftscan.ai_workflow_packet_history_index.v1`. Each row records `indexed_utc`, `archive_stem`, `source_created_utc`, `source_app_version`, and `artifacts`.
+
+Offline Workflow Check validates `previous_packet_archive.status`, verifies archived summary/report files exist when the status is `ARCHIVED`, confirms the archived summary is valid JSON, validates `history_index` JSONL, and confirms the index contains the archived summary/report pair.
 
 ### Status values
 

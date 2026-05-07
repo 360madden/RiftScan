@@ -10,7 +10,7 @@
   "candidate_ledger_contract_validation": {
     "app_version": "riftscan-discovery-ledger-v1.2.0",
     "candidate_count": 3,
-    "created_utc": "2026-05-07T17:44:03Z",
+    "created_utc": "2026-05-07T17:51:56Z",
     "display_status": "PASS",
     "error_count": 0,
     "issues": [],
@@ -190,7 +190,7 @@
       ]
     }
   ],
-  "created_utc": "2026-05-07T17:44:03Z",
+  "created_utc": "2026-05-07T17:51:56Z",
   "current_best_candidate": {
     "axis_order": "xyz",
     "best_addon_xyz": [
