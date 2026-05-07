@@ -211,9 +211,12 @@ For quick terminal triage without opening the Markdown report:
 ```text
 python tools/riftscan_ai_workflow_packet.py --print-diff
 python tools/riftscan_ai_workflow_packet.py --show-existing-diff
+python tools/riftscan_ai_workflow_packet.py --show-history-index
+python tools/riftscan_ai_workflow_packet.py --verify-history-index
 ```
 
 `--print-diff` refreshes packet artifacts first; `--show-existing-diff` is read-only and prints the saved summary diff without appending logs.
+`--show-history-index` and `--verify-history-index` are also read-only and do not refresh or archive the current packet.
 
 Each packet refresh archives the prior `ai-workflow-summary.json` and previous Markdown packet under `handoffs/current/ai-workflow/history/` before overwriting current files.
 It also appends `handoffs/current/ai-workflow/history/index.jsonl` so offline agents can enumerate prior packet checkpoints without guessing filenames.

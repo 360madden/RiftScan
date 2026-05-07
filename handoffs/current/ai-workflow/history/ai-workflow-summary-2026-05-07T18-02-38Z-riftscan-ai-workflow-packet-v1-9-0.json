@@ -17,7 +17,7 @@
     "safe_candidate_count": 3,
     "status": "PASS"
   },
-  "created_utc": "2026-05-07T18:03:05Z",
+  "created_utc": "2026-05-07T18:02:38Z",
   "current_best_candidate": {
     "allowed_downstream_uses": [
       "offline_review",
@@ -81,7 +81,7 @@
     "head": "aad6f11c89c5aa21b6070fa0be3e7b9fa4a8f1c6",
     "log_oneline_5": "aad6f11 Validate full AI packet history index\n237d9f2 Index AI workflow packet history\nd0d0e92 Validate AI packet archive offline\n6bef855 Archive AI workflow packet history\n19fb85b Add read-only AI packet diff view",
     "origin_main_left_right_count": "0\t0",
-    "status_short_branch": "## main...origin/main\n M docs/ai-workflow-packet-schema.md\n M docs/helper-tooling-policy.md\n M handoffs/current/ai-workflow/AI_WORKFLOW_PACKET.md\n M handoffs/current/ai-workflow/ai-workflow-log.jsonl\n M handoffs/current/ai-workflow/ai-workflow-summary.json\n M handoffs/current/ai-workflow/history/index.jsonl\n M handoffs/current/candidate-ledger-consumer/CANDIDATE_LEDGER_CONSUMER_REPORT.md\n M handoffs/current/candidate-ledger-consumer/candidate-ledger-consumer-log.jsonl\n M handoffs/current/candidate-ledger-consumer/candidate-ledger-consumer-summary.json\n M handoffs/current/capture-plan-check/CAPTURE_PLAN_CHECK_REPORT.md\n M handoffs/current/capture-plan-check/capture-plan-check-log.jsonl\n M handoffs/current/capture-plan-check/capture-plan-check-summary.json\n M handoffs/current/discovery-ledger/DISCOVERY_LEDGER_REPORT.md\n M handoffs/current/discovery-ledger/discovery-ledger-log.jsonl\n M handoffs/current/discovery-ledger/discovery-ledger-summary.json\n M handoffs/current/movement-test-readiness/MOVEMENT_TEST_READINESS_REPORT.md\n M handoffs/current/movement-test-readiness/movement-test-readiness-log.jsonl\n M handoffs/current/movement-test-readiness/movement-test-readiness-summary.json\n M handoffs/current/offline-workflow-check/OFFLINE_WORKFLOW_CHECK_REPORT.md\n M handoffs/current/offline-workflow-check/offline-workflow-check-log.jsonl\n M handoffs/current/offline-workflow-check/offline-workflow-check-summary.json\n M handoffs/current/operator/RIFTSCAN_OPERATOR_HANDOFF.md\n M handoffs/current/operator/operator-current-gate-summary.json\n M tools/riftscan_ai_workflow_packet.py\n?? handoffs/current/ai-workflow/history/AI_WORKFLOW_PACKET-2026-05-07T17-56-23Z-riftscan-ai-workflow-packet-v1-8-0.md\n?? handoffs/current/ai-workflow/history/ai-workflow-summary-2026-05-07T17-56-23Z-riftscan-ai-workflow-packet-v1-8-0.json"
+    "status_short_branch": "## main...origin/main\n M docs/ai-workflow-packet-schema.md\n M docs/helper-tooling-policy.md\n M handoffs/current/ai-workflow/ai-workflow-log.jsonl\n M tools/riftscan_ai_workflow_packet.py"
   },
   "mode": "offline_ai_workflow",
   "offline_workflow_check": {
@@ -98,15 +98,15 @@
   },
   "packet_history_index": {
     "entry": {
-      "archive_stem": "2026-05-07T18-02-38Z-riftscan-ai-workflow-packet-v1-9-0",
+      "archive_stem": "2026-05-07T17-56-23Z-riftscan-ai-workflow-packet-v1-8-0",
       "artifacts": {
-        "report": "handoffs/current/ai-workflow/history/AI_WORKFLOW_PACKET-2026-05-07T18-02-38Z-riftscan-ai-workflow-packet-v1-9-0.md",
-        "summary": "handoffs/current/ai-workflow/history/ai-workflow-summary-2026-05-07T18-02-38Z-riftscan-ai-workflow-packet-v1-9-0.json"
+        "report": "handoffs/current/ai-workflow/history/AI_WORKFLOW_PACKET-2026-05-07T17-56-23Z-riftscan-ai-workflow-packet-v1-8-0.md",
+        "summary": "handoffs/current/ai-workflow/history/ai-workflow-summary-2026-05-07T17-56-23Z-riftscan-ai-workflow-packet-v1-8-0.json"
       },
-      "indexed_utc": "2026-05-07T18:03:05Z",
+      "indexed_utc": "2026-05-07T18:02:38Z",
       "schema_version": "riftscan.ai_workflow_packet_history_index.v1",
-      "source_app_version": "riftscan-ai-workflow-packet-v1.9.0",
-      "source_created_utc": "2026-05-07T18:02:38Z"
+      "source_app_version": "riftscan-ai-workflow-packet-v1.8.0",
+      "source_created_utc": "2026-05-07T17:56:23Z"
     },
     "path": "handoffs/current/ai-workflow/history/index.jsonl",
     "status": "APPENDED"
@@ -119,27 +119,33 @@
     "summary": "handoffs/current/ai-workflow/ai-workflow-summary.json"
   },
   "previous_packet_archive": {
-    "archive_stem": "2026-05-07T18-02-38Z-riftscan-ai-workflow-packet-v1-9-0",
+    "archive_stem": "2026-05-07T17-56-23Z-riftscan-ai-workflow-packet-v1-8-0",
     "artifacts": {
-      "report": "handoffs/current/ai-workflow/history/AI_WORKFLOW_PACKET-2026-05-07T18-02-38Z-riftscan-ai-workflow-packet-v1-9-0.md",
-      "summary": "handoffs/current/ai-workflow/history/ai-workflow-summary-2026-05-07T18-02-38Z-riftscan-ai-workflow-packet-v1-9-0.json"
+      "report": "handoffs/current/ai-workflow/history/AI_WORKFLOW_PACKET-2026-05-07T17-56-23Z-riftscan-ai-workflow-packet-v1-8-0.md",
+      "summary": "handoffs/current/ai-workflow/history/ai-workflow-summary-2026-05-07T17-56-23Z-riftscan-ai-workflow-packet-v1-8-0.json"
     },
     "history_dir": "handoffs/current/ai-workflow/history",
     "history_index": "handoffs/current/ai-workflow/history/index.jsonl",
-    "source_app_version": "riftscan-ai-workflow-packet-v1.9.0",
-    "source_created_utc": "2026-05-07T18:02:38Z",
+    "source_app_version": "riftscan-ai-workflow-packet-v1.8.0",
+    "source_created_utc": "2026-05-07T17:56:23Z",
     "status": "ARCHIVED"
   },
   "previous_packet_diff": {
-    "change_count": 0,
-    "changes": [],
+    "change_count": 1,
+    "changes": [
+      {
+        "after": "riftscan-ai-workflow-packet-v1.9.0",
+        "before": "riftscan-ai-workflow-packet-v1.8.0",
+        "field": "app_version"
+      }
+    ],
     "current_app_version": "riftscan-ai-workflow-packet-v1.9.0",
-    "current_created_utc": "2026-05-07T18:03:05Z",
-    "previous_app_version": "riftscan-ai-workflow-packet-v1.9.0",
-    "previous_created_utc": "2026-05-07T18:02:38Z",
+    "current_created_utc": "2026-05-07T18:02:38Z",
+    "previous_app_version": "riftscan-ai-workflow-packet-v1.8.0",
+    "previous_created_utc": "2026-05-07T17:56:23Z",
     "previous_packet_available": true,
     "schema_version": "riftscan.ai_workflow_packet_diff.v1",
-    "status": "UNCHANGED"
+    "status": "CHANGED"
   },
   "previous_packet_diff_compared_fields": [
     {

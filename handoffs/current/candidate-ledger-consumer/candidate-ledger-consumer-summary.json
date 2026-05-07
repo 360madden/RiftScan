@@ -12,7 +12,7 @@
     "current_best_missing_count": 0,
     "current_best_records": [
       {
-        "age_hours": 14.77,
+        "age_hours": 14.882,
         "exists": true,
         "max_age_hours": 24.0,
         "mtime_utc": "2026-05-07T03:10:00Z",
@@ -22,7 +22,7 @@
         "status": "fresh"
       },
       {
-        "age_hours": 1.607,
+        "age_hours": 1.719,
         "exists": true,
         "max_age_hours": 24.0,
         "mtime_utc": "2026-05-07T16:19:47Z",
@@ -32,7 +32,7 @@
         "status": "fresh"
       },
       {
-        "age_hours": 1.633,
+        "age_hours": 1.745,
         "exists": true,
         "max_age_hours": 24.0,
         "mtime_utc": "2026-05-07T16:18:16Z",
@@ -47,7 +47,7 @@
     "missing_count": 0,
     "records": [
       {
-        "age_hours": 14.77,
+        "age_hours": 14.882,
         "exists": true,
         "max_age_hours": 24.0,
         "mtime_utc": "2026-05-07T03:10:00Z",
@@ -57,7 +57,7 @@
         "status": "fresh"
       },
       {
-        "age_hours": 1.607,
+        "age_hours": 1.719,
         "exists": true,
         "max_age_hours": 24.0,
         "mtime_utc": "2026-05-07T16:19:47Z",
@@ -67,7 +67,7 @@
         "status": "fresh"
       },
       {
-        "age_hours": 1.633,
+        "age_hours": 1.745,
         "exists": true,
         "max_age_hours": 24.0,
         "mtime_utc": "2026-05-07T16:18:16Z",
@@ -77,7 +77,7 @@
         "status": "fresh"
       },
       {
-        "age_hours": 31.181,
+        "age_hours": 31.293,
         "exists": true,
         "max_age_hours": 24.0,
         "mtime_utc": "2026-05-06T10:45:20Z",
@@ -87,7 +87,7 @@
         "status": "stale"
       },
       {
-        "age_hours": 120.691,
+        "age_hours": 120.802,
         "exists": true,
         "max_age_hours": 24.0,
         "mtime_utc": "2026-05-02T17:14:47Z",
@@ -107,7 +107,7 @@
     "status": "PASS",
     "warning_count": 0
   },
-  "created_utc": "2026-05-07T17:56:13Z",
+  "created_utc": "2026-05-07T18:02:56Z",
   "current_best_candidate": {
     "allowed_downstream_uses": [
       "offline_review",

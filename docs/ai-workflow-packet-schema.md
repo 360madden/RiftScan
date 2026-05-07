@@ -57,6 +57,8 @@ Use `python tools/riftscan_ai_workflow_packet.py --print-diff` for a compact ter
 
 Use `python tools/riftscan_ai_workflow_packet.py --show-existing-diff` when you need a read-only terminal view of the saved packet diff without refreshing artifacts or appending logs.
 
+Use `python tools/riftscan_ai_workflow_packet.py --show-history-index` to inspect saved history-index rows without refreshing artifacts, or `python tools/riftscan_ai_workflow_packet.py --verify-history-index` to validate them with a nonzero exit on failure.
+
 ## Previous packet archive
 
 Before overwriting `ai-workflow-summary.json`, packet generation copies the prior summary into `handoffs/current/ai-workflow/history/`. If the prior Markdown report exists, it is copied there too.

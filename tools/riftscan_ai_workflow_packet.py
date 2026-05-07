@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # RiftScan script metadata
-# Version: riftscan-ai-workflow-packet-v1.8.0
+# Version: riftscan-ai-workflow-packet-v1.9.0
 # Total character count: 000000
 # Purpose: Build a compact offline AI workflow packet from current RiftScan handoff and gate artifacts.
 # Safety boundary: Reads existing artifacts and local git metadata only. No focus preflight, live capture, input, movement, memory scan/read, process attach, offset validation, RiftReader command execution, or /reloadui.
@@ -16,7 +16,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-APP_VERSION = "riftscan-ai-workflow-packet-v1.8.0"
+APP_VERSION = "riftscan-ai-workflow-packet-v1.9.0"
 REPO_ROOT = Path(__file__).resolve().parents[1]
 OUT_DIR = REPO_ROOT / "handoffs" / "current" / "ai-workflow"
 REPORT = OUT_DIR / "AI_WORKFLOW_PACKET.md"
@@ -160,6 +160,175 @@ def append_history_index(archive: dict[str, Any]) -> dict[str, Any]:
         "path": rel(HISTORY_INDEX),
         "entry": entry,
     }
+
+
+def repo_artifact_path(value: Any) -> Path | None:
+    if not isinstance(value, str) or not value:
+        return None
+    raw_path = Path(value)
+    path = raw_path if raw_path.is_absolute() else REPO_ROOT / raw_path
+    try:
+        resolved = path.resolve()
+        resolved.relative_to(REPO_ROOT.resolve())
+    except (OSError, ValueError):
+        return None
+    return resolved
+
+
+def read_history_index() -> tuple[list[dict[str, Any]], list[str]]:
+    entries: list[dict[str, Any]] = []
+    errors: list[str] = []
+    try:
+        lines = HISTORY_INDEX.read_text(encoding="utf-8").splitlines()
+    except FileNotFoundError:
+        return entries, [f"missing history index: {rel(HISTORY_INDEX)}"]
+    except OSError as exc:
+        return entries, [f"unable to read history index {rel(HISTORY_INDEX)}: {exc}"]
+
+    for line_number, line in enumerate(lines, start=1):
+        if not line.strip():
+            continue
+        try:
+            row = json.loads(line)
+        except json.JSONDecodeError as exc:
+            errors.append(f"{rel(HISTORY_INDEX)} line {line_number}: invalid JSON: {exc}")
+            continue
+        if not isinstance(row, dict):
+            errors.append(f"{rel(HISTORY_INDEX)} line {line_number}: row is not an object")
+            continue
+        row["_line_number"] = line_number
+        entries.append(row)
+    return entries, errors
+
+
+def validate_history_index_entries(
+    entries: list[dict[str, Any]],
+    *,
+    current_packet: dict[str, Any] | None = None,
+    require_files: bool = True,
+) -> dict[str, Any]:
+    errors: list[str] = []
+    warnings: list[str] = []
+    seen_pairs: set[tuple[str, str]] = set()
+
+    for index, entry in enumerate(entries, start=1):
+        label = f"history_index[{entry.get('_line_number', index)}]"
+        if entry.get("schema_version") != "riftscan.ai_workflow_packet_history_index.v1":
+            errors.append(f"{label}.schema_version is invalid")
+        artifacts = entry.get("artifacts")
+        if not isinstance(artifacts, dict):
+            errors.append(f"{label}.artifacts is missing or not an object")
+            continue
+
+        pair_values: dict[str, str] = {}
+        for artifact_name in ("summary", "report"):
+            artifact_text = artifacts.get(artifact_name)
+            if not isinstance(artifact_text, str) or not artifact_text:
+                errors.append(f"{label}.artifacts.{artifact_name} is missing")
+                continue
+            pair_values[artifact_name] = artifact_text
+            artifact_path = repo_artifact_path(artifact_text)
+            if artifact_path is None:
+                errors.append(f"{label}.artifacts.{artifact_name} is outside the repo")
+                continue
+            if require_files and not artifact_path.is_file():
+                errors.append(f"{label}.artifacts.{artifact_name} does not exist: {artifact_text}")
+
+        if "summary" in pair_values and "report" in pair_values:
+            pair = (pair_values["summary"], pair_values["report"])
+            if pair in seen_pairs:
+                errors.append(f"{label} duplicates an archived summary/report pair")
+            seen_pairs.add(pair)
+
+        summary_text = pair_values.get("summary")
+        summary_path = repo_artifact_path(summary_text) if summary_text else None
+        if require_files and summary_path and summary_path.is_file():
+            loaded = load_json(summary_path)
+            if artifact_failed(loaded):
+                errors.append(f"{label}.artifacts.summary is not valid JSON object: {loaded.get('_read_error')}")
+
+    current_archive = current_packet.get("previous_packet_archive") if isinstance(current_packet, dict) and isinstance(current_packet.get("previous_packet_archive"), dict) else {}
+    archive_artifacts = current_archive.get("artifacts") if isinstance(current_archive.get("artifacts"), dict) else {}
+    expected_pair = (
+        archive_artifacts.get("summary"),
+        archive_artifacts.get("report"),
+    )
+    current_archive_represented = False
+    if current_archive.get("status") == "ARCHIVED":
+        if not all(isinstance(value, str) and value for value in expected_pair):
+            errors.append("current previous_packet_archive is ARCHIVED but does not expose summary/report artifacts")
+        else:
+            current_archive_represented = expected_pair in seen_pairs
+            if not current_archive_represented:
+                errors.append("history index does not contain the current previous_packet_archive summary/report pair")
+    elif current_archive:
+        warnings.append(f"current previous_packet_archive status is {current_archive.get('status')}")
+
+    return {
+        "schema_version": "riftscan.ai_workflow_packet_history_verify.v1",
+        "status": "PASS" if not errors else "FAIL",
+        "path": rel(HISTORY_INDEX),
+        "entry_count": len(entries),
+        "error_count": len(errors),
+        "warning_count": len(warnings),
+        "errors": errors,
+        "warnings": warnings,
+        "current_archive_represented": current_archive_represented,
+    }
+
+
+def history_index_verification(data: dict[str, Any]) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    entries, read_errors = read_history_index()
+    verify = validate_history_index_entries(entries, current_packet=data)
+    if read_errors:
+        verify["status"] = "FAIL"
+        verify["errors"] = [*read_errors, *verify["errors"]]
+        verify["error_count"] = len(verify["errors"])
+    return entries, verify
+
+
+def history_index_lines(data: dict[str, Any], *, limit: int = 10) -> list[str]:
+    entries, verify = history_index_verification(data)
+    sorted_entries = sorted(entries, key=lambda item: str(item.get("indexed_utc") or ""))
+    shown_entries = sorted_entries[-max(0, limit) :] if limit else sorted_entries
+    lines = [
+        "RIFTSCAN AI WORKFLOW HISTORY INDEX",
+        f"status: {verify.get('status')}",
+        f"path: {verify.get('path')}",
+        f"entry_count: {verify.get('entry_count')}",
+        f"shown_count: {len(shown_entries)}",
+        f"current_archive_represented: {verify.get('current_archive_represented')}",
+        f"error_count: {verify.get('error_count')}",
+        f"warning_count: {verify.get('warning_count')}",
+        "entries:",
+    ]
+    if shown_entries:
+        for entry in shown_entries:
+            artifacts = entry.get("artifacts") if isinstance(entry.get("artifacts"), dict) else {}
+            lines.append(
+                "- "
+                f"line={entry.get('_line_number')} "
+                f"indexed_utc={entry.get('indexed_utc')} "
+                f"source_created_utc={entry.get('source_created_utc')} "
+                f"source_app_version={entry.get('source_app_version')} "
+                f"summary={artifacts.get('summary')} "
+                f"report={artifacts.get('report')}"
+            )
+    else:
+        lines.append("- none")
+
+    errors = verify.get("errors") if isinstance(verify.get("errors"), list) else []
+    if errors:
+        lines.append("errors:")
+        lines.extend(f"- {error}" for error in errors)
+
+    warnings = verify.get("warnings") if isinstance(verify.get("warnings"), list) else []
+    if warnings:
+        lines.append("warnings:")
+        lines.extend(f"- {warning}" for warning in warnings)
+
+    lines.append("Safety: read-only history index view; no packet refresh, focus, capture, input, movement, memory read, RiftReader command, offset validation, or /reloadui was run.")
+    return lines
 
 
 def run_git(args: list[str], timeout_seconds: int = 15) -> dict[str, Any]:
@@ -834,6 +1003,21 @@ def run_self_test() -> int:
         failures.append("history_index_entry_schema_missing")
     if get_nested(passing, "paths", "history_index") != rel(HISTORY_INDEX):
         failures.append("packet_paths_missing_history_index")
+    history_packet = {
+        "previous_packet_archive": {
+            "status": "ARCHIVED",
+            "artifacts": history_entry["artifacts"],
+        }
+    }
+    history_verify = validate_history_index_entries([history_entry], current_packet=history_packet, require_files=False)
+    if history_verify.get("status") != "PASS" or history_verify.get("current_archive_represented") is not True:
+        failures.append("history_index_verify_valid_fixture_failed")
+    bad_history_verify = validate_history_index_entries(
+        [{"schema_version": "bad", "artifacts": {"summary": "handoffs/current/ai-workflow/history/missing.json", "report": "handoffs/current/ai-workflow/history/missing.md"}}],
+        require_files=False,
+    )
+    if bad_history_verify.get("status") != "FAIL":
+        failures.append("history_index_verify_bad_fixture_did_not_fail")
     token = safe_history_token("2026-05-07T17:32:05Z")
     if ":" in token or token != "2026-05-07T17-32-05Z":
         failures.append("history_token_not_windows_safe")
@@ -870,6 +1054,9 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument("--print-summary", action="store_true", help="Print the generated packet summary after writing artifacts.")
     parser.add_argument("--print-diff", action="store_true", help="Print the previous-packet diff after writing artifacts.")
     parser.add_argument("--show-existing-diff", action="store_true", help="Print the saved packet diff without refreshing artifacts or writing logs.")
+    parser.add_argument("--show-history-index", action="store_true", help="Print the saved packet history index without refreshing artifacts or writing logs.")
+    parser.add_argument("--verify-history-index", action="store_true", help="Validate the saved packet history index without refreshing artifacts or writing logs.")
+    parser.add_argument("--history-limit", type=int, default=10, help="Maximum recent history-index entries to print for --show-history-index or --verify-history-index. Use 0 for all entries.")
     parser.add_argument("--strict-exit-code", action="store_true", help="Return nonzero when the packet status is not PASS.")
     return parser.parse_args(argv)
 
@@ -886,6 +1073,17 @@ def main(argv: list[str]) -> int:
             return 1
         print("\n".join(packet_diff_lines(saved_packet, source_label="saved_existing_no_refresh")))
         return 1 if args.strict_exit_code and saved_packet.get("status") != "PASS" else 0
+
+    if args.show_history_index or args.verify_history_index:
+        saved_packet = load_json(SUMMARY)
+        if artifact_failed(saved_packet):
+            print(f"Unable to read saved AI workflow packet: {saved_packet.get('_read_error')} ({saved_packet.get('_path')})", file=sys.stderr)
+            return 1
+        _, verify = history_index_verification(saved_packet)
+        print("\n".join(history_index_lines(saved_packet, limit=max(0, args.history_limit))))
+        if args.verify_history_index or args.strict_exit_code:
+            return 0 if verify.get("status") == "PASS" else 1
+        return 0
 
     previous_packet = load_json(SUMMARY)
     packet = build_packet(previous_packet)
