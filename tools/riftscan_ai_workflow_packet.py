@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # RiftScan script metadata
-# Version: riftscan-ai-workflow-packet-v1.4.0
+# Version: riftscan-ai-workflow-packet-v1.5.0
 # Total character count: 000000
 # Purpose: Build a compact offline AI workflow packet from current RiftScan handoff and gate artifacts.
 # Safety boundary: Reads existing artifacts and local git metadata only. No focus preflight, live capture, input, movement, memory scan/read, process attach, offset validation, RiftReader command execution, or /reloadui.
@@ -15,7 +15,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-APP_VERSION = "riftscan-ai-workflow-packet-v1.4.0"
+APP_VERSION = "riftscan-ai-workflow-packet-v1.5.0"
 REPO_ROOT = Path(__file__).resolve().parents[1]
 OUT_DIR = REPO_ROOT / "handoffs" / "current" / "ai-workflow"
 REPORT = OUT_DIR / "AI_WORKFLOW_PACKET.md"
@@ -565,6 +565,45 @@ def write_outputs(data: dict[str, Any]) -> None:
     append_log("outputs_written", report=rel(REPORT), summary=rel(SUMMARY), status=data["status"])
 
 
+def format_diff_value(value: Any) -> str:
+    if value is None:
+        return "null"
+    if isinstance(value, bool):
+        return str(value).lower()
+    if isinstance(value, (int, float)):
+        return str(value)
+    return json.dumps(value, sort_keys=True)
+
+
+def packet_diff_lines(data: dict[str, Any]) -> list[str]:
+    packet_diff = data.get("previous_packet_diff") if isinstance(data.get("previous_packet_diff"), dict) else {}
+    compared_fields = data.get("previous_packet_diff_compared_fields")
+    changes = packet_diff.get("changes") if isinstance(packet_diff.get("changes"), list) else []
+    lines = [
+        "RIFTSCAN AI WORKFLOW PACKET DIFF",
+        f"status: {packet_diff.get('status', 'not_run')}",
+        f"change_count: {packet_diff.get('change_count', 'unknown')}",
+        f"previous_created_utc: {packet_diff.get('previous_created_utc')}",
+        f"current_created_utc: {packet_diff.get('current_created_utc')}",
+        f"previous_app_version: {packet_diff.get('previous_app_version')}",
+        f"current_app_version: {packet_diff.get('current_app_version')}",
+        f"compared_field_count: {len(compared_fields) if isinstance(compared_fields, list) else 'unknown'}",
+        f"schema_doc: {rel(AI_WORKFLOW_PACKET_SCHEMA_DOC)}",
+        f"summary: {rel(SUMMARY)}",
+        f"report: {rel(REPORT)}",
+        "changes:",
+    ]
+    if changes:
+        for change in changes:
+            lines.append(
+                f"- {change.get('field')}: {format_diff_value(change.get('before'))} -> {format_diff_value(change.get('after'))}"
+            )
+    else:
+        lines.append("- none")
+    lines.append("Safety: offline packet only; no focus, capture, input, movement, memory read, RiftReader command, offset validation, or /reloadui was run.")
+    return lines
+
+
 def run_self_test() -> int:
     fake_discovery = {
         "status": "ledger_written",
@@ -638,6 +677,13 @@ def run_self_test() -> int:
     changed_diff = build_previous_packet_diff(passing, changed_packet)
     if changed_diff.get("status") != "CHANGED" or changed_diff.get("change_count") != 1:
         failures.append("changed_packet_diff_not_detected")
+    changed_packet["previous_packet_diff"] = changed_diff
+    diff_text = "\n".join(packet_diff_lines(changed_packet))
+    if "safe_candidate_count" not in diff_text or "1 -> 2" not in diff_text:
+        failures.append("print_diff_changed_field_missing")
+    passing["previous_packet_diff"] = unchanged_diff
+    if "- none" not in "\n".join(packet_diff_lines(passing)):
+        failures.append("print_diff_unchanged_missing_none")
     compared_fields = passing.get("previous_packet_diff_compared_fields")
     if not isinstance(compared_fields, list) or len(compared_fields) != len(PACKET_DIFF_FIELDS):
         failures.append("packet_diff_compared_fields_missing_or_wrong_count")
@@ -669,6 +715,7 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Build a compact offline AI workflow packet from current RiftScan artifacts.")
     parser.add_argument("--self-test", action="store_true", help="Run offline self-test only; writes no artifacts.")
     parser.add_argument("--print-summary", action="store_true", help="Print the generated packet summary after writing artifacts.")
+    parser.add_argument("--print-diff", action="store_true", help="Print the previous-packet diff after writing artifacts.")
     parser.add_argument("--strict-exit-code", action="store_true", help="Return nonzero when the packet status is not PASS.")
     return parser.parse_args(argv)
 
@@ -684,6 +731,8 @@ def main(argv: list[str]) -> int:
 
     if args.print_summary:
         print(json.dumps(packet, indent=2, sort_keys=True))
+    elif args.print_diff:
+        print("\n".join(packet_diff_lines(packet)))
     else:
         print(f"RIFTSCAN AI WORKFLOW PACKET: {rel(REPORT)}")
         print(f"Summary: {rel(SUMMARY)}")

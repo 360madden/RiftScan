@@ -50,6 +50,8 @@ Packet generation must not start focus preflight, live capture, scanner probes a
 
 It intentionally ignores normal refresh noise such as `created_utc`, JSONL row growth, report timestamps, full git status text, and regenerated Markdown wording that does not alter selected packet fields.
 
+Use `python tools/riftscan_ai_workflow_packet.py --print-diff` for a compact terminal view of the current diff after refreshing the packet artifacts.
+
 ### Status values
 
 | Status | Meaning |

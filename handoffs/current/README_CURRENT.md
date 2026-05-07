@@ -61,7 +61,7 @@ A newer doc-only handoff-pointer commit may exist; check `git log --oneline -5` 
 - Ledger generation embeds candidate-ledger contract validation in the summary/report, and Offline Workflow Check includes Discovery Ledger self-test + refresh + candidate-ledger contract validation; `.\scripts\run-riftscan-offline-workflow-check.cmd` updates and checks the ledger without touching the game window.
 - Candidate Ledger Consumer is a safe offline-only downstream view with source-artifact age diagnostics: `python tools/riftscan_candidate_ledger_consumer.py --self-test`, `python tools/riftscan_candidate_ledger_consumer.py`, and `.\scripts\run-riftscan-candidate-ledger-consumer.cmd --max-artifact-age-hours 24 --strict-exit-code`.
 - Latest Candidate Ledger Consumer artifacts: `handoffs/current/candidate-ledger-consumer/`.
-- AI Workflow Packet is a compact offline agent resume packet with previous-packet diffing documented in `docs/ai-workflow-packet-schema.md`; Offline Workflow Check validates the current packet diff contract. Commands: `python tools/riftscan_ai_workflow_packet.py --self-test`, `python tools/riftscan_ai_workflow_packet.py`, and `.\scripts\run-riftscan-ai-workflow-packet.cmd --strict-exit-code`.
+- AI Workflow Packet is a compact offline agent resume packet with previous-packet diffing documented in `docs/ai-workflow-packet-schema.md`; Offline Workflow Check validates the current packet diff contract. Commands: `python tools/riftscan_ai_workflow_packet.py --self-test`, `python tools/riftscan_ai_workflow_packet.py --print-diff`, `python tools/riftscan_ai_workflow_packet.py`, and `.\scripts\run-riftscan-ai-workflow-packet.cmd --strict-exit-code`.
 - Latest AI Workflow Packet artifacts: `handoffs/current/ai-workflow/`.
 
 ## Current direction

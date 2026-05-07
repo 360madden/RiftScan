@@ -206,6 +206,12 @@ python tools/riftscan_ai_workflow_packet.py --self-test
 
 The packet should include a previous-packet diff so offline agents can distinguish real workflow/truth changes from timestamp-only refreshes. The packet and diff contracts are documented in `docs/ai-workflow-packet-schema.md`, and Offline Workflow Check validates that the current packet exposes the required diff fields.
 
+For quick terminal triage without opening the Markdown report:
+
+```text
+python tools/riftscan_ai_workflow_packet.py --print-diff
+```
+
 Capture plan validation:
 
 ```text
