@@ -1,0 +1,147 @@
+{
+  "app_version": "riftscan-ai-workflow-packet-v1.10.0",
+  "created_utc": "2026-05-07T18:11:22Z",
+  "current_packet": {
+    "app_version": "riftscan-ai-workflow-packet-v1.10.0",
+    "created_utc": "2026-05-07T18:11:22Z",
+    "previous_packet_archive": {
+      "archive_stem": "2026-05-07T18-10-54Z-riftscan-ai-workflow-packet-v1-10-0",
+      "artifacts": {
+        "report": "handoffs/current/ai-workflow/history/AI_WORKFLOW_PACKET-2026-05-07T18-10-54Z-riftscan-ai-workflow-packet-v1-10-0.md",
+        "summary": "handoffs/current/ai-workflow/history/ai-workflow-summary-2026-05-07T18-10-54Z-riftscan-ai-workflow-packet-v1-10-0.json"
+      },
+      "history_dir": "handoffs/current/ai-workflow/history",
+      "history_index": "handoffs/current/ai-workflow/history/index.jsonl",
+      "source_app_version": "riftscan-ai-workflow-packet-v1.10.0",
+      "source_created_utc": "2026-05-07T18:10:54Z",
+      "status": "ARCHIVED"
+    },
+    "report": "handoffs/current/ai-workflow/AI_WORKFLOW_PACKET.md",
+    "status": "PASS",
+    "summary": "handoffs/current/ai-workflow/ai-workflow-summary.json"
+  },
+  "history_index": {
+    "entries": [
+      {
+        "archive_stem": "2026-05-07T17-44-10Z-riftscan-ai-workflow-packet-v1-7-0",
+        "artifacts": {
+          "report": "handoffs/current/ai-workflow/history/AI_WORKFLOW_PACKET-2026-05-07T17-44-10Z-riftscan-ai-workflow-packet-v1-7-0.md",
+          "summary": "handoffs/current/ai-workflow/history/ai-workflow-summary-2026-05-07T17-44-10Z-riftscan-ai-workflow-packet-v1-7-0.json"
+        },
+        "indexed_utc": "2026-05-07T17:51:26Z",
+        "line_number": 1,
+        "source_app_version": "riftscan-ai-workflow-packet-v1.7.0",
+        "source_created_utc": "2026-05-07T17:44:10Z"
+      },
+      {
+        "archive_stem": "2026-05-07T17-51-26Z-riftscan-ai-workflow-packet-v1-8-0",
+        "artifacts": {
+          "report": "handoffs/current/ai-workflow/history/AI_WORKFLOW_PACKET-2026-05-07T17-51-26Z-riftscan-ai-workflow-packet-v1-8-0.md",
+          "summary": "handoffs/current/ai-workflow/history/ai-workflow-summary-2026-05-07T17-51-26Z-riftscan-ai-workflow-packet-v1-8-0.json"
+        },
+        "indexed_utc": "2026-05-07T17:52:03Z",
+        "line_number": 2,
+        "source_app_version": "riftscan-ai-workflow-packet-v1.8.0",
+        "source_created_utc": "2026-05-07T17:51:26Z"
+      },
+      {
+        "archive_stem": "2026-05-07T17-52-03Z-riftscan-ai-workflow-packet-v1-8-0",
+        "artifacts": {
+          "report": "handoffs/current/ai-workflow/history/AI_WORKFLOW_PACKET-2026-05-07T17-52-03Z-riftscan-ai-workflow-packet-v1-8-0.md",
+          "summary": "handoffs/current/ai-workflow/history/ai-workflow-summary-2026-05-07T17-52-03Z-riftscan-ai-workflow-packet-v1-8-0.json"
+        },
+        "indexed_utc": "2026-05-07T17:56:23Z",
+        "line_number": 3,
+        "source_app_version": "riftscan-ai-workflow-packet-v1.8.0",
+        "source_created_utc": "2026-05-07T17:52:03Z"
+      },
+      {
+        "archive_stem": "2026-05-07T17-56-23Z-riftscan-ai-workflow-packet-v1-8-0",
+        "artifacts": {
+          "report": "handoffs/current/ai-workflow/history/AI_WORKFLOW_PACKET-2026-05-07T17-56-23Z-riftscan-ai-workflow-packet-v1-8-0.md",
+          "summary": "handoffs/current/ai-workflow/history/ai-workflow-summary-2026-05-07T17-56-23Z-riftscan-ai-workflow-packet-v1-8-0.json"
+        },
+        "indexed_utc": "2026-05-07T18:02:38Z",
+        "line_number": 4,
+        "source_app_version": "riftscan-ai-workflow-packet-v1.8.0",
+        "source_created_utc": "2026-05-07T17:56:23Z"
+      },
+      {
+        "archive_stem": "2026-05-07T18-02-38Z-riftscan-ai-workflow-packet-v1-9-0",
+        "artifacts": {
+          "report": "handoffs/current/ai-workflow/history/AI_WORKFLOW_PACKET-2026-05-07T18-02-38Z-riftscan-ai-workflow-packet-v1-9-0.md",
+          "summary": "handoffs/current/ai-workflow/history/ai-workflow-summary-2026-05-07T18-02-38Z-riftscan-ai-workflow-packet-v1-9-0.json"
+        },
+        "indexed_utc": "2026-05-07T18:03:05Z",
+        "line_number": 5,
+        "source_app_version": "riftscan-ai-workflow-packet-v1.9.0",
+        "source_created_utc": "2026-05-07T18:02:38Z"
+      },
+      {
+        "archive_stem": "2026-05-07T18-03-05Z-riftscan-ai-workflow-packet-v1-9-0",
+        "artifacts": {
+          "report": "handoffs/current/ai-workflow/history/AI_WORKFLOW_PACKET-2026-05-07T18-03-05Z-riftscan-ai-workflow-packet-v1-9-0.md",
+          "summary": "handoffs/current/ai-workflow/history/ai-workflow-summary-2026-05-07T18-03-05Z-riftscan-ai-workflow-packet-v1-9-0.json"
+        },
+        "indexed_utc": "2026-05-07T18:10:54Z",
+        "line_number": 6,
+        "source_app_version": "riftscan-ai-workflow-packet-v1.9.0",
+        "source_created_utc": "2026-05-07T18:03:05Z"
+      },
+      {
+        "archive_stem": "2026-05-07T18-10-54Z-riftscan-ai-workflow-packet-v1-10-0",
+        "artifacts": {
+          "report": "handoffs/current/ai-workflow/history/AI_WORKFLOW_PACKET-2026-05-07T18-10-54Z-riftscan-ai-workflow-packet-v1-10-0.md",
+          "summary": "handoffs/current/ai-workflow/history/ai-workflow-summary-2026-05-07T18-10-54Z-riftscan-ai-workflow-packet-v1-10-0.json"
+        },
+        "indexed_utc": "2026-05-07T18:11:22Z",
+        "line_number": 7,
+        "source_app_version": "riftscan-ai-workflow-packet-v1.10.0",
+        "source_created_utc": "2026-05-07T18:10:54Z"
+      }
+    ],
+    "entry_count": 7,
+    "latest_entry": {
+      "archive_stem": "2026-05-07T18-10-54Z-riftscan-ai-workflow-packet-v1-10-0",
+      "artifacts": {
+        "report": "handoffs/current/ai-workflow/history/AI_WORKFLOW_PACKET-2026-05-07T18-10-54Z-riftscan-ai-workflow-packet-v1-10-0.md",
+        "summary": "handoffs/current/ai-workflow/history/ai-workflow-summary-2026-05-07T18-10-54Z-riftscan-ai-workflow-packet-v1-10-0.json"
+      },
+      "indexed_utc": "2026-05-07T18:11:22Z",
+      "line_number": 7,
+      "source_app_version": "riftscan-ai-workflow-packet-v1.10.0",
+      "source_created_utc": "2026-05-07T18:10:54Z"
+    },
+    "path": "handoffs/current/ai-workflow/history/index.jsonl"
+  },
+  "paths": {
+    "history_index": "handoffs/current/ai-workflow/history/index.jsonl",
+    "report": "handoffs/current/ai-workflow/AI_WORKFLOW_HISTORY_INDEX_REPORT.md",
+    "summary": "handoffs/current/ai-workflow/ai-workflow-history-index-summary.json"
+  },
+  "safety": {
+    "focus_preflight_started": false,
+    "live_capture_started": false,
+    "memory_scan_or_read_started": false,
+    "movement_or_input_sent": false,
+    "offline_only": true,
+    "offset_validation_started": false,
+    "process_attach_or_memory_read_started": false,
+    "reloadui_sent": false,
+    "riftreader_command_executed": false,
+    "writes_report_artifacts": true
+  },
+  "schema_version": "riftscan.ai_workflow_packet_history_report.v1",
+  "status": "PASS",
+  "verification": {
+    "current_archive_represented": true,
+    "entry_count": 7,
+    "error_count": 0,
+    "errors": [],
+    "path": "handoffs/current/ai-workflow/history/index.jsonl",
+    "schema_version": "riftscan.ai_workflow_packet_history_verify.v1",
+    "status": "PASS",
+    "warning_count": 0,
+    "warnings": []
+  }
+}

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # RiftScan script metadata
-# Version: riftscan-ai-workflow-packet-v1.9.0
+# Version: riftscan-ai-workflow-packet-v1.10.0
 # Total character count: 000000
 # Purpose: Build a compact offline AI workflow packet from current RiftScan handoff and gate artifacts.
 # Safety boundary: Reads existing artifacts and local git metadata only. No focus preflight, live capture, input, movement, memory scan/read, process attach, offset validation, RiftReader command execution, or /reloadui.
@@ -16,7 +16,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-APP_VERSION = "riftscan-ai-workflow-packet-v1.9.0"
+APP_VERSION = "riftscan-ai-workflow-packet-v1.10.0"
 REPO_ROOT = Path(__file__).resolve().parents[1]
 OUT_DIR = REPO_ROOT / "handoffs" / "current" / "ai-workflow"
 REPORT = OUT_DIR / "AI_WORKFLOW_PACKET.md"
@@ -24,6 +24,8 @@ SUMMARY = OUT_DIR / "ai-workflow-summary.json"
 LOG = OUT_DIR / "ai-workflow-log.jsonl"
 HISTORY_DIR = OUT_DIR / "history"
 HISTORY_INDEX = HISTORY_DIR / "index.jsonl"
+HISTORY_REPORT = OUT_DIR / "AI_WORKFLOW_HISTORY_INDEX_REPORT.md"
+HISTORY_SUMMARY = OUT_DIR / "ai-workflow-history-index-summary.json"
 
 README_CURRENT = REPO_ROOT / "handoffs" / "current" / "README_CURRENT.md"
 DISCOVERY_LEDGER_REPORT = REPO_ROOT / "handoffs" / "current" / "discovery-ledger" / "DISCOVERY_LEDGER_REPORT.md"
@@ -329,6 +331,149 @@ def history_index_lines(data: dict[str, Any], *, limit: int = 10) -> list[str]:
 
     lines.append("Safety: read-only history index view; no packet refresh, focus, capture, input, movement, memory read, RiftReader command, offset validation, or /reloadui was run.")
     return lines
+
+
+def compact_history_index_entry(entry: dict[str, Any]) -> dict[str, Any]:
+    artifacts = entry.get("artifacts") if isinstance(entry.get("artifacts"), dict) else {}
+    return {
+        "line_number": entry.get("_line_number"),
+        "indexed_utc": entry.get("indexed_utc"),
+        "archive_stem": entry.get("archive_stem"),
+        "source_created_utc": entry.get("source_created_utc"),
+        "source_app_version": entry.get("source_app_version"),
+        "artifacts": {
+            "summary": artifacts.get("summary"),
+            "report": artifacts.get("report"),
+        },
+    }
+
+
+def build_history_report_data(packet: dict[str, Any], *, created_utc: str | None = None) -> dict[str, Any]:
+    entries, verify = history_index_verification(packet)
+    sorted_entries = sorted(entries, key=lambda item: str(item.get("indexed_utc") or ""))
+    compact_entries = [compact_history_index_entry(entry) for entry in sorted_entries]
+    latest_entry = compact_entries[-1] if compact_entries else None
+    return {
+        "schema_version": "riftscan.ai_workflow_packet_history_report.v1",
+        "created_utc": created_utc or utc(),
+        "app_version": APP_VERSION,
+        "status": verify.get("status"),
+        "verification": verify,
+        "history_index": {
+            "path": rel(HISTORY_INDEX),
+            "entry_count": len(compact_entries),
+            "entries": compact_entries,
+            "latest_entry": latest_entry,
+        },
+        "current_packet": {
+            "created_utc": packet.get("created_utc"),
+            "app_version": packet.get("app_version"),
+            "status": packet.get("status"),
+            "summary": rel(SUMMARY),
+            "report": rel(REPORT),
+            "previous_packet_archive": packet.get("previous_packet_archive") if isinstance(packet.get("previous_packet_archive"), dict) else {},
+        },
+        "paths": {
+            "report": rel(HISTORY_REPORT),
+            "summary": rel(HISTORY_SUMMARY),
+            "history_index": rel(HISTORY_INDEX),
+        },
+        "safety": {
+            "offline_only": True,
+            "writes_report_artifacts": True,
+            "focus_preflight_started": False,
+            "live_capture_started": False,
+            "process_attach_or_memory_read_started": False,
+            "memory_scan_or_read_started": False,
+            "movement_or_input_sent": False,
+            "riftreader_command_executed": False,
+            "offset_validation_started": False,
+            "reloadui_sent": False,
+        },
+    }
+
+
+def history_report_lines(data: dict[str, Any]) -> list[str]:
+    verification = data.get("verification") if isinstance(data.get("verification"), dict) else {}
+    history = data.get("history_index") if isinstance(data.get("history_index"), dict) else {}
+    entries = history.get("entries") if isinstance(history.get("entries"), list) else []
+    latest = history.get("latest_entry") if isinstance(history.get("latest_entry"), dict) else {}
+    lines = [
+        "# RiftScan AI Workflow History Index Report",
+        "",
+        f"Created UTC: `{data.get('created_utc')}`",
+        f"App version: `{data.get('app_version')}`",
+        "",
+        "## Result",
+        "",
+        "```text",
+        f"status: {data.get('status')}",
+        f"history_index: {history.get('path')}",
+        f"entry_count: {history.get('entry_count')}",
+        f"current_archive_represented: {verification.get('current_archive_represented')}",
+        f"error_count: {verification.get('error_count')}",
+        f"warning_count: {verification.get('warning_count')}",
+        "```",
+        "",
+        "## Latest archived packet",
+        "",
+    ]
+    if latest:
+        artifacts = latest.get("artifacts") if isinstance(latest.get("artifacts"), dict) else {}
+        lines.extend(
+            [
+                "| Field | Value |",
+                "|---|---|",
+                f"| Line | `{latest.get('line_number')}` |",
+                f"| Indexed UTC | `{latest.get('indexed_utc')}` |",
+                f"| Source created UTC | `{latest.get('source_created_utc')}` |",
+                f"| Source app version | `{latest.get('source_app_version')}` |",
+                f"| Summary | `{artifacts.get('summary')}` |",
+                f"| Report | `{artifacts.get('report')}` |",
+                "",
+            ]
+        )
+    else:
+        lines.extend(["No history-index entries are available.", ""])
+
+    lines.extend(["## History entries", ""])
+    if entries:
+        lines.extend(["| Line | Indexed UTC | Source created UTC | Source app version | Summary | Report |", "|---:|---|---|---|---|---|"])
+        for entry in entries:
+            artifacts = entry.get("artifacts") if isinstance(entry.get("artifacts"), dict) else {}
+            lines.append(
+                f"| {entry.get('line_number')} | `{entry.get('indexed_utc')}` | `{entry.get('source_created_utc')}` | `{entry.get('source_app_version')}` | `{artifacts.get('summary')}` | `{artifacts.get('report')}` |"
+            )
+    else:
+        lines.append("- None.")
+
+    errors = verification.get("errors") if isinstance(verification.get("errors"), list) else []
+    lines.extend(["", "## Errors", ""])
+    lines.extend(f"- {error}" for error in errors) if errors else lines.append("- None.")
+
+    warnings = verification.get("warnings") if isinstance(verification.get("warnings"), list) else []
+    lines.extend(["", "## Warnings", ""])
+    lines.extend(f"- {warning}" for warning in warnings) if warnings else lines.append("- None.")
+
+    lines.extend(
+        [
+            "",
+            "## Safety",
+            "",
+            "```json",
+            json.dumps(data.get("safety", {}), indent=2, sort_keys=True),
+            "```",
+            "",
+        ]
+    )
+    return lines
+
+
+def write_history_outputs(packet: dict[str, Any]) -> dict[str, Any]:
+    data = build_history_report_data(packet)
+    write_json(HISTORY_SUMMARY, data)
+    write_text(HISTORY_REPORT, "\n".join(history_report_lines(data)))
+    return data
 
 
 def run_git(args: list[str], timeout_seconds: int = 15) -> dict[str, Any]:
@@ -641,6 +786,8 @@ def build_packet_from_artifacts(
             "log": rel(LOG),
             "history_dir": rel(HISTORY_DIR),
             "history_index": rel(HISTORY_INDEX),
+            "history_report": rel(HISTORY_REPORT),
+            "history_summary": rel(HISTORY_SUMMARY),
         },
         "safety": {
             "offline_only": True,
@@ -851,14 +998,18 @@ def write_outputs(data: dict[str, Any], previous_packet: dict[str, Any] | None =
     data["packet_history_index"] = history_index
     write_json(SUMMARY, data)
     write_text(REPORT, "\n".join(report_lines(data)))
+    history_report = write_history_outputs(data)
     append_log(
         "outputs_written",
         report=rel(REPORT),
         summary=rel(SUMMARY),
+        history_report=rel(HISTORY_REPORT),
+        history_summary=rel(HISTORY_SUMMARY),
         status=data["status"],
         previous_packet_archive_status=archive.get("status"),
         packet_history_index_status=history_index.get("status"),
         packet_history_index_path=history_index.get("path"),
+        packet_history_report_status=history_report.get("status"),
     )
 
 
@@ -1003,6 +1154,8 @@ def run_self_test() -> int:
         failures.append("history_index_entry_schema_missing")
     if get_nested(passing, "paths", "history_index") != rel(HISTORY_INDEX):
         failures.append("packet_paths_missing_history_index")
+    if get_nested(passing, "paths", "history_report") != rel(HISTORY_REPORT) or get_nested(passing, "paths", "history_summary") != rel(HISTORY_SUMMARY):
+        failures.append("packet_paths_missing_history_report_artifacts")
     history_packet = {
         "previous_packet_archive": {
             "status": "ARCHIVED",
@@ -1018,6 +1171,16 @@ def run_self_test() -> int:
     )
     if bad_history_verify.get("status") != "FAIL":
         failures.append("history_index_verify_bad_fixture_did_not_fail")
+    history_report = build_history_report_data(history_packet, created_utc="2026-01-01T00:00:02Z")
+    history_report["history_index"] = {
+        "path": rel(HISTORY_INDEX),
+        "entry_count": 1,
+        "entries": [compact_history_index_entry(history_entry)],
+        "latest_entry": compact_history_index_entry(history_entry),
+    }
+    history_report_text = "\n".join(history_report_lines(history_report))
+    if "RiftScan AI Workflow History Index Report" not in history_report_text:
+        failures.append("history_report_markdown_title_missing")
     token = safe_history_token("2026-05-07T17:32:05Z")
     if ":" in token or token != "2026-05-07T17-32-05Z":
         failures.append("history_token_not_windows_safe")
@@ -1096,6 +1259,8 @@ def main(argv: list[str]) -> int:
     else:
         print(f"RIFTSCAN AI WORKFLOW PACKET: {rel(REPORT)}")
         print(f"Summary: {rel(SUMMARY)}")
+        print(f"History report: {rel(HISTORY_REPORT)}")
+        print(f"History summary: {rel(HISTORY_SUMMARY)}")
         print(f"Status: {packet['status']}")
         print("Safety: offline packet only; no focus, capture, input, movement, memory read, RiftReader command, offset validation, or /reloadui was run.")
     return 1 if args.strict_exit_code and packet["status"] != "PASS" else 0

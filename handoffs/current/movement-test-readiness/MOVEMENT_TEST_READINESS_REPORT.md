@@ -56,7 +56,7 @@ log: handoffs/current/movement-test-readiness/movement-test-readiness-log.jsonl
 ## Git Snapshot
 
 ```text
-head: aad6f11c89c5aa21b6070fa0be3e7b9fa4a8f1c6
+head: 60a8e5b1066a4358a91ff0df77eb8604e93f965f
 ```
 
 Git status:
@@ -82,19 +82,22 @@ Git status:
  M handoffs/current/offline-workflow-check/offline-workflow-check-log.jsonl
  M handoffs/current/offline-workflow-check/offline-workflow-check-summary.json
  M tools/riftscan_ai_workflow_packet.py
-?? handoffs/current/ai-workflow/history/AI_WORKFLOW_PACKET-2026-05-07T17-56-23Z-riftscan-ai-workflow-packet-v1-8-0.md
-?? handoffs/current/ai-workflow/history/ai-workflow-summary-2026-05-07T17-56-23Z-riftscan-ai-workflow-packet-v1-8-0.json
+ M tools/riftscan_offline_workflow_check.py
+?? handoffs/current/ai-workflow/AI_WORKFLOW_HISTORY_INDEX_REPORT.md
+?? handoffs/current/ai-workflow/ai-workflow-history-index-summary.json
+?? handoffs/current/ai-workflow/history/AI_WORKFLOW_PACKET-2026-05-07T18-03-05Z-riftscan-ai-workflow-packet-v1-9-0.md
+?? handoffs/current/ai-workflow/history/ai-workflow-summary-2026-05-07T18-03-05Z-riftscan-ai-workflow-packet-v1-9-0.json
 
 ```
 
 Recent commits:
 
 ```text
+60a8e5b Add AI packet history index view
 aad6f11 Validate full AI packet history index
 237d9f2 Index AI workflow packet history
 d0d0e92 Validate AI packet archive offline
 6bef855 Archive AI workflow packet history
-19fb85b Add read-only AI packet diff view
 ```
 
 ## Machine-Readable Summary
@@ -140,12 +143,12 @@ d0d0e92 Validate AI packet archive offline
       "post_update_baseline": "PASS"
     }
   },
-  "created_utc": "2026-05-07T18:03:03Z",
+  "created_utc": "2026-05-07T18:11:21Z",
   "display_status": "PASS",
   "git": {
-    "head": "aad6f11c89c5aa21b6070fa0be3e7b9fa4a8f1c6",
-    "log_oneline_5": "aad6f11 Validate full AI packet history index\n237d9f2 Index AI workflow packet history\nd0d0e92 Validate AI packet archive offline\n6bef855 Archive AI workflow packet history\n19fb85b Add read-only AI packet diff view",
-    "status_short": " M docs/ai-workflow-packet-schema.md\n M docs/helper-tooling-policy.md\n M handoffs/current/ai-workflow/AI_WORKFLOW_PACKET.md\n M handoffs/current/ai-workflow/ai-workflow-log.jsonl\n M handoffs/current/ai-workflow/ai-workflow-summary.json\n M handoffs/current/ai-workflow/history/index.jsonl\n M handoffs/current/candidate-ledger-consumer/CANDIDATE_LEDGER_CONSUMER_REPORT.md\n M handoffs/current/candidate-ledger-consumer/candidate-ledger-consumer-log.jsonl\n M handoffs/current/candidate-ledger-consumer/candidate-ledger-consumer-summary.json\n M handoffs/current/capture-plan-check/CAPTURE_PLAN_CHECK_REPORT.md\n M handoffs/current/capture-plan-check/capture-plan-check-log.jsonl\n M handoffs/current/capture-plan-check/capture-plan-check-summary.json\n M handoffs/current/discovery-ledger/DISCOVERY_LEDGER_REPORT.md\n M handoffs/current/discovery-ledger/discovery-ledger-log.jsonl\n M handoffs/current/discovery-ledger/discovery-ledger-summary.json\n M handoffs/current/movement-test-readiness/movement-test-readiness-log.jsonl\n M handoffs/current/offline-workflow-check/OFFLINE_WORKFLOW_CHECK_REPORT.md\n M handoffs/current/offline-workflow-check/offline-workflow-check-log.jsonl\n M handoffs/current/offline-workflow-check/offline-workflow-check-summary.json\n M tools/riftscan_ai_workflow_packet.py\n?? handoffs/current/ai-workflow/history/AI_WORKFLOW_PACKET-2026-05-07T17-56-23Z-riftscan-ai-workflow-packet-v1-8-0.md\n?? handoffs/current/ai-workflow/history/ai-workflow-summary-2026-05-07T17-56-23Z-riftscan-ai-workflow-packet-v1-8-0.json\n"
+    "head": "60a8e5b1066a4358a91ff0df77eb8604e93f965f",
+    "log_oneline_5": "60a8e5b Add AI packet history index view\naad6f11 Validate full AI packet history index\n237d9f2 Index AI workflow packet history\nd0d0e92 Validate AI packet archive offline\n6bef855 Archive AI workflow packet history",
+    "status_short": " M docs/ai-workflow-packet-schema.md\n M docs/helper-tooling-policy.md\n M handoffs/current/ai-workflow/AI_WORKFLOW_PACKET.md\n M handoffs/current/ai-workflow/ai-workflow-log.jsonl\n M handoffs/current/ai-workflow/ai-workflow-summary.json\n M handoffs/current/ai-workflow/history/index.jsonl\n M handoffs/current/candidate-ledger-consumer/CANDIDATE_LEDGER_CONSUMER_REPORT.md\n M handoffs/current/candidate-ledger-consumer/candidate-ledger-consumer-log.jsonl\n M handoffs/current/candidate-ledger-consumer/candidate-ledger-consumer-summary.json\n M handoffs/current/capture-plan-check/CAPTURE_PLAN_CHECK_REPORT.md\n M handoffs/current/capture-plan-check/capture-plan-check-log.jsonl\n M handoffs/current/capture-plan-check/capture-plan-check-summary.json\n M handoffs/current/discovery-ledger/DISCOVERY_LEDGER_REPORT.md\n M handoffs/current/discovery-ledger/discovery-ledger-log.jsonl\n M handoffs/current/discovery-ledger/discovery-ledger-summary.json\n M handoffs/current/movement-test-readiness/movement-test-readiness-log.jsonl\n M handoffs/current/offline-workflow-check/OFFLINE_WORKFLOW_CHECK_REPORT.md\n M handoffs/current/offline-workflow-check/offline-workflow-check-log.jsonl\n M handoffs/current/offline-workflow-check/offline-workflow-check-summary.json\n M tools/riftscan_ai_workflow_packet.py\n M tools/riftscan_offline_workflow_check.py\n?? handoffs/current/ai-workflow/AI_WORKFLOW_HISTORY_INDEX_REPORT.md\n?? handoffs/current/ai-workflow/ai-workflow-history-index-summary.json\n?? handoffs/current/ai-workflow/history/AI_WORKFLOW_PACKET-2026-05-07T18-03-05Z-riftscan-ai-workflow-packet-v1-9-0.md\n?? handoffs/current/ai-workflow/history/ai-workflow-summary-2026-05-07T18-03-05Z-riftscan-ai-workflow-packet-v1-9-0.json\n"
   },
   "paths": {
     "log": "handoffs/current/movement-test-readiness/movement-test-readiness-log.jsonl",

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # RiftScan script metadata
-# Version: riftscan-offline-workflow-check-v1.0.11
+# Version: riftscan-offline-workflow-check-v1.0.12
 # Total character count: 000000
 # Purpose: Run conservative offline helper workflow checks, refresh the offline discovery ledger, and write deterministic report artifacts.
 # Safety boundary: Offline validation only. No RIFT focus preflight, live capture, input, movement, memory scan/read, offset validation, RiftReader validation, or /reloadui.
@@ -16,13 +16,15 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-APP_VERSION = "riftscan-offline-workflow-check-v1.0.11"
+APP_VERSION = "riftscan-offline-workflow-check-v1.0.12"
 REPO_ROOT = Path(__file__).resolve().parents[1]
 OUT_DIR = REPO_ROOT / "handoffs" / "current" / "offline-workflow-check"
 REPORT = OUT_DIR / "OFFLINE_WORKFLOW_CHECK_REPORT.md"
 SUMMARY = OUT_DIR / "offline-workflow-check-summary.json"
 LOG = OUT_DIR / "offline-workflow-check-log.jsonl"
 AI_WORKFLOW_SUMMARY = REPO_ROOT / "handoffs" / "current" / "ai-workflow" / "ai-workflow-summary.json"
+AI_WORKFLOW_HISTORY_SUMMARY = REPO_ROOT / "handoffs" / "current" / "ai-workflow" / "ai-workflow-history-index-summary.json"
+AI_WORKFLOW_HISTORY_REPORT = REPO_ROOT / "handoffs" / "current" / "ai-workflow" / "AI_WORKFLOW_HISTORY_INDEX_REPORT.md"
 AI_WORKFLOW_SCHEMA_DOC = REPO_ROOT / "docs" / "ai-workflow-packet-schema.md"
 AI_WORKFLOW_HISTORY_DIR = REPO_ROOT / "handoffs" / "current" / "ai-workflow" / "history"
 REQUIRED_AI_PACKET_DIFF_FIELDS = [
@@ -181,8 +183,28 @@ def repo_artifact_path(value: Any) -> Path | None:
     return resolved
 
 
-def validate_ai_workflow_packet_contract(summary: dict[str, Any], schema_doc_text: str) -> list[str]:
+def validate_ai_workflow_packet_contract(summary: dict[str, Any], schema_doc_text: str, *, validate_current_artifacts: bool = True) -> list[str]:
     errors: list[str] = []
+
+    paths = summary.get("paths")
+    if not isinstance(paths, dict):
+        errors.append("paths is missing or not an object")
+        paths = {}
+    else:
+        expected_paths = {
+            "history_report": AI_WORKFLOW_HISTORY_REPORT,
+            "history_summary": AI_WORKFLOW_HISTORY_SUMMARY,
+        }
+        for field, expected_path in expected_paths.items():
+            path_value = paths.get(field)
+            path = repo_artifact_path(path_value)
+            if path is None:
+                errors.append(f"paths.{field} is missing or outside the repo")
+                continue
+            if path.resolve() != expected_path.resolve():
+                errors.append(f"paths.{field} is not {rel(expected_path)}")
+            if validate_current_artifacts and not path.is_file():
+                errors.append(f"paths.{field} does not exist: {path_value}")
 
     packet_diff = summary.get("previous_packet_diff")
     if not isinstance(packet_diff, dict):
@@ -321,6 +343,30 @@ def validate_ai_workflow_packet_contract(summary: dict[str, Any], schema_doc_tex
         errors.append("schema doc does not mention history_index")
     if "packet_history_index" not in schema_doc_text:
         errors.append("schema doc does not mention packet_history_index")
+    if "AI_WORKFLOW_HISTORY_INDEX_REPORT.md" not in schema_doc_text:
+        errors.append("schema doc does not mention AI_WORKFLOW_HISTORY_INDEX_REPORT.md")
+    if "ai-workflow-history-index-summary.json" not in schema_doc_text:
+        errors.append("schema doc does not mention ai-workflow-history-index-summary.json")
+
+    if validate_current_artifacts:
+        history_summary, history_summary_error = read_json_file(AI_WORKFLOW_HISTORY_SUMMARY)
+        if history_summary_error:
+            errors.append(f"history index summary is invalid: {history_summary_error}")
+        else:
+            if history_summary.get("schema_version") != "riftscan.ai_workflow_packet_history_report.v1":
+                errors.append("history index summary schema_version is not riftscan.ai_workflow_packet_history_report.v1")
+            if history_summary.get("status") not in {"PASS", "FAIL"}:
+                errors.append("history index summary status is not PASS or FAIL")
+            verification = history_summary.get("verification")
+            if not isinstance(verification, dict):
+                errors.append("history index summary verification is missing or not an object")
+            elif verification.get("status") != "PASS":
+                errors.append("history index summary verification.status is not PASS")
+            history = history_summary.get("history_index")
+            if not isinstance(history, dict):
+                errors.append("history index summary history_index is missing or not an object")
+            elif not isinstance(history.get("entries"), list):
+                errors.append("history index summary history_index.entries is missing or not a list")
 
     return errors
 
@@ -593,6 +639,10 @@ def run_self_test() -> tuple[bool, dict[str, Any]]:
             }
         )
     valid_summary = {
+        "paths": {
+            "history_report": "handoffs/current/ai-workflow/AI_WORKFLOW_HISTORY_INDEX_REPORT.md",
+            "history_summary": "handoffs/current/ai-workflow/ai-workflow-history-index-summary.json",
+        },
         "previous_packet_diff": {
             "schema_version": "riftscan.ai_workflow_packet_diff.v1",
             "status": "UNCHANGED",
@@ -609,8 +659,8 @@ def run_self_test() -> tuple[bool, dict[str, Any]]:
             "artifacts": {},
         },
     }
-    valid_doc = "previous_packet_diff_compared_fields\nprevious_packet_archive\nhistory_index\npacket_history_index\n" + "\n".join(f"`{field}`" for field in REQUIRED_AI_PACKET_DIFF_FIELDS)
-    valid_errors = validate_ai_workflow_packet_contract(valid_summary, valid_doc)
+    valid_doc = "previous_packet_diff_compared_fields\nprevious_packet_archive\nhistory_index\npacket_history_index\nAI_WORKFLOW_HISTORY_INDEX_REPORT.md\nai-workflow-history-index-summary.json\n" + "\n".join(f"`{field}`" for field in REQUIRED_AI_PACKET_DIFF_FIELDS)
+    valid_errors = validate_ai_workflow_packet_contract(valid_summary, valid_doc, validate_current_artifacts=False)
     tests.append(
         {
             "name": "ai packet contract pass",
@@ -621,6 +671,10 @@ def run_self_test() -> tuple[bool, dict[str, Any]]:
         }
     )
     invalid_summary = {
+        "paths": {
+            "history_report": "handoffs/current/ai-workflow/AI_WORKFLOW_HISTORY_INDEX_REPORT.md",
+            "history_summary": "handoffs/current/ai-workflow/ai-workflow-history-index-summary.json",
+        },
         "previous_packet_diff": {
             "schema_version": "riftscan.ai_workflow_packet_diff.v1",
             "status": "UNCHANGED",
@@ -637,7 +691,7 @@ def run_self_test() -> tuple[bool, dict[str, Any]]:
             "artifacts": {},
         },
     }
-    invalid_errors = validate_ai_workflow_packet_contract(invalid_summary, valid_doc)
+    invalid_errors = validate_ai_workflow_packet_contract(invalid_summary, valid_doc, validate_current_artifacts=False)
     tests.append(
         {
             "name": "ai packet contract blocks missing fields",
@@ -653,7 +707,7 @@ def run_self_test() -> tuple[bool, dict[str, Any]]:
         "history_dir": "handoffs/current/ai-workflow/history",
         "artifacts": {},
     }
-    invalid_archive_errors = validate_ai_workflow_packet_contract(invalid_archive_summary, valid_doc)
+    invalid_archive_errors = validate_ai_workflow_packet_contract(invalid_archive_summary, valid_doc, validate_current_artifacts=False)
     tests.append(
         {
             "name": "ai packet contract blocks archived packet without artifact paths",

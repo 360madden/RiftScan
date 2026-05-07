@@ -18,6 +18,8 @@ Packet generation must not start focus preflight, live capture, scanner probes a
 | `handoffs/current/ai-workflow/ai-workflow-summary.json` | Machine-readable packet. |
 | `handoffs/current/ai-workflow/ai-workflow-log.jsonl` | Append-only helper log. |
 | `handoffs/current/ai-workflow/history/index.jsonl` | Append-only index of archived prior packet summaries/reports. |
+| `handoffs/current/ai-workflow/AI_WORKFLOW_HISTORY_INDEX_REPORT.md` | Compact human report for the saved history index. |
+| `handoffs/current/ai-workflow/ai-workflow-history-index-summary.json` | Machine-readable history-index verification/report artifact. |
 
 ## Required summary fields
 
@@ -66,6 +68,8 @@ Before overwriting `ai-workflow-summary.json`, packet generation copies the prio
 The current packet records this under `previous_packet_archive` with `status`, `history_dir`, `history_index`, source packet metadata, and `artifacts` paths. The archive is append-only for normal packet generation; do not delete historical packet files just to reduce noise.
 
 When `status` is `ARCHIVED`, packet generation appends one JSON object to `handoffs/current/ai-workflow/history/index.jsonl` with schema `riftscan.ai_workflow_packet_history_index.v1`. Each row records `indexed_utc`, `archive_stem`, `source_created_utc`, `source_app_version`, and `artifacts`.
+
+Packet refresh also writes a compact history-index report and summary at `AI_WORKFLOW_HISTORY_INDEX_REPORT.md` and `ai-workflow-history-index-summary.json` so agents can inspect history health without rerunning the CLI.
 
 Offline Workflow Check validates `previous_packet_archive.status`, verifies archived summary/report files exist when the status is `ARCHIVED`, confirms archived summaries are valid JSON, validates every `history_index` JSONL row, and confirms the index contains the archived summary/report pair.
 
