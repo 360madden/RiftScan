@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # RiftScan script metadata
-# Version: riftscan-offline-workflow-check-v1.0.3
+# Version: riftscan-offline-workflow-check-v1.0.4
 # Total character count: 000000
-# Purpose: Run conservative offline helper workflow checks and write deterministic report artifacts.
+# Purpose: Run conservative offline helper workflow checks, refresh the offline discovery ledger, and write deterministic report artifacts.
 # Safety boundary: Offline validation only. No RIFT focus preflight, live capture, input, movement, memory scan/read, offset validation, RiftReader validation, or /reloadui.
 
 from __future__ import annotations
@@ -16,7 +16,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-APP_VERSION = "riftscan-offline-workflow-check-v1.0.3"
+APP_VERSION = "riftscan-offline-workflow-check-v1.0.4"
 REPO_ROOT = Path(__file__).resolve().parents[1]
 OUT_DIR = REPO_ROOT / "handoffs" / "current" / "offline-workflow-check"
 REPORT = OUT_DIR / "OFFLINE_WORKFLOW_CHECK_REPORT.md"
@@ -127,6 +127,7 @@ def helper_checks(timeout_seconds: int) -> list[tuple[str, list[str], int]]:
                 "tools/riftscan_capture_plan_check.py",
                 "tools/riftscan_movement_test_readiness.py",
                 "tools/riftscan_movement_execution_gate.py",
+                "tools/riftscan_discovery_ledger.py",
             ],
             timeout_seconds,
         ),
@@ -160,6 +161,16 @@ def helper_checks(timeout_seconds: int) -> list[tuple[str, list[str], int]]:
             "movement_execution_gate_self_test",
             [sys.executable, "tools/riftscan_movement_execution_gate.py", "--self-test"],
             timeout_seconds,
+        ),
+        (
+            "discovery_ledger_self_test",
+            [sys.executable, "tools/riftscan_discovery_ledger.py", "--self-test"],
+            timeout_seconds,
+        ),
+        (
+            "discovery_ledger_refresh",
+            [sys.executable, "tools/riftscan_discovery_ledger.py"],
+            max(timeout_seconds, 120),
         ),
         (
             "patch_intake_self_test",
@@ -222,6 +233,7 @@ movement_or_input_sent: false
 memory_scan_or_read_started: false
 offset_validation_started: false
 riftreader_validation_started: false
+riftreader_command_executed: false
 reloadui_sent: false
 ```
 
@@ -272,6 +284,7 @@ def run_offline_check(args: argparse.Namespace) -> dict[str, Any]:
             "memory_scan_or_read_started": False,
             "offset_validation_started": False,
             "riftreader_validation_started": False,
+            "riftreader_command_executed": False,
             "reloadui_sent": False,
         },
         "git": git_snapshot(args.git_timeout_seconds),
@@ -321,6 +334,7 @@ def run_self_test() -> tuple[bool, dict[str, Any]]:
             "capture_started": False,
             "movement_or_input_sent": False,
             "memory_scan_or_read_started": False,
+            "riftreader_command_executed": False,
             "reloadui_sent": False,
         },
     }

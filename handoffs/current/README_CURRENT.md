@@ -50,8 +50,9 @@ A newer doc-only handoff-pointer commit may exist; check `git log --oneline -5` 
 - Latest Movement Execution Gate artifacts: `handoffs/current/movement-execution-gate/`.
 - Future live-collection criteria are documented under `handoffs/current/live-collection-gate/`; this is a checklist only, not authorization.
 - Patch Intake can require Operator, Post-Update Baseline, Capture Readiness, and Offline Workflow Check post-apply py_compile/self-test checks for future gate patches.
-- Offline Discovery Ledger is a Python-first, read-only artifact inventory: `python tools/riftscan_discovery_ledger.py --self-test` and `python tools/riftscan_discovery_ledger.py`.
+- Offline Discovery Ledger is a Python-first, read-only artifact inventory: `python tools/riftscan_discovery_ledger.py --self-test`, `python tools/riftscan_discovery_ledger.py`, and `.\scripts\run-riftscan-discovery-ledger.cmd`.
 - Latest Offline Discovery Ledger artifacts: `handoffs/current/discovery-ledger/`.
+- Offline Workflow Check now includes Discovery Ledger self-test + refresh, so `.\scripts\run-riftscan-offline-workflow-check.cmd` updates the ledger without touching the game window.
 
 ## Current direction
 

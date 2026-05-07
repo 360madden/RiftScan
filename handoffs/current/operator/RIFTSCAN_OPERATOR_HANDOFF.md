@@ -1,7 +1,7 @@
 # RiftScan Operator Handoff
 
-Created UTC: `2026-05-06T10:55:16Z`
-App version: `riftscan-operator-app-v3.8.21`
+Created UTC: `2026-05-07T16:14:39Z`
+App version: `riftscan-operator-app-v3.8.22`
 Repo root: `C:\RIFT MODDING\Riftscan`
 
 ## Operator Assessment
@@ -43,7 +43,7 @@ blockers:
 ```json
 {
   "schema_version": "riftscan.operator_current_workflow_gate.v1",
-  "created_utc": "2026-05-06T10:55:16Z",
+  "created_utc": "2026-05-07T16:14:39Z",
   "metadata_capture_plan_gate": "PASS",
   "live_collection_allowed": false,
   "old_offsets_trusted": false,
@@ -62,11 +62,12 @@ blockers:
     "artifact_freshness": {
       "status": "warning_non_relevant_changes",
       "artifact_head": "40bbd1c62c5db71ecbe4d5931643d37619f955b3",
-      "current_head": "4d7a06b15cd2a443060fe32142490ac5186f2401",
+      "current_head": "7db4d852669ba9f7ce90ef479861050e2a1c66c7",
       "head_matches_current": false,
       "changed_paths_since_artifact_head": [
         "docs/helper-tooling-policy.md",
         "handoffs/current/README_CURRENT.md",
+        "handoffs/current/RIFTSCAN_RESUME_HANDOFF_2026-05-06_0650_COORD_API_TRUTH_TRACE_BLOCKED.md",
         "handoffs/current/RIFTSCAN_RESUME_HANDOFF_2026-05-06_OPERATOR_GATE_WORKFLOW.md",
         "handoffs/current/capture-plan-check/CAPTURE_PLAN_CHECK_REPORT.md",
         "handoffs/current/capture-plan-check/capture-plan-check-log.jsonl",
@@ -74,6 +75,13 @@ blockers:
         "handoffs/current/capture-readiness/CAPTURE_READINESS_REPORT.md",
         "handoffs/current/capture-readiness/capture-readiness-log.jsonl",
         "handoffs/current/capture-readiness/capture-readiness-summary.json",
+        "handoffs/current/coord-api-truth/COORD_API_TRUTH_REPORT.md",
+        "handoffs/current/coord-api-truth/coord-api-truth-log.jsonl",
+        "handoffs/current/coord-api-truth/coord-api-truth-summary.json",
+        "handoffs/current/discovery-ledger/DISCOVERY_LEDGER_REPORT.md",
+        "handoffs/current/discovery-ledger/candidate_ledger.jsonl",
+        "handoffs/current/discovery-ledger/discovery-ledger-log.jsonl",
+        "handoffs/current/discovery-ledger/discovery-ledger-summary.json",
         "handoffs/current/focus-control-local/focus-control-log.jsonl",
         "handoffs/current/focus-control-local/focus-control-summary.json",
         "handoffs/current/focus-control-local/process-command-result.json",
@@ -102,6 +110,7 @@ blockers:
         "scripts/run-riftscan-movement-test-readiness.cmd",
         "scripts/run-riftscan-operator-offline-diagnostics.cmd",
         "tools/riftscan_capture_plan_check.py",
+        "tools/riftscan_discovery_ledger.py",
         "tools/riftscan_movement_execution_gate.py",
         "tools/riftscan_movement_test_readiness.py",
         "tools/riftscan_offline_workflow_check.py",
@@ -126,11 +135,12 @@ blockers:
     "artifact_freshness": {
       "status": "warning_non_relevant_changes",
       "artifact_head": "40bbd1c62c5db71ecbe4d5931643d37619f955b3",
-      "current_head": "4d7a06b15cd2a443060fe32142490ac5186f2401",
+      "current_head": "7db4d852669ba9f7ce90ef479861050e2a1c66c7",
       "head_matches_current": false,
       "changed_paths_since_artifact_head": [
         "docs/helper-tooling-policy.md",
         "handoffs/current/README_CURRENT.md",
+        "handoffs/current/RIFTSCAN_RESUME_HANDOFF_2026-05-06_0650_COORD_API_TRUTH_TRACE_BLOCKED.md",
         "handoffs/current/RIFTSCAN_RESUME_HANDOFF_2026-05-06_OPERATOR_GATE_WORKFLOW.md",
         "handoffs/current/capture-plan-check/CAPTURE_PLAN_CHECK_REPORT.md",
         "handoffs/current/capture-plan-check/capture-plan-check-log.jsonl",
@@ -138,6 +148,13 @@ blockers:
         "handoffs/current/capture-readiness/CAPTURE_READINESS_REPORT.md",
         "handoffs/current/capture-readiness/capture-readiness-log.jsonl",
         "handoffs/current/capture-readiness/capture-readiness-summary.json",
+        "handoffs/current/coord-api-truth/COORD_API_TRUTH_REPORT.md",
+        "handoffs/current/coord-api-truth/coord-api-truth-log.jsonl",
+        "handoffs/current/coord-api-truth/coord-api-truth-summary.json",
+        "handoffs/current/discovery-ledger/DISCOVERY_LEDGER_REPORT.md",
+        "handoffs/current/discovery-ledger/candidate_ledger.jsonl",
+        "handoffs/current/discovery-ledger/discovery-ledger-log.jsonl",
+        "handoffs/current/discovery-ledger/discovery-ledger-summary.json",
         "handoffs/current/focus-control-local/focus-control-log.jsonl",
         "handoffs/current/focus-control-local/focus-control-summary.json",
         "handoffs/current/focus-control-local/process-command-result.json",
@@ -166,6 +183,7 @@ blockers:
         "scripts/run-riftscan-movement-test-readiness.cmd",
         "scripts/run-riftscan-operator-offline-diagnostics.cmd",
         "tools/riftscan_capture_plan_check.py",
+        "tools/riftscan_discovery_ledger.py",
         "tools/riftscan_movement_execution_gate.py",
         "tools/riftscan_movement_test_readiness.py",
         "tools/riftscan_offline_workflow_check.py",
@@ -267,17 +285,16 @@ blockers:
 Exit code: `0`
 
 ```text
- M handoffs/current/focus-control-local/focus-control-log.jsonl
- M handoffs/current/focus-control-local/focus-control-summary.json
- M handoffs/current/focus-control-local/process-command-result.json
- M handoffs/current/movement-execution-gate/MOVEMENT_EXECUTION_GATE_REPORT.md
- M handoffs/current/movement-execution-gate/movement-execution-gate-log.jsonl
- M handoffs/current/movement-execution-gate/movement-execution-gate-summary.json
- M handoffs/current/operator/RIFTSCAN_OPERATOR_HANDOFF.md
- M handoffs/current/operator/operator-current-gate-summary.json
+ M handoffs/current/README_CURRENT.md
+ M handoffs/current/discovery-ledger/DISCOVERY_LEDGER_REPORT.md
+ M handoffs/current/discovery-ledger/discovery-ledger-log.jsonl
+ M handoffs/current/discovery-ledger/discovery-ledger-summary.json
+ M handoffs/current/offline-workflow-check/OFFLINE_WORKFLOW_CHECK_REPORT.md
+ M handoffs/current/offline-workflow-check/offline-workflow-check-log.jsonl
+ M handoffs/current/offline-workflow-check/offline-workflow-check-summary.json
+ M tools/riftscan_offline_workflow_check.py
  M tools/riftscan_operator_app.py
-?? handoffs/current/RIFTSCAN_RESUME_HANDOFF_2026-05-06_0650_COORD_API_TRUTH_TRACE_BLOCKED.md
-?? handoffs/current/coord-api-truth/
+?? scripts/run-riftscan-discovery-ledger.cmd
 
 ```
 
@@ -286,11 +303,11 @@ Exit code: `0`
 Exit code: `0`
 
 ```text
+7db4d85 Add offline discovery ledger
+8ebf266 Record current API coordinate candidate
 4d7a06b Add movement execution gate
 b7bd739 Add movement test readiness gate
 e3992a5 Add capture plan check workflow
-3ae21d7 Record current-client gate pass and capture plan
-40bbd1c Refresh blocked post-update baseline artifacts
 
 ```
 
@@ -722,7 +739,7 @@ e3992a5 Add capture plan check workflow
   "summary_path": "handoffs/current/offline-workflow-check/offline-workflow-check-summary.json",
   "log_path": "handoffs/current/offline-workflow-check/offline-workflow-check-log.jsonl",
   "summary": {
-    "app_version": "riftscan-offline-workflow-check-v1.0.3",
+    "app_version": "riftscan-offline-workflow-check-v1.0.4",
     "checks": [
       {
         "args": [
@@ -736,7 +753,8 @@ e3992a5 Add capture plan check workflow
           "tools/riftscan_offline_workflow_check.py",
           "tools/riftscan_capture_plan_check.py",
           "tools/riftscan_movement_test_readiness.py",
-          "tools/riftscan_movement_execution_gate.py"
+          "tools/riftscan_movement_execution_gate.py",
+          "tools/riftscan_discovery_ledger.py"
         ],
         "exit_code": 0,
         "name": "py_compile_helpers",
@@ -754,7 +772,7 @@ e3992a5 Add capture plan check workflow
         "name": "offline_workflow_check_self_test",
         "status": "pass",
         "stderr": "",
-        "stdout": "{\n  \"app_version\": \"riftscan-offline-workflow-check-v1.0.3\",\n  \"case_count\": 2,\n  \"created_utc\": \"2026-05-06T05:53:56Z\",\n  \"safety\": {\n    \"capture_started\": false,\n    \"memory_scan_or_read_started\": false,\n    \"movement_or_input_sent\": false,\n    \"reloadui_sent\": false,\n    \"runs_focus_preflight\": false,\n    \"writes_artifacts\": false\n  },\n  \"schema_version\": \"riftscan.offline_workflow_check_self_test.v1\",\n  \"status\": \"PASS\",\n  \"tests\": [\n    {\n      \"actual\": \"pass\",\n      \"expected\": \"pass\",\n      \"failed_checks\": [],\n      \"name\": \"all pass\",\n      \"pass\": true\n    },\n    {\n      \"actual\": \"fail\",\n      \"expected\": \"fail\",\n      \"failed_checks\": [\n        \"b\"\n      ],\n      \"name\": \"one fail\",\n      \"pass\": true\n    }\n  ]\n}\n"
+        "stdout": "{\n  \"app_version\": \"riftscan-offline-workflow-check-v1.0.4\",\n  \"case_count\": 2,\n  \"created_utc\": \"2026-05-07T16:14:24Z\",\n  \"safety\": {\n    \"capture_started\": false,\n    \"memory_scan_or_read_started\": false,\n    \"movement_or_input_sent\": false,\n    \"reloadui_sent\": false,\n    \"riftreader_command_executed\": false,\n    \"runs_focus_preflight\": false,\n    \"writes_artifacts\": false\n  },\n  \"schema_version\": \"riftscan.offline_workflow_check_self_test.v1\",\n  \"status\": \"PASS\",\n  \"tests\": [\n    {\n      \"actual\": \"pass\",\n      \"expected\": \"pass\",\n      \"failed_checks\": [],\n      \"name\": \"all pass\",\n      \"pass\": true\n    },\n    {\n      \"actual\": \"fail\",\n      \"expected\": \"fail\",\n      \"failed_checks\": [\n        \"b\"\n      ],\n      \"name\": \"one fail\",\n      \"pass\": true\n    }\n  ]\n}\n"
       },
       {
         "args": [
@@ -766,7 +784,7 @@ e3992a5 Add capture plan check workflow
         "name": "operator_self_test",
         "status": "pass",
         "stderr": "",
-        "stdout": "{\n  \"schema_version\": \"riftscan.operator_self_test.v1\",\n  \"created_utc\": \"2026-05-06T05:53:57Z\",\n  \"app_version\": \"riftscan-operator-app-v3.8.20\",\n  \"status\": \"PASS\",\n  \"case_count\": 11,\n  \"tests\": [\n    {\n      \"name\": \"all gates pass without latest capture plan\",\n      \"expected_gate\": \"PASS\",\n      \"actual_gate\": \"PASS\",\n      \"next_action\": \"Refresh the metadata-only capture plan; live collection/discovery still requires an explicit future gate.\",\n      \"blockers\": [],\n      \"live_collection_allowed\": false,\n      \"old_offsets_trusted\": false,\n      \"pass\": true\n    },\n    {\n      \"name\": \"all gates pass with latest metadata-only capture plan\",\n      \"expected_gate\": \"PASS\",\n      \"actual_gate\": \"PASS\",\n      \"next_action\": \"Run Capture Plan Check and review the latest metadata-only capture plan; live collection/discovery still requires an explicit future gate.\",\n      \"blockers\": [],\n      \"live_collection_allowed\": false,\n      \"old_offsets_trusted\": false,\n      \"pass\": true\n    },\n    {\n      \"name\": \"all gates pass with capture plan check\",\n      \"expected_gate\": \"PASS\",\n      \"actual_gate\": \"PASS\",\n      \"next_action\": \"Run Movement Test Readiness before staging any live game-world movement test.\",\n      \"blockers\": [],\n      \"live_collection_allowed\": false,\n      \"old_offsets_trusted\": false,\n      \"pass\": true\n    },\n    {\n      \"name\": \"all gates pass with movement test readiness\",\n      \"expected_gate\": \"PASS\",\n      \"actual_gate\": \"PASS\",\n      \"next_action\": \"Run the final current-window Movement Execution Gate; live movement still requires immediate PID/HWND/focus revalidation and abort controls.\",\n      \"blockers\": [],\n      \"live_collection_allowed\": false,\n      \"old_offsets_trusted\": false,\n      \"pass\": true\n    },\n    {\n      \"name\": \"all gates pass with blocked movement execution gate\",\n      \"expected_gate\": \"PASS\",\n      \"actual_gate\": \"PASS\",\n      \"next_action\": \"Resolve Movement Execution Gate blockers and rerun it; do not send movement/input.\",\n      \"blockers\": [],\n      \"live_collection_allowed\": false,\n      \"old_offsets_trusted\": false,\n      \"pass\": true\n    },\n    {\n      \"name\": \"all gates pass with movement execution gate pass\",\n      \"expected_gate\": \"PASS\",\n      \"actual_gate\": \"PASS\",\n      \"next_action\": \"Movement Execution Gate is PASS; if still before expires_utc, run only the exact bounded move_forward command from that gate.\",\n      \"blockers\": [],\n      \"live_collection_allowed\": false,\n      \"old_offsets_trusted\": false,\n      \"pass\": true\n    },\n    {\n      \"name\": \"baseline blocks even when preflight passes\",\n      \"expected_gate\": \"BLOCKED\",\n      \"actual_gate\": \"BLOCKED\",\n      \"next_action\": \"Run Post-Update Baseline after the current updated RIFT client is confirmed stable in-world.\",\n      \"blockers\": [\n        \"Post-Update Baseline is not PASS for the current updated client.\",\n        \"Stable in-world state is not confirmed.\",\n        \"Capture Readiness was generated from an older/different Post-Update Baseline; rerun Capture Readiness.\"\n      ],\n      \"live_collection_allowed\": false,\n      \"old_offsets_trusted\": false,\n      \"pass\": true\n    },\n    {\n      \"name\": \"readiness blocks after baseline pass\",\n      \"expected_gate\": \"BLOCKED\",\n      \"actual_gate\": \"BLOCKED\",\n      \"next_action\": \"Run Capture Readiness and resolve any blockers before capture-plan refresh.\",\n      \"blockers\": [\n        \"Capture Readiness is not PASS.\",\n        \"Post-update baseline is not PASS for the current client.\"\n      ],\n      \"live_collection_allowed\": false,\n      \"old_offsets_trusted\": false,\n      \"pass\": true\n    },\n    {\n      \"name\": \"stale readiness baseline link blocks metadata plan\",\n      \"expected_gate\": \"BLOCKED\",\n      \"actual_gate\": \"BLOCKED\",\n      \"next_action\": \"Run Capture Readiness again against the latest Post-Update Baseline.\",\n      \"blockers\": [\n        \"Capture Readiness was generated from an older/different Post-Update Baseline; rerun Capture Readiness.\"\n      ],\n      \"live_collection_allowed\": false,\n      \"old_offsets_trusted\": false,\n      \"pass\": true\n    },\n    {\n      \"name\": \"full live preflight blocks metadata plan\",\n      \"expected_gate\": \"BLOCKED\",\n      \"actual_gate\": \"BLOCKED\",\n      \"next_action\": \"Run Full Live Preflight before metadata-only capture-plan refresh.\",\n      \"blockers\": [\n        \"Focus status is not foreground_verified.\"\n      ],\n      \"live_collection_allowed\": false,\n      \"old_offsets_trusted\": false,\n      \"pass\": true\n    },\n    {\n      \"name\": \"focus preflight blocks metadata plan\",\n      \"expected_gate\": \"BLOCKED\",\n      \"actual_gate\": \"BLOCKED\",\n      \"next_action\": \"Run Full Live Preflight before metadata-only capture-plan refresh.\",\n      \"blockers\": [\n        \"Focus preflight is not foreground_verified.\"\n      ],\n      \"live_collection_allowed\": false,\n      \"old_offsets_trusted\": false,\n      \"pass\": true\n    }\n  ],\n  \"safety\": {\n    \"writes_artifacts\": false,\n    \"launches_gui\": false,\n    \"runs_focus_preflight\": false,\n    \"capture_started\": false,\n    \"movement_or_input_sent\": false,\n    \"memory_scan_or_read_started\": false,\n    \"reloadui_sent\": false\n  }\n}\n"
+        "stdout": "{\n  \"schema_version\": \"riftscan.operator_self_test.v1\",\n  \"created_utc\": \"2026-05-07T16:14:26Z\",\n  \"app_version\": \"riftscan-operator-app-v3.8.22\",\n  \"status\": \"PASS\",\n  \"case_count\": 11,\n  \"tests\": [\n    {\n      \"name\": \"all gates pass without latest capture plan\",\n      \"expected_gate\": \"PASS\",\n      \"actual_gate\": \"PASS\",\n      \"next_action\": \"Refresh the metadata-only capture plan; live collection/discovery still requires an explicit future gate.\",\n      \"blockers\": [],\n      \"live_collection_allowed\": false,\n      \"old_offsets_trusted\": false,\n      \"pass\": true\n    },\n    {\n      \"name\": \"all gates pass with latest metadata-only capture plan\",\n      \"expected_gate\": \"PASS\",\n      \"actual_gate\": \"PASS\",\n      \"next_action\": \"Run Capture Plan Check and review the latest metadata-only capture plan; live collection/discovery still requires an explicit future gate.\",\n      \"blockers\": [],\n      \"live_collection_allowed\": false,\n      \"old_offsets_trusted\": false,\n      \"pass\": true\n    },\n    {\n      \"name\": \"all gates pass with capture plan check\",\n      \"expected_gate\": \"PASS\",\n      \"actual_gate\": \"PASS\",\n      \"next_action\": \"Run Movement Test Readiness before staging any live game-world movement test.\",\n      \"blockers\": [],\n      \"live_collection_allowed\": false,\n      \"old_offsets_trusted\": false,\n      \"pass\": true\n    },\n    {\n      \"name\": \"all gates pass with movement test readiness\",\n      \"expected_gate\": \"PASS\",\n      \"actual_gate\": \"PASS\",\n      \"next_action\": \"Run the final current-window Movement Execution Gate; live movement still requires immediate PID/HWND/focus revalidation and abort controls.\",\n      \"blockers\": [],\n      \"live_collection_allowed\": false,\n      \"old_offsets_trusted\": false,\n      \"pass\": true\n    },\n    {\n      \"name\": \"all gates pass with blocked movement execution gate\",\n      \"expected_gate\": \"PASS\",\n      \"actual_gate\": \"PASS\",\n      \"next_action\": \"Resolve Movement Execution Gate blockers and rerun it; do not send movement/input.\",\n      \"blockers\": [],\n      \"live_collection_allowed\": false,\n      \"old_offsets_trusted\": false,\n      \"pass\": true\n    },\n    {\n      \"name\": \"all gates pass with movement execution gate pass\",\n      \"expected_gate\": \"PASS\",\n      \"actual_gate\": \"PASS\",\n      \"next_action\": \"Movement Execution Gate is PASS; if still before expires_utc, run only the exact bounded move_forward command from that gate.\",\n      \"blockers\": [],\n      \"live_collection_allowed\": false,\n      \"old_offsets_trusted\": false,\n      \"pass\": true\n    },\n    {\n      \"name\": \"baseline blocks even when preflight passes\",\n      \"expected_gate\": \"BLOCKED\",\n      \"actual_gate\": \"BLOCKED\",\n      \"next_action\": \"Run Post-Update Baseline after the current updated RIFT client is confirmed stable in-world.\",\n      \"blockers\": [\n        \"Post-Update Baseline is not PASS for the current updated client.\",\n        \"Stable in-world state is not confirmed.\",\n        \"Capture Readiness was generated from an older/different Post-Update Baseline; rerun Capture Readiness.\"\n      ],\n      \"live_collection_allowed\": false,\n      \"old_offsets_trusted\": false,\n      \"pass\": true\n    },\n    {\n      \"name\": \"readiness blocks after baseline pass\",\n      \"expected_gate\": \"BLOCKED\",\n      \"actual_gate\": \"BLOCKED\",\n      \"next_action\": \"Run Capture Readiness and resolve any blockers before capture-plan refresh.\",\n      \"blockers\": [\n        \"Capture Readiness is not PASS.\",\n        \"Post-update baseline is not PASS for the current client.\"\n      ],\n      \"live_collection_allowed\": false,\n      \"old_offsets_trusted\": false,\n      \"pass\": true\n    },\n    {\n      \"name\": \"stale readiness baseline link blocks metadata plan\",\n      \"expected_gate\": \"BLOCKED\",\n      \"actual_gate\": \"BLOCKED\",\n      \"next_action\": \"Run Capture Readiness again against the latest Post-Update Baseline.\",\n      \"blockers\": [\n        \"Capture Readiness was generated from an older/different Post-Update Baseline; rerun Capture Readiness.\"\n      ],\n      \"live_collection_allowed\": false,\n      \"old_offsets_trusted\": false,\n      \"pass\": true\n    },\n    {\n      \"name\": \"full live preflight blocks metadata plan\",\n      \"expected_gate\": \"BLOCKED\",\n      \"actual_gate\": \"BLOCKED\",\n      \"next_action\": \"Run Full Live Preflight before metadata-only capture-plan refresh.\",\n      \"blockers\": [\n        \"Focus status is not foreground_verified.\"\n      ],\n      \"live_collection_allowed\": false,\n      \"old_offsets_trusted\": false,\n      \"pass\": true\n    },\n    {\n      \"name\": \"focus preflight blocks metadata plan\",\n      \"expected_gate\": \"BLOCKED\",\n      \"actual_gate\": \"BLOCKED\",\n      \"next_action\": \"Run Full Live Preflight before metadata-only capture-plan refresh.\",\n      \"blockers\": [\n        \"Focus preflight is not foreground_verified.\"\n      ],\n      \"live_collection_allowed\": false,\n      \"old_offsets_trusted\": false,\n      \"pass\": true\n    }\n  ],\n  \"safety\": {\n    \"writes_artifacts\": false,\n    \"launches_gui\": false,\n    \"runs_focus_preflight\": false,\n    \"capture_started\": false,\n    \"movement_or_input_sent\": false,\n    \"memory_scan_or_read_started\": false,\n    \"reloadui_sent\": false\n  }\n}\n"
       },
       {
         "args": [
@@ -778,7 +796,7 @@ e3992a5 Add capture plan check workflow
         "name": "post_update_baseline_self_test",
         "status": "pass",
         "stderr": "",
-        "stdout": "{\n  \"app_version\": \"riftscan-post-update-baseline-v1.0.1\",\n  \"case_count\": 6,\n  \"created_utc\": \"2026-05-06T05:53:57Z\",\n  \"safety\": {\n    \"capture_started\": false,\n    \"memory_scan_or_read_started\": false,\n    \"movement_or_input_sent\": false,\n    \"reloadui_sent\": false,\n    \"runs_focus_preflight\": false,\n    \"writes_artifacts\": false\n  },\n  \"schema_version\": \"riftscan.post_update_baseline_self_test.v1\",\n  \"status\": \"PASS\",\n  \"tests\": [\n    {\n      \"actual_display_status\": \"PASS\",\n      \"actual_status\": \"pass\",\n      \"blockers\": [],\n      \"expected_blocker_substrings\": [],\n      \"expected_display_status\": \"PASS\",\n      \"expected_status\": \"pass\",\n      \"name\": \"pass baseline\",\n      \"pass\": true\n    },\n    {\n      \"actual_display_status\": \"BLOCKED\",\n      \"actual_status\": \"blocked_waiting_for_game_or_focus\",\n      \"blockers\": [\n        \"Maintenance is not confirmed over.\",\n        \"Login is not confirmed successful.\",\n        \"Stable in-world state is not confirmed.\"\n      ],\n      \"expected_blocker_substrings\": [\n        \"Maintenance is not confirmed over\",\n        \"Login is not confirmed successful\",\n        \"Stable in-world state is not confirmed\"\n      ],\n      \"expected_display_status\": \"BLOCKED\",\n      \"expected_status\": \"blocked_waiting_for_game_or_focus\",\n      \"name\": \"blocked manual state\",\n      \"pass\": true\n    },\n    {\n      \"actual_display_status\": \"BLOCKED\",\n      \"actual_status\": \"blocked_waiting_for_game_or_focus\",\n      \"blockers\": [\n        \"Focus preflight command did not complete successfully.\"\n      ],\n      \"expected_blocker_substrings\": [\n        \"Focus preflight command did not complete successfully\"\n      ],\n      \"expected_display_status\": \"BLOCKED\",\n      \"expected_status\": \"blocked_waiting_for_game_or_focus\",\n      \"name\": \"blocked focus command failure\",\n      \"pass\": true\n    },\n    {\n      \"actual_display_status\": \"PASS\",\n      \"actual_status\": \"pass\",\n      \"blockers\": [],\n      \"expected_blocker_substrings\": [],\n      \"expected_display_status\": \"PASS\",\n      \"expected_status\": \"pass\",\n      \"name\": \"skip focus command failure for offline check\",\n      \"pass\": true\n    },\n    {\n      \"actual_display_status\": \"BLOCKED\",\n      \"actual_status\": \"blocked_waiting_for_game_or_focus\",\n      \"blockers\": [\n        \"selected_window is missing or null.\"\n      ],\n      \"expected_blocker_substrings\": [\n        \"selected_window is missing or null\"\n      ],\n      \"expected_display_status\": \"BLOCKED\",\n      \"expected_status\": \"blocked_waiting_for_game_or_focus\",\n      \"name\": \"blocked missing selected window\",\n      \"pass\": true\n    },\n    {\n      \"actual_display_status\": \"BLOCKED\",\n      \"actual_status\": \"blocked_waiting_for_game_or_focus\",\n      \"blockers\": [\n        \"windows.json has no window entries.\"\n      ],\n      \"expected_blocker_substrings\": [\n        \"windows.json has no window entries\"\n      ],\n      \"expected_display_status\": \"BLOCKED\",\n      \"expected_status\": \"blocked_waiting_for_game_or_focus\",\n      \"name\": \"blocked empty windows list\",\n      \"pass\": true\n    }\n  ]\n}\n"
+        "stdout": "{\n  \"app_version\": \"riftscan-post-update-baseline-v1.0.1\",\n  \"case_count\": 6,\n  \"created_utc\": \"2026-05-07T16:14:26Z\",\n  \"safety\": {\n    \"capture_started\": false,\n    \"memory_scan_or_read_started\": false,\n    \"movement_or_input_sent\": false,\n    \"reloadui_sent\": false,\n    \"runs_focus_preflight\": false,\n    \"writes_artifacts\": false\n  },\n  \"schema_version\": \"riftscan.post_update_baseline_self_test.v1\",\n  \"status\": \"PASS\",\n  \"tests\": [\n    {\n      \"actual_display_status\": \"PASS\",\n      \"actual_status\": \"pass\",\n      \"blockers\": [],\n      \"expected_blocker_substrings\": [],\n      \"expected_display_status\": \"PASS\",\n      \"expected_status\": \"pass\",\n      \"name\": \"pass baseline\",\n      \"pass\": true\n    },\n    {\n      \"actual_display_status\": \"BLOCKED\",\n      \"actual_status\": \"blocked_waiting_for_game_or_focus\",\n      \"blockers\": [\n        \"Maintenance is not confirmed over.\",\n        \"Login is not confirmed successful.\",\n        \"Stable in-world state is not confirmed.\"\n      ],\n      \"expected_blocker_substrings\": [\n        \"Maintenance is not confirmed over\",\n        \"Login is not confirmed successful\",\n        \"Stable in-world state is not confirmed\"\n      ],\n      \"expected_display_status\": \"BLOCKED\",\n      \"expected_status\": \"blocked_waiting_for_game_or_focus\",\n      \"name\": \"blocked manual state\",\n      \"pass\": true\n    },\n    {\n      \"actual_display_status\": \"BLOCKED\",\n      \"actual_status\": \"blocked_waiting_for_game_or_focus\",\n      \"blockers\": [\n        \"Focus preflight command did not complete successfully.\"\n      ],\n      \"expected_blocker_substrings\": [\n        \"Focus preflight command did not complete successfully\"\n      ],\n      \"expected_display_status\": \"BLOCKED\",\n      \"expected_status\": \"blocked_waiting_for_game_or_focus\",\n      \"name\": \"blocked focus command failure\",\n      \"pass\": true\n    },\n    {\n      \"actual_display_status\": \"PASS\",\n      \"actual_status\": \"pass\",\n      \"blockers\": [],\n      \"expected_blocker_substrings\": [],\n      \"expected_display_status\": \"PASS\",\n      \"expected_status\": \"pass\",\n      \"name\": \"skip focus command failure for offline check\",\n      \"pass\": true\n    },\n    {\n      \"actual_display_status\": \"BLOCKED\",\n      \"actual_status\": \"blocked_waiting_for_game_or_focus\",\n      \"blockers\": [\n        \"selected_window is missing or null.\"\n      ],\n      \"expected_blocker_substrings\": [\n        \"selected_window is missing or null\"\n      ],\n      \"expected_display_status\": \"BLOCKED\",\n      \"expected_status\": \"blocked_waiting_for_game_or_focus\",\n      \"name\": \"blocked missing selected window\",\n      \"pass\": true\n    },\n    {\n      \"actual_display_status\": \"BLOCKED\",\n      \"actual_status\": \"blocked_waiting_for_game_or_focus\",\n      \"blockers\": [\n        \"windows.json has no window entries.\"\n      ],\n      \"expected_blocker_substrings\": [\n        \"windows.json has no window entries\"\n      ],\n      \"expected_display_status\": \"BLOCKED\",\n      \"expected_status\": \"blocked_waiting_for_game_or_focus\",\n      \"name\": \"blocked empty windows list\",\n      \"pass\": true\n    }\n  ]\n}\n"
       },
       {
         "args": [
@@ -790,7 +808,7 @@ e3992a5 Add capture plan check workflow
         "name": "capture_readiness_self_test",
         "status": "pass",
         "stderr": "",
-        "stdout": "{\n  \"app_version\": \"riftscan-capture-readiness-v1.0.1\",\n  \"case_count\": 7,\n  \"created_utc\": \"2026-05-06T05:53:57Z\",\n  \"safety\": {\n    \"capture_started\": false,\n    \"memory_scan_or_read_started\": false,\n    \"movement_or_input_sent\": false,\n    \"reloadui_sent\": false,\n    \"runs_focus_preflight\": false,\n    \"writes_artifacts\": false\n  },\n  \"schema_version\": \"riftscan.capture_readiness_self_test.v1\",\n  \"status\": \"PASS\",\n  \"tests\": [\n    {\n      \"actual_display_status\": \"PASS\",\n      \"actual_status\": \"pass\",\n      \"blockers\": [],\n      \"capture_planning_allowed\": true,\n      \"expected_blocker_substrings\": [],\n      \"expected_display_status\": \"PASS\",\n      \"expected_status\": \"pass\",\n      \"name\": \"pass gate\",\n      \"pass\": true\n    },\n    {\n      \"actual_display_status\": \"BLOCKED\",\n      \"actual_status\": \"blocked_waiting_for_current_baseline\",\n      \"blockers\": [\n        \"Post-update baseline is not PASS for the current client.\",\n        \"Post-update baseline display_status is not PASS.\"\n      ],\n      \"capture_planning_allowed\": false,\n      \"expected_blocker_substrings\": [\n        \"Post-update baseline is not PASS\",\n        \"display_status is not PASS\"\n      ],\n      \"expected_display_status\": \"BLOCKED\",\n      \"expected_status\": \"blocked_waiting_for_current_baseline\",\n      \"name\": \"blocked baseline status\",\n      \"pass\": true\n    },\n    {\n      \"actual_display_status\": \"BLOCKED\",\n      \"actual_status\": \"blocked_waiting_for_current_baseline\",\n      \"blockers\": [\n        \"Safety field baseline.safety.old_offsets_trusted is not false.\"\n      ],\n      \"capture_planning_allowed\": false,\n      \"expected_blocker_substrings\": [\n        \"baseline.safety.old_offsets_trusted\"\n      ],\n      \"expected_display_status\": \"BLOCKED\",\n      \"expected_status\": \"blocked_waiting_for_current_baseline\",\n      \"name\": \"blocked unsafe baseline safety\",\n      \"pass\": true\n    },\n    {\n      \"actual_display_status\": \"BLOCKED\",\n      \"actual_status\": \"blocked_waiting_for_current_baseline\",\n      \"blockers\": [\n        \"Current focus status is not foreground_verified.\"\n      ],\n      \"capture_planning_allowed\": false,\n      \"expected_blocker_substrings\": [\n        \"Current focus status is not foreground_verified\"\n      ],\n      \"expected_display_status\": \"BLOCKED\",\n      \"expected_status\": \"blocked_waiting_for_current_baseline\",\n      \"name\": \"blocked current focus lost\",\n      \"pass\": true\n    },\n    {\n      \"actual_display_status\": \"BLOCKED\",\n      \"actual_status\": \"blocked_waiting_for_current_baseline\",\n      \"blockers\": [\n        \"Current RIFT PID differs from the post-update baseline; rerun Post-Update Baseline.\"\n      ],\n      \"capture_planning_allowed\": false,\n      \"expected_blocker_substrings\": [\n        \"Current RIFT PID differs\"\n      ],\n      \"expected_display_status\": \"BLOCKED\",\n      \"expected_status\": \"blocked_waiting_for_current_baseline\",\n      \"name\": \"blocked pid drift\",\n      \"pass\": true\n    },\n    {\n      \"actual_display_status\": \"BLOCKED\",\n      \"actual_status\": \"blocked_waiting_for_current_baseline\",\n      \"blockers\": [\n        \"Current focus preflight command did not complete successfully.\"\n      ],\n      \"capture_planning_allowed\": false,\n      \"expected_blocker_substrings\": [\n        \"Current focus preflight command did not complete successfully\"\n      ],\n      \"expected_display_status\": \"BLOCKED\",\n      \"expected_status\": \"blocked_waiting_for_current_baseline\",\n      \"name\": \"blocked focus command failure\",\n      \"pass\": true\n    },\n    {\n      \"actual_display_status\": \"PASS\",\n      \"actual_status\": \"pass\",\n      \"blockers\": [],\n      \"capture_planning_allowed\": true,\n      \"expected_blocker_substrings\": [],\n      \"expected_display_status\": \"PASS\",\n      \"expected_status\": \"pass\",\n      \"name\": \"skip focus command failure for offline check\",\n      \"pass\": true\n    }\n  ]\n}\n"
+        "stdout": "{\n  \"app_version\": \"riftscan-capture-readiness-v1.0.1\",\n  \"case_count\": 7,\n  \"created_utc\": \"2026-05-07T16:14:26Z\",\n  \"safety\": {\n    \"capture_started\": false,\n    \"memory_scan_or_read_started\": false,\n    \"movement_or_input_sent\": false,\n    \"reloadui_sent\": false,\n    \"runs_focus_preflight\": false,\n    \"writes_artifacts\": false\n  },\n  \"schema_version\": \"riftscan.capture_readiness_self_test.v1\",\n  \"status\": \"PASS\",\n  \"tests\": [\n    {\n      \"actual_display_status\": \"PASS\",\n      \"actual_status\": \"pass\",\n      \"blockers\": [],\n      \"capture_planning_allowed\": true,\n      \"expected_blocker_substrings\": [],\n      \"expected_display_status\": \"PASS\",\n      \"expected_status\": \"pass\",\n      \"name\": \"pass gate\",\n      \"pass\": true\n    },\n    {\n      \"actual_display_status\": \"BLOCKED\",\n      \"actual_status\": \"blocked_waiting_for_current_baseline\",\n      \"blockers\": [\n        \"Post-update baseline is not PASS for the current client.\",\n        \"Post-update baseline display_status is not PASS.\"\n      ],\n      \"capture_planning_allowed\": false,\n      \"expected_blocker_substrings\": [\n        \"Post-update baseline is not PASS\",\n        \"display_status is not PASS\"\n      ],\n      \"expected_display_status\": \"BLOCKED\",\n      \"expected_status\": \"blocked_waiting_for_current_baseline\",\n      \"name\": \"blocked baseline status\",\n      \"pass\": true\n    },\n    {\n      \"actual_display_status\": \"BLOCKED\",\n      \"actual_status\": \"blocked_waiting_for_current_baseline\",\n      \"blockers\": [\n        \"Safety field baseline.safety.old_offsets_trusted is not false.\"\n      ],\n      \"capture_planning_allowed\": false,\n      \"expected_blocker_substrings\": [\n        \"baseline.safety.old_offsets_trusted\"\n      ],\n      \"expected_display_status\": \"BLOCKED\",\n      \"expected_status\": \"blocked_waiting_for_current_baseline\",\n      \"name\": \"blocked unsafe baseline safety\",\n      \"pass\": true\n    },\n    {\n      \"actual_display_status\": \"BLOCKED\",\n      \"actual_status\": \"blocked_waiting_for_current_baseline\",\n      \"blockers\": [\n        \"Current focus status is not foreground_verified.\"\n      ],\n      \"capture_planning_allowed\": false,\n      \"expected_blocker_substrings\": [\n        \"Current focus status is not foreground_verified\"\n      ],\n      \"expected_display_status\": \"BLOCKED\",\n      \"expected_status\": \"blocked_waiting_for_current_baseline\",\n      \"name\": \"blocked current focus lost\",\n      \"pass\": true\n    },\n    {\n      \"actual_display_status\": \"BLOCKED\",\n      \"actual_status\": \"blocked_waiting_for_current_baseline\",\n      \"blockers\": [\n        \"Current RIFT PID differs from the post-update baseline; rerun Post-Update Baseline.\"\n      ],\n      \"capture_planning_allowed\": false,\n      \"expected_blocker_substrings\": [\n        \"Current RIFT PID differs\"\n      ],\n      \"expected_display_status\": \"BLOCKED\",\n      \"expected_status\": \"blocked_waiting_for_current_baseline\",\n      \"name\": \"blocked pid drift\",\n      \"pass\": true\n    },\n    {\n      \"actual_display_status\": \"BLOCKED\",\n      \"actual_status\": \"blocked_waiting_for_current_baseline\",\n      \"blockers\": [\n        \"Current focus preflight command did not complete successfully.\"\n      ],\n      \"capture_planning_allowed\": false,\n      \"expected_blocker_substrings\": [\n        \"Current focus preflight command did not complete successfully\"\n      ],\n      \"expected_display_status\": \"BLOCKED\",\n      \"expected_status\": \"blocked_waiting_for_current_baseline\",\n      \"name\": \"blocked focus command failure\",\n      \"pass\": true\n    },\n    {\n      \"actual_display_status\": \"PASS\",\n      \"actual_status\": \"pass\",\n      \"blockers\": [],\n      \"capture_planning_allowed\": true,\n      \"expected_blocker_substrings\": [],\n      \"expected_display_status\": \"PASS\",\n      \"expected_status\": \"pass\",\n      \"name\": \"skip focus command failure for offline check\",\n      \"pass\": true\n    }\n  ]\n}\n"
       },
       {
         "args": [
@@ -802,7 +820,7 @@ e3992a5 Add capture plan check workflow
         "name": "capture_plan_check_self_test",
         "status": "pass",
         "stderr": "",
-        "stdout": "{\n  \"app_version\": \"riftscan-capture-plan-check-v1.0.0\",\n  \"case_count\": 5,\n  \"created_utc\": \"2026-05-06T05:53:58Z\",\n  \"safety\": {\n    \"capture_started\": false,\n    \"memory_scan_or_read_started\": false,\n    \"movement_or_input_sent\": false,\n    \"reloadui_sent\": false,\n    \"runs_focus_preflight\": false,\n    \"writes_current_artifacts\": false\n  },\n  \"schema_version\": \"riftscan.capture_plan_check_self_test.v1\",\n  \"status\": \"PASS\",\n  \"tests\": [\n    {\n      \"actual_display_status\": \"PASS\",\n      \"actual_status\": \"pass\",\n      \"blockers\": [],\n      \"expected_display_status\": \"PASS\",\n      \"expected_status\": \"pass\",\n      \"name\": \"valid metadata-only plan\",\n      \"pass\": true\n    },\n    {\n      \"actual_display_status\": \"BLOCKED\",\n      \"actual_status\": \"blocked_capture_plan_not_valid\",\n      \"blockers\": [\n        \"capture-plan capture_started is not false.\"\n      ],\n      \"expected_display_status\": \"BLOCKED\",\n      \"expected_status\": \"blocked_capture_plan_not_valid\",\n      \"name\": \"blocked capture_started true\",\n      \"pass\": true\n    },\n    {\n      \"actual_display_status\": \"BLOCKED\",\n      \"actual_status\": \"blocked_capture_plan_not_valid\",\n      \"blockers\": [\n        \"Capture-plan expected_files is missing required metadata outputs: capture-log.jsonl, focus-summary-after.json, focus-summary-before.json, operator-report.md.\"\n      ],\n      \"expected_display_status\": \"BLOCKED\",\n      \"expected_status\": \"blocked_capture_plan_not_valid\",\n      \"name\": \"blocked missing expected files\",\n      \"pass\": true\n    },\n    {\n      \"actual_display_status\": \"BLOCKED\",\n      \"actual_status\": \"blocked_capture_plan_not_valid\",\n      \"blockers\": [\n        \"Capture-plan focus/preflight source artifacts are missing: windows_json=handoffs/current/focus-control-local/windows.json.\"\n      ],\n      \"expected_display_status\": \"BLOCKED\",\n      \"expected_status\": \"blocked_capture_plan_not_valid\",\n      \"name\": \"blocked missing source artifact\",\n      \"pass\": true\n    },\n    {\n      \"actual_display_status\": \"BLOCKED\",\n      \"actual_status\": \"blocked_capture_plan_not_valid\",\n      \"blockers\": [\n        \"Operator gate live_collection_allowed is not false.\"\n      ],\n      \"expected_display_status\": \"BLOCKED\",\n      \"expected_status\": \"blocked_capture_plan_not_valid\",\n      \"name\": \"blocked operator live collection allowed\",\n      \"pass\": true\n    }\n  ]\n}\n"
+        "stdout": "{\n  \"app_version\": \"riftscan-capture-plan-check-v1.0.0\",\n  \"case_count\": 5,\n  \"created_utc\": \"2026-05-07T16:14:26Z\",\n  \"safety\": {\n    \"capture_started\": false,\n    \"memory_scan_or_read_started\": false,\n    \"movement_or_input_sent\": false,\n    \"reloadui_sent\": false,\n    \"runs_focus_preflight\": false,\n    \"writes_current_artifacts\": false\n  },\n  \"schema_version\": \"riftscan.capture_plan_check_self_test.v1\",\n  \"status\": \"PASS\",\n  \"tests\": [\n    {\n      \"actual_display_status\": \"PASS\",\n      \"actual_status\": \"pass\",\n      \"blockers\": [],\n      \"expected_display_status\": \"PASS\",\n      \"expected_status\": \"pass\",\n      \"name\": \"valid metadata-only plan\",\n      \"pass\": true\n    },\n    {\n      \"actual_display_status\": \"BLOCKED\",\n      \"actual_status\": \"blocked_capture_plan_not_valid\",\n      \"blockers\": [\n        \"capture-plan capture_started is not false.\"\n      ],\n      \"expected_display_status\": \"BLOCKED\",\n      \"expected_status\": \"blocked_capture_plan_not_valid\",\n      \"name\": \"blocked capture_started true\",\n      \"pass\": true\n    },\n    {\n      \"actual_display_status\": \"BLOCKED\",\n      \"actual_status\": \"blocked_capture_plan_not_valid\",\n      \"blockers\": [\n        \"Capture-plan expected_files is missing required metadata outputs: capture-log.jsonl, focus-summary-after.json, focus-summary-before.json, operator-report.md.\"\n      ],\n      \"expected_display_status\": \"BLOCKED\",\n      \"expected_status\": \"blocked_capture_plan_not_valid\",\n      \"name\": \"blocked missing expected files\",\n      \"pass\": true\n    },\n    {\n      \"actual_display_status\": \"BLOCKED\",\n      \"actual_status\": \"blocked_capture_plan_not_valid\",\n      \"blockers\": [\n        \"Capture-plan focus/preflight source artifacts are missing: windows_json=handoffs/current/focus-control-local/windows.json.\"\n      ],\n      \"expected_display_status\": \"BLOCKED\",\n      \"expected_status\": \"blocked_capture_plan_not_valid\",\n      \"name\": \"blocked missing source artifact\",\n      \"pass\": true\n    },\n    {\n      \"actual_display_status\": \"BLOCKED\",\n      \"actual_status\": \"blocked_capture_plan_not_valid\",\n      \"blockers\": [\n        \"Operator gate live_collection_allowed is not false.\"\n      ],\n      \"expected_display_status\": \"BLOCKED\",\n      \"expected_status\": \"blocked_capture_plan_not_valid\",\n      \"name\": \"blocked operator live collection allowed\",\n      \"pass\": true\n    }\n  ]\n}\n"
       },
       {
         "args": [
@@ -814,7 +832,7 @@ e3992a5 Add capture plan check workflow
         "name": "movement_test_readiness_self_test",
         "status": "pass",
         "stderr": "",
-        "stdout": "{\n  \"app_version\": \"riftscan-movement-test-readiness-v1.0.0\",\n  \"case_count\": 5,\n  \"created_utc\": \"2026-05-06T05:53:58Z\",\n  \"safety\": {\n    \"capture_started\": false,\n    \"memory_scan_or_read_started\": false,\n    \"movement_or_input_sent\": false,\n    \"reloadui_sent\": false,\n    \"runs_focus_preflight\": false,\n    \"writes_current_artifacts\": false\n  },\n  \"schema_version\": \"riftscan.movement_test_readiness_self_test.v1\",\n  \"status\": \"PASS\",\n  \"tests\": [\n    {\n      \"actual_display_status\": \"PASS\",\n      \"actual_status\": \"pass\",\n      \"blockers\": [],\n      \"expected_display_status\": \"PASS\",\n      \"expected_status\": \"pass\",\n      \"name\": \"all readiness inputs pass\",\n      \"pass\": true\n    },\n    {\n      \"actual_display_status\": \"BLOCKED\",\n      \"actual_status\": \"blocked_movement_test_not_ready\",\n      \"blockers\": [\n        \"Operator metadata_capture_plan_gate is not PASS.\"\n      ],\n      \"expected_display_status\": \"BLOCKED\",\n      \"expected_status\": \"blocked_movement_test_not_ready\",\n      \"name\": \"blocked operator gate\",\n      \"pass\": true\n    },\n    {\n      \"actual_display_status\": \"BLOCKED\",\n      \"actual_status\": \"blocked_movement_test_not_ready\",\n      \"blockers\": [\n        \"Capture Plan Check is not PASS.\"\n      ],\n      \"expected_display_status\": \"BLOCKED\",\n      \"expected_status\": \"blocked_movement_test_not_ready\",\n      \"name\": \"blocked capture plan check\",\n      \"pass\": true\n    },\n    {\n      \"actual_display_status\": \"BLOCKED\",\n      \"actual_status\": \"blocked_movement_test_not_ready\",\n      \"blockers\": [\n        \"Movement live-test wrapper is missing required guard features: move_forward stimulus, pre-capture wait, ReaderBridge freshness, RiftReader anchor read, RiftScan passive capture, delta summary, movement-proof interpretation.\"\n      ],\n      \"expected_display_status\": \"BLOCKED\",\n      \"expected_status\": \"blocked_movement_test_not_ready\",\n      \"name\": \"blocked wrapper missing movement support\",\n      \"pass\": true\n    },\n    {\n      \"actual_display_status\": \"BLOCKED\",\n      \"actual_status\": \"blocked_movement_test_not_ready\",\n      \"blockers\": [\n        \"RiftReader run-reader.cmd is missing; movement wrapper cannot refresh proof-grade coordinate anchors.\"\n      ],\n      \"expected_display_status\": \"BLOCKED\",\n      \"expected_status\": \"blocked_movement_test_not_ready\",\n      \"name\": \"blocked missing RiftReader\",\n      \"pass\": true\n    }\n  ]\n}\n"
+        "stdout": "{\n  \"app_version\": \"riftscan-movement-test-readiness-v1.0.0\",\n  \"case_count\": 5,\n  \"created_utc\": \"2026-05-07T16:14:26Z\",\n  \"safety\": {\n    \"capture_started\": false,\n    \"memory_scan_or_read_started\": false,\n    \"movement_or_input_sent\": false,\n    \"reloadui_sent\": false,\n    \"runs_focus_preflight\": false,\n    \"writes_current_artifacts\": false\n  },\n  \"schema_version\": \"riftscan.movement_test_readiness_self_test.v1\",\n  \"status\": \"PASS\",\n  \"tests\": [\n    {\n      \"actual_display_status\": \"PASS\",\n      \"actual_status\": \"pass\",\n      \"blockers\": [],\n      \"expected_display_status\": \"PASS\",\n      \"expected_status\": \"pass\",\n      \"name\": \"all readiness inputs pass\",\n      \"pass\": true\n    },\n    {\n      \"actual_display_status\": \"BLOCKED\",\n      \"actual_status\": \"blocked_movement_test_not_ready\",\n      \"blockers\": [\n        \"Operator metadata_capture_plan_gate is not PASS.\"\n      ],\n      \"expected_display_status\": \"BLOCKED\",\n      \"expected_status\": \"blocked_movement_test_not_ready\",\n      \"name\": \"blocked operator gate\",\n      \"pass\": true\n    },\n    {\n      \"actual_display_status\": \"BLOCKED\",\n      \"actual_status\": \"blocked_movement_test_not_ready\",\n      \"blockers\": [\n        \"Capture Plan Check is not PASS.\"\n      ],\n      \"expected_display_status\": \"BLOCKED\",\n      \"expected_status\": \"blocked_movement_test_not_ready\",\n      \"name\": \"blocked capture plan check\",\n      \"pass\": true\n    },\n    {\n      \"actual_display_status\": \"BLOCKED\",\n      \"actual_status\": \"blocked_movement_test_not_ready\",\n      \"blockers\": [\n        \"Movement live-test wrapper is missing required guard features: move_forward stimulus, pre-capture wait, ReaderBridge freshness, RiftReader anchor read, RiftScan passive capture, delta summary, movement-proof interpretation.\"\n      ],\n      \"expected_display_status\": \"BLOCKED\",\n      \"expected_status\": \"blocked_movement_test_not_ready\",\n      \"name\": \"blocked wrapper missing movement support\",\n      \"pass\": true\n    },\n    {\n      \"actual_display_status\": \"BLOCKED\",\n      \"actual_status\": \"blocked_movement_test_not_ready\",\n      \"blockers\": [\n        \"RiftReader run-reader.cmd is missing; movement wrapper cannot refresh proof-grade coordinate anchors.\"\n      ],\n      \"expected_display_status\": \"BLOCKED\",\n      \"expected_status\": \"blocked_movement_test_not_ready\",\n      \"name\": \"blocked missing RiftReader\",\n      \"pass\": true\n    }\n  ]\n}\n"
       },
       {
         "args": [
@@ -826,7 +844,30 @@ e3992a5 Add capture plan check workflow
         "name": "movement_execution_gate_self_test",
         "status": "pass",
         "stderr": "",
-        "stdout": "{\n  \"app_version\": \"riftscan-movement-execution-gate-v1.0.0\",\n  \"case_count\": 5,\n  \"created_utc\": \"2026-05-06T05:53:58Z\",\n  \"safety\": {\n    \"capture_started\": false,\n    \"memory_scan_or_read_started_by_riftscan\": false,\n    \"movement_or_input_sent\": false,\n    \"reloadui_sent\": false,\n    \"writes_current_artifacts\": false\n  },\n  \"schema_version\": \"riftscan.movement_execution_gate_self_test.v1\",\n  \"status\": \"PASS\",\n  \"tests\": [\n    {\n      \"actual\": \"pass\",\n      \"blockers\": [],\n      \"expected\": \"pass\",\n      \"name\": \"pass\",\n      \"pass\": true\n    },\n    {\n      \"actual\": \"blocked_movement_execution_not_allowed\",\n      \"blockers\": [\n        \"Movement Test Readiness is not PASS.\"\n      ],\n      \"expected\": \"blocked_movement_execution_not_allowed\",\n      \"name\": \"blocked readiness\",\n      \"pass\": true\n    },\n    {\n      \"actual\": \"blocked_movement_execution_not_allowed\",\n      \"blockers\": [\n        \"Focus summary status is not foreground_verified.\",\n        \"Focus summary selected_window is missing.\"\n      ],\n      \"expected\": \"blocked_movement_execution_not_allowed\",\n      \"name\": \"blocked focus\",\n      \"pass\": true\n    },\n    {\n      \"actual\": \"blocked_movement_execution_not_allowed\",\n      \"blockers\": [\n        \"live-test-riftscan preflight failed for move_forward.\"\n      ],\n      \"expected\": \"blocked_movement_execution_not_allowed\",\n      \"name\": \"blocked wrapper\",\n      \"pass\": true\n    },\n    {\n      \"actual\": \"blocked_movement_execution_not_allowed\",\n      \"blockers\": [],\n      \"expected\": \"blocked_movement_execution_not_allowed\",\n      \"name\": \"blocked skipped wrapper\",\n      \"pass\": true\n    }\n  ]\n}\n"
+        "stdout": "{\n  \"app_version\": \"riftscan-movement-execution-gate-v1.0.0\",\n  \"case_count\": 5,\n  \"created_utc\": \"2026-05-07T16:14:27Z\",\n  \"safety\": {\n    \"capture_started\": false,\n    \"memory_scan_or_read_started_by_riftscan\": false,\n    \"movement_or_input_sent\": false,\n    \"reloadui_sent\": false,\n    \"writes_current_artifacts\": false\n  },\n  \"schema_version\": \"riftscan.movement_execution_gate_self_test.v1\",\n  \"status\": \"PASS\",\n  \"tests\": [\n    {\n      \"actual\": \"pass\",\n      \"blockers\": [],\n      \"expected\": \"pass\",\n      \"name\": \"pass\",\n      \"pass\": true\n    },\n    {\n      \"actual\": \"blocked_movement_execution_not_allowed\",\n      \"blockers\": [\n        \"Movement Test Readiness is not PASS.\"\n      ],\n      \"expected\": \"blocked_movement_execution_not_allowed\",\n      \"name\": \"blocked readiness\",\n      \"pass\": true\n    },\n    {\n      \"actual\": \"blocked_movement_execution_not_allowed\",\n      \"blockers\": [\n        \"Focus summary status is not foreground_verified.\",\n        \"Focus summary selected_window is missing.\"\n      ],\n      \"expected\": \"blocked_movement_execution_not_allowed\",\n      \"name\": \"blocked focus\",\n      \"pass\": true\n    },\n    {\n      \"actual\": \"blocked_movement_execution_not_allowed\",\n      \"blockers\": [\n        \"live-test-riftscan preflight failed for move_forward.\"\n      ],\n      \"expected\": \"blocked_movement_execution_not_allowed\",\n      \"name\": \"blocked wrapper\",\n      \"pass\": true\n    },\n    {\n      \"actual\": \"blocked_movement_execution_not_allowed\",\n      \"blockers\": [],\n      \"expected\": \"blocked_movement_execution_not_allowed\",\n      \"name\": \"blocked skipped wrapper\",\n      \"pass\": true\n    }\n  ]\n}\n"
+      },
+      {
+        "args": [
+          "C:\\Users\\mrkoo\\AppData\\Local\\Programs\\Python\\Python314\\python.exe",
+          "tools/riftscan_discovery_ledger.py",
+          "--self-test"
+        ],
+        "exit_code": 0,
+        "name": "discovery_ledger_self_test",
+        "status": "pass",
+        "stderr": "",
+        "stdout": "{\n  \"app_version\": \"riftscan-discovery-ledger-v1.0.0\",\n  \"created_utc\": \"2026-05-07T16:14:27Z\",\n  \"failures\": [],\n  \"safety\": {\n    \"capture_started\": false,\n    \"memory_scan_or_read_started\": false,\n    \"movement_or_input_sent\": false,\n    \"reloadui_sent\": false,\n    \"riftreader_command_executed\": false,\n    \"runs_focus_preflight\": false,\n    \"writes_artifacts\": false\n  },\n  \"schema_version\": \"riftscan.discovery_ledger.self_test.v1\",\n  \"status\": \"PASS\"\n}\n"
+      },
+      {
+        "args": [
+          "C:\\Users\\mrkoo\\AppData\\Local\\Programs\\Python\\Python314\\python.exe",
+          "tools/riftscan_discovery_ledger.py"
+        ],
+        "exit_code": 0,
+        "name": "discovery_ledger_refresh",
+        "status": "pass",
+        "stderr": "",
+        "stdout": "RIFTSCAN DISCOVERY LEDGER: handoffs/current/discovery-ledger/DISCOVERY_LEDGER_REPORT.md\nSummary: handoffs/current/discovery-ledger/discovery-ledger-summary.json\nCandidate ledger: handoffs/current/discovery-ledger/candidate_ledger.jsonl\nSafety: offline artifact inventory only; no focus, capture, input, movement, memory read, RiftReader command, or /reloadui was run.\n"
       },
       {
         "args": [
@@ -838,10 +879,10 @@ e3992a5 Add capture plan check workflow
         "name": "patch_intake_self_test",
         "status": "pass",
         "stderr": "",
-        "stdout": "{\n  \"app_version\": \"riftscan-patch-intake-v1.2.5\",\n  \"created_utc\": \"2026-05-06T05:54:04Z\",\n  \"schema_version\": \"riftscan.patch_intake_self_test.v1\",\n  \"status\": \"PASS\",\n  \"tests\": [\n    {\n      \"actual\": \"FAIL_BAD_HEADER\",\n      \"expected\": \"FAIL_BAD_HEADER\",\n      \"issues\": [\n        \"Payload must start with RIFTSCAN_CLIPBOARD_PATCH_V1 or RIFTSCAN_CHUNKED_PATCH_V1.\"\n      ],\n      \"name\": \"empty payload\",\n      \"pass\": true\n    },\n    {\n      \"actual\": \"FAIL_BAD_HEADER\",\n      \"expected\": \"FAIL_BAD_HEADER\",\n      \"issues\": [\n        \"Payload must start with RIFTSCAN_CLIPBOARD_PATCH_V1 or RIFTSCAN_CHUNKED_PATCH_V1.\"\n      ],\n      \"name\": \"wrong header\",\n      \"pass\": true\n    },\n    {\n      \"actual\": \"FAIL_BAD_MANIFEST\",\n      \"expected\": \"FAIL_BAD_MANIFEST\",\n      \"issues\": [\n        \"JSONDecodeError: Expecting property name enclosed in double quotes: line 1 column 2 (char 1)\"\n      ],\n      \"name\": \"bad json\",\n      \"pass\": true\n    },\n    {\n      \"actual\": \"FAIL_MISSING_PAYLOAD\",\n      \"expected\": \"FAIL_MISSING_PAYLOAD\",\n      \"issues\": [\n        \"Payload block markers are missing.\"\n      ],\n      \"name\": \"missing payload\",\n      \"pass\": true\n    },\n    {\n      \"actual\": \"FAIL_HASH_MISMATCH\",\n      \"expected\": \"FAIL_HASH_MISMATCH\",\n      \"issues\": [],\n      \"name\": \"hash mismatch\",\n      \"pass\": true\n    },\n    {\n      \"actual\": \"FAIL_STALE_PATCH\",\n      \"expected\": \"FAIL_STALE_PATCH\",\n      \"issues\": [\n        \"Patch timestamp is not newer than last accepted patch.\"\n      ],\n      \"name\": \"stale timestamp\",\n      \"pass\": true\n    },\n    {\n      \"actual\": \"FAIL_WRONG_REPO\",\n      \"expected\": \"FAIL_WRONG_REPO\",\n      \"issues\": [\n        \"target_repo_root does not match selected repo root.\"\n      ],\n      \"name\": \"wrong repo\",\n      \"pass\": true\n    },\n    {\n      \"actual\": \"PASS_DRY_RUN\",\n      \"expected\": \"PASS_DRY_RUN\",\n      \"issues\": [],\n      \"name\": \"valid dry run\",\n      \"pass\": true\n    },\n    {\n      \"actual\": \"FAIL_COMMIT_WITHOUT_APPLY\",\n      \"expected\": \"FAIL_COMMIT_WITHOUT_APPLY\",\n      \"issues\": [\n        \"No successful process/apply result exists.\"\n      ],\n      \"name\": \"commit without apply\",\n      \"pass\": true\n    },\n    {\n      \"actual\": \"PASS_PROCESSED\",\n      \"expected\": \"PASS_PROCESSED\",\n      \"issues\": [],\n      \"name\": \"process payload without commit metadata\",\n      \"pass\": true\n    },\n    {\n      \"actual\": \"FAIL_COMMIT_MISSING_METADATA\",\n      \"expected\": \"FAIL_COMMIT_MISSING_METADATA\",\n      \"issues\": [\n        \"Manifest commit block is required.\"\n      ],\n      \"name\": \"commit missing metadata\",\n      \"pass\": true\n    },\n    {\n      \"actual\": \"FAIL_COMMIT_UNSAFE_STAGE_PATH\",\n      \"expected\": \"FAIL_COMMIT_UNSAFE_STAGE_PATH\",\n      \"issues\": [\n        \"Unsafe commit.stage_paths entry: .\"\n      ],\n      \"name\": \"unsafe commit stage path validation\",\n      \"pass\": true\n    },\n    {\n      \"actual\": \"PASS_PROCESSED\",\n      \"expected\": \"PASS_PROCESSED\",\n      \"issues\": [],\n      \"name\": \"process payload with capture readiness checks\",\n      \"pass\": true\n    },\n    {\n      \"actual\": \"PASS_PROCESSED\",\n      \"expected\": \"PASS_PROCESSED\",\n      \"issues\": [],\n      \"name\": \"process payload\",\n      \"pass\": true\n    },\n    {\n      \"actual\": \"PASS_COMMITTED\",\n      \"expected\": \"PASS_COMMITTED\",\n      \"issues\": [],\n      \"name\": \"commit in temp repo\",\n      \"pass\": true\n    },\n    {\n      \"actual\": \"PASS_PUSH_VERIFY_SIMULATED_OR_SKIPPED\",\n      \"expected\": \"PASS_PUSH_VERIFY_SIMULATED_OR_SKIPPED\",\n      \"issues\": [],\n      \"name\": \"push verify simulated\",\n      \"pass\": true\n    },\n    {\n      \"actual\": \"PASS_DRY_RUN\",\n      \"expected\": \"PASS_DRY_RUN\",\n      \"issues\": [],\n      \"name\": \"chunked dry run\",\n      \"pass\": true\n    },\n    {\n      \"actual\": \"FAIL_CHUNK_HASH_MISMATCH\",\n      \"expected\": \"FAIL_CHUNK_HASH_MISMATCH\",\n      \"issues\": [\n        \"chunk 1 hash mismatch\"\n      ],\n      \"name\": \"chunked bad chunk hash\",\n      \"pass\": true\n    },\n    {\n      \"actual\": \"FAIL_MISSING_CHUNK\",\n      \"expected\": \"FAIL_MISSING_CHUNK\",\n      \"issues\": [\n        \"missing chunks: 1\"\n      ],\n      \"name\": \"chunked missing chunk\",\n      \"pass\": true\n    }\n  ]\n}\n"
+        "stdout": "{\n  \"app_version\": \"riftscan-patch-intake-v1.2.5\",\n  \"created_utc\": \"2026-05-07T16:14:36Z\",\n  \"schema_version\": \"riftscan.patch_intake_self_test.v1\",\n  \"status\": \"PASS\",\n  \"tests\": [\n    {\n      \"actual\": \"FAIL_BAD_HEADER\",\n      \"expected\": \"FAIL_BAD_HEADER\",\n      \"issues\": [\n        \"Payload must start with RIFTSCAN_CLIPBOARD_PATCH_V1 or RIFTSCAN_CHUNKED_PATCH_V1.\"\n      ],\n      \"name\": \"empty payload\",\n      \"pass\": true\n    },\n    {\n      \"actual\": \"FAIL_BAD_HEADER\",\n      \"expected\": \"FAIL_BAD_HEADER\",\n      \"issues\": [\n        \"Payload must start with RIFTSCAN_CLIPBOARD_PATCH_V1 or RIFTSCAN_CHUNKED_PATCH_V1.\"\n      ],\n      \"name\": \"wrong header\",\n      \"pass\": true\n    },\n    {\n      \"actual\": \"FAIL_BAD_MANIFEST\",\n      \"expected\": \"FAIL_BAD_MANIFEST\",\n      \"issues\": [\n        \"JSONDecodeError: Expecting property name enclosed in double quotes: line 1 column 2 (char 1)\"\n      ],\n      \"name\": \"bad json\",\n      \"pass\": true\n    },\n    {\n      \"actual\": \"FAIL_MISSING_PAYLOAD\",\n      \"expected\": \"FAIL_MISSING_PAYLOAD\",\n      \"issues\": [\n        \"Payload block markers are missing.\"\n      ],\n      \"name\": \"missing payload\",\n      \"pass\": true\n    },\n    {\n      \"actual\": \"FAIL_HASH_MISMATCH\",\n      \"expected\": \"FAIL_HASH_MISMATCH\",\n      \"issues\": [],\n      \"name\": \"hash mismatch\",\n      \"pass\": true\n    },\n    {\n      \"actual\": \"FAIL_STALE_PATCH\",\n      \"expected\": \"FAIL_STALE_PATCH\",\n      \"issues\": [\n        \"Patch timestamp is not newer than last accepted patch.\"\n      ],\n      \"name\": \"stale timestamp\",\n      \"pass\": true\n    },\n    {\n      \"actual\": \"FAIL_WRONG_REPO\",\n      \"expected\": \"FAIL_WRONG_REPO\",\n      \"issues\": [\n        \"target_repo_root does not match selected repo root.\"\n      ],\n      \"name\": \"wrong repo\",\n      \"pass\": true\n    },\n    {\n      \"actual\": \"PASS_DRY_RUN\",\n      \"expected\": \"PASS_DRY_RUN\",\n      \"issues\": [],\n      \"name\": \"valid dry run\",\n      \"pass\": true\n    },\n    {\n      \"actual\": \"FAIL_COMMIT_WITHOUT_APPLY\",\n      \"expected\": \"FAIL_COMMIT_WITHOUT_APPLY\",\n      \"issues\": [\n        \"No successful process/apply result exists.\"\n      ],\n      \"name\": \"commit without apply\",\n      \"pass\": true\n    },\n    {\n      \"actual\": \"PASS_PROCESSED\",\n      \"expected\": \"PASS_PROCESSED\",\n      \"issues\": [],\n      \"name\": \"process payload without commit metadata\",\n      \"pass\": true\n    },\n    {\n      \"actual\": \"FAIL_COMMIT_MISSING_METADATA\",\n      \"expected\": \"FAIL_COMMIT_MISSING_METADATA\",\n      \"issues\": [\n        \"Manifest commit block is required.\"\n      ],\n      \"name\": \"commit missing metadata\",\n      \"pass\": true\n    },\n    {\n      \"actual\": \"FAIL_COMMIT_UNSAFE_STAGE_PATH\",\n      \"expected\": \"FAIL_COMMIT_UNSAFE_STAGE_PATH\",\n      \"issues\": [\n        \"Unsafe commit.stage_paths entry: .\"\n      ],\n      \"name\": \"unsafe commit stage path validation\",\n      \"pass\": true\n    },\n    {\n      \"actual\": \"PASS_PROCESSED\",\n      \"expected\": \"PASS_PROCESSED\",\n      \"issues\": [],\n      \"name\": \"process payload with capture readiness checks\",\n      \"pass\": true\n    },\n    {\n      \"actual\": \"PASS_PROCESSED\",\n      \"expected\": \"PASS_PROCESSED\",\n      \"issues\": [],\n      \"name\": \"process payload\",\n      \"pass\": true\n    },\n    {\n      \"actual\": \"PASS_COMMITTED\",\n      \"expected\": \"PASS_COMMITTED\",\n      \"issues\": [],\n      \"name\": \"commit in temp repo\",\n      \"pass\": true\n    },\n    {\n      \"actual\": \"PASS_PUSH_VERIFY_SIMULATED_OR_SKIPPED\",\n      \"expected\": \"PASS_PUSH_VERIFY_SIMULATED_OR_SKIPPED\",\n      \"issues\": [],\n      \"name\": \"push verify simulated\",\n      \"pass\": true\n    },\n    {\n      \"actual\": \"PASS_DRY_RUN\",\n      \"expected\": \"PASS_DRY_RUN\",\n      \"issues\": [],\n      \"name\": \"chunked dry run\",\n      \"pass\": true\n    },\n    {\n      \"actual\": \"FAIL_CHUNK_HASH_MISMATCH\",\n      \"expected\": \"FAIL_CHUNK_HASH_MISMATCH\",\n      \"issues\": [\n        \"chunk 1 hash mismatch\"\n      ],\n      \"name\": \"chunked bad chunk hash\",\n      \"pass\": true\n    },\n    {\n      \"actual\": \"FAIL_MISSING_CHUNK\",\n      \"expected\": \"FAIL_MISSING_CHUNK\",\n      \"issues\": [\n        \"missing chunks: 1\"\n      ],\n      \"name\": \"chunked missing chunk\",\n      \"pass\": true\n    }\n  ]\n}\n"
       }
     ],
-    "created_utc": "2026-05-06T05:54:04Z",
+    "created_utc": "2026-05-07T16:14:36Z",
     "display_status": "PASS",
     "failed_check_count": 0,
     "failed_checks": [],
@@ -851,9 +892,9 @@ e3992a5 Add capture plan check workflow
         "log": "pass",
         "status": "pass"
       },
-      "head": "b7bd739d3da8d9d5ec1c0e02241590e6dde682af",
-      "log_oneline_5": "b7bd739 Add movement test readiness gate\ne3992a5 Add capture plan check workflow\n3ae21d7 Record current-client gate pass and capture plan\n40bbd1c Refresh blocked post-update baseline artifacts\n17d69f5 Refresh handoffs after offline workflow check",
-      "status_short": " M docs/helper-tooling-policy.md\n M handoffs/current/README_CURRENT.md\n M handoffs/current/RIFTSCAN_RESUME_HANDOFF_2026-05-06_OPERATOR_GATE_WORKFLOW.md\n M handoffs/current/focus-control-local/focus-control-log.jsonl\n M handoffs/current/focus-control-local/focus-control-summary.json\n M handoffs/current/focus-control-local/process-command-result.json\n M handoffs/current/live-collection-gate/LIVE_COLLECTION_GATE_CHECKLIST.md\n M handoffs/current/live-collection-gate/live-collection-gate-summary.json\n M handoffs/current/offline-workflow-check/offline-workflow-check-log.jsonl\n M handoffs/current/operator/RIFTSCAN_OPERATOR_HANDOFF.md\n M handoffs/current/operator/operator-current-gate-summary.json\n M scripts/live-test-riftscan.ps1\n M tools/riftscan_offline_workflow_check.py\n M tools/riftscan_operator_app.py\n?? handoffs/current/movement-execution-gate/\n?? scripts/run-riftscan-movement-execution-gate.cmd\n?? tools/riftscan_movement_execution_gate.py\n"
+      "head": "7db4d852669ba9f7ce90ef479861050e2a1c66c7",
+      "log_oneline_5": "7db4d85 Add offline discovery ledger\n8ebf266 Record current API coordinate candidate\n4d7a06b Add movement execution gate\nb7bd739 Add movement test readiness gate\ne3992a5 Add capture plan check workflow",
+      "status_short": " M handoffs/current/README_CURRENT.md\n M handoffs/current/discovery-ledger/DISCOVERY_LEDGER_REPORT.md\n M handoffs/current/discovery-ledger/discovery-ledger-log.jsonl\n M handoffs/current/discovery-ledger/discovery-ledger-summary.json\n M handoffs/current/offline-workflow-check/offline-workflow-check-log.jsonl\n M tools/riftscan_offline_workflow_check.py\n M tools/riftscan_operator_app.py\n?? scripts/run-riftscan-discovery-ledger.cmd\n"
     },
     "paths": {
       "log": "handoffs/current/offline-workflow-check/offline-workflow-check-log.jsonl",
@@ -868,12 +909,563 @@ e3992a5 Add capture plan check workflow
       "offline_only": true,
       "offset_validation_started": false,
       "reloadui_sent": false,
+      "riftreader_command_executed": false,
       "riftreader_validation_started": false
     },
     "schema_version": "riftscan.offline_workflow_check.v1",
     "status": "pass"
   },
   "report_exists": true,
+  "log_exists": true
+}
+```
+
+## Latest Discovery Ledger
+
+```json
+{
+  "status": "present",
+  "report_path": "handoffs/current/discovery-ledger/DISCOVERY_LEDGER_REPORT.md",
+  "summary_path": "handoffs/current/discovery-ledger/discovery-ledger-summary.json",
+  "candidate_ledger_path": "handoffs/current/discovery-ledger/candidate_ledger.jsonl",
+  "log_path": "handoffs/current/discovery-ledger/discovery-ledger-log.jsonl",
+  "summary": {
+    "app_version": "riftscan-discovery-ledger-v1.0.0",
+    "blockers": [
+      "offline ledger cannot authorize live movement or claim current window focus",
+      "RiftReader pointer says fresh preflight is required before more movement",
+      "older Coord API Truth artifact remains stale-trace-blocked",
+      "RiftScan Movement Execution Gate artifact is blocked/stale relative to newer RiftReader proof lane"
+    ],
+    "candidate_count": 3,
+    "candidates": [
+      {
+        "axis_order": "xyz",
+        "best_addon_xyz": [
+          7436.57568359375,
+          885.2205810546875,
+          3056.736572265625
+        ],
+        "best_max_abs_distance": 0,
+        "best_memory_xyz": [
+          7436.57568359375,
+          885.2205810546875,
+          3056.736572265625
+        ],
+        "candidate_id": "rift-addon-coordinate-candidate-000001",
+        "claim_level": "validated_candidate",
+        "kind": "coordinate_vec3",
+        "latest_validation": {
+          "current_coordinate": {
+            "recordedAtUtc": "2026-05-07T16:03:06.7356655Z",
+            "x": 7437.40673828125,
+            "y": 885.2205810546875,
+            "z": 3055.98486328125
+          },
+          "generated_at_utc": "2026-05-07T16:03:07.235598+00:00",
+          "movement_allowed_at_capture_time": true,
+          "movement_sent_by_readback": false,
+          "no_cheat_engine": true,
+          "proof_anchor_max_age_seconds": null,
+          "readback_recorded_sample_count": null,
+          "readback_total_region_read_failures": null,
+          "stable_across_readback_samples": null,
+          "status": "valid"
+        },
+        "ledger_live_movement_authorized": false,
+        "movement_evidence": {
+          "active_movement_input_resumed_by_user": true,
+          "currently_requires_revalidation_before_more_movement": true,
+          "latest_forward_series_completed_pulse_count": 3,
+          "latest_forward_series_requested_pulse_count": 3,
+          "latest_forward_series_status": "passed-python-forward-series-3x250",
+          "latest_forward_smoke_status": "passed-python-orchestrator-forward250",
+          "proof_gated_pulse_status": "passed",
+          "requires_fresh_preflight_immediately_before_movement": true
+        },
+        "next_validation_step": "rerun exact current PID/HWND proof readback before any more live movement",
+        "observation_support_count": 1,
+        "proof_anchor_cache": {
+          "canonical_coord_source_kind": "riftscan-reference-validated-candidate",
+          "generated_at_utc": "2026-05-07T16:03:01.4741365+00:00",
+          "max_delta_error": 0.0063136718749774445,
+          "max_reference_planar_displacement": 2.4753908943841862,
+          "pose_count": 3,
+          "proof_method": "no-ce-riftscan-reference-multisample",
+          "proof_validation_status": "validated"
+        },
+        "proof_level": "riftscan_candidate_plus_riftreader_no_ce_multisample_and_post_readback",
+        "riftreader_pointer_matched_candidate": true,
+        "riftreader_status": "valid-after-dynamic-baseline-pool-proofonly",
+        "riftscan_validation_status": "candidate_unverified",
+        "source": "riftscan_addon_coordinate_match",
+        "source_absolute_address_hex": "0x2400EA32120",
+        "source_artifacts": [
+          "reports/generated/codex-current-coord-region-passive-20260506-230940-addon-coordinate-matches.json",
+          "C:\\RIFT MODDING\\RiftReader\\docs\\recovery\\current-proof-anchor-readback.json",
+          "C:\\RIFT MODDING\\RiftReader\\scripts\\captures\\proof-anchor-currentpid-47560-readback-summary-20260507-120302.json"
+        ],
+        "source_base_address_hex": "0x2400E970000",
+        "source_offset_hex": "0xC2120",
+        "source_region_id": "region-001892",
+        "source_session_id": "codex-current-coord-region-passive-20260506-230940",
+        "source_session_path": "C:\\RIFT MODDING\\Riftscan\\sessions\\codex-current-coord-region-passive-20260506-230940",
+        "stable_id": "coordinate::rift-addon-coordinate-candidate-000001::0x2400EA32120",
+        "state": "validated_candidate_historical_checkpoint",
+        "support_count": 3,
+        "warnings": [
+          "offline_ledger_does_not_authorize_live_movement",
+          "fresh_pid_hwnd_preflight_required_before_any_input"
+        ]
+      },
+      {
+        "axis_order": "xyz",
+        "best_addon_xyz": [
+          7511.5297851562,
+          904.47998046875,
+          3040.2800292969
+        ],
+        "best_max_abs_distance": 5.002220859751105e-11,
+        "best_memory_xyz": [
+          7511.52978515625,
+          904.47998046875,
+          3040.280029296875
+        ],
+        "candidate_id": "rift-addon-coordinate-candidate-000001",
+        "claim_level": "candidate",
+        "kind": "coordinate_vec3",
+        "ledger_live_movement_authorized": false,
+        "next_validation_step": "keep as historical evidence unless explicitly replaying the stale-trace blocker",
+        "proof_level": "current_api_plus_readonly_memory_candidate",
+        "source": "coord_api_truth_handoff",
+        "source_absolute_address_hex": "0x1DA682DF690",
+        "source_artifacts": [
+          "handoffs/current/coord-api-truth/coord-api-truth-summary.json"
+        ],
+        "source_session_id": "current-api-coord-readonly-20260506-064252",
+        "source_session_path": "sessions/current-api-coord-readonly-20260506-064252",
+        "stable_id": "coordinate::rift-addon-coordinate-candidate-000001::0x1DA682DF690::legacy_coord_api_truth",
+        "state": "historical_stale_trace_blocked",
+        "superseded_by_stable_id": "coordinate::rift-addon-coordinate-candidate-000001::0x2400EA32120",
+        "support_count": 8,
+        "trace_anchor": {
+          "blocked_reason": "old coord-trace artifact is from PID 41220 and does not match current PID 11220",
+          "process_id": 11220,
+          "trace_matches_process": false,
+          "trace_process_id": 41220
+        },
+        "warnings": [
+          "old_coord_trace_anchor_does_not_match_current_process",
+          "not_movement_grade_truth"
+        ]
+      },
+      {
+        "candidate_like_value_count": 32,
+        "claim_level": "observed",
+        "final_truth_claim": false,
+        "hit_count": 32,
+        "kind": "coordinate_candidate_scan",
+        "ledger_live_movement_authorized": false,
+        "manual_confirmation_required": true,
+        "next_validation_step": "do not use for current-client movement proof; keep only as historical search context",
+        "process_id": 33812,
+        "proof_level": "candidate_like_values_only",
+        "sample_candidate_addresses": [
+          "0x1F60208F250",
+          "0x1F6038AD880",
+          "0x1F603FABC60",
+          "0x1F603FAD0F0",
+          "0x1F604FC7270",
+          "0x1F6052B5CA0",
+          "0x1F6052BEF10",
+          "0x1F6052BF4B0",
+          "0x1F6094292C0",
+          "0x1F60DB4D230"
+        ],
+        "source": "coord_recovery_probe_summary",
+        "source_artifacts": [
+          "handoffs/current/coord-recovery/coord-recovery-summary.json"
+        ],
+        "stable_id": "coordinate_scan::33812::2026-05-02T17:14:47Z",
+        "state": "historical_candidate_scan_only",
+        "warnings": [
+          "candidate_scan_not_truth",
+          "historical_process_specific"
+        ]
+      }
+    ],
+    "created_utc": "2026-05-07T16:14:27Z",
+    "current_best_candidate": {
+      "axis_order": "xyz",
+      "best_addon_xyz": [
+        7436.57568359375,
+        885.2205810546875,
+        3056.736572265625
+      ],
+      "best_max_abs_distance": 0,
+      "best_memory_xyz": [
+        7436.57568359375,
+        885.2205810546875,
+        3056.736572265625
+      ],
+      "candidate_id": "rift-addon-coordinate-candidate-000001",
+      "claim_level": "validated_candidate",
+      "kind": "coordinate_vec3",
+      "latest_validation": {
+        "current_coordinate": {
+          "recordedAtUtc": "2026-05-07T16:03:06.7356655Z",
+          "x": 7437.40673828125,
+          "y": 885.2205810546875,
+          "z": 3055.98486328125
+        },
+        "generated_at_utc": "2026-05-07T16:03:07.235598+00:00",
+        "movement_allowed_at_capture_time": true,
+        "movement_sent_by_readback": false,
+        "no_cheat_engine": true,
+        "proof_anchor_max_age_seconds": null,
+        "readback_recorded_sample_count": null,
+        "readback_total_region_read_failures": null,
+        "stable_across_readback_samples": null,
+        "status": "valid"
+      },
+      "ledger_live_movement_authorized": false,
+      "movement_evidence": {
+        "active_movement_input_resumed_by_user": true,
+        "currently_requires_revalidation_before_more_movement": true,
+        "latest_forward_series_completed_pulse_count": 3,
+        "latest_forward_series_requested_pulse_count": 3,
+        "latest_forward_series_status": "passed-python-forward-series-3x250",
+        "latest_forward_smoke_status": "passed-python-orchestrator-forward250",
+        "proof_gated_pulse_status": "passed",
+        "requires_fresh_preflight_immediately_before_movement": true
+      },
+      "next_validation_step": "rerun exact current PID/HWND proof readback before any more live movement",
+      "observation_support_count": 1,
+      "proof_anchor_cache": {
+        "canonical_coord_source_kind": "riftscan-reference-validated-candidate",
+        "generated_at_utc": "2026-05-07T16:03:01.4741365+00:00",
+        "max_delta_error": 0.0063136718749774445,
+        "max_reference_planar_displacement": 2.4753908943841862,
+        "pose_count": 3,
+        "proof_method": "no-ce-riftscan-reference-multisample",
+        "proof_validation_status": "validated"
+      },
+      "proof_level": "riftscan_candidate_plus_riftreader_no_ce_multisample_and_post_readback",
+      "riftreader_pointer_matched_candidate": true,
+      "riftreader_status": "valid-after-dynamic-baseline-pool-proofonly",
+      "riftscan_validation_status": "candidate_unverified",
+      "source": "riftscan_addon_coordinate_match",
+      "source_absolute_address_hex": "0x2400EA32120",
+      "source_artifacts": [
+        "reports/generated/codex-current-coord-region-passive-20260506-230940-addon-coordinate-matches.json",
+        "C:\\RIFT MODDING\\RiftReader\\docs\\recovery\\current-proof-anchor-readback.json",
+        "C:\\RIFT MODDING\\RiftReader\\scripts\\captures\\proof-anchor-currentpid-47560-readback-summary-20260507-120302.json"
+      ],
+      "source_base_address_hex": "0x2400E970000",
+      "source_offset_hex": "0xC2120",
+      "source_region_id": "region-001892",
+      "source_session_id": "codex-current-coord-region-passive-20260506-230940",
+      "source_session_path": "C:\\RIFT MODDING\\Riftscan\\sessions\\codex-current-coord-region-passive-20260506-230940",
+      "stable_id": "coordinate::rift-addon-coordinate-candidate-000001::0x2400EA32120",
+      "state": "validated_candidate_historical_checkpoint",
+      "support_count": 3,
+      "warnings": [
+        "offline_ledger_does_not_authorize_live_movement",
+        "fresh_pid_hwnd_preflight_required_before_any_input"
+      ]
+    },
+    "current_best_candidate_stable_id": "coordinate::rift-addon-coordinate-candidate-000001::0x2400EA32120",
+    "inventory": {
+      "latest_sessions": [
+        {
+          "capture_mode": "passive",
+          "last_write_utc_inferred_from_filesystem": "2026-05-07T03:09:44.862971Z",
+          "path": "sessions/codex-current-coord-region-passive-20260506-230940",
+          "process_id": 47560,
+          "process_name": "rift_x64",
+          "region_count": 1,
+          "session_id": "codex-current-coord-region-passive-20260506-230940",
+          "snapshot_count": 3,
+          "status": "complete",
+          "total_bytes_raw": 50528256
+        },
+        {
+          "capture_mode": "passive",
+          "last_write_utc_inferred_from_filesystem": "2026-05-06T16:57:11.702384Z",
+          "path": "sessions/riftreader-currentpid-47560-passive-noinput-20260506-125703",
+          "process_id": 47560,
+          "process_name": "rift_x64",
+          "region_count": 16,
+          "session_id": "riftreader-currentpid-47560-passive-noinput-20260506-125703",
+          "snapshot_count": 32,
+          "status": "complete",
+          "total_bytes_raw": 2097152
+        },
+        {
+          "capture_mode": "passive",
+          "last_write_utc_inferred_from_filesystem": "2026-05-06T13:12:20.345488Z",
+          "path": "sessions/riftreader-currentpid-47560-passive-noinput-20260506-091212",
+          "process_id": 47560,
+          "process_name": "rift_x64",
+          "region_count": 16,
+          "session_id": "riftreader-currentpid-47560-passive-noinput-20260506-091212",
+          "snapshot_count": 32,
+          "status": "complete",
+          "total_bytes_raw": 2097152
+        },
+        {
+          "capture_mode": "passive",
+          "last_write_utc_inferred_from_filesystem": "2026-05-06T13:06:22.409463Z",
+          "path": "sessions/riftreader-currentpid-47560-passive-noinput-20260506-090614",
+          "process_id": 47560,
+          "process_name": "rift_x64",
+          "region_count": 16,
+          "session_id": "riftreader-currentpid-47560-passive-noinput-20260506-090614",
+          "snapshot_count": 32,
+          "status": "complete",
+          "total_bytes_raw": 2097152
+        },
+        {
+          "capture_mode": "passive",
+          "last_write_utc_inferred_from_filesystem": "2026-05-06T13:05:46.714390Z",
+          "path": "sessions/riftreader-currentpid-47560-passive-noinput-20260506-090539",
+          "process_id": 47560,
+          "process_name": "rift_x64",
+          "region_count": 16,
+          "session_id": "riftreader-currentpid-47560-passive-noinput-20260506-090539",
+          "snapshot_count": 32,
+          "status": "complete",
+          "total_bytes_raw": 2097152
+        },
+        {
+          "capture_mode": "passive",
+          "last_write_utc_inferred_from_filesystem": "2026-05-06T12:56:58.935273Z",
+          "path": "sessions/riftreader-currentpid-47560-passive-noinput-20260506-085655",
+          "process_id": 47560,
+          "process_name": "rift_x64",
+          "region_count": 16,
+          "session_id": "riftreader-currentpid-47560-passive-noinput-20260506-085655",
+          "snapshot_count": 32,
+          "status": "complete",
+          "total_bytes_raw": 2097152
+        },
+        {
+          "capture_mode": "passive",
+          "last_write_utc_inferred_from_filesystem": "2026-05-06T10:42:54.151525Z",
+          "path": "sessions/current-api-coord-readonly-20260506-064252",
+          "process_id": 11220,
+          "process_name": "rift_x64",
+          "region_count": 1,
+          "session_id": "current-api-coord-readonly-20260506-064252",
+          "snapshot_count": 8,
+          "status": "complete",
+          "total_bytes_raw": 4096
+        },
+        {
+          "capture_mode": null,
+          "last_write_utc_inferred_from_filesystem": "2026-05-03T07:50:23.041489Z",
+          "path": "sessions/focus-gated-dry-runs/20260503T075023Z_focus_gated_session_dry_run",
+          "process_id": null,
+          "process_name": null,
+          "region_count": null,
+          "session_id": "20260503T075023Z_focus_gated_session_dry_run",
+          "snapshot_count": null,
+          "status": "dry_run_session_created",
+          "total_bytes_raw": null
+        },
+        {
+          "capture_mode": "passive",
+          "last_write_utc_inferred_from_filesystem": "2026-04-30T14:58:25.809904Z",
+          "path": "sessions/actor-coord-move-forward-manual-20260430-105808",
+          "process_id": 41220,
+          "process_name": "rift_x64",
+          "region_count": 3,
+          "session_id": "actor-coord-move-forward-manual-20260430-105808",
+          "snapshot_count": 240,
+          "status": "complete",
+          "total_bytes_raw": 983040
+        },
+        {
+          "capture_mode": "passive",
+          "last_write_utc_inferred_from_filesystem": "2026-04-30T13:48:42.813102Z",
+          "path": "sessions/codex-riftreader-delegate-actor-coords-20260430-094839",
+          "process_id": 41220,
+          "process_name": "rift_x64",
+          "region_count": 3,
+          "session_id": "codex-riftreader-delegate-actor-coords-20260430-094839",
+          "snapshot_count": 12,
+          "status": "complete",
+          "total_bytes_raw": 49152
+        },
+        {
+          "capture_mode": "passive",
+          "last_write_utc_inferred_from_filesystem": "2026-04-30T08:38:30.476263Z",
+          "path": "sessions/actor-coordinate-owner-combined-passive-20260430-043829",
+          "process_id": 41220,
+          "process_name": "rift_x64",
+          "region_count": 2,
+          "session_id": "actor-coordinate-owner-combined-passive-20260430-043829",
+          "snapshot_count": 16,
+          "status": "complete",
+          "total_bytes_raw": 884736
+        },
+        {
+          "capture_mode": "passive",
+          "last_write_utc_inferred_from_filesystem": "2026-04-30T08:34:29.228166Z",
+          "path": "sessions/actor-coordinate-owner-adjacent-passive-20260430-043427",
+          "process_id": 41220,
+          "process_name": "rift_x64",
+          "region_count": 48,
+          "session_id": "actor-coordinate-owner-adjacent-passive-20260430-043427",
+          "snapshot_count": 192,
+          "status": "complete",
+          "total_bytes_raw": 3686400
+        },
+        {
+          "capture_mode": "passive",
+          "last_write_utc_inferred_from_filesystem": "2026-04-30T08:20:04.859546Z",
+          "path": "sessions/actor-coordinate-owner-followup-passive-20260430-042003",
+          "process_id": 41220,
+          "process_name": "rift_x64",
+          "region_count": 2,
+          "session_id": "actor-coordinate-owner-followup-passive-20260430-042003",
+          "snapshot_count": 16,
+          "status": "complete",
+          "total_bytes_raw": 1048576
+        },
+        {
+          "capture_mode": "passive",
+          "last_write_utc_inferred_from_filesystem": "2026-04-30T07:16:07.360392Z",
+          "path": "sessions/live-alt-z-camera-20260430-031557-camera_only_alt_z_zoom",
+          "process_id": 41220,
+          "process_name": "rift_x64",
+          "region_count": 1,
+          "session_id": "live-alt-z-camera-20260430-031557-camera_only_alt_z_zoom",
+          "snapshot_count": 80,
+          "status": "complete",
+          "total_bytes_raw": 7864320
+        },
+        {
+          "capture_mode": "passive",
+          "last_write_utc_inferred_from_filesystem": "2026-04-30T07:11:42.686152Z",
+          "path": "sessions/live-alt-z-camera-20260430-031132-camera_only_alt_z_zoom",
+          "process_id": 41220,
+          "process_name": "rift_x64",
+          "region_count": 1,
+          "session_id": "live-alt-z-camera-20260430-031132-camera_only_alt_z_zoom",
+          "snapshot_count": 80,
+          "status": "complete",
+          "total_bytes_raw": 7864320
+        },
+        {
+          "capture_mode": "passive",
+          "last_write_utc_inferred_from_filesystem": "2026-04-30T07:04:09.832107Z",
+          "path": "sessions/live-shift-z-repeat-20260430-030359-camera_only_shift_z_zoom",
+          "process_id": 41220,
+          "process_name": "rift_x64",
+          "region_count": 1,
+          "session_id": "live-shift-z-repeat-20260430-030359-camera_only_shift_z_zoom",
+          "snapshot_count": 80,
+          "status": "complete",
+          "total_bytes_raw": 7864320
+        },
+        {
+          "capture_mode": "passive",
+          "last_write_utc_inferred_from_filesystem": "2026-04-30T07:01:59.664208Z",
+          "path": "sessions/live-redo-movement-20260430-025319-camera_only_shift_z_zoom",
+          "process_id": 41220,
+          "process_name": "rift_x64",
+          "region_count": 1,
+          "session_id": "live-redo-movement-20260430-025319-camera_only_shift_z_zoom",
+          "snapshot_count": 80,
+          "status": "complete",
+          "total_bytes_raw": 7864320
+        },
+        {
+          "capture_mode": "passive",
+          "last_write_utc_inferred_from_filesystem": "2026-04-30T06:56:26.021229Z",
+          "path": "sessions/live-redo-movement-20260430-025319-camera_only",
+          "process_id": 41220,
+          "process_name": "rift_x64",
+          "region_count": 1,
+          "session_id": "live-redo-movement-20260430-025319-camera_only",
+          "snapshot_count": 80,
+          "status": "complete",
+          "total_bytes_raw": 7864320
+        },
+        {
+          "capture_mode": "passive",
+          "last_write_utc_inferred_from_filesystem": "2026-04-30T06:54:01.932778Z",
+          "path": "sessions/live-redo-movement-20260430-025319-move_forward",
+          "process_id": 41220,
+          "process_name": "rift_x64",
+          "region_count": 1,
+          "session_id": "live-redo-movement-20260430-025319-move_forward",
+          "snapshot_count": 80,
+          "status": "complete",
+          "total_bytes_raw": 7864320
+        },
+        {
+          "capture_mode": "passive",
+          "last_write_utc_inferred_from_filesystem": "2026-04-30T06:53:50.991365Z",
+          "path": "sessions/live-redo-movement-20260430-025319-turn_right",
+          "process_id": 41220,
+          "process_name": "rift_x64",
+          "region_count": 1,
+          "session_id": "live-redo-movement-20260430-025319-turn_right",
+          "snapshot_count": 80,
+          "status": "complete",
+          "total_bytes_raw": 7864320
+        }
+      ],
+      "session_manifest_count": 115
+    },
+    "next_recommended_actions": [
+      "Use the RiftReader May 7 current-proof pointer as the latest discovery status, but treat it as requiring fresh preflight before more movement.",
+      "Keep the RiftScan candidate at 0x2400EA32120 as the current best coordinate candidate source.",
+      "Do not promote the older 0x1DA682DF690 Coord API Truth artifact beyond historical stale-trace-blocked evidence.",
+      "When the game window is available, have RiftReader rerun exact PID/HWND proof readback rather than rediscovering from scratch.",
+      "If PID/HWND changed, reacquire via RiftScan-first candidate import/readback/promotion instead of CE or heuristic caches."
+    ],
+    "output_paths": {
+      "candidate_ledger": "handoffs/current/discovery-ledger/candidate_ledger.jsonl",
+      "log": "handoffs/current/discovery-ledger/discovery-ledger-log.jsonl",
+      "report": "handoffs/current/discovery-ledger/DISCOVERY_LEDGER_REPORT.md",
+      "summary": "handoffs/current/discovery-ledger/discovery-ledger-summary.json"
+    },
+    "safety": {
+      "focus_preflight_started": false,
+      "ledger_live_movement_authorized": false,
+      "live_capture_started": false,
+      "movement_or_input_sent": false,
+      "offline_only": true,
+      "process_attach_or_memory_read_started": false,
+      "reloadui_sent": false,
+      "riftreader_command_executed": false
+    },
+    "schema_version": "riftscan.discovery_ledger.v1",
+    "scope": "offline_artifact_inventory_no_live_process_access",
+    "source_artifact_status": {
+      "riftreader_current_proof_pointer_exists": true,
+      "riftreader_latest_handoff_exists": true,
+      "riftreader_latest_proof_summary_exists": true,
+      "riftscan_coord_api_truth_summary_exists": true,
+      "riftscan_coord_recovery_summary_exists": true,
+      "riftscan_match_file_exists": true
+    },
+    "source_artifacts": {
+      "riftreader_current_proof_pointer": "C:\\RIFT MODDING\\RiftReader\\docs\\recovery\\current-proof-anchor-readback.json",
+      "riftreader_latest_handoff": "C:\\RIFT MODDING\\RiftReader\\docs\\handoffs\\2026-05-07-120330-python-baseline-pool-handoff.md",
+      "riftreader_latest_proof_summary": "C:\\RIFT MODDING\\RiftReader\\scripts\\captures\\proof-anchor-currentpid-47560-readback-summary-20260507-120302.json",
+      "riftscan_coord_api_truth_summary": "handoffs/current/coord-api-truth/coord-api-truth-summary.json",
+      "riftscan_coord_recovery_summary": "handoffs/current/coord-recovery/coord-recovery-summary.json",
+      "riftscan_match_file": "reports/generated/codex-current-coord-region-passive-20260506-230940-addon-coordinate-matches.json",
+      "riftscan_movement_execution_gate_summary": "handoffs/current/movement-execution-gate/movement-execution-gate-summary.json"
+    },
+    "status": "ledger_written"
+  },
+  "report_exists": true,
+  "candidate_ledger_exists": true,
   "log_exists": true
 }
 ```

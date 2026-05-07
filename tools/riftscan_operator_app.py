@@ -1,5 +1,5 @@
-# Version: riftscan-operator-app-v3.8.21
-# Purpose: Windows Tkinter helper app for RiftScan operator workflow: run focus preflight, run full live preflight gate, run the post-update baseline and capture-readiness gates, run offline workflow checks and Post-Update Baseline, Capture Readiness, Operator gate, and movement gate self-tests, summarize the current workflow go/no-go gate with artifact freshness/linkage checks plus coord/API truth and movement execution gate references, manage focus-gated metadata workflows, validate patch-runner manifests, check the online patch inbox discovery-only from the visible Main tab, write compact AI-ready reports, clean known junk, safely commit/push allowlisted files including baseline/readiness/coord-truth/movement-gate, repo-bridge handoffs and repo inbox patch packages, and provide tabbed/wrapped controls, a guided button-pusher workflow, focus-discipline confirmation, and lightweight status highlighting.
+# Version: riftscan-operator-app-v3.8.22
+# Purpose: Windows Tkinter helper app for RiftScan operator workflow: run focus preflight, run full live preflight gate, run the post-update baseline and capture-readiness gates, run offline workflow checks and Post-Update Baseline, Capture Readiness, Operator gate, discovery-ledger, and movement gate self-tests, summarize the current workflow go/no-go gate with artifact freshness/linkage checks plus coord/API truth, discovery-ledger, and movement execution gate references, manage focus-gated metadata workflows, validate patch-runner manifests, check the online patch inbox discovery-only from the visible Main tab, write compact AI-ready reports, clean known junk, safely commit/push allowlisted files including baseline/readiness/coord-truth/discovery-ledger/movement-gate, repo-bridge handoffs and repo inbox patch packages, and provide tabbed/wrapped controls, a guided button-pusher workflow, focus-discipline confirmation, and lightweight status highlighting.
 # Total character count: 204218
 
 from __future__ import annotations
@@ -22,7 +22,7 @@ from tkinter import messagebox, scrolledtext, ttk
 from typing import Any
 
 
-APP_VERSION = "riftscan-operator-app-v3.8.21"
+APP_VERSION = "riftscan-operator-app-v3.8.22"
 REPO_ROOT = Path(__file__).resolve().parents[1]
 FOCUS_SCRIPT = REPO_ROOT / "scripts" / "run-rift-focus-control.cmd"
 HANDOFF_DIR = REPO_ROOT / "handoffs" / "current" / "focus-control-local"
@@ -47,6 +47,12 @@ OFFLINE_WORKFLOW_CHECK_DIR = REPO_ROOT / "handoffs" / "current" / "offline-workf
 OFFLINE_WORKFLOW_CHECK_REPORT = OFFLINE_WORKFLOW_CHECK_DIR / "OFFLINE_WORKFLOW_CHECK_REPORT.md"
 OFFLINE_WORKFLOW_CHECK_SUMMARY = OFFLINE_WORKFLOW_CHECK_DIR / "offline-workflow-check-summary.json"
 OFFLINE_WORKFLOW_CHECK_LOG = OFFLINE_WORKFLOW_CHECK_DIR / "offline-workflow-check-log.jsonl"
+DISCOVERY_LEDGER_CMD = REPO_ROOT / "scripts" / "run-riftscan-discovery-ledger.cmd"
+DISCOVERY_LEDGER_DIR = REPO_ROOT / "handoffs" / "current" / "discovery-ledger"
+DISCOVERY_LEDGER_REPORT = DISCOVERY_LEDGER_DIR / "DISCOVERY_LEDGER_REPORT.md"
+DISCOVERY_LEDGER_SUMMARY = DISCOVERY_LEDGER_DIR / "discovery-ledger-summary.json"
+DISCOVERY_LEDGER_CANDIDATE_LEDGER = DISCOVERY_LEDGER_DIR / "candidate_ledger.jsonl"
+DISCOVERY_LEDGER_LOG = DISCOVERY_LEDGER_DIR / "discovery-ledger-log.jsonl"
 CAPTURE_PLAN_CHECK_CMD = REPO_ROOT / "scripts" / "run-riftscan-capture-plan-check.cmd"
 CAPTURE_PLAN_CHECK_DIR = REPO_ROOT / "handoffs" / "current" / "capture-plan-check"
 CAPTURE_PLAN_CHECK_REPORT = CAPTURE_PLAN_CHECK_DIR / "CAPTURE_PLAN_CHECK_REPORT.md"
@@ -101,6 +107,7 @@ ALLOWLIST = [
     "handoffs/current/post-update-baseline",
     "handoffs/current/capture-readiness",
     "handoffs/current/offline-workflow-check",
+    "handoffs/current/discovery-ledger",
     "handoffs/current/capture-plan-check",
     "handoffs/current/movement-test-readiness",
     "handoffs/current/movement-execution-gate",
@@ -114,6 +121,7 @@ ALLOWLIST = [
     "scripts/run-riftscan-post-update-baseline.cmd",
     "scripts/run-riftscan-capture-readiness.cmd",
     "scripts/run-riftscan-offline-workflow-check.cmd",
+    "scripts/run-riftscan-discovery-ledger.cmd",
     "scripts/run-riftscan-capture-plan-check.cmd",
     "scripts/run-riftscan-movement-test-readiness.cmd",
     "scripts/run-riftscan-movement-execution-gate.cmd",
@@ -125,6 +133,7 @@ ALLOWLIST = [
     "tools/riftscan_post_update_baseline.py",
     "tools/riftscan_capture_readiness.py",
     "tools/riftscan_offline_workflow_check.py",
+    "tools/riftscan_discovery_ledger.py",
     "tools/riftscan_capture_plan_check.py",
     "tools/riftscan_movement_test_readiness.py",
     "tools/riftscan_movement_execution_gate.py",
@@ -518,6 +527,38 @@ def latest_offline_workflow_check_summary() -> dict[str, Any]:
         "summary": summary,
         "report_exists": OFFLINE_WORKFLOW_CHECK_REPORT.exists(),
         "log_exists": OFFLINE_WORKFLOW_CHECK_LOG.exists(),
+    }
+
+
+def latest_discovery_ledger_summary() -> dict[str, Any]:
+    if not DISCOVERY_LEDGER_SUMMARY.exists():
+        return {
+            "status": "none",
+            "reason": "discovery ledger summary has not been generated",
+            "expected_report_path": rel(DISCOVERY_LEDGER_REPORT),
+            "expected_summary_path": rel(DISCOVERY_LEDGER_SUMMARY),
+            "expected_candidate_ledger_path": rel(DISCOVERY_LEDGER_CANDIDATE_LEDGER),
+            "expected_log_path": rel(DISCOVERY_LEDGER_LOG),
+        }
+
+    summary = load_json(DISCOVERY_LEDGER_SUMMARY)
+    if summary.get("_missing") or summary.get("_error"):
+        return {
+            "status": "error",
+            "summary_path": rel(DISCOVERY_LEDGER_SUMMARY),
+            "summary": summary,
+        }
+
+    return {
+        "status": "present",
+        "report_path": rel(DISCOVERY_LEDGER_REPORT),
+        "summary_path": rel(DISCOVERY_LEDGER_SUMMARY),
+        "candidate_ledger_path": rel(DISCOVERY_LEDGER_CANDIDATE_LEDGER),
+        "log_path": rel(DISCOVERY_LEDGER_LOG),
+        "summary": summary,
+        "report_exists": DISCOVERY_LEDGER_REPORT.exists(),
+        "candidate_ledger_exists": DISCOVERY_LEDGER_CANDIDATE_LEDGER.exists(),
+        "log_exists": DISCOVERY_LEDGER_LOG.exists(),
     }
 
 
@@ -2823,6 +2864,7 @@ def write_operator_report() -> Path:
     post_update_baseline = latest_post_update_baseline_summary()
     capture_readiness = latest_capture_readiness_summary()
     offline_workflow_check = latest_offline_workflow_check_summary()
+    discovery_ledger = latest_discovery_ledger_summary()
     capture_plan_check = latest_capture_plan_check_summary()
     movement_test_readiness = latest_movement_test_readiness_summary()
     movement_execution_gate = latest_movement_execution_gate_summary()
@@ -2926,6 +2968,12 @@ Exit code: `{log_code}`
 
 ```json
 {json_block(offline_workflow_check)}
+```
+
+## Latest Discovery Ledger
+
+```json
+{json_block(discovery_ledger)}
 ```
 
 ## Latest Capture Plan Check
@@ -3562,6 +3610,7 @@ class RiftScanOperatorApp(tk.Tk):
                 ("Validate Pending Patch", self.validate_pending_patch),
                 ("Operator Gate Self-Test", self.run_operator_gate_self_test),
                 ("Offline Workflow Check", self.run_offline_workflow_check),
+                ("Discovery Ledger", self.run_discovery_ledger),
                 ("Capture Plan Check", self.run_capture_plan_check),
                 ("Movement Test Readiness", self.run_movement_test_readiness),
                 ("Movement Execution Gate", self.run_movement_execution_gate),
@@ -4022,6 +4071,85 @@ class RiftScanOperatorApp(tk.Tk):
             return "\n".join(lines)
 
         self.run_async("offline workflow check", task)
+
+
+    def run_discovery_ledger(self) -> None:
+        def task() -> str:
+            if not DISCOVERY_LEDGER_CMD.exists():
+                return f"ERROR: missing {rel(DISCOVERY_LEDGER_CMD)}"
+
+            exit_code, stdout, stderr = run_command(
+                ["cmd", "/c", str(DISCOVERY_LEDGER_CMD)],
+                timeout=180,
+            )
+            summary = load_json(DISCOVERY_LEDGER_SUMMARY)
+            report_path = write_operator_report()
+
+            if summary.get("_missing") or summary.get("_error"):
+                display_status = "FAIL"
+                status = "summary_unavailable"
+                blockers = [summary.get("_error") or f"Missing summary: {rel(DISCOVERY_LEDGER_SUMMARY)}"]
+                paths = {
+                    "report": rel(DISCOVERY_LEDGER_REPORT),
+                    "summary": rel(DISCOVERY_LEDGER_SUMMARY),
+                    "candidate_ledger": rel(DISCOVERY_LEDGER_CANDIDATE_LEDGER),
+                    "log": rel(DISCOVERY_LEDGER_LOG),
+                }
+                best = {}
+            else:
+                display_status = "PASS" if summary.get("status") == "ledger_written" else "UNKNOWN"
+                status = str(summary.get("status") or "unknown")
+                blockers = list(summary.get("blockers") or [])
+                paths = summary.get("output_paths") or {}
+                best = summary.get("current_best_candidate") if isinstance(summary.get("current_best_candidate"), dict) else {}
+
+            if exit_code != 0 and display_status == "PASS":
+                display_status = "FAIL"
+
+            lines = [
+                "\n=== DISCOVERY LEDGER ===",
+                f"DISCOVERY LEDGER: {display_status}",
+                f"status: {status}",
+                f"Exit code: {exit_code}",
+                "",
+                "Current best candidate:",
+                f"- candidate_id: {best.get('candidate_id') or '-'}",
+                f"- address: {best.get('source_absolute_address_hex') or '-'}",
+                f"- state: {best.get('state') or '-'}",
+                f"- proof_level: {best.get('proof_level') or '-'}",
+                "",
+                "Blockers / guardrails:",
+            ]
+            if blockers:
+                lines.extend(f"- {blocker}" for blocker in blockers)
+            else:
+                lines.append("- None")
+
+            lines.extend(
+                [
+                    "",
+                    f"Report: {paths.get('report') or rel(DISCOVERY_LEDGER_REPORT)}",
+                    f"Summary: {paths.get('summary') or rel(DISCOVERY_LEDGER_SUMMARY)}",
+                    f"Candidate ledger: {paths.get('candidate_ledger') or rel(DISCOVERY_LEDGER_CANDIDATE_LEDGER)}",
+                    f"Log: {paths.get('log') or rel(DISCOVERY_LEDGER_LOG)}",
+                    f"Operator report: {rel(report_path)}",
+                ]
+            )
+
+            if stdout.strip():
+                lines.extend(["", "Launcher stdout:", stdout.strip()])
+            if stderr.strip():
+                lines.extend(["", "Launcher stderr:", stderr.strip()])
+
+            lines.extend(
+                [
+                    "",
+                    "Safety: offline artifact inventory only; no focus preflight, capture, movement/input, memory scan/read, process attach, RiftReader command execution, or /reloadui was run.",
+                ]
+            )
+            return "\n".join(lines)
+
+        self.run_async("discovery ledger", task)
 
 
     def run_capture_plan_check(self) -> None:
@@ -4623,6 +4751,7 @@ class RiftScanOperatorApp(tk.Tk):
         guide = (
             "=== RIFTSCAN GUIDED WORKFLOW ===\n"
             "Recommended button order:\n"
+            "0. Discovery Ledger (offline, when RiftReader owns the game window)\n"
             "1. Post-Update Baseline\n"
             "2. Capture Readiness\n"
             "3. Run Full Live Preflight\n"
@@ -4635,7 +4764,7 @@ class RiftScanOperatorApp(tk.Tk):
             "10. Compare Sessions\n"
             "11. Clean Known Junk, Commit Allowlist, Push\n\n"
             "After a RIFT update, treat older baselines and offsets as historical until a fresh current-client baseline passes.\n"
-            "Diagnostics > Operator Gate Self-Test, Offline Workflow Check, Capture Plan Check, Movement Test Readiness, Post-Update Baseline Self-Test, and Capture Readiness Self-Test are safe helper checks; self-tests are offline and Capture Plan Check/Movement Test Readiness only read existing metadata artifacts.\n"
+            "Diagnostics > Operator Gate Self-Test, Offline Workflow Check, Discovery Ledger, Capture Plan Check, Movement Test Readiness, Post-Update Baseline Self-Test, and Capture Readiness Self-Test are safe helper checks; self-tests are offline and Discovery Ledger/Capture Plan Check/Movement Test Readiness only read existing metadata artifacts.\n"
             "Movement Execution Gate is live-adjacent but no-input: it may re-run focus/live-wrapper preflight and RiftReader anchor checks, but it must not capture or send movement.\n"
             "Capture Readiness must PASS before creating or refreshing capture plans; Capture Plan Check, Movement Test Readiness, and Movement Execution Gate must PASS before any bounded live movement command.\n"
             "LEAVE RIFT FOREGROUND during the metadata collector.\n"
