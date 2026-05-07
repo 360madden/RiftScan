@@ -65,7 +65,7 @@ The current packet records this under `previous_packet_archive` with `status`, `
 
 When `status` is `ARCHIVED`, packet generation appends one JSON object to `handoffs/current/ai-workflow/history/index.jsonl` with schema `riftscan.ai_workflow_packet_history_index.v1`. Each row records `indexed_utc`, `archive_stem`, `source_created_utc`, `source_app_version`, and `artifacts`.
 
-Offline Workflow Check validates `previous_packet_archive.status`, verifies archived summary/report files exist when the status is `ARCHIVED`, confirms the archived summary is valid JSON, validates `history_index` JSONL, and confirms the index contains the archived summary/report pair.
+Offline Workflow Check validates `previous_packet_archive.status`, verifies archived summary/report files exist when the status is `ARCHIVED`, confirms archived summaries are valid JSON, validates every `history_index` JSONL row, and confirms the index contains the archived summary/report pair.
 
 ### Status values
 

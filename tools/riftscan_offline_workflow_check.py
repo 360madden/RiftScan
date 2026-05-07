@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # RiftScan script metadata
-# Version: riftscan-offline-workflow-check-v1.0.10
+# Version: riftscan-offline-workflow-check-v1.0.11
 # Total character count: 000000
 # Purpose: Run conservative offline helper workflow checks, refresh the offline discovery ledger, and write deterministic report artifacts.
 # Safety boundary: Offline validation only. No RIFT focus preflight, live capture, input, movement, memory scan/read, offset validation, RiftReader validation, or /reloadui.
@@ -16,7 +16,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-APP_VERSION = "riftscan-offline-workflow-check-v1.0.10"
+APP_VERSION = "riftscan-offline-workflow-check-v1.0.11"
 REPO_ROOT = Path(__file__).resolve().parents[1]
 OUT_DIR = REPO_ROOT / "handoffs" / "current" / "offline-workflow-check"
 REPORT = OUT_DIR / "OFFLINE_WORKFLOW_CHECK_REPORT.md"
@@ -281,6 +281,28 @@ def validate_ai_workflow_packet_contract(summary: dict[str, Any], schema_doc_tex
                     if index_error:
                         errors.append(f"previous_packet_archive.history_index is invalid: {index_error}")
                     else:
+                        for entry_index, entry in enumerate(index_entries or [], start=1):
+                            if entry.get("schema_version") != "riftscan.ai_workflow_packet_history_index.v1":
+                                errors.append(f"previous_packet_archive.history_index[{entry_index}].schema_version is invalid")
+                            entry_artifacts = entry.get("artifacts")
+                            if not isinstance(entry_artifacts, dict):
+                                errors.append(f"previous_packet_archive.history_index[{entry_index}].artifacts is missing or not an object")
+                                continue
+                            for artifact_name in ("summary", "report"):
+                                artifact_path_text = entry_artifacts.get(artifact_name)
+                                artifact_path = repo_artifact_path(artifact_path_text)
+                                if artifact_path is None:
+                                    errors.append(f"previous_packet_archive.history_index[{entry_index}].artifacts.{artifact_name} is missing or outside the repo")
+                                    continue
+                                if not artifact_path.is_file():
+                                    errors.append(f"previous_packet_archive.history_index[{entry_index}].artifacts.{artifact_name} does not exist: {artifact_path_text}")
+                            summary_path = repo_artifact_path(entry_artifacts.get("summary"))
+                            if summary_path and summary_path.is_file():
+                                archived_summary, archived_error = read_json_file(summary_path)
+                                if archived_error:
+                                    errors.append(f"previous_packet_archive.history_index[{entry_index}].artifacts.summary is not valid JSON: {archived_error}")
+                                elif not isinstance(archived_summary, dict):
+                                    errors.append(f"previous_packet_archive.history_index[{entry_index}].artifacts.summary is not a JSON object")
                         expected_summary = artifacts.get("summary")
                         expected_report = artifacts.get("report")
                         matching_entries = [

@@ -217,7 +217,7 @@ python tools/riftscan_ai_workflow_packet.py --show-existing-diff
 
 Each packet refresh archives the prior `ai-workflow-summary.json` and previous Markdown packet under `handoffs/current/ai-workflow/history/` before overwriting current files.
 It also appends `handoffs/current/ai-workflow/history/index.jsonl` so offline agents can enumerate prior packet checkpoints without guessing filenames.
-Offline Workflow Check validates that archive metadata, archived paths, and the history index remain usable.
+Offline Workflow Check validates that archive metadata, archived paths, every history-index row, and archived summary JSON remain usable.
 
 Capture plan validation:
 
