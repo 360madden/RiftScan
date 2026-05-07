@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # RiftScan script metadata
-# Version: riftscan-discovery-ledger-v1.0.0
+# Version: riftscan-discovery-ledger-v1.1.0
 # Total character count: 000000
-# Purpose: Build an offline, replayable discovery ledger from stored RiftScan/RiftReader artifacts.
+# Purpose: Build and validate an offline, replayable discovery ledger from stored RiftScan/RiftReader artifacts.
 # Safety boundary: Reads existing JSON/Markdown/session artifacts only. No RIFT focus preflight, live capture, input, movement, memory scan/read, process attach, offset validation, RiftReader command execution, or /reloadui.
 
 from __future__ import annotations
@@ -14,7 +14,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-APP_VERSION = "riftscan-discovery-ledger-v1.0.0"
+APP_VERSION = "riftscan-discovery-ledger-v1.1.0"
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_RIFTREADER_ROOT = Path(r"C:\RIFT MODDING\RiftReader")
 OUT_DIR = REPO_ROOT / "handoffs" / "current" / "discovery-ledger"
@@ -22,6 +22,36 @@ SUMMARY = OUT_DIR / "discovery-ledger-summary.json"
 REPORT = OUT_DIR / "DISCOVERY_LEDGER_REPORT.md"
 CANDIDATE_LEDGER = OUT_DIR / "candidate_ledger.jsonl"
 LOG = OUT_DIR / "discovery-ledger-log.jsonl"
+LEDGER_SCHEMA_VERSION = "riftscan.discovery_ledger.v1"
+LEDGER_VALIDATION_SCHEMA_VERSION = "riftscan.discovery_ledger_validation.v1"
+ALLOWED_STATES = {
+    "candidate",
+    "validated_candidate_historical_checkpoint",
+    "historical_stale_trace_blocked",
+    "historical_candidate_scan_only",
+}
+ALLOWED_CLAIM_LEVELS = {"observed", "candidate", "validated_candidate"}
+REQUIRED_COMMON_FIELDS = [
+    "stable_id",
+    "kind",
+    "state",
+    "claim_level",
+    "proof_level",
+    "source",
+    "ledger_live_movement_authorized",
+    "next_validation_step",
+    "source_artifacts",
+    "warnings",
+]
+REQUIRED_COORDINATE_FIELDS = [
+    "candidate_id",
+    "source_absolute_address_hex",
+    "axis_order",
+    "support_count",
+    "best_max_abs_distance",
+    "best_memory_xyz",
+    "best_addon_xyz",
+]
 
 COORD_API_TRUTH_SUMMARY = REPO_ROOT / "handoffs" / "current" / "coord-api-truth" / "coord-api-truth-summary.json"
 COORD_RECOVERY_SUMMARY = REPO_ROOT / "handoffs" / "current" / "coord-recovery" / "coord-recovery-summary.json"
@@ -242,6 +272,8 @@ def legacy_coord_api_entry(summary_path: Path, summary: dict[str, Any], supersed
         "source": "coord_api_truth_handoff",
         "source_session_id": capture.get("session_id"),
         "source_session_path": capture.get("session_path"),
+        "source_base_address_hex": capture.get("candidate_source_base_address_hex") or capture.get("source_base_address_hex"),
+        "source_offset_hex": capture.get("candidate_source_offset_hex") or capture.get("source_offset_hex"),
         "source_absolute_address_hex": capture.get("candidate_source_absolute_address_hex"),
         "axis_order": capture.get("axis_order"),
         "support_count": capture.get("support_count"),
@@ -373,7 +405,7 @@ def build_ledger(riftreader_root: Path) -> dict[str, Any]:
 
     current_best = current_candidate or (candidates[0] if candidates else None)
     summary = {
-        "schema_version": "riftscan.discovery_ledger.v1",
+        "schema_version": LEDGER_SCHEMA_VERSION,
         "created_utc": utc(),
         "app_version": APP_VERSION,
         "status": "ledger_written" if candidates else "no_candidates_found",
@@ -533,6 +565,271 @@ def write_outputs(summary: dict[str, Any]) -> None:
     append_log("outputs_written", summary=rel(SUMMARY), report=rel(REPORT), candidate_ledger=rel(CANDIDATE_LEDGER))
 
 
+def is_blank(value: Any) -> bool:
+    return value is None or (isinstance(value, str) and not value.strip())
+
+
+def issue(
+    issues: list[dict[str, Any]],
+    code: str,
+    message: str,
+    *,
+    severity: str = "error",
+    line: int | None = None,
+    stable_id: Any = None,
+    field: str | None = None,
+) -> None:
+    item: dict[str, Any] = {
+        "severity": severity,
+        "code": code,
+        "message": message,
+    }
+    if line is not None:
+        item["line"] = line
+    if not is_blank(stable_id):
+        item["stable_id"] = stable_id
+    if field:
+        item["field"] = field
+    issues.append(item)
+
+
+def require_present(entry: dict[str, Any], field: str, issues: list[dict[str, Any]], line: int, stable_id: Any) -> None:
+    if field not in entry or is_blank(entry.get(field)):
+        issue(issues, "missing_required_field", f"Missing required field: {field}", line=line, stable_id=stable_id, field=field)
+
+
+def require_list(entry: dict[str, Any], field: str, issues: list[dict[str, Any]], line: int, stable_id: Any) -> list[Any]:
+    value = entry.get(field)
+    if not isinstance(value, list):
+        issue(issues, "field_must_be_list", f"Field must be a list: {field}", line=line, stable_id=stable_id, field=field)
+        return []
+    return value
+
+
+def validate_candidate_entries(entries: list[dict[str, Any]], source_name: str) -> list[dict[str, Any]]:
+    issues: list[dict[str, Any]] = []
+    seen_stable_ids: set[str] = set()
+
+    for index, entry in enumerate(entries, start=1):
+        line = index
+        stable_id = entry.get("stable_id")
+        if is_blank(stable_id):
+            issue(issues, "missing_stable_id", "Every candidate ledger row must have a stable_id.", line=line, field="stable_id")
+            stable_id = f"{source_name}:line-{line}"
+        else:
+            stable_id_text = str(stable_id)
+            if stable_id_text in seen_stable_ids:
+                issue(issues, "duplicate_stable_id", "stable_id must be unique within the candidate ledger.", line=line, stable_id=stable_id)
+            seen_stable_ids.add(stable_id_text)
+
+        for field in REQUIRED_COMMON_FIELDS:
+            require_present(entry, field, issues, line, stable_id)
+
+        state = entry.get("state")
+        if state not in ALLOWED_STATES:
+            issue(issues, "unknown_state", f"State is not in the allowed contract set: {state}", line=line, stable_id=stable_id, field="state")
+
+        claim_level = entry.get("claim_level")
+        if claim_level not in ALLOWED_CLAIM_LEVELS:
+            issue(
+                issues,
+                "unknown_claim_level",
+                f"Claim level is not in the allowed contract set: {claim_level}",
+                line=line,
+                stable_id=stable_id,
+                field="claim_level",
+            )
+
+        if entry.get("ledger_live_movement_authorized") is not False:
+            issue(
+                issues,
+                "ledger_must_not_authorize_live_movement",
+                "Offline discovery ledger rows must keep ledger_live_movement_authorized=false.",
+                line=line,
+                stable_id=stable_id,
+                field="ledger_live_movement_authorized",
+            )
+
+        artifacts = require_list(entry, "source_artifacts", issues, line, stable_id)
+        if not artifacts or any(not isinstance(path, str) or not path.strip() for path in artifacts):
+            issue(
+                issues,
+                "source_artifacts_must_be_nonempty_strings",
+                "source_artifacts must contain at least one non-empty artifact path.",
+                line=line,
+                stable_id=stable_id,
+                field="source_artifacts",
+            )
+
+        warnings = require_list(entry, "warnings", issues, line, stable_id)
+        if not warnings:
+            issue(issues, "warnings_required", "warnings must contain at least one guardrail note.", line=line, stable_id=stable_id, field="warnings")
+
+        kind = entry.get("kind")
+        if kind == "coordinate_vec3":
+            for field in REQUIRED_COORDINATE_FIELDS:
+                require_present(entry, field, issues, line, stable_id)
+            for vector_field in ("best_memory_xyz", "best_addon_xyz"):
+                vector = entry.get(vector_field)
+                if not isinstance(vector, list) or len(vector) != 3:
+                    issue(
+                        issues,
+                        "coordinate_vector_must_have_three_values",
+                        f"{vector_field} must be a three-value coordinate vector.",
+                        line=line,
+                        stable_id=stable_id,
+                        field=vector_field,
+                    )
+
+        if state == "validated_candidate_historical_checkpoint":
+            for field in ("source_base_address_hex", "source_offset_hex", "source_absolute_address_hex"):
+                require_present(entry, field, issues, line, stable_id)
+            if entry.get("riftreader_pointer_matched_candidate") is not True:
+                issue(
+                    issues,
+                    "validated_checkpoint_requires_pointer_match",
+                    "Validated checkpoint rows must show the RiftReader pointer matched the RiftScan candidate.",
+                    line=line,
+                    stable_id=stable_id,
+                    field="riftreader_pointer_matched_candidate",
+                )
+            latest = entry.get("latest_validation") if isinstance(entry.get("latest_validation"), dict) else {}
+            if latest.get("no_cheat_engine") is not True:
+                issue(
+                    issues,
+                    "validated_checkpoint_requires_no_ce",
+                    "Validated checkpoint rows must preserve no-Cheat-Engine proof evidence.",
+                    line=line,
+                    stable_id=stable_id,
+                    field="latest_validation.no_cheat_engine",
+                )
+            if latest.get("movement_sent_by_readback") is not False:
+                issue(
+                    issues,
+                    "readback_must_not_send_movement",
+                    "Proof readback evidence must not have sent movement.",
+                    line=line,
+                    stable_id=stable_id,
+                    field="latest_validation.movement_sent_by_readback",
+                )
+            next_step = str(entry.get("next_validation_step") or "").lower()
+            if "proof readback" not in next_step or "before" not in next_step:
+                issue(
+                    issues,
+                    "validated_checkpoint_requires_fresh_readback_next_step",
+                    "Validated checkpoint rows must still require a fresh proof readback before live input.",
+                    line=line,
+                    stable_id=stable_id,
+                    field="next_validation_step",
+                )
+            if "offline_ledger_does_not_authorize_live_movement" not in warnings:
+                issue(
+                    issues,
+                    "validated_checkpoint_missing_offline_warning",
+                    "Validated checkpoint rows must warn that the offline ledger does not authorize live movement.",
+                    line=line,
+                    stable_id=stable_id,
+                    field="warnings",
+                )
+
+        if state == "historical_stale_trace_blocked":
+            trace = entry.get("trace_anchor") if isinstance(entry.get("trace_anchor"), dict) else {}
+            if trace.get("trace_matches_process") is not False:
+                issue(
+                    issues,
+                    "stale_trace_rows_must_preserve_blocker",
+                    "Historical stale-trace rows must preserve trace_matches_process=false.",
+                    line=line,
+                    stable_id=stable_id,
+                    field="trace_anchor.trace_matches_process",
+                )
+
+        if state == "historical_candidate_scan_only":
+            if kind != "coordinate_candidate_scan":
+                issue(
+                    issues,
+                    "candidate_scan_state_kind_mismatch",
+                    "historical_candidate_scan_only rows must use kind=coordinate_candidate_scan.",
+                    line=line,
+                    stable_id=stable_id,
+                    field="kind",
+                )
+            if entry.get("claim_level") != "observed":
+                issue(
+                    issues,
+                    "candidate_scan_claim_level_must_be_observed",
+                    "Historical candidate scans are observed search context only.",
+                    line=line,
+                    stable_id=stable_id,
+                    field="claim_level",
+                )
+            if entry.get("final_truth_claim") is not False:
+                issue(
+                    issues,
+                    "candidate_scan_must_not_claim_truth",
+                    "Historical candidate scans must keep final_truth_claim=false.",
+                    line=line,
+                    stable_id=stable_id,
+                    field="final_truth_claim",
+                )
+
+    return issues
+
+
+def validate_candidate_ledger(path: Path) -> dict[str, Any]:
+    issues: list[dict[str, Any]] = []
+    entries: list[dict[str, Any]] = []
+    line_count = 0
+
+    if not path.exists():
+        issue(issues, "candidate_ledger_missing", "Candidate ledger JSONL file does not exist.", field="path")
+    else:
+        for line_count, line in enumerate(path.read_text(encoding="utf-8", errors="replace").splitlines(), start=1):
+            if not line.strip():
+                continue
+            try:
+                parsed = json.loads(line)
+            except json.JSONDecodeError as exc:
+                issue(issues, "jsonl_parse_error", f"Line is not valid JSON: {exc}", line=line_count)
+                continue
+            if not isinstance(parsed, dict):
+                issue(issues, "jsonl_root_must_be_object", "Each JSONL row must be a JSON object.", line=line_count)
+                continue
+            entries.append(parsed)
+
+    if entries:
+        issues.extend(validate_candidate_entries(entries, rel(path)))
+    elif path.exists():
+        issue(issues, "candidate_ledger_empty", "Candidate ledger exists but contains no candidate rows.", field="path")
+
+    errors = [item for item in issues if item.get("severity") != "warning"]
+    return {
+        "schema_version": LEDGER_VALIDATION_SCHEMA_VERSION,
+        "created_utc": utc(),
+        "app_version": APP_VERSION,
+        "status": "PASS" if not errors else "FAIL",
+        "display_status": "PASS" if not errors else "FAIL",
+        "path": rel(path),
+        "line_count": line_count,
+        "candidate_count": len(entries),
+        "error_count": len(errors),
+        "warning_count": len(issues) - len(errors),
+        "issues": issues,
+        "safety": {
+            "offline_only": True,
+            "writes_artifacts": False,
+            "runs_focus_preflight": False,
+            "capture_started": False,
+            "movement_or_input_sent": False,
+            "memory_scan_or_read_started": False,
+            "process_attach_or_memory_read_started": False,
+            "riftreader_command_executed": False,
+            "reloadui_sent": False,
+            "ledger_live_movement_authorized": False,
+        },
+    }
+
+
 def run_self_test() -> int:
     fake_match = {
         "session_id": "fixture-session",
@@ -547,6 +844,12 @@ def run_self_test() -> int:
                 "support_count": 3,
                 "observation_support_count": 1,
                 "best_max_abs_distance": 0,
+                "best_memory_x": 1.0,
+                "best_memory_y": 2.0,
+                "best_memory_z": 3.0,
+                "best_addon_x": 1.0,
+                "best_addon_y": 2.0,
+                "best_addon_z": 3.0,
                 "validation_status": "candidate_unverified",
             }
         ],
@@ -564,13 +867,14 @@ def run_self_test() -> int:
             "movementAllowed": True,
             "movementSent": False,
             "noCheatEngine": True,
+            "stableAcrossReadbackSamples": True,
         },
         "proofAnchorCache": {
             "candidateAddressHex": "0x1020",
             "proofMethod": "no-ce-riftscan-reference-multisample",
         },
     }
-    candidate = candidate_from_match(None, fake_match, None, fake_pointer)
+    candidate = candidate_from_match(Path("fixture-match.json"), fake_match, Path("fixture-pointer.json"), fake_pointer)
     failures: list[str] = []
     if not candidate:
         failures.append("candidate_not_built")
@@ -583,7 +887,16 @@ def run_self_test() -> int:
         "coordinate_truth_level": "current_api_plus_readonly_memory_candidate",
         "riftscan_readonly_capture": {
             "candidate_id": "old",
+            "axis_order": "xyz",
             "candidate_source_absolute_address_hex": "0xDEAD",
+            "support_count": 8,
+            "best_max_abs_distance": 0.0,
+            "best_memory_x": 1.0,
+            "best_memory_y": 2.0,
+            "best_memory_z": 3.0,
+            "best_addon_x": 1.0,
+            "best_addon_y": 2.0,
+            "best_addon_z": 3.0,
         },
         "riftreader_coord_trace_anchor": {
             "trace_matches_process": False,
@@ -595,12 +908,40 @@ def run_self_test() -> int:
     if not legacy or legacy.get("state") != "historical_stale_trace_blocked":
         failures.append("legacy_state_not_stale_trace_blocked")
 
+    recovery = {
+        "stable_id": "coordinate_scan::fixture",
+        "kind": "coordinate_candidate_scan",
+        "state": "historical_candidate_scan_only",
+        "claim_level": "observed",
+        "proof_level": "candidate_like_values_only",
+        "source": "self_test",
+        "sample_candidate_addresses": ["0x1000"],
+        "final_truth_claim": False,
+        "manual_confirmation_required": True,
+        "ledger_live_movement_authorized": False,
+        "next_validation_step": "keep only as historical search context",
+        "source_artifacts": ["fixture-recovery.json"],
+        "warnings": ["candidate_scan_not_truth"],
+    }
+    valid_entries = [entry for entry in (candidate, legacy, recovery) if entry]
+    validation_issues = validate_candidate_entries(valid_entries, "self-test")
+    validation_errors = [item for item in validation_issues if item.get("severity") != "warning"]
+    if validation_errors:
+        failures.append(f"valid_entries_failed_contract={validation_errors}")
+
+    bad_candidate = dict(candidate or {})
+    bad_candidate["ledger_live_movement_authorized"] = True
+    bad_issues = validate_candidate_entries([bad_candidate], "self-test-bad")
+    if not any(item.get("code") == "ledger_must_not_authorize_live_movement" for item in bad_issues):
+        failures.append("bad_candidate_did_not_fail_live_movement_contract")
+
     result = {
         "schema_version": "riftscan.discovery_ledger.self_test.v1",
         "created_utc": utc(),
         "app_version": APP_VERSION,
         "status": "PASS" if not failures else "FAIL",
         "failures": failures,
+        "contract_validation_issue_count": len(validation_issues),
         "safety": {
             "writes_artifacts": False,
             "runs_focus_preflight": False,
@@ -620,6 +961,7 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument("--riftreader-root", default=str(DEFAULT_RIFTREADER_ROOT), help="RiftReader repo root to read tracked proof pointer artifacts from.")
     parser.add_argument("--out-dir", default=str(OUT_DIR), help="Output directory for ledger artifacts.")
     parser.add_argument("--self-test", action="store_true", help="Run offline self-test only; writes no artifacts.")
+    parser.add_argument("--validate-existing", action="store_true", help="Validate the existing candidate_ledger.jsonl contract without writing artifacts.")
     parser.add_argument("--print-summary", action="store_true", help="Print the generated summary JSON after writing artifacts.")
     return parser.parse_args(argv)
 
@@ -635,6 +977,11 @@ def main(argv: list[str]) -> int:
     REPORT = OUT_DIR / "DISCOVERY_LEDGER_REPORT.md"
     CANDIDATE_LEDGER = OUT_DIR / "candidate_ledger.jsonl"
     LOG = OUT_DIR / "discovery-ledger-log.jsonl"
+
+    if args.validate_existing:
+        validation = validate_candidate_ledger(CANDIDATE_LEDGER)
+        print(json.dumps(validation, indent=2, sort_keys=True))
+        return 0 if validation["status"] == "PASS" else 1
 
     summary = build_ledger(Path(args.riftreader_root))
     write_outputs(summary)

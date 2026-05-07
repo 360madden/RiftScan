@@ -1,7 +1,7 @@
 # RiftScan Offline Discovery Ledger
 
-Created UTC: `2026-05-07T16:14:27Z`
-App version: `riftscan-discovery-ledger-v1.0.0`
+Created UTC: `2026-05-07T16:24:50Z`
+App version: `riftscan-discovery-ledger-v1.1.0`
 
 ## Result
 
@@ -25,7 +25,7 @@ ledger_live_movement_authorized: False
 | Axis | `xyz` |
 | Support | `3` snapshots / `1` observations |
 | Best max abs distance | `0` |
-| RiftReader status | `valid-after-dynamic-baseline-pool-proofonly` |
+| RiftReader status | `valid-after-run-progress-checkpoint-proofonly` |
 | Next validation | `rerun exact current PID/HWND proof readback before any more live movement` |
 
 ## Candidate ledger
@@ -48,8 +48,8 @@ ledger_live_movement_authorized: False
 ```json
 {
   "riftreader_current_proof_pointer": "C:\\RIFT MODDING\\RiftReader\\docs\\recovery\\current-proof-anchor-readback.json",
-  "riftreader_latest_handoff": "C:\\RIFT MODDING\\RiftReader\\docs\\handoffs\\2026-05-07-120330-python-baseline-pool-handoff.md",
-  "riftreader_latest_proof_summary": "C:\\RIFT MODDING\\RiftReader\\scripts\\captures\\proof-anchor-currentpid-47560-readback-summary-20260507-120302.json",
+  "riftreader_latest_handoff": "C:\\RIFT MODDING\\RiftReader\\docs\\handoffs\\2026-05-07-122200-python-live-test-orchestrator-current-handoff.md",
+  "riftreader_latest_proof_summary": "C:\\RIFT MODDING\\RiftReader\\scripts\\captures\\proof-anchor-currentpid-47560-readback-summary-20260507-121811.json",
   "riftscan_coord_api_truth_summary": "handoffs/current/coord-api-truth/coord-api-truth-summary.json",
   "riftscan_coord_recovery_summary": "handoffs/current/coord-recovery/coord-recovery-summary.json",
   "riftscan_match_file": "reports/generated/codex-current-coord-region-passive-20260506-230940-addon-coordinate-matches.json",

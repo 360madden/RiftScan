@@ -22,6 +22,7 @@ This applies to:
 - Post-Update Baseline tool
 - Capture Readiness gate
 - Offline Workflow Check runners
+- Offline Discovery Ledger and candidate-ledger contract validation
 - Capture Plan Check and other metadata-plan validators
 - Movement Test Readiness and other future live-test readiness validators
 - Movement Execution Gate and other final no-input live-adjacent gate validators
@@ -132,6 +133,9 @@ scripts/run-riftscan-capture-readiness.cmd
 tools/riftscan_offline_workflow_check.py
 scripts/run-riftscan-offline-workflow-check.cmd
 
+tools/riftscan_discovery_ledger.py
+scripts/run-riftscan-discovery-ledger.cmd
+
 tools/riftscan_capture_plan_check.py
 scripts/run-riftscan-capture-plan-check.cmd
 
@@ -167,6 +171,14 @@ Offline workflow check validation and full helper sweep:
 ```text
 python tools/riftscan_offline_workflow_check.py --self-test
 .\scripts\run-riftscan-offline-workflow-check.cmd
+```
+
+Offline discovery ledger validation:
+
+```text
+python tools/riftscan_discovery_ledger.py --self-test
+python tools/riftscan_discovery_ledger.py --validate-existing
+.\scripts\run-riftscan-discovery-ledger.cmd
 ```
 
 Capture plan validation:

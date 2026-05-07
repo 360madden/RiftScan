@@ -10,6 +10,7 @@ Start here for new RiftScan work:
 4. `handoffs/current/operator/operator-current-gate-summary.json`
 5. `handoffs/current/operator/RIFTSCAN_OPERATOR_HANDOFF.md`
 6. `docs/helper-tooling-policy.md`
+7. `docs/discovery-ledger-workflow.md`
 
 For discovery status while RiftReader owns the game window, prefer the offline discovery ledger first. It reconciles ignored/generated RiftScan evidence with RiftReader's tracked current-proof pointer without running focus, capture, input, movement, memory reads, RiftReader commands, or `/reloadui`.
 
@@ -50,9 +51,10 @@ A newer doc-only handoff-pointer commit may exist; check `git log --oneline -5` 
 - Latest Movement Execution Gate artifacts: `handoffs/current/movement-execution-gate/`.
 - Future live-collection criteria are documented under `handoffs/current/live-collection-gate/`; this is a checklist only, not authorization.
 - Patch Intake can require Operator, Post-Update Baseline, Capture Readiness, and Offline Workflow Check post-apply py_compile/self-test checks for future gate patches.
-- Offline Discovery Ledger is a Python-first, read-only artifact inventory: `python tools/riftscan_discovery_ledger.py --self-test`, `python tools/riftscan_discovery_ledger.py`, and `.\scripts\run-riftscan-discovery-ledger.cmd`.
+- Offline Discovery Ledger is a Python-first, read-only artifact inventory: `python tools/riftscan_discovery_ledger.py --self-test`, `python tools/riftscan_discovery_ledger.py`, `python tools/riftscan_discovery_ledger.py --validate-existing`, and `.\scripts\run-riftscan-discovery-ledger.cmd`.
 - Latest Offline Discovery Ledger artifacts: `handoffs/current/discovery-ledger/`.
-- Offline Workflow Check now includes Discovery Ledger self-test + refresh, so `.\scripts\run-riftscan-offline-workflow-check.cmd` updates the ledger without touching the game window.
+- The ledger contract is documented in `docs/discovery-ledger-workflow.md`.
+- Offline Workflow Check now includes Discovery Ledger self-test + refresh + candidate-ledger contract validation, so `.\scripts\run-riftscan-offline-workflow-check.cmd` updates and checks the ledger without touching the game window.
 
 ## Current direction
 
@@ -92,4 +94,4 @@ For meaningful workflow milestones:
 
 ## Current next recommended action
 
-Review `handoffs/current/discovery-ledger/DISCOVERY_LEDGER_REPORT.md` first. If RiftReader still owns the game window, keep RiftScan work offline: update/validate the ledger from stored artifacts only and do not start focus preflight, live capture, scanner/discovery probes, movement/input, `/reloadui`, offset validation, or RiftReader validation from RiftScan.
+Review `handoffs/current/discovery-ledger/DISCOVERY_LEDGER_REPORT.md` and `docs/discovery-ledger-workflow.md` first. If RiftReader still owns the game window, keep RiftScan work offline: update/validate the ledger from stored artifacts only and do not start focus preflight, live capture, scanner/discovery probes, movement/input, `/reloadui`, offset validation, or RiftReader validation from RiftScan.
