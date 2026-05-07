@@ -1,7 +1,7 @@
 # RiftScan Offline AI Workflow Packet
 
-Created UTC: `2026-05-07T16:58:33Z`
-App version: `riftscan-ai-workflow-packet-v1.2.0`
+Created UTC: `2026-05-07T17:04:15Z`
+App version: `riftscan-ai-workflow-packet-v1.3.0`
 
 ## Result
 
@@ -41,6 +41,15 @@ current_best_missing_count: 0
 
 - None for offline AI workflow.
 
+## Previous packet diff
+
+```text
+status: UNCHANGED
+previous_created_utc: 2026-05-07T17:03:46Z
+previous_app_version: riftscan-ai-workflow-packet-v1.3.0
+change_count: 0
+```
+
 ## Warnings
 
 - Candidate Ledger Consumer: Historical/non-current candidate rows include 2 stale source artifact(s); keep them historical.
@@ -69,7 +78,7 @@ current_best_missing_count: 0
 7. Run py_compile, helper self-tests, Offline Workflow Check, JSON/JSONL validation, dotnet build/test/format, and git diff checks at the milestone boundary.
 8. Commit and push coherent offline workflow milestones only after validation passes.
 9. If any artifact conflicts, prefer the newest PASS machine-readable artifact and preserve older artifacts as historical evidence.
-10. The next useful offline slice is packet diffing or schema docs; do not pivot into live testing without explicit authorization.
+10. Review Previous packet diff before deciding whether a new offline slice changed truth or only refreshed timestamps/logs.
 
 ## AI resume prompt
 

@@ -56,13 +56,13 @@ log: handoffs/current/movement-test-readiness/movement-test-readiness-log.jsonl
 ## Git Snapshot
 
 ```text
-head: a333923539b424cc56b55e8b252a977f22182c7b
+head: 7ae032eb3a7ba1dab4f78aa7ea6f4648bc4a3653
 ```
 
 Git status:
 
 ```text
- M docs/discovery-ledger-workflow.md
+ M docs/agent-execution-workflow.md
  M docs/helper-tooling-policy.md
  M handoffs/current/README_CURRENT.md
  M handoffs/current/ai-workflow/AI_WORKFLOW_PACKET.md
@@ -82,18 +82,17 @@ Git status:
  M handoffs/current/offline-workflow-check/offline-workflow-check-log.jsonl
  M handoffs/current/offline-workflow-check/offline-workflow-check-summary.json
  M tools/riftscan_ai_workflow_packet.py
- M tools/riftscan_candidate_ledger_consumer.py
 
 ```
 
 Recent commits:
 
 ```text
+7ae032e Add offline artifact age diagnostics
 a333923 Add safe candidate ledger consumer
 fbeeded Add offline AI workflow packet
 1eca1be Surface discovery ledger validation
 676b428 Validate offline discovery ledger contract
-9ca69dc Wire discovery ledger into offline diagnostics
 ```
 
 ## Machine-Readable Summary
@@ -139,12 +138,12 @@ fbeeded Add offline AI workflow packet
       "post_update_baseline": "PASS"
     }
   },
-  "created_utc": "2026-05-07T16:58:32Z",
+  "created_utc": "2026-05-07T17:04:14Z",
   "display_status": "PASS",
   "git": {
-    "head": "a333923539b424cc56b55e8b252a977f22182c7b",
-    "log_oneline_5": "a333923 Add safe candidate ledger consumer\nfbeeded Add offline AI workflow packet\n1eca1be Surface discovery ledger validation\n676b428 Validate offline discovery ledger contract\n9ca69dc Wire discovery ledger into offline diagnostics",
-    "status_short": " M docs/discovery-ledger-workflow.md\n M docs/helper-tooling-policy.md\n M handoffs/current/README_CURRENT.md\n M handoffs/current/ai-workflow/AI_WORKFLOW_PACKET.md\n M handoffs/current/ai-workflow/ai-workflow-log.jsonl\n M handoffs/current/ai-workflow/ai-workflow-summary.json\n M handoffs/current/candidate-ledger-consumer/CANDIDATE_LEDGER_CONSUMER_REPORT.md\n M handoffs/current/candidate-ledger-consumer/candidate-ledger-consumer-log.jsonl\n M handoffs/current/candidate-ledger-consumer/candidate-ledger-consumer-summary.json\n M handoffs/current/capture-plan-check/CAPTURE_PLAN_CHECK_REPORT.md\n M handoffs/current/capture-plan-check/capture-plan-check-log.jsonl\n M handoffs/current/capture-plan-check/capture-plan-check-summary.json\n M handoffs/current/discovery-ledger/DISCOVERY_LEDGER_REPORT.md\n M handoffs/current/discovery-ledger/discovery-ledger-log.jsonl\n M handoffs/current/discovery-ledger/discovery-ledger-summary.json\n M handoffs/current/movement-test-readiness/movement-test-readiness-log.jsonl\n M handoffs/current/offline-workflow-check/OFFLINE_WORKFLOW_CHECK_REPORT.md\n M handoffs/current/offline-workflow-check/offline-workflow-check-log.jsonl\n M handoffs/current/offline-workflow-check/offline-workflow-check-summary.json\n M tools/riftscan_ai_workflow_packet.py\n M tools/riftscan_candidate_ledger_consumer.py\n"
+    "head": "7ae032eb3a7ba1dab4f78aa7ea6f4648bc4a3653",
+    "log_oneline_5": "7ae032e Add offline artifact age diagnostics\na333923 Add safe candidate ledger consumer\nfbeeded Add offline AI workflow packet\n1eca1be Surface discovery ledger validation\n676b428 Validate offline discovery ledger contract",
+    "status_short": " M docs/agent-execution-workflow.md\n M docs/helper-tooling-policy.md\n M handoffs/current/README_CURRENT.md\n M handoffs/current/ai-workflow/AI_WORKFLOW_PACKET.md\n M handoffs/current/ai-workflow/ai-workflow-log.jsonl\n M handoffs/current/ai-workflow/ai-workflow-summary.json\n M handoffs/current/candidate-ledger-consumer/CANDIDATE_LEDGER_CONSUMER_REPORT.md\n M handoffs/current/candidate-ledger-consumer/candidate-ledger-consumer-log.jsonl\n M handoffs/current/candidate-ledger-consumer/candidate-ledger-consumer-summary.json\n M handoffs/current/capture-plan-check/CAPTURE_PLAN_CHECK_REPORT.md\n M handoffs/current/capture-plan-check/capture-plan-check-log.jsonl\n M handoffs/current/capture-plan-check/capture-plan-check-summary.json\n M handoffs/current/discovery-ledger/DISCOVERY_LEDGER_REPORT.md\n M handoffs/current/discovery-ledger/discovery-ledger-log.jsonl\n M handoffs/current/discovery-ledger/discovery-ledger-summary.json\n M handoffs/current/movement-test-readiness/movement-test-readiness-log.jsonl\n M handoffs/current/offline-workflow-check/OFFLINE_WORKFLOW_CHECK_REPORT.md\n M handoffs/current/offline-workflow-check/offline-workflow-check-log.jsonl\n M handoffs/current/offline-workflow-check/offline-workflow-check-summary.json\n M tools/riftscan_ai_workflow_packet.py\n"
   },
   "paths": {
     "log": "handoffs/current/movement-test-readiness/movement-test-readiness-log.jsonl",

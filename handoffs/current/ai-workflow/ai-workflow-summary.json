@@ -1,6 +1,6 @@
 {
   "ai_resume_prompt": "Resume RiftScan in offline AI workflow mode. Read handoffs/current/ai-workflow/AI_WORKFLOW_PACKET.md, then the Candidate Ledger Consumer and Discovery Ledger artifacts. Do not touch live RIFT, focus preflight, capture, process attach/memory reads, movement/input, RiftReader commands, offset validation, or /reloadui unless the user explicitly authorizes live work.",
-  "app_version": "riftscan-ai-workflow-packet-v1.2.0",
+  "app_version": "riftscan-ai-workflow-packet-v1.3.0",
   "blockers": [],
   "candidate_ledger_consumer": {
     "artifact_age": {
@@ -17,7 +17,7 @@
     "safe_candidate_count": 3,
     "status": "PASS"
   },
-  "created_utc": "2026-05-07T16:58:33Z",
+  "created_utc": "2026-05-07T17:04:15Z",
   "current_best_candidate": {
     "allowed_downstream_uses": [
       "offline_review",
@@ -78,10 +78,10 @@
       "origin_main_parity": "pass",
       "status": "pass"
     },
-    "head": "a333923539b424cc56b55e8b252a977f22182c7b",
-    "log_oneline_5": "a333923 Add safe candidate ledger consumer\nfbeeded Add offline AI workflow packet\n1eca1be Surface discovery ledger validation\n676b428 Validate offline discovery ledger contract\n9ca69dc Wire discovery ledger into offline diagnostics",
+    "head": "7ae032eb3a7ba1dab4f78aa7ea6f4648bc4a3653",
+    "log_oneline_5": "7ae032e Add offline artifact age diagnostics\na333923 Add safe candidate ledger consumer\nfbeeded Add offline AI workflow packet\n1eca1be Surface discovery ledger validation\n676b428 Validate offline discovery ledger contract",
     "origin_main_left_right_count": "0\t0",
-    "status_short_branch": "## main...origin/main\n M docs/discovery-ledger-workflow.md\n M docs/helper-tooling-policy.md\n M handoffs/current/README_CURRENT.md\n M handoffs/current/ai-workflow/AI_WORKFLOW_PACKET.md\n M handoffs/current/ai-workflow/ai-workflow-log.jsonl\n M handoffs/current/ai-workflow/ai-workflow-summary.json\n M handoffs/current/candidate-ledger-consumer/CANDIDATE_LEDGER_CONSUMER_REPORT.md\n M handoffs/current/candidate-ledger-consumer/candidate-ledger-consumer-log.jsonl\n M handoffs/current/candidate-ledger-consumer/candidate-ledger-consumer-summary.json\n M handoffs/current/capture-plan-check/CAPTURE_PLAN_CHECK_REPORT.md\n M handoffs/current/capture-plan-check/capture-plan-check-log.jsonl\n M handoffs/current/capture-plan-check/capture-plan-check-summary.json\n M handoffs/current/discovery-ledger/DISCOVERY_LEDGER_REPORT.md\n M handoffs/current/discovery-ledger/discovery-ledger-log.jsonl\n M handoffs/current/discovery-ledger/discovery-ledger-summary.json\n M handoffs/current/movement-test-readiness/MOVEMENT_TEST_READINESS_REPORT.md\n M handoffs/current/movement-test-readiness/movement-test-readiness-log.jsonl\n M handoffs/current/movement-test-readiness/movement-test-readiness-summary.json\n M handoffs/current/offline-workflow-check/OFFLINE_WORKFLOW_CHECK_REPORT.md\n M handoffs/current/offline-workflow-check/offline-workflow-check-log.jsonl\n M handoffs/current/offline-workflow-check/offline-workflow-check-summary.json\n M handoffs/current/operator/RIFTSCAN_OPERATOR_HANDOFF.md\n M handoffs/current/operator/operator-current-gate-summary.json\n M tools/riftscan_ai_workflow_packet.py\n M tools/riftscan_candidate_ledger_consumer.py"
+    "status_short_branch": "## main...origin/main\n M docs/agent-execution-workflow.md\n M docs/helper-tooling-policy.md\n M handoffs/current/README_CURRENT.md\n M handoffs/current/ai-workflow/AI_WORKFLOW_PACKET.md\n M handoffs/current/ai-workflow/ai-workflow-log.jsonl\n M handoffs/current/ai-workflow/ai-workflow-summary.json\n M handoffs/current/candidate-ledger-consumer/CANDIDATE_LEDGER_CONSUMER_REPORT.md\n M handoffs/current/candidate-ledger-consumer/candidate-ledger-consumer-log.jsonl\n M handoffs/current/candidate-ledger-consumer/candidate-ledger-consumer-summary.json\n M handoffs/current/capture-plan-check/CAPTURE_PLAN_CHECK_REPORT.md\n M handoffs/current/capture-plan-check/capture-plan-check-log.jsonl\n M handoffs/current/capture-plan-check/capture-plan-check-summary.json\n M handoffs/current/discovery-ledger/DISCOVERY_LEDGER_REPORT.md\n M handoffs/current/discovery-ledger/discovery-ledger-log.jsonl\n M handoffs/current/discovery-ledger/discovery-ledger-summary.json\n M handoffs/current/movement-test-readiness/MOVEMENT_TEST_READINESS_REPORT.md\n M handoffs/current/movement-test-readiness/movement-test-readiness-log.jsonl\n M handoffs/current/movement-test-readiness/movement-test-readiness-summary.json\n M handoffs/current/offline-workflow-check/OFFLINE_WORKFLOW_CHECK_REPORT.md\n M handoffs/current/offline-workflow-check/offline-workflow-check-log.jsonl\n M handoffs/current/offline-workflow-check/offline-workflow-check-summary.json\n M handoffs/current/operator/RIFTSCAN_OPERATOR_HANDOFF.md\n M handoffs/current/operator/operator-current-gate-summary.json\n M tools/riftscan_ai_workflow_packet.py"
   },
   "mode": "offline_ai_workflow",
   "offline_workflow_check": {
@@ -100,6 +100,17 @@
     "log": "handoffs/current/ai-workflow/ai-workflow-log.jsonl",
     "report": "handoffs/current/ai-workflow/AI_WORKFLOW_PACKET.md",
     "summary": "handoffs/current/ai-workflow/ai-workflow-summary.json"
+  },
+  "previous_packet_diff": {
+    "change_count": 0,
+    "changes": [],
+    "current_app_version": "riftscan-ai-workflow-packet-v1.3.0",
+    "current_created_utc": "2026-05-07T17:04:15Z",
+    "previous_app_version": "riftscan-ai-workflow-packet-v1.3.0",
+    "previous_created_utc": "2026-05-07T17:03:46Z",
+    "previous_packet_available": true,
+    "schema_version": "riftscan.ai_workflow_packet_diff.v1",
+    "status": "UNCHANGED"
   },
   "recommended_first_files": [
     "handoffs/current/README_CURRENT.md",
@@ -149,7 +160,7 @@
     "Run py_compile, helper self-tests, Offline Workflow Check, JSON/JSONL validation, dotnet build/test/format, and git diff checks at the milestone boundary.",
     "Commit and push coherent offline workflow milestones only after validation passes.",
     "If any artifact conflicts, prefer the newest PASS machine-readable artifact and preserve older artifacts as historical evidence.",
-    "The next useful offline slice is packet diffing or schema docs; do not pivot into live testing without explicit authorization."
+    "Review Previous packet diff before deciding whether a new offline slice changed truth or only refreshed timestamps/logs."
   ],
   "warnings": [
     "Candidate Ledger Consumer: Historical/non-current candidate rows include 2 stale source artifact(s); keep them historical."

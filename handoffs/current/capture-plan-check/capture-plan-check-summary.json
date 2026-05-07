@@ -33,12 +33,12 @@
       "windows_json": "handoffs/current/focus-control-local/windows.json"
     }
   },
-  "created_utc": "2026-05-07T16:58:32Z",
+  "created_utc": "2026-05-07T17:04:14Z",
   "display_status": "PASS",
   "git": {
-    "head": "a333923539b424cc56b55e8b252a977f22182c7b",
-    "log_oneline_5": "a333923 Add safe candidate ledger consumer\nfbeeded Add offline AI workflow packet\n1eca1be Surface discovery ledger validation\n676b428 Validate offline discovery ledger contract\n9ca69dc Wire discovery ledger into offline diagnostics",
-    "status_short": " M docs/discovery-ledger-workflow.md\n M docs/helper-tooling-policy.md\n M handoffs/current/README_CURRENT.md\n M handoffs/current/ai-workflow/AI_WORKFLOW_PACKET.md\n M handoffs/current/ai-workflow/ai-workflow-log.jsonl\n M handoffs/current/ai-workflow/ai-workflow-summary.json\n M handoffs/current/candidate-ledger-consumer/CANDIDATE_LEDGER_CONSUMER_REPORT.md\n M handoffs/current/candidate-ledger-consumer/candidate-ledger-consumer-log.jsonl\n M handoffs/current/candidate-ledger-consumer/candidate-ledger-consumer-summary.json\n M handoffs/current/capture-plan-check/capture-plan-check-log.jsonl\n M handoffs/current/discovery-ledger/DISCOVERY_LEDGER_REPORT.md\n M handoffs/current/discovery-ledger/discovery-ledger-log.jsonl\n M handoffs/current/discovery-ledger/discovery-ledger-summary.json\n M handoffs/current/offline-workflow-check/OFFLINE_WORKFLOW_CHECK_REPORT.md\n M handoffs/current/offline-workflow-check/offline-workflow-check-log.jsonl\n M handoffs/current/offline-workflow-check/offline-workflow-check-summary.json\n M tools/riftscan_ai_workflow_packet.py\n M tools/riftscan_candidate_ledger_consumer.py\n"
+    "head": "7ae032eb3a7ba1dab4f78aa7ea6f4648bc4a3653",
+    "log_oneline_5": "7ae032e Add offline artifact age diagnostics\na333923 Add safe candidate ledger consumer\nfbeeded Add offline AI workflow packet\n1eca1be Surface discovery ledger validation\n676b428 Validate offline discovery ledger contract",
+    "status_short": " M docs/agent-execution-workflow.md\n M docs/helper-tooling-policy.md\n M handoffs/current/README_CURRENT.md\n M handoffs/current/ai-workflow/AI_WORKFLOW_PACKET.md\n M handoffs/current/ai-workflow/ai-workflow-log.jsonl\n M handoffs/current/ai-workflow/ai-workflow-summary.json\n M handoffs/current/candidate-ledger-consumer/CANDIDATE_LEDGER_CONSUMER_REPORT.md\n M handoffs/current/candidate-ledger-consumer/candidate-ledger-consumer-log.jsonl\n M handoffs/current/candidate-ledger-consumer/candidate-ledger-consumer-summary.json\n M handoffs/current/capture-plan-check/capture-plan-check-log.jsonl\n M handoffs/current/discovery-ledger/DISCOVERY_LEDGER_REPORT.md\n M handoffs/current/discovery-ledger/discovery-ledger-log.jsonl\n M handoffs/current/discovery-ledger/discovery-ledger-summary.json\n M handoffs/current/offline-workflow-check/OFFLINE_WORKFLOW_CHECK_REPORT.md\n M handoffs/current/offline-workflow-check/offline-workflow-check-log.jsonl\n M handoffs/current/offline-workflow-check/offline-workflow-check-summary.json\n M tools/riftscan_ai_workflow_packet.py\n"
   },
   "latest_capture_plan": {
     "handoff_exists": true,

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # RiftScan script metadata
-# Version: riftscan-ai-workflow-packet-v1.2.0
+# Version: riftscan-ai-workflow-packet-v1.3.0
 # Total character count: 000000
 # Purpose: Build a compact offline AI workflow packet from current RiftScan handoff and gate artifacts.
 # Safety boundary: Reads existing artifacts and local git metadata only. No focus preflight, live capture, input, movement, memory scan/read, process attach, offset validation, RiftReader command execution, or /reloadui.
@@ -15,7 +15,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-APP_VERSION = "riftscan-ai-workflow-packet-v1.2.0"
+APP_VERSION = "riftscan-ai-workflow-packet-v1.3.0"
 REPO_ROOT = Path(__file__).resolve().parents[1]
 OUT_DIR = REPO_ROOT / "handoffs" / "current" / "ai-workflow"
 REPORT = OUT_DIR / "AI_WORKFLOW_PACKET.md"
@@ -146,6 +146,73 @@ def artifact_failed(artifact: dict[str, Any]) -> bool:
     return artifact.get("_read_success") is False
 
 
+def selected_packet_value(packet: dict[str, Any], path: tuple[str, ...]) -> Any:
+    if path == ("blocker_count",):
+        blockers = packet.get("blockers")
+        return len(blockers) if isinstance(blockers, list) else None
+    if path == ("warning_count",):
+        warnings = packet.get("warnings")
+        return len(warnings) if isinstance(warnings, list) else None
+    return get_nested(packet, *path)
+
+
+PACKET_DIFF_FIELDS: list[tuple[str, tuple[str, ...]]] = [
+    ("app_version", ("app_version",)),
+    ("status", ("status",)),
+    ("blocker_count", ("blocker_count",)),
+    ("warning_count", ("warning_count",)),
+    ("current_best_stable_id", ("current_best_candidate", "stable_id")),
+    ("current_best_address", ("current_best_candidate", "source_absolute_address_hex")),
+    ("candidate_consumer_status", ("candidate_ledger_consumer", "status")),
+    ("safe_candidate_count", ("candidate_ledger_consumer", "safe_candidate_count")),
+    ("rejected_candidate_count", ("candidate_ledger_consumer", "rejected_candidate_count")),
+    ("artifact_stale_count", ("candidate_ledger_consumer", "artifact_age", "stale_count")),
+    ("artifact_missing_count", ("candidate_ledger_consumer", "artifact_age", "missing_count")),
+    ("current_best_stale_count", ("candidate_ledger_consumer", "artifact_age", "current_best_stale_count")),
+    ("current_best_missing_count", ("candidate_ledger_consumer", "artifact_age", "current_best_missing_count")),
+    ("discovery_ledger_contract_status", ("discovery_ledger", "candidate_ledger_contract_validation", "status")),
+    ("offline_workflow_status", ("offline_workflow_check", "status")),
+    ("operator_live_collection_allowed", ("operator_gate", "live_collection_allowed")),
+]
+
+
+def build_previous_packet_diff(previous: dict[str, Any], current: dict[str, Any]) -> dict[str, Any]:
+    if artifact_failed(previous):
+        return {
+            "schema_version": "riftscan.ai_workflow_packet_diff.v1",
+            "status": "NO_PREVIOUS_PACKET",
+            "previous_packet_available": False,
+            "previous_read_error": previous.get("_read_error"),
+            "change_count": 0,
+            "changes": [],
+        }
+
+    changes: list[dict[str, Any]] = []
+    for name, path in PACKET_DIFF_FIELDS:
+        before = selected_packet_value(previous, path)
+        after = selected_packet_value(current, path)
+        if before != after:
+            changes.append(
+                {
+                    "field": name,
+                    "before": before,
+                    "after": after,
+                }
+            )
+
+    return {
+        "schema_version": "riftscan.ai_workflow_packet_diff.v1",
+        "status": "CHANGED" if changes else "UNCHANGED",
+        "previous_packet_available": True,
+        "previous_created_utc": previous.get("created_utc"),
+        "previous_app_version": previous.get("app_version"),
+        "current_created_utc": current.get("created_utc"),
+        "current_app_version": current.get("app_version"),
+        "change_count": len(changes),
+        "changes": changes,
+    }
+
+
 def build_packet_from_artifacts(
     discovery: dict[str, Any],
     consumer: dict[str, Any],
@@ -224,7 +291,7 @@ def build_packet_from_artifacts(
         "Run py_compile, helper self-tests, Offline Workflow Check, JSON/JSONL validation, dotnet build/test/format, and git diff checks at the milestone boundary.",
         "Commit and push coherent offline workflow milestones only after validation passes.",
         "If any artifact conflicts, prefer the newest PASS machine-readable artifact and preserve older artifacts as historical evidence.",
-        "The next useful offline slice is packet diffing or schema docs; do not pivot into live testing without explicit authorization.",
+        "Review Previous packet diff before deciding whether a new offline slice changed truth or only refreshed timestamps/logs.",
     ]
 
     packet_status = "PASS" if not blockers else "BLOCKED"
@@ -317,7 +384,7 @@ def build_packet_from_artifacts(
     }
 
 
-def build_packet() -> dict[str, Any]:
+def build_packet(previous_packet: dict[str, Any] | None = None) -> dict[str, Any]:
     append_log("build_start")
     data = build_packet_from_artifacts(
         load_json(DISCOVERY_LEDGER_SUMMARY),
@@ -326,7 +393,15 @@ def build_packet() -> dict[str, Any]:
         load_json(OPERATOR_SUMMARY),
         git_snapshot(),
     )
-    append_log("build_finish", status=data["status"], blocker_count=len(data["blockers"]), warning_count=len(data["warnings"]))
+    data["previous_packet_diff"] = build_previous_packet_diff(previous_packet or {"_read_success": False, "_read_error": "previous_packet_not_loaded"}, data)
+    append_log(
+        "build_finish",
+        status=data["status"],
+        blocker_count=len(data["blockers"]),
+        warning_count=len(data["warnings"]),
+        previous_packet_diff_status=get_nested(data, "previous_packet_diff", "status"),
+        previous_packet_change_count=get_nested(data, "previous_packet_diff", "change_count"),
+    )
     return data
 
 
@@ -392,6 +467,36 @@ def report_lines(data: dict[str, Any]) -> list[str]:
         lines.extend(f"- {item}" for item in blockers)
     else:
         lines.append("- None for offline AI workflow.")
+
+    packet_diff = data.get("previous_packet_diff") if isinstance(data.get("previous_packet_diff"), dict) else {}
+    lines.extend(
+        [
+            "",
+            "## Previous packet diff",
+            "",
+            "```text",
+            f"status: {packet_diff.get('status', 'not_run')}",
+            f"previous_created_utc: {packet_diff.get('previous_created_utc')}",
+            f"previous_app_version: {packet_diff.get('previous_app_version')}",
+            f"change_count: {packet_diff.get('change_count', 'unknown')}",
+            "```",
+        ]
+    )
+    changes = packet_diff.get("changes") if isinstance(packet_diff.get("changes"), list) else []
+    if changes:
+        lines.extend(
+            [
+                "",
+                "| Field | Before | After |",
+                "|---|---|---|",
+            ]
+        )
+        for change in changes[:20]:
+            lines.append(
+                f"| `{change.get('field')}` | `{change.get('before')}` | `{change.get('after')}` |"
+            )
+        if len(changes) > 20:
+            lines.append(f"| ... | {len(changes) - 20} more change(s) omitted from Markdown table | see JSON summary |")
 
     lines.extend(["", "## Warnings", ""])
     warnings = data.get("warnings") if isinstance(data.get("warnings"), list) else []
@@ -505,6 +610,14 @@ def run_self_test() -> int:
         failures.append("bad_ledger_safety_did_not_block")
     if "AI_WORKFLOW_PACKET.md" not in "\n".join(report_lines(passing)):
         failures.append("report_missing_packet_reference")
+    unchanged_diff = build_previous_packet_diff(passing, dict(passing))
+    if unchanged_diff.get("status") != "UNCHANGED":
+        failures.append("unchanged_packet_diff_not_detected")
+    changed_packet = json.loads(json.dumps(passing))
+    changed_packet["candidate_ledger_consumer"]["safe_candidate_count"] = 2
+    changed_diff = build_previous_packet_diff(passing, changed_packet)
+    if changed_diff.get("status") != "CHANGED" or changed_diff.get("change_count") != 1:
+        failures.append("changed_packet_diff_not_detected")
 
     result = {
         "schema_version": "riftscan.ai_workflow_packet.self_test.v1",
@@ -540,7 +653,8 @@ def main(argv: list[str]) -> int:
     if args.self_test:
         return run_self_test()
 
-    packet = build_packet()
+    previous_packet = load_json(SUMMARY)
+    packet = build_packet(previous_packet)
     write_outputs(packet)
 
     if args.print_summary:

@@ -57,6 +57,8 @@ Then read:
 - `handoffs/current/discovery-ledger/DISCOVERY_LEDGER_REPORT.md`
 - `docs/discovery-ledger-workflow.md`
 
+Use the AI packet's `Previous packet diff` section to decide whether the latest offline run changed meaningful workflow/truth fields or only refreshed timestamps/logs.
+
 Offline AI workflow may update docs, validators, reports, schemas, replay analysis, fixtures, and deterministic helper tooling. It must not start focus preflight, live capture, scanner/discovery probes against a live process, process attach/memory reads, movement/input, RiftReader commands, offset validation, or `/reloadui`.
 
 ## Live RIFT window control authorization
