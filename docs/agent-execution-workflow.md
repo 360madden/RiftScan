@@ -38,9 +38,30 @@ git diff --check
 
 If any command cannot be run, state the exact reason and the unverified risk.
 
+## Offline AI workflow mode
+
+When the current user task says to keep working offline, or when RiftReader/operator activity owns the game window, the offline instruction supersedes older live-test authorization notes.
+
+Start with:
+
+```powershell
+python .\tools\riftscan_ai_workflow_packet.py --self-test
+.\scripts\run-riftscan-ai-workflow-packet.cmd --strict-exit-code
+```
+
+Then read:
+
+- `handoffs/current/ai-workflow/AI_WORKFLOW_PACKET.md`
+- `handoffs/current/discovery-ledger/DISCOVERY_LEDGER_REPORT.md`
+- `docs/discovery-ledger-workflow.md`
+
+Offline AI workflow may update docs, validators, reports, schemas, replay analysis, fixtures, and deterministic helper tooling. It must not start focus preflight, live capture, scanner/discovery probes against a live process, process attach/memory reads, movement/input, RiftReader commands, offset validation, or `/reloadui`.
+
 ## Live RIFT window control authorization
 
 As of 2026-04-29, the operator explicitly authorized autonomous Codex control of the local RIFT game window when needed for RiftScan live testing. This authorization applies to focusing the exact `rift_x64` / `RIFT` window and sending bounded stimulus input such as turn-left, turn-right, camera-only, or short movement actions required to label capture sessions.
+
+Current task-level instructions still win. If the active task says offline-only, or asks to avoid the game window because RiftReader is using it, do not rely on the older 2026-04-29 live authorization.
 
 Boundaries:
 

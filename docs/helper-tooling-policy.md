@@ -23,6 +23,7 @@ This applies to:
 - Capture Readiness gate
 - Offline Workflow Check runners
 - Offline Discovery Ledger and candidate-ledger contract validation
+- AI Workflow Packet and offline agent resume packets
 - Capture Plan Check and other metadata-plan validators
 - Movement Test Readiness and other future live-test readiness validators
 - Movement Execution Gate and other final no-input live-adjacent gate validators
@@ -136,6 +137,9 @@ scripts/run-riftscan-offline-workflow-check.cmd
 tools/riftscan_discovery_ledger.py
 scripts/run-riftscan-discovery-ledger.cmd
 
+tools/riftscan_ai_workflow_packet.py
+scripts/run-riftscan-ai-workflow-packet.cmd
+
 tools/riftscan_capture_plan_check.py
 scripts/run-riftscan-capture-plan-check.cmd
 
@@ -181,6 +185,13 @@ python tools/riftscan_discovery_ledger.py --validate-existing
 .\scripts\run-riftscan-discovery-ledger.cmd
 ```
 
+AI workflow packet validation:
+
+```text
+python tools/riftscan_ai_workflow_packet.py --self-test
+.\scripts\run-riftscan-ai-workflow-packet.cmd --strict-exit-code
+```
+
 Capture plan validation:
 
 ```text
@@ -209,6 +220,8 @@ No-GUI Operator diagnostics:
 ```text
 .\scripts\run-riftscan-operator-offline-diagnostics.cmd
 ```
+
+This wrapper should refresh the Operator report and the offline AI Workflow Packet after the helper sweep passes.
 
 Operator report refresh without launching the GUI:
 

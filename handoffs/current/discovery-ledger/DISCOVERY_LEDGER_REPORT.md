@@ -1,6 +1,6 @@
 # RiftScan Offline Discovery Ledger
 
-Created UTC: `2026-05-07T16:34:56Z`
+Created UTC: `2026-05-07T16:43:00Z`
 App version: `riftscan-discovery-ledger-v1.2.0`
 
 ## Result
@@ -60,7 +60,7 @@ warning_count: 0
 {
   "riftreader_current_proof_pointer": "C:\\RIFT MODDING\\RiftReader\\docs\\recovery\\current-proof-anchor-readback.json",
   "riftreader_latest_handoff": "C:\\RIFT MODDING\\RiftReader\\docs\\handoffs\\2026-05-07-122200-python-live-test-orchestrator-current-handoff.md",
-  "riftreader_latest_proof_summary": "C:\\RIFT MODDING\\RiftReader\\scripts\\captures\\proof-anchor-currentpid-47560-readback-summary-20260507-123335.json",
+  "riftreader_latest_proof_summary": "C:\\RIFT MODDING\\RiftReader\\scripts\\captures\\proof-anchor-currentpid-47560-readback-summary-20260507-123808.json",
   "riftscan_coord_api_truth_summary": "handoffs/current/coord-api-truth/coord-api-truth-summary.json",
   "riftscan_coord_recovery_summary": "handoffs/current/coord-recovery/coord-recovery-summary.json",
   "riftscan_match_file": "reports/generated/codex-current-coord-region-passive-20260506-230940-addon-coordinate-matches.json",

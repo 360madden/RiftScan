@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # RiftScan script metadata
-# Version: riftscan-offline-workflow-check-v1.0.5
+# Version: riftscan-offline-workflow-check-v1.0.6
 # Total character count: 000000
 # Purpose: Run conservative offline helper workflow checks, refresh the offline discovery ledger, and write deterministic report artifacts.
 # Safety boundary: Offline validation only. No RIFT focus preflight, live capture, input, movement, memory scan/read, offset validation, RiftReader validation, or /reloadui.
@@ -16,7 +16,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-APP_VERSION = "riftscan-offline-workflow-check-v1.0.5"
+APP_VERSION = "riftscan-offline-workflow-check-v1.0.6"
 REPO_ROOT = Path(__file__).resolve().parents[1]
 OUT_DIR = REPO_ROOT / "handoffs" / "current" / "offline-workflow-check"
 REPORT = OUT_DIR / "OFFLINE_WORKFLOW_CHECK_REPORT.md"
@@ -128,6 +128,7 @@ def helper_checks(timeout_seconds: int) -> list[tuple[str, list[str], int]]:
                 "tools/riftscan_movement_test_readiness.py",
                 "tools/riftscan_movement_execution_gate.py",
                 "tools/riftscan_discovery_ledger.py",
+                "tools/riftscan_ai_workflow_packet.py",
             ],
             timeout_seconds,
         ),
@@ -175,6 +176,11 @@ def helper_checks(timeout_seconds: int) -> list[tuple[str, list[str], int]]:
         (
             "discovery_ledger_validate_existing",
             [sys.executable, "tools/riftscan_discovery_ledger.py", "--validate-existing"],
+            timeout_seconds,
+        ),
+        (
+            "ai_workflow_packet_self_test",
+            [sys.executable, "tools/riftscan_ai_workflow_packet.py", "--self-test"],
             timeout_seconds,
         ),
         (

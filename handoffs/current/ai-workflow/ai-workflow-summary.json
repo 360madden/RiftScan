@@ -1,0 +1,113 @@
+{
+  "ai_resume_prompt": "Resume RiftScan in offline AI workflow mode. Read handoffs/current/ai-workflow/AI_WORKFLOW_PACKET.md, then the Discovery Ledger artifacts. Do not touch live RIFT, focus preflight, capture, process attach/memory reads, movement/input, RiftReader commands, offset validation, or /reloadui unless the user explicitly authorizes live work.",
+  "app_version": "riftscan-ai-workflow-packet-v1.0.0",
+  "blockers": [],
+  "created_utc": "2026-05-07T16:43:11Z",
+  "current_best_candidate": {
+    "axis_order": "xyz",
+    "best_max_abs_distance": 0,
+    "candidate_id": "rift-addon-coordinate-candidate-000001",
+    "claim_level": "validated_candidate",
+    "kind": "coordinate_vec3",
+    "ledger_live_movement_authorized": false,
+    "next_validation_step": "rerun exact current PID/HWND proof readback before any more live movement",
+    "proof_level": "riftscan_candidate_plus_riftreader_no_ce_multisample_and_post_readback",
+    "riftreader_status": "valid-after-run-progress-checkpoint-proofonly",
+    "source_absolute_address_hex": "0x2400EA32120",
+    "source_base_address_hex": "0x2400E970000",
+    "source_offset_hex": "0xC2120",
+    "stable_id": "coordinate::rift-addon-coordinate-candidate-000001::0x2400EA32120",
+    "state": "validated_candidate_historical_checkpoint",
+    "support_count": 3
+  },
+  "discovery_ledger": {
+    "candidate_count": 3,
+    "candidate_ledger_contract_validation": {
+      "candidate_count": 3,
+      "error_count": 0,
+      "path": "handoffs/current/discovery-ledger/candidate_ledger.jsonl",
+      "status": "PASS",
+      "warning_count": 0
+    },
+    "ledger_live_movement_authorized": false,
+    "status": "ledger_written"
+  },
+  "display_status": "PASS",
+  "git": {
+    "command_status": {
+      "head": "pass",
+      "log": "pass",
+      "origin_main_parity": "pass",
+      "status": "pass"
+    },
+    "head": "1eca1bef210c45f42d232348c732bcb59c3981d5",
+    "log_oneline_5": "1eca1be Surface discovery ledger validation\n676b428 Validate offline discovery ledger contract\n9ca69dc Wire discovery ledger into offline diagnostics\n7db4d85 Add offline discovery ledger\n8ebf266 Record current API coordinate candidate",
+    "origin_main_left_right_count": "0\t0",
+    "status_short_branch": "## main...origin/main\n M docs/agent-execution-workflow.md\n M docs/helper-tooling-policy.md\n M handoffs/current/README_CURRENT.md\n M handoffs/current/capture-plan-check/CAPTURE_PLAN_CHECK_REPORT.md\n M handoffs/current/capture-plan-check/capture-plan-check-log.jsonl\n M handoffs/current/capture-plan-check/capture-plan-check-summary.json\n M handoffs/current/discovery-ledger/DISCOVERY_LEDGER_REPORT.md\n M handoffs/current/discovery-ledger/discovery-ledger-log.jsonl\n M handoffs/current/discovery-ledger/discovery-ledger-summary.json\n M handoffs/current/movement-test-readiness/MOVEMENT_TEST_READINESS_REPORT.md\n M handoffs/current/movement-test-readiness/movement-test-readiness-log.jsonl\n M handoffs/current/movement-test-readiness/movement-test-readiness-summary.json\n M handoffs/current/offline-workflow-check/OFFLINE_WORKFLOW_CHECK_REPORT.md\n M handoffs/current/offline-workflow-check/offline-workflow-check-log.jsonl\n M handoffs/current/offline-workflow-check/offline-workflow-check-summary.json\n M handoffs/current/operator/RIFTSCAN_OPERATOR_HANDOFF.md\n M handoffs/current/operator/operator-current-gate-summary.json\n M scripts/run-riftscan-operator-offline-diagnostics.cmd\n M tools/riftscan_offline_workflow_check.py\n?? handoffs/current/ai-workflow/\n?? scripts/run-riftscan-ai-workflow-packet.cmd\n?? tools/riftscan_ai_workflow_packet.py"
+  },
+  "mode": "offline_ai_workflow",
+  "offline_workflow_check": {
+    "display_status": "PASS",
+    "failed_check_count": 0,
+    "failed_checks": [],
+    "status": "pass"
+  },
+  "operator_gate": {
+    "display_status": null,
+    "live_collection_allowed": false,
+    "next_action": "Resolve Movement Execution Gate blockers and rerun it; do not send movement/input.",
+    "status": null
+  },
+  "paths": {
+    "log": "handoffs/current/ai-workflow/ai-workflow-log.jsonl",
+    "report": "handoffs/current/ai-workflow/AI_WORKFLOW_PACKET.md",
+    "summary": "handoffs/current/ai-workflow/ai-workflow-summary.json"
+  },
+  "recommended_first_files": [
+    "handoffs/current/README_CURRENT.md",
+    "handoffs/current/ai-workflow/AI_WORKFLOW_PACKET.md",
+    "handoffs/current/ai-workflow/ai-workflow-summary.json",
+    "handoffs/current/discovery-ledger/DISCOVERY_LEDGER_REPORT.md",
+    "handoffs/current/discovery-ledger/discovery-ledger-summary.json",
+    "docs/discovery-ledger-workflow.md",
+    "AGENTS.md",
+    "docs/agent-execution-workflow.md"
+  ],
+  "safety": {
+    "focus_preflight_started": false,
+    "live_action_authorized": false,
+    "live_capture_started": false,
+    "memory_scan_or_read_started": false,
+    "movement_or_input_sent": false,
+    "offline_only": true,
+    "offset_validation_started": false,
+    "process_attach_or_memory_read_started": false,
+    "reloadui_sent": false,
+    "riftreader_command_executed": false
+  },
+  "schema_version": "riftscan.ai_workflow_packet.v1",
+  "source_artifacts": {
+    "agent_workflow_doc": "docs/agent-execution-workflow.md",
+    "agents_contract": "AGENTS.md",
+    "discovery_ledger_doc": "docs/discovery-ledger-workflow.md",
+    "discovery_ledger_report": "handoffs/current/discovery-ledger/DISCOVERY_LEDGER_REPORT.md",
+    "discovery_ledger_summary": "handoffs/current/discovery-ledger/discovery-ledger-summary.json",
+    "offline_workflow_summary": "handoffs/current/offline-workflow-check/offline-workflow-check-summary.json",
+    "operator_summary": "handoffs/current/operator/operator-current-gate-summary.json",
+    "readme_current": "handoffs/current/README_CURRENT.md"
+  },
+  "status": "PASS",
+  "top_next_actions": [
+    "Keep work offline while RiftReader or the operator owns the game window.",
+    "Start from this AI Workflow Packet, then inspect the Discovery Ledger report and summary.",
+    "Use only stored artifacts, docs, schema checks, report generation, and deterministic tests.",
+    "Do not start focus preflight, live capture, process attach, memory reads, movement/input, RiftReader commands, offset validation, or /reloadui.",
+    "Treat the current best coordinate candidate as offline evidence only until a fresh exact PID/HWND proof readback is explicitly authorized.",
+    "If adding a helper, follow the Python tool + thin CMD wrapper + Markdown/JSON/JSONL artifact pattern.",
+    "Run py_compile, helper self-tests, Offline Workflow Check, JSON/JSONL validation, dotnet build/test/format, and git diff checks at the milestone boundary.",
+    "Commit and push coherent offline workflow milestones only after validation passes.",
+    "If any artifact conflicts, prefer the newest PASS machine-readable artifact and preserve older artifacts as historical evidence.",
+    "The next useful offline slice is a safe candidate-ledger consumer or stale-artifact age warning; do not pivot into live testing without explicit authorization."
+  ],
+  "warnings": []
+}

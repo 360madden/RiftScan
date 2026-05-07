@@ -1,6 +1,6 @@
 {
   "schema_version": "riftscan.operator_current_workflow_gate.v1",
-  "created_utc": "2026-05-07T16:35:05Z",
+  "created_utc": "2026-05-07T16:43:11Z",
   "metadata_capture_plan_gate": "PASS",
   "live_collection_allowed": false,
   "old_offsets_trusted": false,
@@ -19,7 +19,7 @@
     "artifact_freshness": {
       "status": "warning_non_relevant_changes",
       "artifact_head": "40bbd1c62c5db71ecbe4d5931643d37619f955b3",
-      "current_head": "676b4281394f6235c2a28a4bb2aaae6ad49b27b1",
+      "current_head": "1eca1bef210c45f42d232348c732bcb59c3981d5",
       "head_matches_current": false,
       "changed_paths_since_artifact_head": [
         "docs/discovery-ledger-workflow.md",
@@ -94,7 +94,7 @@
     "artifact_freshness": {
       "status": "warning_non_relevant_changes",
       "artifact_head": "40bbd1c62c5db71ecbe4d5931643d37619f955b3",
-      "current_head": "676b4281394f6235c2a28a4bb2aaae6ad49b27b1",
+      "current_head": "1eca1bef210c45f42d232348c732bcb59c3981d5",
       "head_matches_current": false,
       "changed_paths_since_artifact_head": [
         "docs/discovery-ledger-workflow.md",
@@ -193,7 +193,7 @@
     "artifact_status": "present",
     "status": "pass",
     "display_status": "PASS",
-    "created_utc": "2026-05-06T05:54:06Z",
+    "created_utc": "2026-05-07T16:43:09Z",
     "blockers": [],
     "paths": {
       "report": "handoffs/current/capture-plan-check/CAPTURE_PLAN_CHECK_REPORT.md",
@@ -206,7 +206,7 @@
     "artifact_status": "present",
     "status": "pass",
     "display_status": "PASS",
-    "created_utc": "2026-05-06T05:54:07Z",
+    "created_utc": "2026-05-07T16:43:10Z",
     "blockers": [],
     "paths": {
       "report": "handoffs/current/movement-test-readiness/MOVEMENT_TEST_READINESS_REPORT.md",

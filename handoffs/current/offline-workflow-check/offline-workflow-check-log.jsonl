@@ -286,3 +286,73 @@
 {"args": ["git", "log", "--oneline", "-5"], "created_utc": "2026-05-07T16:35:04Z", "event": "command_start", "name": "git_log_oneline_5"}
 {"created_utc": "2026-05-07T16:35:04Z", "event": "command_finish", "exit_code": 0, "name": "git_log_oneline_5", "status": "pass"}
 {"created_utc": "2026-05-07T16:35:04Z", "event": "offline_workflow_check_finish", "failed_check_count": 0, "status": "pass"}
+{"created_utc": "2026-05-07T16:42:43Z", "event": "offline_workflow_check_start", "version": "riftscan-offline-workflow-check-v1.0.6"}
+{"args": ["C:\\Users\\mrkoo\\AppData\\Local\\Programs\\Python\\Python314\\python.exe", "-m", "py_compile", "tools/riftscan_operator_app.py", "tools/riftscan_post_update_baseline.py", "tools/riftscan_capture_readiness.py", "tools/riftscan_patch_intake_app.py", "tools/riftscan_offline_workflow_check.py", "tools/riftscan_capture_plan_check.py", "tools/riftscan_movement_test_readiness.py", "tools/riftscan_movement_execution_gate.py", "tools/riftscan_discovery_ledger.py", "tools/riftscan_ai_workflow_packet.py"], "created_utc": "2026-05-07T16:42:43Z", "event": "command_start", "name": "py_compile_helpers"}
+{"created_utc": "2026-05-07T16:42:43Z", "event": "command_finish", "exit_code": 0, "name": "py_compile_helpers", "status": "pass"}
+{"args": ["C:\\Users\\mrkoo\\AppData\\Local\\Programs\\Python\\Python314\\python.exe", "tools/riftscan_offline_workflow_check.py", "--self-test"], "created_utc": "2026-05-07T16:42:43Z", "event": "command_start", "name": "offline_workflow_check_self_test"}
+{"created_utc": "2026-05-07T16:42:44Z", "event": "command_finish", "exit_code": 0, "name": "offline_workflow_check_self_test", "status": "pass"}
+{"args": ["C:\\Users\\mrkoo\\AppData\\Local\\Programs\\Python\\Python314\\python.exe", "tools/riftscan_operator_app.py", "--self-test"], "created_utc": "2026-05-07T16:42:44Z", "event": "command_start", "name": "operator_self_test"}
+{"created_utc": "2026-05-07T16:42:45Z", "event": "command_finish", "exit_code": 0, "name": "operator_self_test", "status": "pass"}
+{"args": ["C:\\Users\\mrkoo\\AppData\\Local\\Programs\\Python\\Python314\\python.exe", "tools/riftscan_post_update_baseline.py", "--self-test"], "created_utc": "2026-05-07T16:42:45Z", "event": "command_start", "name": "post_update_baseline_self_test"}
+{"created_utc": "2026-05-07T16:42:46Z", "event": "command_finish", "exit_code": 0, "name": "post_update_baseline_self_test", "status": "pass"}
+{"args": ["C:\\Users\\mrkoo\\AppData\\Local\\Programs\\Python\\Python314\\python.exe", "tools/riftscan_capture_readiness.py", "--self-test"], "created_utc": "2026-05-07T16:42:46Z", "event": "command_start", "name": "capture_readiness_self_test"}
+{"created_utc": "2026-05-07T16:42:46Z", "event": "command_finish", "exit_code": 0, "name": "capture_readiness_self_test", "status": "pass"}
+{"args": ["C:\\Users\\mrkoo\\AppData\\Local\\Programs\\Python\\Python314\\python.exe", "tools/riftscan_capture_plan_check.py", "--self-test"], "created_utc": "2026-05-07T16:42:46Z", "event": "command_start", "name": "capture_plan_check_self_test"}
+{"created_utc": "2026-05-07T16:42:46Z", "event": "command_finish", "exit_code": 0, "name": "capture_plan_check_self_test", "status": "pass"}
+{"args": ["C:\\Users\\mrkoo\\AppData\\Local\\Programs\\Python\\Python314\\python.exe", "tools/riftscan_movement_test_readiness.py", "--self-test"], "created_utc": "2026-05-07T16:42:46Z", "event": "command_start", "name": "movement_test_readiness_self_test"}
+{"created_utc": "2026-05-07T16:42:46Z", "event": "command_finish", "exit_code": 0, "name": "movement_test_readiness_self_test", "status": "pass"}
+{"args": ["C:\\Users\\mrkoo\\AppData\\Local\\Programs\\Python\\Python314\\python.exe", "tools/riftscan_movement_execution_gate.py", "--self-test"], "created_utc": "2026-05-07T16:42:46Z", "event": "command_start", "name": "movement_execution_gate_self_test"}
+{"created_utc": "2026-05-07T16:42:46Z", "event": "command_finish", "exit_code": 0, "name": "movement_execution_gate_self_test", "status": "pass"}
+{"args": ["C:\\Users\\mrkoo\\AppData\\Local\\Programs\\Python\\Python314\\python.exe", "tools/riftscan_discovery_ledger.py", "--self-test"], "created_utc": "2026-05-07T16:42:46Z", "event": "command_start", "name": "discovery_ledger_self_test"}
+{"created_utc": "2026-05-07T16:42:47Z", "event": "command_finish", "exit_code": 0, "name": "discovery_ledger_self_test", "status": "pass"}
+{"args": ["C:\\Users\\mrkoo\\AppData\\Local\\Programs\\Python\\Python314\\python.exe", "tools/riftscan_discovery_ledger.py"], "created_utc": "2026-05-07T16:42:47Z", "event": "command_start", "name": "discovery_ledger_refresh"}
+{"created_utc": "2026-05-07T16:42:48Z", "event": "command_finish", "exit_code": 0, "name": "discovery_ledger_refresh", "status": "pass"}
+{"args": ["C:\\Users\\mrkoo\\AppData\\Local\\Programs\\Python\\Python314\\python.exe", "tools/riftscan_discovery_ledger.py", "--validate-existing"], "created_utc": "2026-05-07T16:42:48Z", "event": "command_start", "name": "discovery_ledger_validate_existing"}
+{"created_utc": "2026-05-07T16:42:48Z", "event": "command_finish", "exit_code": 0, "name": "discovery_ledger_validate_existing", "status": "pass"}
+{"args": ["C:\\Users\\mrkoo\\AppData\\Local\\Programs\\Python\\Python314\\python.exe", "tools/riftscan_ai_workflow_packet.py", "--self-test"], "created_utc": "2026-05-07T16:42:48Z", "event": "command_start", "name": "ai_workflow_packet_self_test"}
+{"created_utc": "2026-05-07T16:42:49Z", "event": "command_finish", "exit_code": 0, "name": "ai_workflow_packet_self_test", "status": "pass"}
+{"args": ["C:\\Users\\mrkoo\\AppData\\Local\\Programs\\Python\\Python314\\python.exe", "tools/riftscan_patch_intake_app.py", "--self-test"], "created_utc": "2026-05-07T16:42:49Z", "event": "command_start", "name": "patch_intake_self_test"}
+{"created_utc": "2026-05-07T16:42:55Z", "event": "command_finish", "exit_code": 0, "name": "patch_intake_self_test", "status": "pass"}
+{"created_utc": "2026-05-07T16:42:55Z", "event": "python_cache_cleanup_finish", "path": "tools/__pycache__"}
+{"args": ["git", "rev-parse", "HEAD"], "created_utc": "2026-05-07T16:42:55Z", "event": "command_start", "name": "git_head"}
+{"created_utc": "2026-05-07T16:42:55Z", "event": "command_finish", "exit_code": 0, "name": "git_head", "status": "pass"}
+{"args": ["git", "status", "--short"], "created_utc": "2026-05-07T16:42:55Z", "event": "command_start", "name": "git_status_short"}
+{"created_utc": "2026-05-07T16:42:55Z", "event": "command_finish", "exit_code": 0, "name": "git_status_short", "status": "pass"}
+{"args": ["git", "log", "--oneline", "-5"], "created_utc": "2026-05-07T16:42:55Z", "event": "command_start", "name": "git_log_oneline_5"}
+{"created_utc": "2026-05-07T16:42:56Z", "event": "command_finish", "exit_code": 0, "name": "git_log_oneline_5", "status": "pass"}
+{"created_utc": "2026-05-07T16:42:56Z", "event": "offline_workflow_check_finish", "failed_check_count": 0, "status": "pass"}
+{"created_utc": "2026-05-07T16:42:56Z", "event": "offline_workflow_check_start", "version": "riftscan-offline-workflow-check-v1.0.6"}
+{"args": ["C:\\Users\\mrkoo\\AppData\\Local\\Programs\\Python\\Python314\\python.exe", "-m", "py_compile", "tools/riftscan_operator_app.py", "tools/riftscan_post_update_baseline.py", "tools/riftscan_capture_readiness.py", "tools/riftscan_patch_intake_app.py", "tools/riftscan_offline_workflow_check.py", "tools/riftscan_capture_plan_check.py", "tools/riftscan_movement_test_readiness.py", "tools/riftscan_movement_execution_gate.py", "tools/riftscan_discovery_ledger.py", "tools/riftscan_ai_workflow_packet.py"], "created_utc": "2026-05-07T16:42:56Z", "event": "command_start", "name": "py_compile_helpers"}
+{"created_utc": "2026-05-07T16:42:56Z", "event": "command_finish", "exit_code": 0, "name": "py_compile_helpers", "status": "pass"}
+{"args": ["C:\\Users\\mrkoo\\AppData\\Local\\Programs\\Python\\Python314\\python.exe", "tools/riftscan_offline_workflow_check.py", "--self-test"], "created_utc": "2026-05-07T16:42:56Z", "event": "command_start", "name": "offline_workflow_check_self_test"}
+{"created_utc": "2026-05-07T16:42:56Z", "event": "command_finish", "exit_code": 0, "name": "offline_workflow_check_self_test", "status": "pass"}
+{"args": ["C:\\Users\\mrkoo\\AppData\\Local\\Programs\\Python\\Python314\\python.exe", "tools/riftscan_operator_app.py", "--self-test"], "created_utc": "2026-05-07T16:42:56Z", "event": "command_start", "name": "operator_self_test"}
+{"created_utc": "2026-05-07T16:42:59Z", "event": "command_finish", "exit_code": 0, "name": "operator_self_test", "status": "pass"}
+{"args": ["C:\\Users\\mrkoo\\AppData\\Local\\Programs\\Python\\Python314\\python.exe", "tools/riftscan_post_update_baseline.py", "--self-test"], "created_utc": "2026-05-07T16:42:59Z", "event": "command_start", "name": "post_update_baseline_self_test"}
+{"created_utc": "2026-05-07T16:42:59Z", "event": "command_finish", "exit_code": 0, "name": "post_update_baseline_self_test", "status": "pass"}
+{"args": ["C:\\Users\\mrkoo\\AppData\\Local\\Programs\\Python\\Python314\\python.exe", "tools/riftscan_capture_readiness.py", "--self-test"], "created_utc": "2026-05-07T16:42:59Z", "event": "command_start", "name": "capture_readiness_self_test"}
+{"created_utc": "2026-05-07T16:42:59Z", "event": "command_finish", "exit_code": 0, "name": "capture_readiness_self_test", "status": "pass"}
+{"args": ["C:\\Users\\mrkoo\\AppData\\Local\\Programs\\Python\\Python314\\python.exe", "tools/riftscan_capture_plan_check.py", "--self-test"], "created_utc": "2026-05-07T16:42:59Z", "event": "command_start", "name": "capture_plan_check_self_test"}
+{"created_utc": "2026-05-07T16:43:00Z", "event": "command_finish", "exit_code": 0, "name": "capture_plan_check_self_test", "status": "pass"}
+{"args": ["C:\\Users\\mrkoo\\AppData\\Local\\Programs\\Python\\Python314\\python.exe", "tools/riftscan_movement_test_readiness.py", "--self-test"], "created_utc": "2026-05-07T16:43:00Z", "event": "command_start", "name": "movement_test_readiness_self_test"}
+{"created_utc": "2026-05-07T16:43:00Z", "event": "command_finish", "exit_code": 0, "name": "movement_test_readiness_self_test", "status": "pass"}
+{"args": ["C:\\Users\\mrkoo\\AppData\\Local\\Programs\\Python\\Python314\\python.exe", "tools/riftscan_movement_execution_gate.py", "--self-test"], "created_utc": "2026-05-07T16:43:00Z", "event": "command_start", "name": "movement_execution_gate_self_test"}
+{"created_utc": "2026-05-07T16:43:00Z", "event": "command_finish", "exit_code": 0, "name": "movement_execution_gate_self_test", "status": "pass"}
+{"args": ["C:\\Users\\mrkoo\\AppData\\Local\\Programs\\Python\\Python314\\python.exe", "tools/riftscan_discovery_ledger.py", "--self-test"], "created_utc": "2026-05-07T16:43:00Z", "event": "command_start", "name": "discovery_ledger_self_test"}
+{"created_utc": "2026-05-07T16:43:00Z", "event": "command_finish", "exit_code": 0, "name": "discovery_ledger_self_test", "status": "pass"}
+{"args": ["C:\\Users\\mrkoo\\AppData\\Local\\Programs\\Python\\Python314\\python.exe", "tools/riftscan_discovery_ledger.py"], "created_utc": "2026-05-07T16:43:00Z", "event": "command_start", "name": "discovery_ledger_refresh"}
+{"created_utc": "2026-05-07T16:43:00Z", "event": "command_finish", "exit_code": 0, "name": "discovery_ledger_refresh", "status": "pass"}
+{"args": ["C:\\Users\\mrkoo\\AppData\\Local\\Programs\\Python\\Python314\\python.exe", "tools/riftscan_discovery_ledger.py", "--validate-existing"], "created_utc": "2026-05-07T16:43:00Z", "event": "command_start", "name": "discovery_ledger_validate_existing"}
+{"created_utc": "2026-05-07T16:43:01Z", "event": "command_finish", "exit_code": 0, "name": "discovery_ledger_validate_existing", "status": "pass"}
+{"args": ["C:\\Users\\mrkoo\\AppData\\Local\\Programs\\Python\\Python314\\python.exe", "tools/riftscan_ai_workflow_packet.py", "--self-test"], "created_utc": "2026-05-07T16:43:01Z", "event": "command_start", "name": "ai_workflow_packet_self_test"}
+{"created_utc": "2026-05-07T16:43:01Z", "event": "command_finish", "exit_code": 0, "name": "ai_workflow_packet_self_test", "status": "pass"}
+{"args": ["C:\\Users\\mrkoo\\AppData\\Local\\Programs\\Python\\Python314\\python.exe", "tools/riftscan_patch_intake_app.py", "--self-test"], "created_utc": "2026-05-07T16:43:01Z", "event": "command_start", "name": "patch_intake_self_test"}
+{"created_utc": "2026-05-07T16:43:07Z", "event": "command_finish", "exit_code": 0, "name": "patch_intake_self_test", "status": "pass"}
+{"created_utc": "2026-05-07T16:43:07Z", "event": "python_cache_cleanup_finish", "path": "tools/__pycache__"}
+{"args": ["git", "rev-parse", "HEAD"], "created_utc": "2026-05-07T16:43:07Z", "event": "command_start", "name": "git_head"}
+{"created_utc": "2026-05-07T16:43:07Z", "event": "command_finish", "exit_code": 0, "name": "git_head", "status": "pass"}
+{"args": ["git", "status", "--short"], "created_utc": "2026-05-07T16:43:07Z", "event": "command_start", "name": "git_status_short"}
+{"created_utc": "2026-05-07T16:43:07Z", "event": "command_finish", "exit_code": 0, "name": "git_status_short", "status": "pass"}
+{"args": ["git", "log", "--oneline", "-5"], "created_utc": "2026-05-07T16:43:07Z", "event": "command_start", "name": "git_log_oneline_5"}
+{"created_utc": "2026-05-07T16:43:07Z", "event": "command_finish", "exit_code": 0, "name": "git_log_oneline_5", "status": "pass"}
+{"created_utc": "2026-05-07T16:43:07Z", "event": "offline_workflow_check_finish", "failed_check_count": 0, "status": "pass"}
