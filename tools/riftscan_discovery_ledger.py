@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # RiftScan script metadata
-# Version: riftscan-discovery-ledger-v1.1.0
+# Version: riftscan-discovery-ledger-v1.2.0
 # Total character count: 000000
 # Purpose: Build and validate an offline, replayable discovery ledger from stored RiftScan/RiftReader artifacts.
 # Safety boundary: Reads existing JSON/Markdown/session artifacts only. No RIFT focus preflight, live capture, input, movement, memory scan/read, process attach, offset validation, RiftReader command execution, or /reloadui.
@@ -14,7 +14,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-APP_VERSION = "riftscan-discovery-ledger-v1.1.0"
+APP_VERSION = "riftscan-discovery-ledger-v1.2.0"
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_RIFTREADER_ROOT = Path(r"C:\RIFT MODDING\RiftReader")
 OUT_DIR = REPO_ROOT / "handoffs" / "current" / "discovery-ledger"
@@ -464,6 +464,11 @@ def build_ledger(riftreader_root: Path) -> dict[str, Any]:
 def report_lines(summary: dict[str, Any]) -> list[str]:
     best = summary.get("current_best_candidate") if isinstance(summary.get("current_best_candidate"), dict) else {}
     candidates = summary.get("candidates") if isinstance(summary.get("candidates"), list) else []
+    contract = (
+        summary.get("candidate_ledger_contract_validation")
+        if isinstance(summary.get("candidate_ledger_contract_validation"), dict)
+        else {}
+    )
     lines = [
         "# RiftScan Offline Discovery Ledger",
         "",
@@ -476,6 +481,7 @@ def report_lines(summary: dict[str, Any]) -> list[str]:
         f"status: {summary.get('status')}",
         f"scope: {summary.get('scope')}",
         f"candidate_count: {summary.get('candidate_count')}",
+        f"candidate_ledger_contract_validation: {contract.get('status', 'not_run')}",
         f"ledger_live_movement_authorized: {get_nested(summary, 'safety', 'ledger_live_movement_authorized')}",
         "```",
         "",
@@ -524,6 +530,33 @@ def report_lines(summary: dict[str, Any]) -> list[str]:
     lines.extend(
         [
             "",
+            "## Candidate ledger contract",
+            "",
+            "```text",
+            f"status: {contract.get('status', 'not_run')}",
+            f"path: {contract.get('path', rel(CANDIDATE_LEDGER))}",
+            f"candidate_count: {contract.get('candidate_count', len(candidates))}",
+            f"error_count: {contract.get('error_count', 'unknown')}",
+            f"warning_count: {contract.get('warning_count', 'unknown')}",
+            "```",
+        ]
+    )
+    contract_issues = contract.get("issues") if isinstance(contract.get("issues"), list) else []
+    if contract_issues:
+        lines.extend(
+            [
+                "",
+                "Contract issues:",
+                "",
+                "```json",
+                json.dumps(contract_issues, indent=2, sort_keys=True),
+                "```",
+            ]
+        )
+
+    lines.extend(
+        [
+            "",
             "## Blockers / guardrails",
             "",
         ]
@@ -558,11 +591,20 @@ def report_lines(summary: dict[str, Any]) -> list[str]:
 
 
 def write_outputs(summary: dict[str, Any]) -> None:
-    write_json(SUMMARY, summary)
     lines = [json.dumps(candidate, sort_keys=True) for candidate in summary.get("candidates", [])]
     write_text(CANDIDATE_LEDGER, "\n".join(lines) + ("\n" if lines else ""))
+    validation = validate_candidate_ledger(CANDIDATE_LEDGER)
+    summary["candidate_ledger_contract_validation"] = validation
+    write_json(SUMMARY, summary)
     write_text(REPORT, "\n".join(report_lines(summary)))
-    append_log("outputs_written", summary=rel(SUMMARY), report=rel(REPORT), candidate_ledger=rel(CANDIDATE_LEDGER))
+    append_log(
+        "outputs_written",
+        summary=rel(SUMMARY),
+        report=rel(REPORT),
+        candidate_ledger=rel(CANDIDATE_LEDGER),
+        candidate_ledger_contract_status=validation["status"],
+        candidate_ledger_contract_error_count=validation["error_count"],
+    )
 
 
 def is_blank(value: Any) -> bool:

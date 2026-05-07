@@ -54,7 +54,7 @@ A newer doc-only handoff-pointer commit may exist; check `git log --oneline -5` 
 - Offline Discovery Ledger is a Python-first, read-only artifact inventory: `python tools/riftscan_discovery_ledger.py --self-test`, `python tools/riftscan_discovery_ledger.py`, `python tools/riftscan_discovery_ledger.py --validate-existing`, and `.\scripts\run-riftscan-discovery-ledger.cmd`.
 - Latest Offline Discovery Ledger artifacts: `handoffs/current/discovery-ledger/`.
 - The ledger contract is documented in `docs/discovery-ledger-workflow.md`.
-- Offline Workflow Check now includes Discovery Ledger self-test + refresh + candidate-ledger contract validation, so `.\scripts\run-riftscan-offline-workflow-check.cmd` updates and checks the ledger without touching the game window.
+- Ledger generation embeds candidate-ledger contract validation in the summary/report, and Offline Workflow Check includes Discovery Ledger self-test + refresh + candidate-ledger contract validation; `.\scripts\run-riftscan-offline-workflow-check.cmd` updates and checks the ledger without touching the game window.
 
 ## Current direction
 

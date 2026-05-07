@@ -1,7 +1,7 @@
 # RiftScan Offline Discovery Ledger
 
-Created UTC: `2026-05-07T16:24:50Z`
-App version: `riftscan-discovery-ledger-v1.1.0`
+Created UTC: `2026-05-07T16:34:56Z`
+App version: `riftscan-discovery-ledger-v1.2.0`
 
 ## Result
 
@@ -9,6 +9,7 @@ App version: `riftscan-discovery-ledger-v1.1.0`
 status: ledger_written
 scope: offline_artifact_inventory_no_live_process_access
 candidate_count: 3
+candidate_ledger_contract_validation: PASS
 ledger_live_movement_authorized: False
 ```
 
@@ -36,6 +37,16 @@ ledger_live_movement_authorized: False
 | `historical_stale_trace_blocked` | `rift-addon-coordinate-candidate-000001` | `0x1DA682DF690` | `current_api_plus_readonly_memory_candidate` | `keep as historical evidence unless explicitly replaying the stale-trace blocker` |
 | `historical_candidate_scan_only` | `coordinate_candidate_scan` | `-` | `candidate_like_values_only` | `do not use for current-client movement proof; keep only as historical search context` |
 
+## Candidate ledger contract
+
+```text
+status: PASS
+path: handoffs/current/discovery-ledger/candidate_ledger.jsonl
+candidate_count: 3
+error_count: 0
+warning_count: 0
+```
+
 ## Blockers / guardrails
 
 - offline ledger cannot authorize live movement or claim current window focus
@@ -49,7 +60,7 @@ ledger_live_movement_authorized: False
 {
   "riftreader_current_proof_pointer": "C:\\RIFT MODDING\\RiftReader\\docs\\recovery\\current-proof-anchor-readback.json",
   "riftreader_latest_handoff": "C:\\RIFT MODDING\\RiftReader\\docs\\handoffs\\2026-05-07-122200-python-live-test-orchestrator-current-handoff.md",
-  "riftreader_latest_proof_summary": "C:\\RIFT MODDING\\RiftReader\\scripts\\captures\\proof-anchor-currentpid-47560-readback-summary-20260507-121811.json",
+  "riftreader_latest_proof_summary": "C:\\RIFT MODDING\\RiftReader\\scripts\\captures\\proof-anchor-currentpid-47560-readback-summary-20260507-123335.json",
   "riftscan_coord_api_truth_summary": "handoffs/current/coord-api-truth/coord-api-truth-summary.json",
   "riftscan_coord_recovery_summary": "handoffs/current/coord-recovery/coord-recovery-summary.json",
   "riftscan_match_file": "reports/generated/codex-current-coord-region-passive-20260506-230940-addon-coordinate-matches.json",

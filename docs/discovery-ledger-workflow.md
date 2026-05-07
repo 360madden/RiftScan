@@ -17,6 +17,8 @@ python tools/riftscan_discovery_ledger.py --validate-existing
 
 `--validate-existing` validates `handoffs/current/discovery-ledger/candidate_ledger.jsonl` without writing artifacts.
 
+Normal ledger generation writes `candidate_ledger.jsonl`, validates it immediately, then embeds the validation result in both `discovery-ledger-summary.json` and `DISCOVERY_LEDGER_REPORT.md`.
+
 `.\scripts\run-riftscan-offline-workflow-check.cmd` refreshes the ledger and then validates the generated candidate ledger contract.
 
 ## Artifact contract

@@ -1,5 +1,5 @@
 {
-  "app_version": "riftscan-discovery-ledger-v1.1.0",
+  "app_version": "riftscan-discovery-ledger-v1.2.0",
   "blockers": [
     "offline ledger cannot authorize live movement or claim current window focus",
     "RiftReader pointer says fresh preflight is required before more movement",
@@ -7,6 +7,31 @@
     "RiftScan Movement Execution Gate artifact is blocked/stale relative to newer RiftReader proof lane"
   ],
   "candidate_count": 3,
+  "candidate_ledger_contract_validation": {
+    "app_version": "riftscan-discovery-ledger-v1.2.0",
+    "candidate_count": 3,
+    "created_utc": "2026-05-07T16:34:56Z",
+    "display_status": "PASS",
+    "error_count": 0,
+    "issues": [],
+    "line_count": 3,
+    "path": "handoffs/current/discovery-ledger/candidate_ledger.jsonl",
+    "safety": {
+      "capture_started": false,
+      "ledger_live_movement_authorized": false,
+      "memory_scan_or_read_started": false,
+      "movement_or_input_sent": false,
+      "offline_only": true,
+      "process_attach_or_memory_read_started": false,
+      "reloadui_sent": false,
+      "riftreader_command_executed": false,
+      "runs_focus_preflight": false,
+      "writes_artifacts": false
+    },
+    "schema_version": "riftscan.discovery_ledger_validation.v1",
+    "status": "PASS",
+    "warning_count": 0
+  },
   "candidates": [
     {
       "axis_order": "xyz",
@@ -165,7 +190,7 @@
       ]
     }
   ],
-  "created_utc": "2026-05-07T16:24:50Z",
+  "created_utc": "2026-05-07T16:34:56Z",
   "current_best_candidate": {
     "axis_order": "xyz",
     "best_addon_xyz": [
@@ -527,7 +552,7 @@
   "source_artifacts": {
     "riftreader_current_proof_pointer": "C:\\RIFT MODDING\\RiftReader\\docs\\recovery\\current-proof-anchor-readback.json",
     "riftreader_latest_handoff": "C:\\RIFT MODDING\\RiftReader\\docs\\handoffs\\2026-05-07-122200-python-live-test-orchestrator-current-handoff.md",
-    "riftreader_latest_proof_summary": "C:\\RIFT MODDING\\RiftReader\\scripts\\captures\\proof-anchor-currentpid-47560-readback-summary-20260507-121811.json",
+    "riftreader_latest_proof_summary": "C:\\RIFT MODDING\\RiftReader\\scripts\\captures\\proof-anchor-currentpid-47560-readback-summary-20260507-123335.json",
     "riftscan_coord_api_truth_summary": "handoffs/current/coord-api-truth/coord-api-truth-summary.json",
     "riftscan_coord_recovery_summary": "handoffs/current/coord-recovery/coord-recovery-summary.json",
     "riftscan_match_file": "reports/generated/codex-current-coord-region-passive-20260506-230940-addon-coordinate-matches.json",
