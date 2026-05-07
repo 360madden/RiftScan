@@ -1,0 +1,200 @@
+{
+  "allowed_downstream_uses": [
+    "offline_review",
+    "report_generation",
+    "replay_analysis_seed",
+    "future_validation_planning"
+  ],
+  "app_version": "riftscan-candidate-ledger-consumer-v1.0.0",
+  "blockers": [],
+  "candidate_ledger_contract_validation": {
+    "candidate_count": 3,
+    "error_count": 0,
+    "path": "handoffs/current/discovery-ledger/candidate_ledger.jsonl",
+    "status": "PASS",
+    "warning_count": 0
+  },
+  "created_utc": "2026-05-07T16:51:20Z",
+  "current_best_candidate": {
+    "allowed_downstream_uses": [
+      "offline_review",
+      "report_generation",
+      "replay_analysis_seed",
+      "future_validation_planning"
+    ],
+    "axis_order": "xyz",
+    "best_max_abs_distance": 0,
+    "candidate_id": "rift-addon-coordinate-candidate-000001",
+    "claim_level": "validated_candidate",
+    "consumer_status": "available_offline_only",
+    "forbidden_downstream_uses": [
+      "movement",
+      "input",
+      "live_capture",
+      "process_attach",
+      "memory_read",
+      "offset_validation",
+      "riftreader_command",
+      "reloadui"
+    ],
+    "kind": "coordinate_vec3",
+    "live_use_authorized": false,
+    "next_validation_step": "rerun exact current PID/HWND proof readback before any more live movement",
+    "proof_level": "riftscan_candidate_plus_riftreader_no_ce_multisample_and_post_readback",
+    "source": "riftscan_addon_coordinate_match",
+    "source_absolute_address_hex": "0x2400EA32120",
+    "source_base_address_hex": "0x2400E970000",
+    "source_index": 1,
+    "source_offset_hex": "0xC2120",
+    "stable_id": "coordinate::rift-addon-coordinate-candidate-000001::0x2400EA32120",
+    "state": "validated_candidate_historical_checkpoint",
+    "support_count": 3
+  },
+  "display_status": "PASS",
+  "forbidden_downstream_uses": [
+    "movement",
+    "input",
+    "live_capture",
+    "process_attach",
+    "memory_read",
+    "offset_validation",
+    "riftreader_command",
+    "reloadui"
+  ],
+  "mode": "offline_candidate_ledger_consumer",
+  "parse_issues": [],
+  "paths": {
+    "log": "handoffs/current/candidate-ledger-consumer/candidate-ledger-consumer-log.jsonl",
+    "report": "handoffs/current/candidate-ledger-consumer/CANDIDATE_LEDGER_CONSUMER_REPORT.md",
+    "summary": "handoffs/current/candidate-ledger-consumer/candidate-ledger-consumer-summary.json"
+  },
+  "rejected_candidate_count": 0,
+  "rejected_candidates": [],
+  "safe_candidate_count": 3,
+  "safe_candidates": [
+    {
+      "allowed_downstream_uses": [
+        "offline_review",
+        "report_generation",
+        "replay_analysis_seed",
+        "future_validation_planning"
+      ],
+      "axis_order": "xyz",
+      "best_max_abs_distance": 0,
+      "candidate_id": "rift-addon-coordinate-candidate-000001",
+      "claim_level": "validated_candidate",
+      "consumer_status": "available_offline_only",
+      "forbidden_downstream_uses": [
+        "movement",
+        "input",
+        "live_capture",
+        "process_attach",
+        "memory_read",
+        "offset_validation",
+        "riftreader_command",
+        "reloadui"
+      ],
+      "kind": "coordinate_vec3",
+      "live_use_authorized": false,
+      "next_validation_step": "rerun exact current PID/HWND proof readback before any more live movement",
+      "proof_level": "riftscan_candidate_plus_riftreader_no_ce_multisample_and_post_readback",
+      "source": "riftscan_addon_coordinate_match",
+      "source_absolute_address_hex": "0x2400EA32120",
+      "source_base_address_hex": "0x2400E970000",
+      "source_index": 1,
+      "source_offset_hex": "0xC2120",
+      "stable_id": "coordinate::rift-addon-coordinate-candidate-000001::0x2400EA32120",
+      "state": "validated_candidate_historical_checkpoint",
+      "support_count": 3
+    },
+    {
+      "allowed_downstream_uses": [
+        "offline_review",
+        "report_generation",
+        "replay_analysis_seed",
+        "future_validation_planning"
+      ],
+      "axis_order": "xyz",
+      "best_max_abs_distance": 5.002220859751105e-11,
+      "candidate_id": "rift-addon-coordinate-candidate-000001",
+      "claim_level": "candidate",
+      "consumer_status": "available_offline_only",
+      "forbidden_downstream_uses": [
+        "movement",
+        "input",
+        "live_capture",
+        "process_attach",
+        "memory_read",
+        "offset_validation",
+        "riftreader_command",
+        "reloadui"
+      ],
+      "kind": "coordinate_vec3",
+      "live_use_authorized": false,
+      "next_validation_step": "keep as historical evidence unless explicitly replaying the stale-trace blocker",
+      "proof_level": "current_api_plus_readonly_memory_candidate",
+      "source": "coord_api_truth_handoff",
+      "source_absolute_address_hex": "0x1DA682DF690",
+      "source_base_address_hex": null,
+      "source_index": 2,
+      "source_offset_hex": null,
+      "stable_id": "coordinate::rift-addon-coordinate-candidate-000001::0x1DA682DF690::legacy_coord_api_truth",
+      "state": "historical_stale_trace_blocked",
+      "support_count": 8
+    },
+    {
+      "allowed_downstream_uses": [
+        "offline_review",
+        "report_generation",
+        "replay_analysis_seed",
+        "future_validation_planning"
+      ],
+      "axis_order": null,
+      "best_max_abs_distance": null,
+      "candidate_id": null,
+      "claim_level": "observed",
+      "consumer_status": "available_offline_only",
+      "forbidden_downstream_uses": [
+        "movement",
+        "input",
+        "live_capture",
+        "process_attach",
+        "memory_read",
+        "offset_validation",
+        "riftreader_command",
+        "reloadui"
+      ],
+      "kind": "coordinate_candidate_scan",
+      "live_use_authorized": false,
+      "next_validation_step": "do not use for current-client movement proof; keep only as historical search context",
+      "proof_level": "candidate_like_values_only",
+      "source": "coord_recovery_probe_summary",
+      "source_absolute_address_hex": null,
+      "source_base_address_hex": null,
+      "source_index": 3,
+      "source_offset_hex": null,
+      "stable_id": "coordinate_scan::33812::2026-05-02T17:14:47Z",
+      "state": "historical_candidate_scan_only",
+      "support_count": null
+    }
+  ],
+  "safety": {
+    "focus_preflight_started": false,
+    "live_action_authorized": false,
+    "live_capture_started": false,
+    "memory_scan_or_read_started": false,
+    "movement_or_input_sent": false,
+    "offline_only": true,
+    "offset_validation_started": false,
+    "process_attach_or_memory_read_started": false,
+    "reloadui_sent": false,
+    "riftreader_command_executed": false
+  },
+  "schema_version": "riftscan.candidate_ledger_consumer.v1",
+  "source_artifacts": {
+    "candidate_ledger": "handoffs/current/discovery-ledger/candidate_ledger.jsonl",
+    "discovery_ledger_summary": "handoffs/current/discovery-ledger/discovery-ledger-summary.json"
+  },
+  "status": "PASS",
+  "warnings": []
+}

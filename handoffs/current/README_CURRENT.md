@@ -6,15 +6,17 @@ Start here for new RiftScan work:
 
 1. `handoffs/current/ai-workflow/AI_WORKFLOW_PACKET.md`
 2. `handoffs/current/ai-workflow/ai-workflow-summary.json`
-3. `handoffs/current/discovery-ledger/DISCOVERY_LEDGER_REPORT.md`
-4. `handoffs/current/discovery-ledger/discovery-ledger-summary.json`
-5. `handoffs/current/RIFTSCAN_RESUME_HANDOFF_2026-05-06_OPERATOR_GATE_WORKFLOW.md`
-6. `handoffs/current/operator/operator-current-gate-summary.json`
-7. `handoffs/current/operator/RIFTSCAN_OPERATOR_HANDOFF.md`
-8. `docs/helper-tooling-policy.md`
-9. `docs/discovery-ledger-workflow.md`
+3. `handoffs/current/candidate-ledger-consumer/CANDIDATE_LEDGER_CONSUMER_REPORT.md`
+4. `handoffs/current/candidate-ledger-consumer/candidate-ledger-consumer-summary.json`
+5. `handoffs/current/discovery-ledger/DISCOVERY_LEDGER_REPORT.md`
+6. `handoffs/current/discovery-ledger/discovery-ledger-summary.json`
+7. `handoffs/current/RIFTSCAN_RESUME_HANDOFF_2026-05-06_OPERATOR_GATE_WORKFLOW.md`
+8. `handoffs/current/operator/operator-current-gate-summary.json`
+9. `handoffs/current/operator/RIFTSCAN_OPERATOR_HANDOFF.md`
+10. `docs/helper-tooling-policy.md`
+11. `docs/discovery-ledger-workflow.md`
 
-For autonomous offline AI workflow while RiftReader owns the game window, prefer the AI Workflow Packet first, then the offline discovery ledger. The packet summarizes current safe context; the ledger reconciles ignored/generated RiftScan evidence with RiftReader's tracked current-proof pointer without running focus, capture, input, movement, memory reads, RiftReader commands, offset validation, or `/reloadui`.
+For autonomous offline AI workflow while RiftReader owns the game window, prefer the AI Workflow Packet first, then the Candidate Ledger Consumer, then the offline discovery ledger. The packet summarizes current safe context; the consumer exposes an offline-only safe candidate view; the ledger reconciles ignored/generated RiftScan evidence with RiftReader's tracked current-proof pointer without running focus, capture, input, movement, memory reads, RiftReader commands, offset validation, or `/reloadui`.
 
 The older 2026-05-05 handoffs remain useful history, but their next-step ordering is superseded by the 2026-05-06 Operator Gate Workflow handoff, the current gate summary JSON, and the newer offline discovery ledger.
 
@@ -57,6 +59,8 @@ A newer doc-only handoff-pointer commit may exist; check `git log --oneline -5` 
 - Latest Offline Discovery Ledger artifacts: `handoffs/current/discovery-ledger/`.
 - The ledger contract is documented in `docs/discovery-ledger-workflow.md`.
 - Ledger generation embeds candidate-ledger contract validation in the summary/report, and Offline Workflow Check includes Discovery Ledger self-test + refresh + candidate-ledger contract validation; `.\scripts\run-riftscan-offline-workflow-check.cmd` updates and checks the ledger without touching the game window.
+- Candidate Ledger Consumer is a safe offline-only downstream view: `python tools/riftscan_candidate_ledger_consumer.py --self-test`, `python tools/riftscan_candidate_ledger_consumer.py`, and `.\scripts\run-riftscan-candidate-ledger-consumer.cmd --strict-exit-code`.
+- Latest Candidate Ledger Consumer artifacts: `handoffs/current/candidate-ledger-consumer/`.
 - AI Workflow Packet is a compact offline agent resume packet: `python tools/riftscan_ai_workflow_packet.py --self-test`, `python tools/riftscan_ai_workflow_packet.py`, and `.\scripts\run-riftscan-ai-workflow-packet.cmd --strict-exit-code`.
 - Latest AI Workflow Packet artifacts: `handoffs/current/ai-workflow/`.
 
@@ -98,4 +102,4 @@ For meaningful workflow milestones:
 
 ## Current next recommended action
 
-Review `handoffs/current/ai-workflow/AI_WORKFLOW_PACKET.md`, then `handoffs/current/discovery-ledger/DISCOVERY_LEDGER_REPORT.md` and `docs/discovery-ledger-workflow.md`. If RiftReader still owns the game window, keep RiftScan work offline: update/validate packet and ledger artifacts from stored evidence only and do not start focus preflight, live capture, scanner/discovery probes, process attach/memory reads, movement/input, `/reloadui`, offset validation, or RiftReader validation from RiftScan.
+Review `handoffs/current/ai-workflow/AI_WORKFLOW_PACKET.md`, then `handoffs/current/candidate-ledger-consumer/CANDIDATE_LEDGER_CONSUMER_REPORT.md`, `handoffs/current/discovery-ledger/DISCOVERY_LEDGER_REPORT.md`, and `docs/discovery-ledger-workflow.md`. If RiftReader still owns the game window, keep RiftScan work offline: update/validate packet, consumer, and ledger artifacts from stored evidence only and do not start focus preflight, live capture, scanner/discovery probes, process attach/memory reads, movement/input, `/reloadui`, offset validation, or RiftReader validation from RiftScan.

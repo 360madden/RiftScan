@@ -46,12 +46,14 @@ Start with:
 
 ```powershell
 python .\tools\riftscan_ai_workflow_packet.py --self-test
+python .\tools\riftscan_candidate_ledger_consumer.py --self-test
 .\scripts\run-riftscan-ai-workflow-packet.cmd --strict-exit-code
 ```
 
 Then read:
 
 - `handoffs/current/ai-workflow/AI_WORKFLOW_PACKET.md`
+- `handoffs/current/candidate-ledger-consumer/CANDIDATE_LEDGER_CONSUMER_REPORT.md`
 - `handoffs/current/discovery-ledger/DISCOVERY_LEDGER_REPORT.md`
 - `docs/discovery-ledger-workflow.md`
 

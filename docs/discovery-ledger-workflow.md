@@ -21,6 +21,15 @@ Normal ledger generation writes `candidate_ledger.jsonl`, validates it immediate
 
 `.\scripts\run-riftscan-offline-workflow-check.cmd` refreshes the ledger and then validates the generated candidate ledger contract.
 
+Downstream tools should prefer the safe consumer view:
+
+```text
+python tools/riftscan_candidate_ledger_consumer.py --self-test
+.\scripts\run-riftscan-candidate-ledger-consumer.cmd --strict-exit-code
+```
+
+The consumer writes `handoffs/current/candidate-ledger-consumer/` and marks every usable row as offline-only with `live_use_authorized=false`.
+
 ## Artifact contract
 
 The current output directory is:
@@ -116,6 +125,7 @@ Important: `latest_validation.movement_allowed_at_capture_time=true` is historic
 
 - Do not use the ledger alone to send movement.
 - Do not promote a coordinate row from the ledger alone to current live truth.
+- Downstream tools should consume `handoffs/current/candidate-ledger-consumer/candidate-ledger-consumer-summary.json` rather than parsing raw ledger rows directly.
 - Before future live input, rerun exact PID/HWND proof readback in RiftReader.
 - If PID/HWND changed, reacquire through the current RiftScan/RiftReader proof lane instead of reusing stale traces.
 - Keep stale and failed rows as evidence unless an explicit prune workflow with dry-run and manifest record exists.

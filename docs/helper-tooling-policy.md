@@ -23,6 +23,7 @@ This applies to:
 - Capture Readiness gate
 - Offline Workflow Check runners
 - Offline Discovery Ledger and candidate-ledger contract validation
+- Candidate Ledger Consumer and offline-only downstream candidate views
 - AI Workflow Packet and offline agent resume packets
 - Capture Plan Check and other metadata-plan validators
 - Movement Test Readiness and other future live-test readiness validators
@@ -137,6 +138,9 @@ scripts/run-riftscan-offline-workflow-check.cmd
 tools/riftscan_discovery_ledger.py
 scripts/run-riftscan-discovery-ledger.cmd
 
+tools/riftscan_candidate_ledger_consumer.py
+scripts/run-riftscan-candidate-ledger-consumer.cmd
+
 tools/riftscan_ai_workflow_packet.py
 scripts/run-riftscan-ai-workflow-packet.cmd
 
@@ -183,6 +187,13 @@ Offline discovery ledger validation:
 python tools/riftscan_discovery_ledger.py --self-test
 python tools/riftscan_discovery_ledger.py --validate-existing
 .\scripts\run-riftscan-discovery-ledger.cmd
+```
+
+Candidate ledger consumer validation:
+
+```text
+python tools/riftscan_candidate_ledger_consumer.py --self-test
+.\scripts\run-riftscan-candidate-ledger-consumer.cmd --strict-exit-code
 ```
 
 AI workflow packet validation:

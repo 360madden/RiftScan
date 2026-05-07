@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # RiftScan script metadata
-# Version: riftscan-ai-workflow-packet-v1.0.0
+# Version: riftscan-ai-workflow-packet-v1.1.0
 # Total character count: 000000
 # Purpose: Build a compact offline AI workflow packet from current RiftScan handoff and gate artifacts.
 # Safety boundary: Reads existing artifacts and local git metadata only. No focus preflight, live capture, input, movement, memory scan/read, process attach, offset validation, RiftReader command execution, or /reloadui.
@@ -15,7 +15,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-APP_VERSION = "riftscan-ai-workflow-packet-v1.0.0"
+APP_VERSION = "riftscan-ai-workflow-packet-v1.1.0"
 REPO_ROOT = Path(__file__).resolve().parents[1]
 OUT_DIR = REPO_ROOT / "handoffs" / "current" / "ai-workflow"
 REPORT = OUT_DIR / "AI_WORKFLOW_PACKET.md"
@@ -27,6 +27,8 @@ DISCOVERY_LEDGER_REPORT = REPO_ROOT / "handoffs" / "current" / "discovery-ledger
 DISCOVERY_LEDGER_SUMMARY = REPO_ROOT / "handoffs" / "current" / "discovery-ledger" / "discovery-ledger-summary.json"
 OFFLINE_WORKFLOW_SUMMARY = REPO_ROOT / "handoffs" / "current" / "offline-workflow-check" / "offline-workflow-check-summary.json"
 OPERATOR_SUMMARY = REPO_ROOT / "handoffs" / "current" / "operator" / "operator-current-gate-summary.json"
+CANDIDATE_LEDGER_CONSUMER_SUMMARY = REPO_ROOT / "handoffs" / "current" / "candidate-ledger-consumer" / "candidate-ledger-consumer-summary.json"
+CANDIDATE_LEDGER_CONSUMER_REPORT = REPO_ROOT / "handoffs" / "current" / "candidate-ledger-consumer" / "CANDIDATE_LEDGER_CONSUMER_REPORT.md"
 AGENTS_CONTRACT = REPO_ROOT / "AGENTS.md"
 AGENT_WORKFLOW_DOC = REPO_ROOT / "docs" / "agent-execution-workflow.md"
 DISCOVERY_LEDGER_DOC = REPO_ROOT / "docs" / "discovery-ledger-workflow.md"
@@ -146,6 +148,7 @@ def artifact_failed(artifact: dict[str, Any]) -> bool:
 
 def build_packet_from_artifacts(
     discovery: dict[str, Any],
+    consumer: dict[str, Any],
     offline: dict[str, Any],
     operator: dict[str, Any],
     git: dict[str, Any],
@@ -157,6 +160,8 @@ def build_packet_from_artifacts(
 
     if artifact_failed(discovery):
         blockers.append(f"Discovery Ledger summary unavailable: {discovery.get('_read_error')}")
+    if artifact_failed(consumer):
+        warnings.append(f"Candidate Ledger Consumer summary unavailable: {consumer.get('_read_error')}")
     if artifact_failed(offline):
         warnings.append(f"Offline Workflow Check summary unavailable: {offline.get('_read_error')}")
     if artifact_failed(operator):
@@ -174,19 +179,28 @@ def build_packet_from_artifacts(
     if offline and not artifact_failed(offline) and offline.get("status") != "pass":
         warnings.append("Offline Workflow Check is not PASS; inspect failed_checks before continuing.")
 
+    if consumer and not artifact_failed(consumer):
+        if consumer.get("status") != "PASS":
+            blockers.append("Candidate Ledger Consumer is not PASS.")
+        if get_nested(consumer, "safety", "live_action_authorized") is not False:
+            blockers.append("Candidate Ledger Consumer safety flag live_action_authorized is not false.")
+
     live_collection_allowed = operator.get("live_collection_allowed") if isinstance(operator, dict) else None
     if live_collection_allowed is not False:
         warnings.append("Operator live_collection_allowed is not confirmed false in the current summary; this AI packet still authorizes offline work only.")
 
+    consumer_best = consumer.get("current_best_candidate") if isinstance(consumer.get("current_best_candidate"), dict) else {}
     best_raw = discovery.get("current_best_candidate") if isinstance(discovery.get("current_best_candidate"), dict) else {}
-    best = compact_candidate(best_raw) if best_raw else {}
-    if best and best.get("ledger_live_movement_authorized") is not False:
-        blockers.append("Current best candidate does not preserve ledger_live_movement_authorized=false.")
+    best = dict(consumer_best) if consumer_best else (compact_candidate(best_raw) if best_raw else {})
+    if best and best.get("live_use_authorized", best.get("ledger_live_movement_authorized")) is not False:
+        blockers.append("Current best candidate does not preserve offline-only live-use safety.")
 
     recommended_files = [
         rel(README_CURRENT),
         rel(REPORT),
         rel(SUMMARY),
+        rel(CANDIDATE_LEDGER_CONSUMER_REPORT),
+        rel(CANDIDATE_LEDGER_CONSUMER_SUMMARY),
         rel(DISCOVERY_LEDGER_REPORT),
         rel(DISCOVERY_LEDGER_SUMMARY),
         rel(DISCOVERY_LEDGER_DOC),
@@ -196,7 +210,7 @@ def build_packet_from_artifacts(
 
     top_next_actions = [
         "Keep work offline while RiftReader or the operator owns the game window.",
-        "Start from this AI Workflow Packet, then inspect the Discovery Ledger report and summary.",
+        "Start from this AI Workflow Packet, then inspect the Candidate Ledger Consumer and Discovery Ledger reports.",
         "Use only stored artifacts, docs, schema checks, report generation, and deterministic tests.",
         "Do not start focus preflight, live capture, process attach, memory reads, movement/input, RiftReader commands, offset validation, or /reloadui.",
         "Treat the current best coordinate candidate as offline evidence only until a fresh exact PID/HWND proof readback is explicitly authorized.",
@@ -204,7 +218,7 @@ def build_packet_from_artifacts(
         "Run py_compile, helper self-tests, Offline Workflow Check, JSON/JSONL validation, dotnet build/test/format, and git diff checks at the milestone boundary.",
         "Commit and push coherent offline workflow milestones only after validation passes.",
         "If any artifact conflicts, prefer the newest PASS machine-readable artifact and preserve older artifacts as historical evidence.",
-        "The next useful offline slice is a safe candidate-ledger consumer or stale-artifact age warning; do not pivot into live testing without explicit authorization.",
+        "The next useful offline slice is stale-artifact age warning or packet diffing; do not pivot into live testing without explicit authorization.",
     ]
 
     packet_status = "PASS" if not blockers else "BLOCKED"
@@ -219,6 +233,13 @@ def build_packet_from_artifacts(
         "warnings": warnings,
         "recommended_first_files": recommended_files,
         "current_best_candidate": best,
+        "candidate_ledger_consumer": {
+            "status": consumer.get("status"),
+            "display_status": consumer.get("display_status"),
+            "safe_candidate_count": consumer.get("safe_candidate_count"),
+            "rejected_candidate_count": consumer.get("rejected_candidate_count"),
+            "live_action_authorized": get_nested(consumer, "safety", "live_action_authorized"),
+        },
         "discovery_ledger": {
             "status": discovery.get("status"),
             "candidate_count": discovery.get("candidate_count"),
@@ -247,13 +268,15 @@ def build_packet_from_artifacts(
         "top_next_actions": top_next_actions,
         "ai_resume_prompt": (
             "Resume RiftScan in offline AI workflow mode. Read handoffs/current/ai-workflow/AI_WORKFLOW_PACKET.md, "
-            "then the Discovery Ledger artifacts. Do not touch live RIFT, focus preflight, capture, process attach/memory reads, "
+            "then the Candidate Ledger Consumer and Discovery Ledger artifacts. Do not touch live RIFT, focus preflight, capture, process attach/memory reads, "
             "movement/input, RiftReader commands, offset validation, or /reloadui unless the user explicitly authorizes live work."
         ),
         "source_artifacts": {
             "readme_current": rel(README_CURRENT),
             "discovery_ledger_report": rel(DISCOVERY_LEDGER_REPORT),
             "discovery_ledger_summary": rel(DISCOVERY_LEDGER_SUMMARY),
+            "candidate_ledger_consumer_report": rel(CANDIDATE_LEDGER_CONSUMER_REPORT),
+            "candidate_ledger_consumer_summary": rel(CANDIDATE_LEDGER_CONSUMER_SUMMARY),
             "offline_workflow_summary": rel(OFFLINE_WORKFLOW_SUMMARY),
             "operator_summary": rel(OPERATOR_SUMMARY),
             "agents_contract": rel(AGENTS_CONTRACT),
@@ -284,6 +307,7 @@ def build_packet() -> dict[str, Any]:
     append_log("build_start")
     data = build_packet_from_artifacts(
         load_json(DISCOVERY_LEDGER_SUMMARY),
+        load_json(CANDIDATE_LEDGER_CONSUMER_SUMMARY),
         load_json(OFFLINE_WORKFLOW_SUMMARY),
         load_json(OPERATOR_SUMMARY),
         git_snapshot(),
@@ -307,6 +331,7 @@ def report_lines(data: dict[str, Any]) -> list[str]:
         f"mode: {data.get('mode')}",
         f"live_action_authorized: {get_nested(data, 'safety', 'live_action_authorized')}",
         f"discovery_ledger_contract: {get_nested(data, 'discovery_ledger', 'candidate_ledger_contract_validation', 'status')}",
+        f"candidate_ledger_consumer: {get_nested(data, 'candidate_ledger_consumer', 'status')}",
         "```",
         "",
         "## Current best offline candidate",
@@ -322,7 +347,7 @@ def report_lines(data: dict[str, Any]) -> list[str]:
                 f"| Claim level | `{best.get('claim_level')}` |",
                 f"| Address | `{best.get('source_absolute_address_hex')}` |",
                 f"| Base + offset | `{best.get('source_base_address_hex')}` + `{best.get('source_offset_hex')}` |",
-                f"| Ledger authorizes movement | `{best.get('ledger_live_movement_authorized')}` |",
+                f"| Live use authorized | `{best.get('live_use_authorized', best.get('ledger_live_movement_authorized'))}` |",
                 f"| Next validation | `{best.get('next_validation_step')}` |",
                 "",
             ]
@@ -417,13 +442,20 @@ def run_self_test() -> int:
         },
     }
     fake_offline = {"status": "pass", "display_status": "PASS", "failed_check_count": 0, "failed_checks": []}
+    fake_consumer = {
+        "status": "PASS",
+        "display_status": "PASS",
+        "safe_candidate_count": 1,
+        "rejected_candidate_count": 0,
+        "safety": {"live_action_authorized": False},
+    }
     fake_operator = {"status": "PASS", "display_status": "PASS", "live_collection_allowed": False}
     fake_git = {"head": "fixture", "status_short_branch": "## main...origin/main", "origin_main_left_right_count": "0\t0"}
 
-    passing = build_packet_from_artifacts(fake_discovery, fake_offline, fake_operator, fake_git, created_utc="2026-01-01T00:00:00Z")
+    passing = build_packet_from_artifacts(fake_discovery, fake_consumer, fake_offline, fake_operator, fake_git, created_utc="2026-01-01T00:00:00Z")
     bad_discovery = dict(fake_discovery)
     bad_discovery["safety"] = {"ledger_live_movement_authorized": True, "movement_or_input_sent": False}
-    blocked = build_packet_from_artifacts(bad_discovery, fake_offline, fake_operator, fake_git, created_utc="2026-01-01T00:00:00Z")
+    blocked = build_packet_from_artifacts(bad_discovery, fake_consumer, fake_offline, fake_operator, fake_git, created_utc="2026-01-01T00:00:00Z")
 
     failures: list[str] = []
     if passing.get("status") != "PASS":
