@@ -74,18 +74,15 @@ Review/refine the latest metadata-only capture plan. Real live collection remain
 ## Git Snapshot
 
 ```text
-head: abb5c3faa86e65a155dc7f0373dc556ffc95918a
+head: c9c00cd55597b65a1c05de22c40e61671742f0bf
 ```
 
 Git status:
 
 ```text
- M docs/agent-execution-workflow.md
+ M docs/ai-workflow-packet-schema.md
  M docs/helper-tooling-policy.md
  M handoffs/current/README_CURRENT.md
- M handoffs/current/ai-workflow/AI_WORKFLOW_PACKET.md
- M handoffs/current/ai-workflow/ai-workflow-log.jsonl
- M handoffs/current/ai-workflow/ai-workflow-summary.json
  M handoffs/current/candidate-ledger-consumer/CANDIDATE_LEDGER_CONSUMER_REPORT.md
  M handoffs/current/candidate-ledger-consumer/candidate-ledger-consumer-log.jsonl
  M handoffs/current/candidate-ledger-consumer/candidate-ledger-consumer-summary.json
@@ -96,19 +93,18 @@ Git status:
  M handoffs/current/offline-workflow-check/OFFLINE_WORKFLOW_CHECK_REPORT.md
  M handoffs/current/offline-workflow-check/offline-workflow-check-log.jsonl
  M handoffs/current/offline-workflow-check/offline-workflow-check-summary.json
- M tools/riftscan_ai_workflow_packet.py
-?? docs/ai-workflow-packet-schema.md
+ M tools/riftscan_offline_workflow_check.py
 
 ```
 
 Recent commits:
 
 ```text
+c9c00cd Document AI workflow packet schema
 abb5c3f Add AI workflow packet diffing
 7ae032e Add offline artifact age diagnostics
 a333923 Add safe candidate ledger consumer
 fbeeded Add offline AI workflow packet
-1eca1be Surface discovery ledger validation
 ```
 
 ## Machine-Readable Summary
@@ -149,12 +145,12 @@ fbeeded Add offline AI workflow packet
       "windows_json": "handoffs/current/focus-control-local/windows.json"
     }
   },
-  "created_utc": "2026-05-07T17:14:35Z",
+  "created_utc": "2026-05-07T17:21:10Z",
   "display_status": "PASS",
   "git": {
-    "head": "abb5c3faa86e65a155dc7f0373dc556ffc95918a",
-    "log_oneline_5": "abb5c3f Add AI workflow packet diffing\n7ae032e Add offline artifact age diagnostics\na333923 Add safe candidate ledger consumer\nfbeeded Add offline AI workflow packet\n1eca1be Surface discovery ledger validation",
-    "status_short": " M docs/agent-execution-workflow.md\n M docs/helper-tooling-policy.md\n M handoffs/current/README_CURRENT.md\n M handoffs/current/ai-workflow/AI_WORKFLOW_PACKET.md\n M handoffs/current/ai-workflow/ai-workflow-log.jsonl\n M handoffs/current/ai-workflow/ai-workflow-summary.json\n M handoffs/current/candidate-ledger-consumer/CANDIDATE_LEDGER_CONSUMER_REPORT.md\n M handoffs/current/candidate-ledger-consumer/candidate-ledger-consumer-log.jsonl\n M handoffs/current/candidate-ledger-consumer/candidate-ledger-consumer-summary.json\n M handoffs/current/capture-plan-check/capture-plan-check-log.jsonl\n M handoffs/current/discovery-ledger/DISCOVERY_LEDGER_REPORT.md\n M handoffs/current/discovery-ledger/discovery-ledger-log.jsonl\n M handoffs/current/discovery-ledger/discovery-ledger-summary.json\n M handoffs/current/offline-workflow-check/OFFLINE_WORKFLOW_CHECK_REPORT.md\n M handoffs/current/offline-workflow-check/offline-workflow-check-log.jsonl\n M handoffs/current/offline-workflow-check/offline-workflow-check-summary.json\n M tools/riftscan_ai_workflow_packet.py\n?? docs/ai-workflow-packet-schema.md\n"
+    "head": "c9c00cd55597b65a1c05de22c40e61671742f0bf",
+    "log_oneline_5": "c9c00cd Document AI workflow packet schema\nabb5c3f Add AI workflow packet diffing\n7ae032e Add offline artifact age diagnostics\na333923 Add safe candidate ledger consumer\nfbeeded Add offline AI workflow packet",
+    "status_short": " M docs/ai-workflow-packet-schema.md\n M docs/helper-tooling-policy.md\n M handoffs/current/README_CURRENT.md\n M handoffs/current/candidate-ledger-consumer/CANDIDATE_LEDGER_CONSUMER_REPORT.md\n M handoffs/current/candidate-ledger-consumer/candidate-ledger-consumer-log.jsonl\n M handoffs/current/candidate-ledger-consumer/candidate-ledger-consumer-summary.json\n M handoffs/current/capture-plan-check/capture-plan-check-log.jsonl\n M handoffs/current/discovery-ledger/DISCOVERY_LEDGER_REPORT.md\n M handoffs/current/discovery-ledger/discovery-ledger-log.jsonl\n M handoffs/current/discovery-ledger/discovery-ledger-summary.json\n M handoffs/current/offline-workflow-check/OFFLINE_WORKFLOW_CHECK_REPORT.md\n M handoffs/current/offline-workflow-check/offline-workflow-check-log.jsonl\n M handoffs/current/offline-workflow-check/offline-workflow-check-summary.json\n M tools/riftscan_offline_workflow_check.py\n"
   },
   "latest_capture_plan": {
     "handoff_exists": true,

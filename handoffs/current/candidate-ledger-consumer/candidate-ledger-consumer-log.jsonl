@@ -25,3 +25,9 @@
 {"created_utc": "2026-05-07T17:14:28Z", "event": "build_start"}
 {"created_utc": "2026-05-07T17:14:28Z", "event": "build_finish", "rejected_candidate_count": 0, "safe_candidate_count": 3, "status": "PASS"}
 {"created_utc": "2026-05-07T17:14:28Z", "event": "outputs_written", "report": "handoffs/current/candidate-ledger-consumer/CANDIDATE_LEDGER_CONSUMER_REPORT.md", "status": "PASS", "summary": "handoffs/current/candidate-ledger-consumer/candidate-ledger-consumer-summary.json"}
+{"created_utc": "2026-05-07T17:20:44Z", "event": "build_start"}
+{"created_utc": "2026-05-07T17:20:44Z", "event": "build_finish", "rejected_candidate_count": 0, "safe_candidate_count": 3, "status": "PASS"}
+{"created_utc": "2026-05-07T17:20:44Z", "event": "outputs_written", "report": "handoffs/current/candidate-ledger-consumer/CANDIDATE_LEDGER_CONSUMER_REPORT.md", "status": "PASS", "summary": "handoffs/current/candidate-ledger-consumer/candidate-ledger-consumer-summary.json"}
+{"created_utc": "2026-05-07T17:21:03Z", "event": "build_start"}
+{"created_utc": "2026-05-07T17:21:03Z", "event": "build_finish", "rejected_candidate_count": 0, "safe_candidate_count": 3, "status": "PASS"}
+{"created_utc": "2026-05-07T17:21:03Z", "event": "outputs_written", "report": "handoffs/current/candidate-ledger-consumer/CANDIDATE_LEDGER_CONSUMER_REPORT.md", "status": "PASS", "summary": "handoffs/current/candidate-ledger-consumer/candidate-ledger-consumer-summary.json"}

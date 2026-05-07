@@ -97,6 +97,8 @@ It intentionally ignores normal refresh noise such as `created_utc`, JSONL row g
 
 If this table changes, update `PACKET_DIFF_FIELDS` in `tools/riftscan_ai_workflow_packet.py`, rerun the helper self-test, refresh the packet, and rerun offline validation.
 
+Offline Workflow Check also validates that `ai-workflow-summary.json` exposes `previous_packet_diff`, exposes `previous_packet_diff_compared_fields`, and that this schema document covers every required compared field.
+
 ## Interpretation rule
 
 - `UNCHANGED` means the latest packet did not alter selected workflow/truth fields; continue the next planned offline slice instead of re-reading logs for timestamp-only churn.

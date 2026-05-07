@@ -133,3 +133,18 @@
 {"args": ["git", "log", "--oneline", "-5"], "created_utc": "2026-05-07T17:14:35Z", "event": "command_start"}
 {"args": ["git", "log", "--oneline", "-5"], "created_utc": "2026-05-07T17:14:35Z", "event": "command_finish", "returncode": 0, "success": true}
 {"blocker_count": 0, "created_utc": "2026-05-07T17:14:35Z", "event": "movement_test_readiness_finish", "status": "pass"}
+{"created_utc": "2026-05-07T17:21:10Z", "event": "movement_test_readiness_start", "version": "riftscan-movement-test-readiness-v1.0.0"}
+{"created_utc": "2026-05-07T17:21:10Z", "event": "text_read", "path": "docs/agent-execution-workflow.md"}
+{"created_utc": "2026-05-07T17:21:10Z", "event": "text_read", "path": "docs/live-rift-control.md"}
+{"created_utc": "2026-05-07T17:21:10Z", "event": "json_read", "path": "handoffs/current/operator/operator-current-gate-summary.json"}
+{"created_utc": "2026-05-07T17:21:10Z", "event": "json_read", "path": "handoffs/current/capture-plan-check/capture-plan-check-summary.json"}
+{"created_utc": "2026-05-07T17:21:10Z", "event": "json_read", "path": "handoffs/current/live-collection-gate/live-collection-gate-summary.json"}
+{"created_utc": "2026-05-07T17:21:10Z", "event": "text_read", "path": "handoffs/current/live-collection-gate/LIVE_COLLECTION_GATE_CHECKLIST.md"}
+{"created_utc": "2026-05-07T17:21:10Z", "event": "text_read", "path": "scripts/live-test-riftscan.ps1"}
+{"args": ["git", "rev-parse", "HEAD"], "created_utc": "2026-05-07T17:21:10Z", "event": "command_start"}
+{"args": ["git", "rev-parse", "HEAD"], "created_utc": "2026-05-07T17:21:10Z", "event": "command_finish", "returncode": 0, "success": true}
+{"args": ["git", "status", "--short"], "created_utc": "2026-05-07T17:21:10Z", "event": "command_start"}
+{"args": ["git", "status", "--short"], "created_utc": "2026-05-07T17:21:10Z", "event": "command_finish", "returncode": 0, "success": true}
+{"args": ["git", "log", "--oneline", "-5"], "created_utc": "2026-05-07T17:21:10Z", "event": "command_start"}
+{"args": ["git", "log", "--oneline", "-5"], "created_utc": "2026-05-07T17:21:10Z", "event": "command_finish", "returncode": 0, "success": true}
+{"blocker_count": 0, "created_utc": "2026-05-07T17:21:10Z", "event": "movement_test_readiness_finish", "status": "pass"}
