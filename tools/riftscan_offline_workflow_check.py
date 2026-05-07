@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # RiftScan script metadata
-# Version: riftscan-offline-workflow-check-v1.0.8
+# Version: riftscan-offline-workflow-check-v1.0.9
 # Total character count: 000000
 # Purpose: Run conservative offline helper workflow checks, refresh the offline discovery ledger, and write deterministic report artifacts.
 # Safety boundary: Offline validation only. No RIFT focus preflight, live capture, input, movement, memory scan/read, offset validation, RiftReader validation, or /reloadui.
@@ -16,7 +16,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-APP_VERSION = "riftscan-offline-workflow-check-v1.0.8"
+APP_VERSION = "riftscan-offline-workflow-check-v1.0.9"
 REPO_ROOT = Path(__file__).resolve().parents[1]
 OUT_DIR = REPO_ROOT / "handoffs" / "current" / "offline-workflow-check"
 REPORT = OUT_DIR / "OFFLINE_WORKFLOW_CHECK_REPORT.md"
@@ -24,6 +24,7 @@ SUMMARY = OUT_DIR / "offline-workflow-check-summary.json"
 LOG = OUT_DIR / "offline-workflow-check-log.jsonl"
 AI_WORKFLOW_SUMMARY = REPO_ROOT / "handoffs" / "current" / "ai-workflow" / "ai-workflow-summary.json"
 AI_WORKFLOW_SCHEMA_DOC = REPO_ROOT / "docs" / "ai-workflow-packet-schema.md"
+AI_WORKFLOW_HISTORY_DIR = REPO_ROOT / "handoffs" / "current" / "ai-workflow" / "history"
 REQUIRED_AI_PACKET_DIFF_FIELDS = [
     "app_version",
     "status",
@@ -145,6 +146,19 @@ def read_json_file(path: Path) -> tuple[dict[str, Any] | None, str | None]:
     return data, None
 
 
+def repo_artifact_path(value: Any) -> Path | None:
+    if not isinstance(value, str) or not value:
+        return None
+    raw_path = Path(value)
+    path = raw_path if raw_path.is_absolute() else REPO_ROOT / raw_path
+    try:
+        resolved = path.resolve()
+        resolved.relative_to(REPO_ROOT.resolve())
+    except (OSError, ValueError):
+        return None
+    return resolved
+
+
 def validate_ai_workflow_packet_contract(summary: dict[str, Any], schema_doc_text: str) -> list[str]:
     errors: list[str] = []
 
@@ -189,6 +203,44 @@ def validate_ai_workflow_packet_contract(summary: dict[str, Any], schema_doc_tex
     missing_doc_fields = [field for field in REQUIRED_AI_PACKET_DIFF_FIELDS if f"`{field}`" not in schema_doc_text]
     if missing_doc_fields:
         errors.append(f"schema doc missing compared field(s): {', '.join(missing_doc_fields)}")
+
+    archive = summary.get("previous_packet_archive")
+    if not isinstance(archive, dict):
+        errors.append("previous_packet_archive is missing or not an object")
+    else:
+        archive_status = archive.get("status")
+        if archive_status not in {"ARCHIVED", "NO_PREVIOUS_PACKET"}:
+            errors.append("previous_packet_archive.status is not a recognized value")
+
+        history_dir = repo_artifact_path(archive.get("history_dir"))
+        if history_dir is None:
+            errors.append("previous_packet_archive.history_dir is missing or outside the repo")
+        elif archive_status == "ARCHIVED" and not history_dir.is_dir():
+            errors.append(f"previous_packet_archive.history_dir does not exist: {archive.get('history_dir')}")
+
+        artifacts = archive.get("artifacts")
+        if archive_status == "ARCHIVED":
+            if not isinstance(artifacts, dict):
+                errors.append("previous_packet_archive.artifacts is missing or not an object")
+            else:
+                for artifact_name in ("summary", "report"):
+                    artifact_path_text = artifacts.get(artifact_name)
+                    artifact_path = repo_artifact_path(artifact_path_text)
+                    if artifact_path is None:
+                        errors.append(f"previous_packet_archive.artifacts.{artifact_name} is missing or outside the repo")
+                        continue
+                    if not artifact_path.is_file():
+                        errors.append(f"previous_packet_archive.artifacts.{artifact_name} does not exist: {artifact_path_text}")
+                summary_path = repo_artifact_path(artifacts.get("summary"))
+                if summary_path and summary_path.is_file():
+                    archived_summary, archived_error = read_json_file(summary_path)
+                    if archived_error:
+                        errors.append(f"previous_packet_archive.artifacts.summary is not valid JSON: {archived_error}")
+                    elif not isinstance(archived_summary, dict):
+                        errors.append("previous_packet_archive.artifacts.summary is not a JSON object")
+
+    if "previous_packet_archive" not in schema_doc_text:
+        errors.append("schema doc does not mention previous_packet_archive")
 
     return errors
 
@@ -470,8 +522,13 @@ def run_self_test() -> tuple[bool, dict[str, Any]]:
         "previous_packet_diff_compared_fields": [
             {"field": field, "packet_path": field.replace("_", ".")} for field in REQUIRED_AI_PACKET_DIFF_FIELDS
         ],
+        "previous_packet_archive": {
+            "status": "NO_PREVIOUS_PACKET",
+            "history_dir": "handoffs/current/ai-workflow/history",
+            "artifacts": {},
+        },
     }
-    valid_doc = "previous_packet_diff_compared_fields\n" + "\n".join(f"`{field}`" for field in REQUIRED_AI_PACKET_DIFF_FIELDS)
+    valid_doc = "previous_packet_diff_compared_fields\nprevious_packet_archive\n" + "\n".join(f"`{field}`" for field in REQUIRED_AI_PACKET_DIFF_FIELDS)
     valid_errors = validate_ai_workflow_packet_contract(valid_summary, valid_doc)
     tests.append(
         {
@@ -492,6 +549,11 @@ def run_self_test() -> tuple[bool, dict[str, Any]]:
         "previous_packet_diff_compared_fields": [
             {"field": "app_version", "packet_path": "app_version"},
         ],
+        "previous_packet_archive": {
+            "status": "NO_PREVIOUS_PACKET",
+            "history_dir": "handoffs/current/ai-workflow/history",
+            "artifacts": {},
+        },
     }
     invalid_errors = validate_ai_workflow_packet_contract(invalid_summary, valid_doc)
     tests.append(
@@ -501,6 +563,22 @@ def run_self_test() -> tuple[bool, dict[str, Any]]:
             "actual": "fail" if invalid_errors else "pass",
             "errors": invalid_errors,
             "pass": bool(invalid_errors),
+        }
+    )
+    invalid_archive_summary = dict(valid_summary)
+    invalid_archive_summary["previous_packet_archive"] = {
+        "status": "ARCHIVED",
+        "history_dir": "handoffs/current/ai-workflow/history",
+        "artifacts": {},
+    }
+    invalid_archive_errors = validate_ai_workflow_packet_contract(invalid_archive_summary, valid_doc)
+    tests.append(
+        {
+            "name": "ai packet contract blocks archived packet without artifact paths",
+            "expected": "fail",
+            "actual": "fail" if invalid_archive_errors else "pass",
+            "errors": invalid_archive_errors,
+            "pass": bool(invalid_archive_errors),
         }
     )
     passed = all(test["pass"] for test in tests)

@@ -1,6 +1,6 @@
 {
   "schema_version": "riftscan.operator_current_workflow_gate.v1",
-  "created_utc": "2026-05-07T17:38:43Z",
+  "created_utc": "2026-05-07T17:44:10Z",
   "metadata_capture_plan_gate": "PASS",
   "live_collection_allowed": false,
   "old_offsets_trusted": false,
@@ -19,7 +19,7 @@
     "artifact_freshness": {
       "status": "warning_non_relevant_changes",
       "artifact_head": "40bbd1c62c5db71ecbe4d5931643d37619f955b3",
-      "current_head": "19fb85b2feac07e15e26e111a057000e81a62b7b",
+      "current_head": "6bef8557354627315baa6eb8f9610b26ad9cf94b",
       "head_matches_current": false,
       "changed_paths_since_artifact_head": [
         "docs/agent-execution-workflow.md",
@@ -32,6 +32,10 @@
         "handoffs/current/ai-workflow/AI_WORKFLOW_PACKET.md",
         "handoffs/current/ai-workflow/ai-workflow-log.jsonl",
         "handoffs/current/ai-workflow/ai-workflow-summary.json",
+        "handoffs/current/ai-workflow/history/AI_WORKFLOW_PACKET-2026-05-07T17-32-05Z-riftscan-ai-workflow-packet-v1-6-0.md",
+        "handoffs/current/ai-workflow/history/AI_WORKFLOW_PACKET-2026-05-07T17-38-24Z-riftscan-ai-workflow-packet-v1-7-0.md",
+        "handoffs/current/ai-workflow/history/ai-workflow-summary-2026-05-07T17-32-05Z-riftscan-ai-workflow-packet-v1-6-0.json",
+        "handoffs/current/ai-workflow/history/ai-workflow-summary-2026-05-07T17-38-24Z-riftscan-ai-workflow-packet-v1-7-0.json",
         "handoffs/current/candidate-ledger-consumer/CANDIDATE_LEDGER_CONSUMER_REPORT.md",
         "handoffs/current/candidate-ledger-consumer/candidate-ledger-consumer-log.jsonl",
         "handoffs/current/candidate-ledger-consumer/candidate-ledger-consumer-summary.json",
@@ -106,7 +110,7 @@
     "artifact_freshness": {
       "status": "warning_non_relevant_changes",
       "artifact_head": "40bbd1c62c5db71ecbe4d5931643d37619f955b3",
-      "current_head": "19fb85b2feac07e15e26e111a057000e81a62b7b",
+      "current_head": "6bef8557354627315baa6eb8f9610b26ad9cf94b",
       "head_matches_current": false,
       "changed_paths_since_artifact_head": [
         "docs/agent-execution-workflow.md",
@@ -119,6 +123,10 @@
         "handoffs/current/ai-workflow/AI_WORKFLOW_PACKET.md",
         "handoffs/current/ai-workflow/ai-workflow-log.jsonl",
         "handoffs/current/ai-workflow/ai-workflow-summary.json",
+        "handoffs/current/ai-workflow/history/AI_WORKFLOW_PACKET-2026-05-07T17-32-05Z-riftscan-ai-workflow-packet-v1-6-0.md",
+        "handoffs/current/ai-workflow/history/AI_WORKFLOW_PACKET-2026-05-07T17-38-24Z-riftscan-ai-workflow-packet-v1-7-0.md",
+        "handoffs/current/ai-workflow/history/ai-workflow-summary-2026-05-07T17-32-05Z-riftscan-ai-workflow-packet-v1-6-0.json",
+        "handoffs/current/ai-workflow/history/ai-workflow-summary-2026-05-07T17-38-24Z-riftscan-ai-workflow-packet-v1-7-0.json",
         "handoffs/current/candidate-ledger-consumer/CANDIDATE_LEDGER_CONSUMER_REPORT.md",
         "handoffs/current/candidate-ledger-consumer/candidate-ledger-consumer-log.jsonl",
         "handoffs/current/candidate-ledger-consumer/candidate-ledger-consumer-summary.json",
@@ -217,7 +225,7 @@
     "artifact_status": "present",
     "status": "pass",
     "display_status": "PASS",
-    "created_utc": "2026-05-07T17:38:42Z",
+    "created_utc": "2026-05-07T17:44:09Z",
     "blockers": [],
     "paths": {
       "report": "handoffs/current/capture-plan-check/CAPTURE_PLAN_CHECK_REPORT.md",
@@ -230,7 +238,7 @@
     "artifact_status": "present",
     "status": "pass",
     "display_status": "PASS",
-    "created_utc": "2026-05-07T17:38:42Z",
+    "created_utc": "2026-05-07T17:44:09Z",
     "blockers": [],
     "paths": {
       "report": "handoffs/current/movement-test-readiness/MOVEMENT_TEST_READINESS_REPORT.md",

@@ -61,6 +61,8 @@ Before overwriting `ai-workflow-summary.json`, packet generation copies the prio
 
 The current packet records this under `previous_packet_archive` with `status`, `history_dir`, and `artifacts` paths. The archive is append-only for normal packet generation; do not delete historical packet files just to reduce noise.
 
+Offline Workflow Check validates `previous_packet_archive.status`, verifies archived summary/report files exist when the status is `ARCHIVED`, and confirms the archived summary is valid JSON.
+
 ### Status values
 
 | Status | Meaning |
