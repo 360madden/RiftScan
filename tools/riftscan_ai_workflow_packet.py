@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # RiftScan script metadata
-# Version: riftscan-ai-workflow-packet-v1.6.0
+# Version: riftscan-ai-workflow-packet-v1.7.0
 # Total character count: 000000
 # Purpose: Build a compact offline AI workflow packet from current RiftScan handoff and gate artifacts.
 # Safety boundary: Reads existing artifacts and local git metadata only. No focus preflight, live capture, input, movement, memory scan/read, process attach, offset validation, RiftReader command execution, or /reloadui.
@@ -9,18 +9,20 @@ from __future__ import annotations
 
 import argparse
 import json
+import shutil
 import subprocess
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-APP_VERSION = "riftscan-ai-workflow-packet-v1.6.0"
+APP_VERSION = "riftscan-ai-workflow-packet-v1.7.0"
 REPO_ROOT = Path(__file__).resolve().parents[1]
 OUT_DIR = REPO_ROOT / "handoffs" / "current" / "ai-workflow"
 REPORT = OUT_DIR / "AI_WORKFLOW_PACKET.md"
 SUMMARY = OUT_DIR / "ai-workflow-summary.json"
 LOG = OUT_DIR / "ai-workflow-log.jsonl"
+HISTORY_DIR = OUT_DIR / "history"
 
 README_CURRENT = REPO_ROOT / "handoffs" / "current" / "README_CURRENT.md"
 DISCOVERY_LEDGER_REPORT = REPO_ROOT / "handoffs" / "current" / "discovery-ledger" / "DISCOVERY_LEDGER_REPORT.md"
@@ -72,6 +74,56 @@ def load_json(path: Path) -> dict[str, Any]:
         return {"_read_success": False, "_read_error": "file_not_found", "_path": rel(path)}
     except Exception as exc:  # noqa: BLE001 - artifact packets must preserve exact diagnostics.
         return {"_read_success": False, "_read_error": f"{type(exc).__name__}: {exc}", "_path": rel(path)}
+
+
+def safe_history_token(value: Any) -> str:
+    text = str(value or "unknown")
+    safe = "".join(ch if ch.isalnum() or ch in ("-", "_") else "-" for ch in text).strip("-")
+    return safe[:96] or "unknown"
+
+
+def unique_path(path: Path) -> Path:
+    if not path.exists():
+        return path
+
+    for index in range(2, 1000):
+        candidate = path.with_name(f"{path.stem}-{index}{path.suffix}")
+        if not candidate.exists():
+            return candidate
+    raise RuntimeError(f"unable to create unique archive path for {path}")
+
+
+def archive_existing_outputs(previous_packet: dict[str, Any] | None) -> dict[str, Any]:
+    if not SUMMARY.exists():
+        return {
+            "status": "NO_PREVIOUS_PACKET",
+            "history_dir": rel(HISTORY_DIR),
+            "artifacts": {},
+        }
+
+    packet = previous_packet if isinstance(previous_packet, dict) else {}
+    stamp = safe_history_token(packet.get("created_utc") or utc())
+    version = safe_history_token(packet.get("app_version") or "unknown-version")
+    archive_stem = f"{stamp}-{version}"
+
+    HISTORY_DIR.mkdir(parents=True, exist_ok=True)
+    artifacts: dict[str, str] = {}
+
+    summary_archive = unique_path(HISTORY_DIR / f"ai-workflow-summary-{archive_stem}.json")
+    shutil.copy2(SUMMARY, summary_archive)
+    artifacts["summary"] = rel(summary_archive)
+
+    if REPORT.exists():
+        report_archive = unique_path(HISTORY_DIR / f"AI_WORKFLOW_PACKET-{archive_stem}.md")
+        shutil.copy2(REPORT, report_archive)
+        artifacts["report"] = rel(report_archive)
+
+    return {
+        "status": "ARCHIVED",
+        "history_dir": rel(HISTORY_DIR),
+        "archive_stem": archive_stem,
+        "artifacts": artifacts,
+    }
 
 
 def run_git(args: list[str], timeout_seconds: int = 15) -> dict[str, Any]:
@@ -382,6 +434,7 @@ def build_packet_from_artifacts(
             "report": rel(REPORT),
             "summary": rel(SUMMARY),
             "log": rel(LOG),
+            "history_dir": rel(HISTORY_DIR),
         },
         "safety": {
             "offline_only": True,
@@ -518,6 +571,19 @@ def report_lines(data: dict[str, Any]) -> list[str]:
         ]
     )
 
+    archive = data.get("previous_packet_archive") if isinstance(data.get("previous_packet_archive"), dict) else {}
+    if archive:
+        lines.extend(
+            [
+                "",
+                "## Previous packet archive",
+                "",
+                "```json",
+                json.dumps(archive, indent=2, sort_keys=True),
+                "```",
+            ]
+        )
+
     lines.extend(["", "## Warnings", ""])
     warnings = data.get("warnings") if isinstance(data.get("warnings"), list) else []
     if warnings:
@@ -559,10 +625,12 @@ def report_lines(data: dict[str, Any]) -> list[str]:
     return lines
 
 
-def write_outputs(data: dict[str, Any]) -> None:
+def write_outputs(data: dict[str, Any], previous_packet: dict[str, Any] | None = None) -> None:
+    archive = archive_existing_outputs(previous_packet)
+    data["previous_packet_archive"] = archive
     write_json(SUMMARY, data)
     write_text(REPORT, "\n".join(report_lines(data)))
-    append_log("outputs_written", report=rel(REPORT), summary=rel(SUMMARY), status=data["status"])
+    append_log("outputs_written", report=rel(REPORT), summary=rel(SUMMARY), status=data["status"], previous_packet_archive_status=archive.get("status"))
 
 
 def format_diff_value(value: Any) -> str:
@@ -579,6 +647,7 @@ def packet_diff_lines(data: dict[str, Any], *, source_label: str = "refreshed") 
     packet_diff = data.get("previous_packet_diff") if isinstance(data.get("previous_packet_diff"), dict) else {}
     compared_fields = data.get("previous_packet_diff_compared_fields")
     changes = packet_diff.get("changes") if isinstance(packet_diff.get("changes"), list) else []
+    archive = data.get("previous_packet_archive") if isinstance(data.get("previous_packet_archive"), dict) else {}
     lines = [
         "RIFTSCAN AI WORKFLOW PACKET DIFF",
         f"source: {source_label}",
@@ -592,6 +661,8 @@ def packet_diff_lines(data: dict[str, Any], *, source_label: str = "refreshed") 
         f"schema_doc: {rel(AI_WORKFLOW_PACKET_SCHEMA_DOC)}",
         f"summary: {rel(SUMMARY)}",
         f"report: {rel(REPORT)}",
+        f"previous_packet_archive_status: {archive.get('status', 'unknown')}",
+        f"history_dir: {archive.get('history_dir', rel(HISTORY_DIR))}",
         "changes:",
     ]
     if changes:
@@ -683,11 +754,15 @@ def run_self_test() -> int:
     if "safe_candidate_count" not in diff_text or "1 -> 2" not in diff_text:
         failures.append("print_diff_changed_field_missing")
     passing["previous_packet_diff"] = unchanged_diff
+    passing["previous_packet_archive"] = {"status": "NO_PREVIOUS_PACKET", "history_dir": rel(HISTORY_DIR), "artifacts": {}}
     saved_diff_text = "\n".join(packet_diff_lines(passing, source_label="saved_existing_no_refresh"))
     if "- none" not in saved_diff_text:
         failures.append("print_diff_unchanged_missing_none")
     if "source: saved_existing_no_refresh" not in saved_diff_text:
         failures.append("show_existing_diff_source_missing")
+    token = safe_history_token("2026-05-07T17:32:05Z")
+    if ":" in token or token != "2026-05-07T17-32-05Z":
+        failures.append("history_token_not_windows_safe")
     compared_fields = passing.get("previous_packet_diff_compared_fields")
     if not isinstance(compared_fields, list) or len(compared_fields) != len(PACKET_DIFF_FIELDS):
         failures.append("packet_diff_compared_fields_missing_or_wrong_count")
@@ -740,7 +815,7 @@ def main(argv: list[str]) -> int:
 
     previous_packet = load_json(SUMMARY)
     packet = build_packet(previous_packet)
-    write_outputs(packet)
+    write_outputs(packet, previous_packet)
 
     if args.print_summary:
         print(json.dumps(packet, indent=2, sort_keys=True))

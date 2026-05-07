@@ -64,3 +64,6 @@
 {"created_utc": "2026-05-07T17:31:55Z", "event": "build_start", "riftreader_root": "C:\\RIFT MODDING\\RiftReader"}
 {"candidate_count": 3, "created_utc": "2026-05-07T17:31:55Z", "event": "build_finish", "status": "ledger_written"}
 {"candidate_ledger": "handoffs/current/discovery-ledger/candidate_ledger.jsonl", "candidate_ledger_contract_error_count": 0, "candidate_ledger_contract_status": "PASS", "created_utc": "2026-05-07T17:31:55Z", "event": "outputs_written", "report": "handoffs/current/discovery-ledger/DISCOVERY_LEDGER_REPORT.md", "summary": "handoffs/current/discovery-ledger/discovery-ledger-summary.json"}
+{"created_utc": "2026-05-07T17:38:35Z", "event": "build_start", "riftreader_root": "C:\\RIFT MODDING\\RiftReader"}
+{"candidate_count": 3, "created_utc": "2026-05-07T17:38:35Z", "event": "build_finish", "status": "ledger_written"}
+{"candidate_ledger": "handoffs/current/discovery-ledger/candidate_ledger.jsonl", "candidate_ledger_contract_error_count": 0, "candidate_ledger_contract_status": "PASS", "created_utc": "2026-05-07T17:38:35Z", "event": "outputs_written", "report": "handoffs/current/discovery-ledger/DISCOVERY_LEDGER_REPORT.md", "summary": "handoffs/current/discovery-ledger/discovery-ledger-summary.json"}

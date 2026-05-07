@@ -38,6 +38,7 @@ Packet generation must not start focus preflight, live capture, scanner probes a
 | `git` | Local git snapshot from packet generation time. |
 | `previous_packet_diff` | Selected-field comparison against the previous packet summary. |
 | `previous_packet_diff_compared_fields` | Machine-readable contract for fields compared by `previous_packet_diff`. |
+| `previous_packet_archive` | Archive result for the packet summary/report that existed before the current overwrite. |
 | `top_next_actions` | Ordered offline-only next actions. |
 | `ai_resume_prompt` | Ready-to-paste resume prompt for the next offline agent. |
 | `source_artifacts` | Paths used to build the packet. |
@@ -53,6 +54,12 @@ It intentionally ignores normal refresh noise such as `created_utc`, JSONL row g
 Use `python tools/riftscan_ai_workflow_packet.py --print-diff` for a compact terminal view of the current diff after refreshing the packet artifacts.
 
 Use `python tools/riftscan_ai_workflow_packet.py --show-existing-diff` when you need a read-only terminal view of the saved packet diff without refreshing artifacts or appending logs.
+
+## Previous packet archive
+
+Before overwriting `ai-workflow-summary.json`, packet generation copies the prior summary into `handoffs/current/ai-workflow/history/`. If the prior Markdown report exists, it is copied there too.
+
+The current packet records this under `previous_packet_archive` with `status`, `history_dir`, and `artifacts` paths. The archive is append-only for normal packet generation; do not delete historical packet files just to reduce noise.
 
 ### Status values
 

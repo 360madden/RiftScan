@@ -63,6 +63,7 @@ A newer doc-only handoff-pointer commit may exist; check `git log --oneline -5` 
 - Latest Candidate Ledger Consumer artifacts: `handoffs/current/candidate-ledger-consumer/`.
 - AI Workflow Packet is a compact offline agent resume packet with previous-packet diffing documented in `docs/ai-workflow-packet-schema.md`; Offline Workflow Check validates the current packet diff contract. Commands: `python tools/riftscan_ai_workflow_packet.py --self-test`, `python tools/riftscan_ai_workflow_packet.py --show-existing-diff`, `python tools/riftscan_ai_workflow_packet.py --print-diff`, `python tools/riftscan_ai_workflow_packet.py`, and `.\scripts\run-riftscan-ai-workflow-packet.cmd --strict-exit-code`.
 - Latest AI Workflow Packet artifacts: `handoffs/current/ai-workflow/`.
+- Prior AI Workflow Packet summaries/reports are archived under `handoffs/current/ai-workflow/history/` before current artifacts are overwritten.
 
 ## Current direction
 

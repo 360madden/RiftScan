@@ -74,7 +74,7 @@ Review/refine the latest metadata-only capture plan. Real live collection remain
 ## Git Snapshot
 
 ```text
-head: c99da28e580a7ccda6337be6cfa5e18cb483eea4
+head: 19fb85b2feac07e15e26e111a057000e81a62b7b
 ```
 
 Git status:
@@ -97,17 +97,18 @@ Git status:
  M handoffs/current/offline-workflow-check/offline-workflow-check-log.jsonl
  M handoffs/current/offline-workflow-check/offline-workflow-check-summary.json
  M tools/riftscan_ai_workflow_packet.py
+?? handoffs/current/ai-workflow/history/
 
 ```
 
 Recent commits:
 
 ```text
+19fb85b Add read-only AI packet diff view
 c99da28 Add AI packet print diff mode
 5c3ff94 Validate AI packet contract offline
 c9c00cd Document AI workflow packet schema
 abb5c3f Add AI workflow packet diffing
-7ae032e Add offline artifact age diagnostics
 ```
 
 ## Machine-Readable Summary
@@ -148,12 +149,12 @@ abb5c3f Add AI workflow packet diffing
       "windows_json": "handoffs/current/focus-control-local/windows.json"
     }
   },
-  "created_utc": "2026-05-07T17:32:04Z",
+  "created_utc": "2026-05-07T17:38:42Z",
   "display_status": "PASS",
   "git": {
-    "head": "c99da28e580a7ccda6337be6cfa5e18cb483eea4",
-    "log_oneline_5": "c99da28 Add AI packet print diff mode\n5c3ff94 Validate AI packet contract offline\nc9c00cd Document AI workflow packet schema\nabb5c3f Add AI workflow packet diffing\n7ae032e Add offline artifact age diagnostics",
-    "status_short": " M docs/ai-workflow-packet-schema.md\n M docs/helper-tooling-policy.md\n M handoffs/current/README_CURRENT.md\n M handoffs/current/ai-workflow/AI_WORKFLOW_PACKET.md\n M handoffs/current/ai-workflow/ai-workflow-log.jsonl\n M handoffs/current/ai-workflow/ai-workflow-summary.json\n M handoffs/current/candidate-ledger-consumer/CANDIDATE_LEDGER_CONSUMER_REPORT.md\n M handoffs/current/candidate-ledger-consumer/candidate-ledger-consumer-log.jsonl\n M handoffs/current/candidate-ledger-consumer/candidate-ledger-consumer-summary.json\n M handoffs/current/capture-plan-check/capture-plan-check-log.jsonl\n M handoffs/current/discovery-ledger/DISCOVERY_LEDGER_REPORT.md\n M handoffs/current/discovery-ledger/discovery-ledger-log.jsonl\n M handoffs/current/discovery-ledger/discovery-ledger-summary.json\n M handoffs/current/offline-workflow-check/OFFLINE_WORKFLOW_CHECK_REPORT.md\n M handoffs/current/offline-workflow-check/offline-workflow-check-log.jsonl\n M handoffs/current/offline-workflow-check/offline-workflow-check-summary.json\n M tools/riftscan_ai_workflow_packet.py\n"
+    "head": "19fb85b2feac07e15e26e111a057000e81a62b7b",
+    "log_oneline_5": "19fb85b Add read-only AI packet diff view\nc99da28 Add AI packet print diff mode\n5c3ff94 Validate AI packet contract offline\nc9c00cd Document AI workflow packet schema\nabb5c3f Add AI workflow packet diffing",
+    "status_short": " M docs/ai-workflow-packet-schema.md\n M docs/helper-tooling-policy.md\n M handoffs/current/README_CURRENT.md\n M handoffs/current/ai-workflow/AI_WORKFLOW_PACKET.md\n M handoffs/current/ai-workflow/ai-workflow-log.jsonl\n M handoffs/current/ai-workflow/ai-workflow-summary.json\n M handoffs/current/candidate-ledger-consumer/CANDIDATE_LEDGER_CONSUMER_REPORT.md\n M handoffs/current/candidate-ledger-consumer/candidate-ledger-consumer-log.jsonl\n M handoffs/current/candidate-ledger-consumer/candidate-ledger-consumer-summary.json\n M handoffs/current/capture-plan-check/capture-plan-check-log.jsonl\n M handoffs/current/discovery-ledger/DISCOVERY_LEDGER_REPORT.md\n M handoffs/current/discovery-ledger/discovery-ledger-log.jsonl\n M handoffs/current/discovery-ledger/discovery-ledger-summary.json\n M handoffs/current/offline-workflow-check/OFFLINE_WORKFLOW_CHECK_REPORT.md\n M handoffs/current/offline-workflow-check/offline-workflow-check-log.jsonl\n M handoffs/current/offline-workflow-check/offline-workflow-check-summary.json\n M tools/riftscan_ai_workflow_packet.py\n?? handoffs/current/ai-workflow/history/\n"
   },
   "latest_capture_plan": {
     "handoff_exists": true,

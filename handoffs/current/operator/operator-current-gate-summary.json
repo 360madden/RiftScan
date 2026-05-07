@@ -1,6 +1,6 @@
 {
   "schema_version": "riftscan.operator_current_workflow_gate.v1",
-  "created_utc": "2026-05-07T17:32:05Z",
+  "created_utc": "2026-05-07T17:38:43Z",
   "metadata_capture_plan_gate": "PASS",
   "live_collection_allowed": false,
   "old_offsets_trusted": false,
@@ -19,7 +19,7 @@
     "artifact_freshness": {
       "status": "warning_non_relevant_changes",
       "artifact_head": "40bbd1c62c5db71ecbe4d5931643d37619f955b3",
-      "current_head": "c99da28e580a7ccda6337be6cfa5e18cb483eea4",
+      "current_head": "19fb85b2feac07e15e26e111a057000e81a62b7b",
       "head_matches_current": false,
       "changed_paths_since_artifact_head": [
         "docs/agent-execution-workflow.md",
@@ -106,7 +106,7 @@
     "artifact_freshness": {
       "status": "warning_non_relevant_changes",
       "artifact_head": "40bbd1c62c5db71ecbe4d5931643d37619f955b3",
-      "current_head": "c99da28e580a7ccda6337be6cfa5e18cb483eea4",
+      "current_head": "19fb85b2feac07e15e26e111a057000e81a62b7b",
       "head_matches_current": false,
       "changed_paths_since_artifact_head": [
         "docs/agent-execution-workflow.md",
@@ -217,7 +217,7 @@
     "artifact_status": "present",
     "status": "pass",
     "display_status": "PASS",
-    "created_utc": "2026-05-07T17:32:04Z",
+    "created_utc": "2026-05-07T17:38:42Z",
     "blockers": [],
     "paths": {
       "report": "handoffs/current/capture-plan-check/CAPTURE_PLAN_CHECK_REPORT.md",
@@ -230,7 +230,7 @@
     "artifact_status": "present",
     "status": "pass",
     "display_status": "PASS",
-    "created_utc": "2026-05-07T17:32:04Z",
+    "created_utc": "2026-05-07T17:38:42Z",
     "blockers": [],
     "paths": {
       "report": "handoffs/current/movement-test-readiness/MOVEMENT_TEST_READINESS_REPORT.md",
