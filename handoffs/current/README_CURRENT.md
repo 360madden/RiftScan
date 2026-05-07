@@ -4,17 +4,21 @@
 
 Start here for new RiftScan work:
 
-1. `handoffs/current/RIFTSCAN_RESUME_HANDOFF_2026-05-06_OPERATOR_GATE_WORKFLOW.md`
-2. `handoffs/current/operator/operator-current-gate-summary.json`
-3. `handoffs/current/operator/RIFTSCAN_OPERATOR_HANDOFF.md`
-4. `docs/helper-tooling-policy.md`
+1. `handoffs/current/discovery-ledger/DISCOVERY_LEDGER_REPORT.md`
+2. `handoffs/current/discovery-ledger/discovery-ledger-summary.json`
+3. `handoffs/current/RIFTSCAN_RESUME_HANDOFF_2026-05-06_OPERATOR_GATE_WORKFLOW.md`
+4. `handoffs/current/operator/operator-current-gate-summary.json`
+5. `handoffs/current/operator/RIFTSCAN_OPERATOR_HANDOFF.md`
+6. `docs/helper-tooling-policy.md`
 
-The older 2026-05-05 handoffs remain useful history, but their next-step ordering is superseded by the 2026-05-06 Operator Gate Workflow handoff and the current gate summary JSON.
+For discovery status while RiftReader owns the game window, prefer the offline discovery ledger first. It reconciles ignored/generated RiftScan evidence with RiftReader's tracked current-proof pointer without running focus, capture, input, movement, memory reads, RiftReader commands, or `/reloadui`.
+
+The older 2026-05-05 handoffs remain useful history, but their next-step ordering is superseded by the 2026-05-06 Operator Gate Workflow handoff, the current gate summary JSON, and the newer offline discovery ledger.
 
 ## Latest verified workflow-code milestone referenced by this pointer
 
 ```text
-b7bd739 Add movement test readiness gate
+8ebf266 Record current API coordinate candidate
 ```
 
 A newer doc-only handoff-pointer commit may exist; check `git log --oneline -5` for the exact current HEAD before editing.
@@ -46,6 +50,8 @@ A newer doc-only handoff-pointer commit may exist; check `git log --oneline -5` 
 - Latest Movement Execution Gate artifacts: `handoffs/current/movement-execution-gate/`.
 - Future live-collection criteria are documented under `handoffs/current/live-collection-gate/`; this is a checklist only, not authorization.
 - Patch Intake can require Operator, Post-Update Baseline, Capture Readiness, and Offline Workflow Check post-apply py_compile/self-test checks for future gate patches.
+- Offline Discovery Ledger is a Python-first, read-only artifact inventory: `python tools/riftscan_discovery_ledger.py --self-test` and `python tools/riftscan_discovery_ledger.py`.
+- Latest Offline Discovery Ledger artifacts: `handoffs/current/discovery-ledger/`.
 
 ## Current direction
 
@@ -66,9 +72,9 @@ Do not rewrite the C# core into Python. Use Python for workflow/control-plane to
 - `Capture Plan Check: PASS` means the latest plan is valid for review/refinement only.
 - `Movement Test Readiness: PASS` means the repo control-plane is ready to stage a separately gated movement test; it does not send input or authorize movement execution by itself.
 - `Movement Execution Gate: PASS` is short-lived and applies only to the exact bounded command printed in that gate before `expires_utc`.
-- Current Movement Execution Gate is BLOCKED by live-wrapper freshness evidence: stale `ReaderBridgeExport.lua`, `TraceMatchesProcess` not true, and source object coordinate sample not matching ReaderBridge. That is a safe stop, not a failed movement run.
-- `live_collection_allowed` remains `false`; do not resume live capture, coordinate recovery, actor/camera discovery, movement/input, `/reloadui`, offset validation, or RiftReader validation from this milestone alone.
-- Treat RiftReader assumptions as unvalidated after a game update unless RiftReader-specific recovery docs and live proof say otherwise.
+- Current Movement Execution Gate artifacts are older/blocking evidence from RiftScan's local gate lane; the Offline Discovery Ledger may point at newer RiftReader proof-pointer evidence, but it still does not authorize movement.
+- `live_collection_allowed` remains `false` from RiftScan alone; do not resume live capture, coordinate recovery, actor/camera discovery, movement/input, `/reloadui`, offset validation, or RiftReader validation from this milestone alone.
+- Treat RiftReader proof-pointer facts as artifact evidence that still requires fresh exact PID/HWND preflight before any future live input.
 
 ## Milestone publishing rule
 
@@ -85,4 +91,4 @@ For meaningful workflow milestones:
 
 ## Current next recommended action
 
-Review the latest Movement Execution Gate report at `handoffs/current/movement-execution-gate/MOVEMENT_EXECUTION_GATE_REPORT.md`. If it is BLOCKED, resolve only the listed current-window/live-wrapper freshness blockers and rerun the gate. Do not start real capture, scanner/discovery probes, movement/input, `/reloadui`, offset validation, or RiftReader validation from any stale or blocked gate.
+Review `handoffs/current/discovery-ledger/DISCOVERY_LEDGER_REPORT.md` first. If RiftReader still owns the game window, keep RiftScan work offline: update/validate the ledger from stored artifacts only and do not start focus preflight, live capture, scanner/discovery probes, movement/input, `/reloadui`, offset validation, or RiftReader validation from RiftScan.
