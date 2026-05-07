@@ -1,6 +1,6 @@
 {
   "ai_resume_prompt": "Resume RiftScan in offline AI workflow mode. Read handoffs/current/ai-workflow/AI_WORKFLOW_PACKET.md, then the Candidate Ledger Consumer and Discovery Ledger artifacts. Do not touch live RIFT, focus preflight, capture, process attach/memory reads, movement/input, RiftReader commands, offset validation, or /reloadui unless the user explicitly authorizes live work.",
-  "app_version": "riftscan-ai-workflow-packet-v1.3.0",
+  "app_version": "riftscan-ai-workflow-packet-v1.4.0",
   "blockers": [],
   "candidate_ledger_consumer": {
     "artifact_age": {
@@ -17,7 +17,7 @@
     "safe_candidate_count": 3,
     "status": "PASS"
   },
-  "created_utc": "2026-05-07T17:04:15Z",
+  "created_utc": "2026-05-07T17:14:37Z",
   "current_best_candidate": {
     "allowed_downstream_uses": [
       "offline_review",
@@ -78,10 +78,10 @@
       "origin_main_parity": "pass",
       "status": "pass"
     },
-    "head": "7ae032eb3a7ba1dab4f78aa7ea6f4648bc4a3653",
-    "log_oneline_5": "7ae032e Add offline artifact age diagnostics\na333923 Add safe candidate ledger consumer\nfbeeded Add offline AI workflow packet\n1eca1be Surface discovery ledger validation\n676b428 Validate offline discovery ledger contract",
+    "head": "abb5c3faa86e65a155dc7f0373dc556ffc95918a",
+    "log_oneline_5": "abb5c3f Add AI workflow packet diffing\n7ae032e Add offline artifact age diagnostics\na333923 Add safe candidate ledger consumer\nfbeeded Add offline AI workflow packet\n1eca1be Surface discovery ledger validation",
     "origin_main_left_right_count": "0\t0",
-    "status_short_branch": "## main...origin/main\n M docs/agent-execution-workflow.md\n M docs/helper-tooling-policy.md\n M handoffs/current/README_CURRENT.md\n M handoffs/current/ai-workflow/AI_WORKFLOW_PACKET.md\n M handoffs/current/ai-workflow/ai-workflow-log.jsonl\n M handoffs/current/ai-workflow/ai-workflow-summary.json\n M handoffs/current/candidate-ledger-consumer/CANDIDATE_LEDGER_CONSUMER_REPORT.md\n M handoffs/current/candidate-ledger-consumer/candidate-ledger-consumer-log.jsonl\n M handoffs/current/candidate-ledger-consumer/candidate-ledger-consumer-summary.json\n M handoffs/current/capture-plan-check/CAPTURE_PLAN_CHECK_REPORT.md\n M handoffs/current/capture-plan-check/capture-plan-check-log.jsonl\n M handoffs/current/capture-plan-check/capture-plan-check-summary.json\n M handoffs/current/discovery-ledger/DISCOVERY_LEDGER_REPORT.md\n M handoffs/current/discovery-ledger/discovery-ledger-log.jsonl\n M handoffs/current/discovery-ledger/discovery-ledger-summary.json\n M handoffs/current/movement-test-readiness/MOVEMENT_TEST_READINESS_REPORT.md\n M handoffs/current/movement-test-readiness/movement-test-readiness-log.jsonl\n M handoffs/current/movement-test-readiness/movement-test-readiness-summary.json\n M handoffs/current/offline-workflow-check/OFFLINE_WORKFLOW_CHECK_REPORT.md\n M handoffs/current/offline-workflow-check/offline-workflow-check-log.jsonl\n M handoffs/current/offline-workflow-check/offline-workflow-check-summary.json\n M handoffs/current/operator/RIFTSCAN_OPERATOR_HANDOFF.md\n M handoffs/current/operator/operator-current-gate-summary.json\n M tools/riftscan_ai_workflow_packet.py"
+    "status_short_branch": "## main...origin/main\n M docs/agent-execution-workflow.md\n M docs/helper-tooling-policy.md\n M handoffs/current/README_CURRENT.md\n M handoffs/current/ai-workflow/AI_WORKFLOW_PACKET.md\n M handoffs/current/ai-workflow/ai-workflow-log.jsonl\n M handoffs/current/ai-workflow/ai-workflow-summary.json\n M handoffs/current/candidate-ledger-consumer/CANDIDATE_LEDGER_CONSUMER_REPORT.md\n M handoffs/current/candidate-ledger-consumer/candidate-ledger-consumer-log.jsonl\n M handoffs/current/candidate-ledger-consumer/candidate-ledger-consumer-summary.json\n M handoffs/current/capture-plan-check/CAPTURE_PLAN_CHECK_REPORT.md\n M handoffs/current/capture-plan-check/capture-plan-check-log.jsonl\n M handoffs/current/capture-plan-check/capture-plan-check-summary.json\n M handoffs/current/discovery-ledger/DISCOVERY_LEDGER_REPORT.md\n M handoffs/current/discovery-ledger/discovery-ledger-log.jsonl\n M handoffs/current/discovery-ledger/discovery-ledger-summary.json\n M handoffs/current/movement-test-readiness/MOVEMENT_TEST_READINESS_REPORT.md\n M handoffs/current/movement-test-readiness/movement-test-readiness-log.jsonl\n M handoffs/current/movement-test-readiness/movement-test-readiness-summary.json\n M handoffs/current/offline-workflow-check/OFFLINE_WORKFLOW_CHECK_REPORT.md\n M handoffs/current/offline-workflow-check/offline-workflow-check-log.jsonl\n M handoffs/current/offline-workflow-check/offline-workflow-check-summary.json\n M handoffs/current/operator/RIFTSCAN_OPERATOR_HANDOFF.md\n M handoffs/current/operator/operator-current-gate-summary.json\n M tools/riftscan_ai_workflow_packet.py\n?? docs/ai-workflow-packet-schema.md"
   },
   "mode": "offline_ai_workflow",
   "offline_workflow_check": {
@@ -104,14 +104,80 @@
   "previous_packet_diff": {
     "change_count": 0,
     "changes": [],
-    "current_app_version": "riftscan-ai-workflow-packet-v1.3.0",
-    "current_created_utc": "2026-05-07T17:04:15Z",
-    "previous_app_version": "riftscan-ai-workflow-packet-v1.3.0",
-    "previous_created_utc": "2026-05-07T17:03:46Z",
+    "current_app_version": "riftscan-ai-workflow-packet-v1.4.0",
+    "current_created_utc": "2026-05-07T17:14:37Z",
+    "previous_app_version": "riftscan-ai-workflow-packet-v1.4.0",
+    "previous_created_utc": "2026-05-07T17:14:03Z",
     "previous_packet_available": true,
     "schema_version": "riftscan.ai_workflow_packet_diff.v1",
     "status": "UNCHANGED"
   },
+  "previous_packet_diff_compared_fields": [
+    {
+      "field": "app_version",
+      "packet_path": "app_version"
+    },
+    {
+      "field": "status",
+      "packet_path": "status"
+    },
+    {
+      "field": "blocker_count",
+      "packet_path": "blocker_count"
+    },
+    {
+      "field": "warning_count",
+      "packet_path": "warning_count"
+    },
+    {
+      "field": "current_best_stable_id",
+      "packet_path": "current_best_candidate.stable_id"
+    },
+    {
+      "field": "current_best_address",
+      "packet_path": "current_best_candidate.source_absolute_address_hex"
+    },
+    {
+      "field": "candidate_consumer_status",
+      "packet_path": "candidate_ledger_consumer.status"
+    },
+    {
+      "field": "safe_candidate_count",
+      "packet_path": "candidate_ledger_consumer.safe_candidate_count"
+    },
+    {
+      "field": "rejected_candidate_count",
+      "packet_path": "candidate_ledger_consumer.rejected_candidate_count"
+    },
+    {
+      "field": "artifact_stale_count",
+      "packet_path": "candidate_ledger_consumer.artifact_age.stale_count"
+    },
+    {
+      "field": "artifact_missing_count",
+      "packet_path": "candidate_ledger_consumer.artifact_age.missing_count"
+    },
+    {
+      "field": "current_best_stale_count",
+      "packet_path": "candidate_ledger_consumer.artifact_age.current_best_stale_count"
+    },
+    {
+      "field": "current_best_missing_count",
+      "packet_path": "candidate_ledger_consumer.artifact_age.current_best_missing_count"
+    },
+    {
+      "field": "discovery_ledger_contract_status",
+      "packet_path": "discovery_ledger.candidate_ledger_contract_validation.status"
+    },
+    {
+      "field": "offline_workflow_status",
+      "packet_path": "offline_workflow_check.status"
+    },
+    {
+      "field": "operator_live_collection_allowed",
+      "packet_path": "operator_gate.live_collection_allowed"
+    }
+  ],
   "recommended_first_files": [
     "handoffs/current/README_CURRENT.md",
     "handoffs/current/ai-workflow/AI_WORKFLOW_PACKET.md",
@@ -121,6 +187,7 @@
     "handoffs/current/discovery-ledger/DISCOVERY_LEDGER_REPORT.md",
     "handoffs/current/discovery-ledger/discovery-ledger-summary.json",
     "docs/discovery-ledger-workflow.md",
+    "docs/ai-workflow-packet-schema.md",
     "AGENTS.md",
     "docs/agent-execution-workflow.md"
   ],
@@ -140,6 +207,7 @@
   "source_artifacts": {
     "agent_workflow_doc": "docs/agent-execution-workflow.md",
     "agents_contract": "AGENTS.md",
+    "ai_workflow_packet_schema_doc": "docs/ai-workflow-packet-schema.md",
     "candidate_ledger_consumer_report": "handoffs/current/candidate-ledger-consumer/CANDIDATE_LEDGER_CONSUMER_REPORT.md",
     "candidate_ledger_consumer_summary": "handoffs/current/candidate-ledger-consumer/candidate-ledger-consumer-summary.json",
     "discovery_ledger_doc": "docs/discovery-ledger-workflow.md",

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # RiftScan script metadata
-# Version: riftscan-ai-workflow-packet-v1.3.0
+# Version: riftscan-ai-workflow-packet-v1.4.0
 # Total character count: 000000
 # Purpose: Build a compact offline AI workflow packet from current RiftScan handoff and gate artifacts.
 # Safety boundary: Reads existing artifacts and local git metadata only. No focus preflight, live capture, input, movement, memory scan/read, process attach, offset validation, RiftReader command execution, or /reloadui.
@@ -15,7 +15,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-APP_VERSION = "riftscan-ai-workflow-packet-v1.3.0"
+APP_VERSION = "riftscan-ai-workflow-packet-v1.4.0"
 REPO_ROOT = Path(__file__).resolve().parents[1]
 OUT_DIR = REPO_ROOT / "handoffs" / "current" / "ai-workflow"
 REPORT = OUT_DIR / "AI_WORKFLOW_PACKET.md"
@@ -32,6 +32,7 @@ CANDIDATE_LEDGER_CONSUMER_REPORT = REPO_ROOT / "handoffs" / "current" / "candida
 AGENTS_CONTRACT = REPO_ROOT / "AGENTS.md"
 AGENT_WORKFLOW_DOC = REPO_ROOT / "docs" / "agent-execution-workflow.md"
 DISCOVERY_LEDGER_DOC = REPO_ROOT / "docs" / "discovery-ledger-workflow.md"
+AI_WORKFLOW_PACKET_SCHEMA_DOC = REPO_ROOT / "docs" / "ai-workflow-packet-schema.md"
 
 
 def utc() -> str:
@@ -176,6 +177,16 @@ PACKET_DIFF_FIELDS: list[tuple[str, tuple[str, ...]]] = [
 ]
 
 
+def packet_diff_compared_fields() -> list[dict[str, str]]:
+    return [
+        {
+            "field": name,
+            "packet_path": ".".join(path),
+        }
+        for name, path in PACKET_DIFF_FIELDS
+    ]
+
+
 def build_previous_packet_diff(previous: dict[str, Any], current: dict[str, Any]) -> dict[str, Any]:
     if artifact_failed(previous):
         return {
@@ -277,6 +288,7 @@ def build_packet_from_artifacts(
         rel(DISCOVERY_LEDGER_REPORT),
         rel(DISCOVERY_LEDGER_SUMMARY),
         rel(DISCOVERY_LEDGER_DOC),
+        rel(AI_WORKFLOW_PACKET_SCHEMA_DOC),
         rel(AGENTS_CONTRACT),
         rel(AGENT_WORKFLOW_DOC),
     ]
@@ -346,6 +358,7 @@ def build_packet_from_artifacts(
             "next_action": operator.get("next_action"),
         },
         "git": git,
+        "previous_packet_diff_compared_fields": packet_diff_compared_fields(),
         "top_next_actions": top_next_actions,
         "ai_resume_prompt": (
             "Resume RiftScan in offline AI workflow mode. Read handoffs/current/ai-workflow/AI_WORKFLOW_PACKET.md, "
@@ -363,6 +376,7 @@ def build_packet_from_artifacts(
             "agents_contract": rel(AGENTS_CONTRACT),
             "agent_workflow_doc": rel(AGENT_WORKFLOW_DOC),
             "discovery_ledger_doc": rel(DISCOVERY_LEDGER_DOC),
+            "ai_workflow_packet_schema_doc": rel(AI_WORKFLOW_PACKET_SCHEMA_DOC),
         },
         "paths": {
             "report": rel(REPORT),
@@ -497,6 +511,12 @@ def report_lines(data: dict[str, Any]) -> list[str]:
             )
         if len(changes) > 20:
             lines.append(f"| ... | {len(changes) - 20} more change(s) omitted from Markdown table | see JSON summary |")
+    lines.extend(
+        [
+            "",
+            f"Compared fields are listed in JSON at `previous_packet_diff_compared_fields` and documented in `{rel(AI_WORKFLOW_PACKET_SCHEMA_DOC)}`.",
+        ]
+    )
 
     lines.extend(["", "## Warnings", ""])
     warnings = data.get("warnings") if isinstance(data.get("warnings"), list) else []
@@ -618,6 +638,11 @@ def run_self_test() -> int:
     changed_diff = build_previous_packet_diff(passing, changed_packet)
     if changed_diff.get("status") != "CHANGED" or changed_diff.get("change_count") != 1:
         failures.append("changed_packet_diff_not_detected")
+    compared_fields = passing.get("previous_packet_diff_compared_fields")
+    if not isinstance(compared_fields, list) or len(compared_fields) != len(PACKET_DIFF_FIELDS):
+        failures.append("packet_diff_compared_fields_missing_or_wrong_count")
+    elif "safe_candidate_count" not in {item.get("field") for item in compared_fields if isinstance(item, dict)}:
+        failures.append("packet_diff_compared_fields_missing_safe_candidate_count")
 
     result = {
         "schema_version": "riftscan.ai_workflow_packet.self_test.v1",

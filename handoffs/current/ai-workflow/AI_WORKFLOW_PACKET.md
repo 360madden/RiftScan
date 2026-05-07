@@ -1,7 +1,7 @@
 # RiftScan Offline AI Workflow Packet
 
-Created UTC: `2026-05-07T17:04:15Z`
-App version: `riftscan-ai-workflow-packet-v1.3.0`
+Created UTC: `2026-05-07T17:14:37Z`
+App version: `riftscan-ai-workflow-packet-v1.4.0`
 
 ## Result
 
@@ -45,10 +45,12 @@ current_best_missing_count: 0
 
 ```text
 status: UNCHANGED
-previous_created_utc: 2026-05-07T17:03:46Z
-previous_app_version: riftscan-ai-workflow-packet-v1.3.0
+previous_created_utc: 2026-05-07T17:14:03Z
+previous_app_version: riftscan-ai-workflow-packet-v1.4.0
 change_count: 0
 ```
+
+Compared fields are listed in JSON at `previous_packet_diff_compared_fields` and documented in `docs/ai-workflow-packet-schema.md`.
 
 ## Warnings
 
@@ -64,6 +66,7 @@ change_count: 0
 - `handoffs/current/discovery-ledger/DISCOVERY_LEDGER_REPORT.md`
 - `handoffs/current/discovery-ledger/discovery-ledger-summary.json`
 - `docs/discovery-ledger-workflow.md`
+- `docs/ai-workflow-packet-schema.md`
 - `AGENTS.md`
 - `docs/agent-execution-workflow.md`
 
@@ -109,6 +112,7 @@ Resume RiftScan in offline AI workflow mode. Read handoffs/current/ai-workflow/A
 {
   "agent_workflow_doc": "docs/agent-execution-workflow.md",
   "agents_contract": "AGENTS.md",
+  "ai_workflow_packet_schema_doc": "docs/ai-workflow-packet-schema.md",
   "candidate_ledger_consumer_report": "handoffs/current/candidate-ledger-consumer/CANDIDATE_LEDGER_CONSUMER_REPORT.md",
   "candidate_ledger_consumer_summary": "handoffs/current/candidate-ledger-consumer/candidate-ledger-consumer-summary.json",
   "discovery_ledger_doc": "docs/discovery-ledger-workflow.md",

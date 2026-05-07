@@ -55,6 +55,7 @@ Then read:
 - `handoffs/current/ai-workflow/AI_WORKFLOW_PACKET.md`
 - `handoffs/current/candidate-ledger-consumer/CANDIDATE_LEDGER_CONSUMER_REPORT.md`
 - `handoffs/current/discovery-ledger/DISCOVERY_LEDGER_REPORT.md`
+- `docs/ai-workflow-packet-schema.md`
 - `docs/discovery-ledger-workflow.md`
 
 Use the AI packet's `Previous packet diff` section to decide whether the latest offline run changed meaningful workflow/truth fields or only refreshed timestamps/logs.
