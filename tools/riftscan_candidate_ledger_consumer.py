@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # RiftScan script metadata
-# Version: riftscan-candidate-ledger-consumer-v1.0.0
+# Version: riftscan-candidate-ledger-consumer-v1.1.0
 # Total character count: 000000
 # Purpose: Build a safe offline-only consumer view of the Discovery Ledger candidate_ledger.jsonl artifact.
 # Safety boundary: Reads existing JSON/JSONL artifacts only. No focus preflight, live capture, input, movement, memory scan/read, process attach, offset validation, RiftReader command execution, or /reloadui.
@@ -20,7 +20,7 @@ if str(SCRIPT_DIR) not in sys.path:
 
 from riftscan_discovery_ledger import validate_candidate_ledger  # noqa: E402
 
-APP_VERSION = "riftscan-candidate-ledger-consumer-v1.0.0"
+APP_VERSION = "riftscan-candidate-ledger-consumer-v1.1.0"
 REPO_ROOT = Path(__file__).resolve().parents[1]
 OUT_DIR = REPO_ROOT / "handoffs" / "current" / "candidate-ledger-consumer"
 REPORT = OUT_DIR / "CANDIDATE_LEDGER_CONSUMER_REPORT.md"
@@ -29,6 +29,7 @@ LOG = OUT_DIR / "candidate-ledger-consumer-log.jsonl"
 DISCOVERY_LEDGER_DIR = REPO_ROOT / "handoffs" / "current" / "discovery-ledger"
 DISCOVERY_SUMMARY = DISCOVERY_LEDGER_DIR / "discovery-ledger-summary.json"
 CANDIDATE_LEDGER = DISCOVERY_LEDGER_DIR / "candidate_ledger.jsonl"
+DEFAULT_MAX_ARTIFACT_AGE_HOURS = 24.0
 
 ALLOWED_OFFLINE_STATES = {
     "candidate",
@@ -47,6 +48,15 @@ def rel(path: Path) -> str:
         return path.resolve().relative_to(REPO_ROOT.resolve()).as_posix()
     except ValueError:
         return str(path)
+
+
+def resolve_artifact_path(path_text: str) -> Path:
+    path = Path(path_text)
+    return path if path.is_absolute() else REPO_ROOT / path
+
+
+def iso_from_timestamp(timestamp: float) -> str:
+    return datetime.fromtimestamp(timestamp, timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
 
 def write_json(path: Path, data: Any) -> None:
@@ -117,6 +127,7 @@ def compact_candidate(entry: dict[str, Any], source_index: int) -> dict[str, Any
         "support_count": entry.get("support_count"),
         "best_max_abs_distance": entry.get("best_max_abs_distance"),
         "next_validation_step": entry.get("next_validation_step"),
+        "source_artifacts": entry.get("source_artifacts") if isinstance(entry.get("source_artifacts"), list) else [],
         "consumer_status": "available_offline_only",
         "live_use_authorized": False,
         "allowed_downstream_uses": [
@@ -154,12 +165,84 @@ def row_rejection_reasons(entry: dict[str, Any]) -> list[str]:
     return reasons
 
 
+def artifact_age_record(path_text: str, now: datetime, max_age_hours: float) -> dict[str, Any]:
+    resolved = resolve_artifact_path(path_text)
+    record: dict[str, Any] = {
+        "path": path_text,
+        "resolved_path": str(resolved),
+        "exists": resolved.exists(),
+        "max_age_hours": max_age_hours,
+    }
+    if not resolved.exists():
+        record.update(
+            {
+                "status": "missing",
+                "age_hours": None,
+                "mtime_utc": None,
+                "stale": True,
+            }
+        )
+        return record
+
+    mtime = datetime.fromtimestamp(resolved.stat().st_mtime, timezone.utc)
+    age_hours = max(0.0, (now - mtime).total_seconds() / 3600.0)
+    stale = age_hours > max_age_hours
+    record.update(
+        {
+            "status": "stale" if stale else "fresh",
+            "mtime_utc": iso_from_timestamp(resolved.stat().st_mtime),
+            "age_hours": round(age_hours, 3),
+            "stale": stale,
+        }
+    )
+    return record
+
+
+def build_artifact_age_summary(
+    safe_candidates: list[dict[str, Any]],
+    current_best: dict[str, Any] | None,
+    now: datetime,
+    max_age_hours: float,
+) -> dict[str, Any]:
+    all_paths: list[str] = []
+    for candidate in safe_candidates:
+        for path in candidate.get("source_artifacts", []):
+            if isinstance(path, str) and path.strip() and path not in all_paths:
+                all_paths.append(path)
+
+    current_paths: list[str] = []
+    if isinstance(current_best, dict):
+        for path in current_best.get("source_artifacts", []):
+            if isinstance(path, str) and path.strip() and path not in current_paths:
+                current_paths.append(path)
+
+    records = [artifact_age_record(path, now, max_age_hours) for path in all_paths]
+    current_records = [artifact_age_record(path, now, max_age_hours) for path in current_paths]
+    stale_records = [record for record in records if record.get("stale")]
+    missing_records = [record for record in records if record.get("status") == "missing"]
+    current_stale = [record for record in current_records if record.get("stale")]
+    current_missing = [record for record in current_records if record.get("status") == "missing"]
+    return {
+        "max_age_hours": max_age_hours,
+        "checked_count": len(records),
+        "stale_count": len(stale_records),
+        "missing_count": len(missing_records),
+        "current_best_checked_count": len(current_records),
+        "current_best_stale_count": len(current_stale),
+        "current_best_missing_count": len(current_missing),
+        "records": records,
+        "current_best_records": current_records,
+    }
+
+
 def build_consumer_view_from_data(
     discovery_summary: dict[str, Any],
     rows: list[dict[str, Any]],
     validation: dict[str, Any],
     parse_issues: list[dict[str, Any]] | None = None,
     *,
+    max_artifact_age_hours: float = DEFAULT_MAX_ARTIFACT_AGE_HOURS,
+    now: datetime | None = None,
     created_utc: str | None = None,
 ) -> dict[str, Any]:
     parse_issues = parse_issues or []
@@ -210,6 +293,16 @@ def build_consumer_view_from_data(
     if not current_best and safe_candidates:
         current_best = safe_candidates[0]
 
+    now_utc = now or datetime.now(timezone.utc)
+    artifact_age = build_artifact_age_summary(safe_candidates, current_best, now_utc, max_artifact_age_hours)
+    if artifact_age["current_best_missing_count"]:
+        warnings.append("Current best candidate has missing source artifact paths; rerun offline ledger refresh before trusting it for planning.")
+    if artifact_age["current_best_stale_count"]:
+        warnings.append("Current best candidate has stale source artifact paths; require fresh proof before any live use.")
+    historical_stale_count = artifact_age["stale_count"] - artifact_age["current_best_stale_count"]
+    if historical_stale_count > 0:
+        warnings.append(f"Historical/non-current candidate rows include {historical_stale_count} stale source artifact(s); keep them historical.")
+
     status = "PASS" if not blockers else "BLOCKED"
     return {
         "schema_version": "riftscan.candidate_ledger_consumer.v1",
@@ -233,6 +326,7 @@ def build_consumer_view_from_data(
         "safe_candidates": safe_candidates,
         "rejected_candidates": rejected_candidates,
         "parse_issues": parse_issues,
+        "artifact_age": artifact_age,
         "allowed_downstream_uses": [
             "offline_review",
             "report_generation",
@@ -273,12 +367,18 @@ def build_consumer_view_from_data(
     }
 
 
-def build_consumer_view() -> dict[str, Any]:
+def build_consumer_view(max_artifact_age_hours: float = DEFAULT_MAX_ARTIFACT_AGE_HOURS) -> dict[str, Any]:
     append_log("build_start")
     discovery_summary = load_json(DISCOVERY_SUMMARY)
     rows, parse_issues = load_jsonl_objects(CANDIDATE_LEDGER)
     validation = validate_candidate_ledger(CANDIDATE_LEDGER)
-    result = build_consumer_view_from_data(discovery_summary, rows, validation, parse_issues)
+    result = build_consumer_view_from_data(
+        discovery_summary,
+        rows,
+        validation,
+        parse_issues,
+        max_artifact_age_hours=max_artifact_age_hours,
+    )
     append_log(
         "build_finish",
         status=result["status"],
@@ -305,6 +405,17 @@ def report_lines(data: dict[str, Any]) -> list[str]:
         f"safe_candidate_count: {data.get('safe_candidate_count')}",
         f"rejected_candidate_count: {data.get('rejected_candidate_count')}",
         f"live_action_authorized: {data.get('safety', {}).get('live_action_authorized')}",
+        "```",
+        "",
+        "## Artifact age",
+        "",
+        "```text",
+        f"max_age_hours: {data.get('artifact_age', {}).get('max_age_hours')}",
+        f"checked_count: {data.get('artifact_age', {}).get('checked_count')}",
+        f"stale_count: {data.get('artifact_age', {}).get('stale_count')}",
+        f"missing_count: {data.get('artifact_age', {}).get('missing_count')}",
+        f"current_best_stale_count: {data.get('artifact_age', {}).get('current_best_stale_count')}",
+        f"current_best_missing_count: {data.get('artifact_age', {}).get('current_best_missing_count')}",
         "```",
         "",
         "## Current best offline candidate",
@@ -337,6 +448,10 @@ def report_lines(data: dict[str, Any]) -> list[str]:
     lines.extend(["", "## Blockers", ""])
     blockers = data.get("blockers") if isinstance(data.get("blockers"), list) else []
     lines.extend(f"- {item}" for item in blockers) if blockers else lines.append("- None.")
+
+    lines.extend(["", "## Warnings", ""])
+    warnings = data.get("warnings") if isinstance(data.get("warnings"), list) else []
+    lines.extend(f"- {item}" for item in warnings) if warnings else lines.append("- None.")
 
     lines.extend(["", "## Forbidden downstream uses", ""])
     for item in data.get("forbidden_downstream_uses", []):
@@ -392,10 +507,25 @@ def run_self_test() -> int:
         "ledger_live_movement_authorized": False,
         "source_artifacts": ["fixture.json"],
     }
-    good = build_consumer_view_from_data(fake_summary, [good_row], fake_validation, [], created_utc="2026-01-01T00:00:00Z")
+    fake_now = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    good = build_consumer_view_from_data(
+        fake_summary,
+        [good_row],
+        fake_validation,
+        [],
+        now=fake_now,
+        created_utc="2026-01-01T00:00:00Z",
+    )
     bad_row = dict(good_row)
     bad_row["ledger_live_movement_authorized"] = True
-    bad = build_consumer_view_from_data(fake_summary, [bad_row], fake_validation, [], created_utc="2026-01-01T00:00:00Z")
+    bad = build_consumer_view_from_data(
+        fake_summary,
+        [bad_row],
+        fake_validation,
+        [],
+        now=fake_now,
+        created_utc="2026-01-01T00:00:00Z",
+    )
 
     failures: list[str] = []
     if good.get("status") != "PASS":
@@ -408,6 +538,8 @@ def run_self_test() -> int:
         failures.append("bad_live_authorization_did_not_block")
     if not bad.get("rejected_candidates"):
         failures.append("bad_candidate_not_rejected")
+    if good.get("artifact_age", {}).get("current_best_missing_count") != 1:
+        failures.append("missing_fixture_source_artifact_not_reported")
 
     result = {
         "schema_version": "riftscan.candidate_ledger_consumer.self_test.v1",
@@ -435,6 +567,7 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument("--self-test", action="store_true", help="Run offline self-test only; writes no artifacts.")
     parser.add_argument("--print-summary", action="store_true", help="Print the generated consumer summary after writing artifacts.")
     parser.add_argument("--strict-exit-code", action="store_true", help="Return nonzero when the consumer status is not PASS.")
+    parser.add_argument("--max-artifact-age-hours", type=float, default=DEFAULT_MAX_ARTIFACT_AGE_HOURS, help="Warn when source artifacts are older than this many hours.")
     return parser.parse_args(argv)
 
 
@@ -443,7 +576,7 @@ def main(argv: list[str]) -> int:
     if args.self_test:
         return run_self_test()
 
-    data = build_consumer_view()
+    data = build_consumer_view(max_artifact_age_hours=args.max_artifact_age_hours)
     write_outputs(data)
     if args.print_summary:
         print(json.dumps(data, indent=2, sort_keys=True))

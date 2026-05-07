@@ -194,6 +194,7 @@ Candidate ledger consumer validation:
 ```text
 python tools/riftscan_candidate_ledger_consumer.py --self-test
 .\scripts\run-riftscan-candidate-ledger-consumer.cmd --strict-exit-code
+.\scripts\run-riftscan-candidate-ledger-consumer.cmd --max-artifact-age-hours 24 --strict-exit-code
 ```
 
 AI workflow packet validation:

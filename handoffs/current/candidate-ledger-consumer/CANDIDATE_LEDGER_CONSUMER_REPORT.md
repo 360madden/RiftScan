@@ -1,7 +1,7 @@
 # RiftScan Candidate Ledger Consumer Report
 
-Created UTC: `2026-05-07T16:51:20Z`
-App version: `riftscan-candidate-ledger-consumer-v1.0.0`
+Created UTC: `2026-05-07T16:58:26Z`
+App version: `riftscan-candidate-ledger-consumer-v1.1.0`
 
 ## Result
 
@@ -12,6 +12,17 @@ contract_validation: PASS
 safe_candidate_count: 3
 rejected_candidate_count: 0
 live_action_authorized: False
+```
+
+## Artifact age
+
+```text
+max_age_hours: 24.0
+checked_count: 5
+stale_count: 2
+missing_count: 0
+current_best_stale_count: 0
+current_best_missing_count: 0
 ```
 
 ## Current best offline candidate
@@ -36,6 +47,10 @@ live_action_authorized: False
 ## Blockers
 
 - None.
+
+## Warnings
+
+- Historical/non-current candidate rows include 2 stale source artifact(s); keep them historical.
 
 ## Forbidden downstream uses
 

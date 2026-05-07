@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # RiftScan script metadata
-# Version: riftscan-ai-workflow-packet-v1.1.0
+# Version: riftscan-ai-workflow-packet-v1.2.0
 # Total character count: 000000
 # Purpose: Build a compact offline AI workflow packet from current RiftScan handoff and gate artifacts.
 # Safety boundary: Reads existing artifacts and local git metadata only. No focus preflight, live capture, input, movement, memory scan/read, process attach, offset validation, RiftReader command execution, or /reloadui.
@@ -15,7 +15,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-APP_VERSION = "riftscan-ai-workflow-packet-v1.1.0"
+APP_VERSION = "riftscan-ai-workflow-packet-v1.2.0"
 REPO_ROOT = Path(__file__).resolve().parents[1]
 OUT_DIR = REPO_ROOT / "handoffs" / "current" / "ai-workflow"
 REPORT = OUT_DIR / "AI_WORKFLOW_PACKET.md"
@@ -184,6 +184,12 @@ def build_packet_from_artifacts(
             blockers.append("Candidate Ledger Consumer is not PASS.")
         if get_nested(consumer, "safety", "live_action_authorized") is not False:
             blockers.append("Candidate Ledger Consumer safety flag live_action_authorized is not false.")
+        consumer_warnings = consumer.get("warnings") if isinstance(consumer.get("warnings"), list) else []
+        warnings.extend(f"Candidate Ledger Consumer: {item}" for item in consumer_warnings)
+        if get_nested(consumer, "artifact_age", "current_best_missing_count"):
+            warnings.append("Candidate Ledger Consumer reports missing source artifact(s) for the current best candidate.")
+        if get_nested(consumer, "artifact_age", "current_best_stale_count"):
+            warnings.append("Candidate Ledger Consumer reports stale source artifact(s) for the current best candidate.")
 
     live_collection_allowed = operator.get("live_collection_allowed") if isinstance(operator, dict) else None
     if live_collection_allowed is not False:
@@ -218,7 +224,7 @@ def build_packet_from_artifacts(
         "Run py_compile, helper self-tests, Offline Workflow Check, JSON/JSONL validation, dotnet build/test/format, and git diff checks at the milestone boundary.",
         "Commit and push coherent offline workflow milestones only after validation passes.",
         "If any artifact conflicts, prefer the newest PASS machine-readable artifact and preserve older artifacts as historical evidence.",
-        "The next useful offline slice is stale-artifact age warning or packet diffing; do not pivot into live testing without explicit authorization.",
+        "The next useful offline slice is packet diffing or schema docs; do not pivot into live testing without explicit authorization.",
     ]
 
     packet_status = "PASS" if not blockers else "BLOCKED"
@@ -239,6 +245,14 @@ def build_packet_from_artifacts(
             "safe_candidate_count": consumer.get("safe_candidate_count"),
             "rejected_candidate_count": consumer.get("rejected_candidate_count"),
             "live_action_authorized": get_nested(consumer, "safety", "live_action_authorized"),
+            "artifact_age": {
+                "max_age_hours": get_nested(consumer, "artifact_age", "max_age_hours"),
+                "checked_count": get_nested(consumer, "artifact_age", "checked_count"),
+                "stale_count": get_nested(consumer, "artifact_age", "stale_count"),
+                "missing_count": get_nested(consumer, "artifact_age", "missing_count"),
+                "current_best_stale_count": get_nested(consumer, "artifact_age", "current_best_stale_count"),
+                "current_best_missing_count": get_nested(consumer, "artifact_age", "current_best_missing_count"),
+            },
         },
         "discovery_ledger": {
             "status": discovery.get("status"),
@@ -355,6 +369,23 @@ def report_lines(data: dict[str, Any]) -> list[str]:
     else:
         lines.extend(["No current best candidate is available from the Discovery Ledger summary.", ""])
 
+    lines.extend(
+        [
+            "## Candidate ledger consumer",
+            "",
+            "```text",
+            f"status: {get_nested(data, 'candidate_ledger_consumer', 'status')}",
+            f"safe_candidate_count: {get_nested(data, 'candidate_ledger_consumer', 'safe_candidate_count')}",
+            f"rejected_candidate_count: {get_nested(data, 'candidate_ledger_consumer', 'rejected_candidate_count')}",
+            f"artifact_stale_count: {get_nested(data, 'candidate_ledger_consumer', 'artifact_age', 'stale_count')}",
+            f"artifact_missing_count: {get_nested(data, 'candidate_ledger_consumer', 'artifact_age', 'missing_count')}",
+            f"current_best_stale_count: {get_nested(data, 'candidate_ledger_consumer', 'artifact_age', 'current_best_stale_count')}",
+            f"current_best_missing_count: {get_nested(data, 'candidate_ledger_consumer', 'artifact_age', 'current_best_missing_count')}",
+            "```",
+            "",
+        ]
+    )
+
     lines.extend(["## Blockers", ""])
     blockers = data.get("blockers") if isinstance(data.get("blockers"), list) else []
     if blockers:
@@ -448,6 +479,14 @@ def run_self_test() -> int:
         "safe_candidate_count": 1,
         "rejected_candidate_count": 0,
         "safety": {"live_action_authorized": False},
+        "artifact_age": {
+            "max_age_hours": 24.0,
+            "checked_count": 1,
+            "stale_count": 0,
+            "missing_count": 0,
+            "current_best_stale_count": 0,
+            "current_best_missing_count": 0,
+        },
     }
     fake_operator = {"status": "PASS", "display_status": "PASS", "live_collection_allowed": False}
     fake_git = {"head": "fixture", "status_short_branch": "## main...origin/main", "origin_main_left_right_count": "0\t0"}

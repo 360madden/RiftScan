@@ -26,9 +26,10 @@ Downstream tools should prefer the safe consumer view:
 ```text
 python tools/riftscan_candidate_ledger_consumer.py --self-test
 .\scripts\run-riftscan-candidate-ledger-consumer.cmd --strict-exit-code
+.\scripts\run-riftscan-candidate-ledger-consumer.cmd --max-artifact-age-hours 24 --strict-exit-code
 ```
 
-The consumer writes `handoffs/current/candidate-ledger-consumer/` and marks every usable row as offline-only with `live_use_authorized=false`.
+The consumer writes `handoffs/current/candidate-ledger-consumer/`, marks every usable row as offline-only with `live_use_authorized=false`, and reports source-artifact age/missing diagnostics without starting live validation.
 
 ## Artifact contract
 

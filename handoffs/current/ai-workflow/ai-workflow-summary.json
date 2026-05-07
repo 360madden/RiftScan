@@ -1,15 +1,23 @@
 {
   "ai_resume_prompt": "Resume RiftScan in offline AI workflow mode. Read handoffs/current/ai-workflow/AI_WORKFLOW_PACKET.md, then the Candidate Ledger Consumer and Discovery Ledger artifacts. Do not touch live RIFT, focus preflight, capture, process attach/memory reads, movement/input, RiftReader commands, offset validation, or /reloadui unless the user explicitly authorizes live work.",
-  "app_version": "riftscan-ai-workflow-packet-v1.1.0",
+  "app_version": "riftscan-ai-workflow-packet-v1.2.0",
   "blockers": [],
   "candidate_ledger_consumer": {
+    "artifact_age": {
+      "checked_count": 5,
+      "current_best_missing_count": 0,
+      "current_best_stale_count": 0,
+      "max_age_hours": 24.0,
+      "missing_count": 0,
+      "stale_count": 2
+    },
     "display_status": "PASS",
     "live_action_authorized": false,
     "rejected_candidate_count": 0,
     "safe_candidate_count": 3,
     "status": "PASS"
   },
-  "created_utc": "2026-05-07T16:51:31Z",
+  "created_utc": "2026-05-07T16:58:33Z",
   "current_best_candidate": {
     "allowed_downstream_uses": [
       "offline_review",
@@ -38,6 +46,11 @@
     "proof_level": "riftscan_candidate_plus_riftreader_no_ce_multisample_and_post_readback",
     "source": "riftscan_addon_coordinate_match",
     "source_absolute_address_hex": "0x2400EA32120",
+    "source_artifacts": [
+      "reports/generated/codex-current-coord-region-passive-20260506-230940-addon-coordinate-matches.json",
+      "C:\\RIFT MODDING\\RiftReader\\docs\\recovery\\current-proof-anchor-readback.json",
+      "C:\\RIFT MODDING\\RiftReader\\scripts\\captures\\proof-anchor-currentpid-47560-readback-summary-20260507-121811.json"
+    ],
     "source_base_address_hex": "0x2400E970000",
     "source_index": 1,
     "source_offset_hex": "0xC2120",
@@ -65,10 +78,10 @@
       "origin_main_parity": "pass",
       "status": "pass"
     },
-    "head": "fbeededd66c1fa7da642bee8475edb8ae53643c1",
-    "log_oneline_5": "fbeeded Add offline AI workflow packet\n1eca1be Surface discovery ledger validation\n676b428 Validate offline discovery ledger contract\n9ca69dc Wire discovery ledger into offline diagnostics\n7db4d85 Add offline discovery ledger",
+    "head": "a333923539b424cc56b55e8b252a977f22182c7b",
+    "log_oneline_5": "a333923 Add safe candidate ledger consumer\nfbeeded Add offline AI workflow packet\n1eca1be Surface discovery ledger validation\n676b428 Validate offline discovery ledger contract\n9ca69dc Wire discovery ledger into offline diagnostics",
     "origin_main_left_right_count": "0\t0",
-    "status_short_branch": "## main...origin/main\n M docs/agent-execution-workflow.md\n M docs/discovery-ledger-workflow.md\n M docs/helper-tooling-policy.md\n M handoffs/current/README_CURRENT.md\n M handoffs/current/ai-workflow/AI_WORKFLOW_PACKET.md\n M handoffs/current/ai-workflow/ai-workflow-log.jsonl\n M handoffs/current/ai-workflow/ai-workflow-summary.json\n M handoffs/current/capture-plan-check/CAPTURE_PLAN_CHECK_REPORT.md\n M handoffs/current/capture-plan-check/capture-plan-check-log.jsonl\n M handoffs/current/capture-plan-check/capture-plan-check-summary.json\n M handoffs/current/discovery-ledger/DISCOVERY_LEDGER_REPORT.md\n M handoffs/current/discovery-ledger/discovery-ledger-log.jsonl\n M handoffs/current/discovery-ledger/discovery-ledger-summary.json\n M handoffs/current/movement-test-readiness/MOVEMENT_TEST_READINESS_REPORT.md\n M handoffs/current/movement-test-readiness/movement-test-readiness-log.jsonl\n M handoffs/current/movement-test-readiness/movement-test-readiness-summary.json\n M handoffs/current/offline-workflow-check/OFFLINE_WORKFLOW_CHECK_REPORT.md\n M handoffs/current/offline-workflow-check/offline-workflow-check-log.jsonl\n M handoffs/current/offline-workflow-check/offline-workflow-check-summary.json\n M handoffs/current/operator/RIFTSCAN_OPERATOR_HANDOFF.md\n M handoffs/current/operator/operator-current-gate-summary.json\n M tools/riftscan_ai_workflow_packet.py\n M tools/riftscan_offline_workflow_check.py\n?? handoffs/current/candidate-ledger-consumer/\n?? scripts/run-riftscan-candidate-ledger-consumer.cmd\n?? tools/riftscan_candidate_ledger_consumer.py"
+    "status_short_branch": "## main...origin/main\n M docs/discovery-ledger-workflow.md\n M docs/helper-tooling-policy.md\n M handoffs/current/README_CURRENT.md\n M handoffs/current/ai-workflow/AI_WORKFLOW_PACKET.md\n M handoffs/current/ai-workflow/ai-workflow-log.jsonl\n M handoffs/current/ai-workflow/ai-workflow-summary.json\n M handoffs/current/candidate-ledger-consumer/CANDIDATE_LEDGER_CONSUMER_REPORT.md\n M handoffs/current/candidate-ledger-consumer/candidate-ledger-consumer-log.jsonl\n M handoffs/current/candidate-ledger-consumer/candidate-ledger-consumer-summary.json\n M handoffs/current/capture-plan-check/CAPTURE_PLAN_CHECK_REPORT.md\n M handoffs/current/capture-plan-check/capture-plan-check-log.jsonl\n M handoffs/current/capture-plan-check/capture-plan-check-summary.json\n M handoffs/current/discovery-ledger/DISCOVERY_LEDGER_REPORT.md\n M handoffs/current/discovery-ledger/discovery-ledger-log.jsonl\n M handoffs/current/discovery-ledger/discovery-ledger-summary.json\n M handoffs/current/movement-test-readiness/MOVEMENT_TEST_READINESS_REPORT.md\n M handoffs/current/movement-test-readiness/movement-test-readiness-log.jsonl\n M handoffs/current/movement-test-readiness/movement-test-readiness-summary.json\n M handoffs/current/offline-workflow-check/OFFLINE_WORKFLOW_CHECK_REPORT.md\n M handoffs/current/offline-workflow-check/offline-workflow-check-log.jsonl\n M handoffs/current/offline-workflow-check/offline-workflow-check-summary.json\n M handoffs/current/operator/RIFTSCAN_OPERATOR_HANDOFF.md\n M handoffs/current/operator/operator-current-gate-summary.json\n M tools/riftscan_ai_workflow_packet.py\n M tools/riftscan_candidate_ledger_consumer.py"
   },
   "mode": "offline_ai_workflow",
   "offline_workflow_check": {
@@ -136,7 +149,9 @@
     "Run py_compile, helper self-tests, Offline Workflow Check, JSON/JSONL validation, dotnet build/test/format, and git diff checks at the milestone boundary.",
     "Commit and push coherent offline workflow milestones only after validation passes.",
     "If any artifact conflicts, prefer the newest PASS machine-readable artifact and preserve older artifacts as historical evidence.",
-    "The next useful offline slice is stale-artifact age warning or packet diffing; do not pivot into live testing without explicit authorization."
+    "The next useful offline slice is packet diffing or schema docs; do not pivot into live testing without explicit authorization."
   ],
-  "warnings": []
+  "warnings": [
+    "Candidate Ledger Consumer: Historical/non-current candidate rows include 2 stale source artifact(s); keep them historical."
+  ]
 }
