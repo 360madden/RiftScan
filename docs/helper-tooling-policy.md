@@ -210,7 +210,10 @@ For quick terminal triage without opening the Markdown report:
 
 ```text
 python tools/riftscan_ai_workflow_packet.py --print-diff
+python tools/riftscan_ai_workflow_packet.py --show-existing-diff
 ```
+
+`--print-diff` refreshes packet artifacts first; `--show-existing-diff` is read-only and prints the saved summary diff without appending logs.
 
 Capture plan validation:
 

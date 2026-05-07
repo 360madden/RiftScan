@@ -56,7 +56,7 @@ log: handoffs/current/movement-test-readiness/movement-test-readiness-log.jsonl
 ## Git Snapshot
 
 ```text
-head: 5c3ff94e4982bca4a8375493081f88faa318fec9
+head: c99da28e580a7ccda6337be6cfa5e18cb483eea4
 ```
 
 Git status:
@@ -88,11 +88,11 @@ Git status:
 Recent commits:
 
 ```text
+c99da28 Add AI packet print diff mode
 5c3ff94 Validate AI packet contract offline
 c9c00cd Document AI workflow packet schema
 abb5c3f Add AI workflow packet diffing
 7ae032e Add offline artifact age diagnostics
-a333923 Add safe candidate ledger consumer
 ```
 
 ## Machine-Readable Summary
@@ -138,11 +138,11 @@ a333923 Add safe candidate ledger consumer
       "post_update_baseline": "PASS"
     }
   },
-  "created_utc": "2026-05-07T17:26:45Z",
+  "created_utc": "2026-05-07T17:32:04Z",
   "display_status": "PASS",
   "git": {
-    "head": "5c3ff94e4982bca4a8375493081f88faa318fec9",
-    "log_oneline_5": "5c3ff94 Validate AI packet contract offline\nc9c00cd Document AI workflow packet schema\nabb5c3f Add AI workflow packet diffing\n7ae032e Add offline artifact age diagnostics\na333923 Add safe candidate ledger consumer",
+    "head": "c99da28e580a7ccda6337be6cfa5e18cb483eea4",
+    "log_oneline_5": "c99da28 Add AI packet print diff mode\n5c3ff94 Validate AI packet contract offline\nc9c00cd Document AI workflow packet schema\nabb5c3f Add AI workflow packet diffing\n7ae032e Add offline artifact age diagnostics",
     "status_short": " M docs/ai-workflow-packet-schema.md\n M docs/helper-tooling-policy.md\n M handoffs/current/README_CURRENT.md\n M handoffs/current/ai-workflow/AI_WORKFLOW_PACKET.md\n M handoffs/current/ai-workflow/ai-workflow-log.jsonl\n M handoffs/current/ai-workflow/ai-workflow-summary.json\n M handoffs/current/candidate-ledger-consumer/CANDIDATE_LEDGER_CONSUMER_REPORT.md\n M handoffs/current/candidate-ledger-consumer/candidate-ledger-consumer-log.jsonl\n M handoffs/current/candidate-ledger-consumer/candidate-ledger-consumer-summary.json\n M handoffs/current/capture-plan-check/CAPTURE_PLAN_CHECK_REPORT.md\n M handoffs/current/capture-plan-check/capture-plan-check-log.jsonl\n M handoffs/current/capture-plan-check/capture-plan-check-summary.json\n M handoffs/current/discovery-ledger/DISCOVERY_LEDGER_REPORT.md\n M handoffs/current/discovery-ledger/discovery-ledger-log.jsonl\n M handoffs/current/discovery-ledger/discovery-ledger-summary.json\n M handoffs/current/movement-test-readiness/movement-test-readiness-log.jsonl\n M handoffs/current/offline-workflow-check/OFFLINE_WORKFLOW_CHECK_REPORT.md\n M handoffs/current/offline-workflow-check/offline-workflow-check-log.jsonl\n M handoffs/current/offline-workflow-check/offline-workflow-check-summary.json\n M tools/riftscan_ai_workflow_packet.py\n"
   },
   "paths": {

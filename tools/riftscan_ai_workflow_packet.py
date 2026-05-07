@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # RiftScan script metadata
-# Version: riftscan-ai-workflow-packet-v1.5.0
+# Version: riftscan-ai-workflow-packet-v1.6.0
 # Total character count: 000000
 # Purpose: Build a compact offline AI workflow packet from current RiftScan handoff and gate artifacts.
 # Safety boundary: Reads existing artifacts and local git metadata only. No focus preflight, live capture, input, movement, memory scan/read, process attach, offset validation, RiftReader command execution, or /reloadui.
@@ -15,7 +15,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-APP_VERSION = "riftscan-ai-workflow-packet-v1.5.0"
+APP_VERSION = "riftscan-ai-workflow-packet-v1.6.0"
 REPO_ROOT = Path(__file__).resolve().parents[1]
 OUT_DIR = REPO_ROOT / "handoffs" / "current" / "ai-workflow"
 REPORT = OUT_DIR / "AI_WORKFLOW_PACKET.md"
@@ -575,12 +575,13 @@ def format_diff_value(value: Any) -> str:
     return json.dumps(value, sort_keys=True)
 
 
-def packet_diff_lines(data: dict[str, Any]) -> list[str]:
+def packet_diff_lines(data: dict[str, Any], *, source_label: str = "refreshed") -> list[str]:
     packet_diff = data.get("previous_packet_diff") if isinstance(data.get("previous_packet_diff"), dict) else {}
     compared_fields = data.get("previous_packet_diff_compared_fields")
     changes = packet_diff.get("changes") if isinstance(packet_diff.get("changes"), list) else []
     lines = [
         "RIFTSCAN AI WORKFLOW PACKET DIFF",
+        f"source: {source_label}",
         f"status: {packet_diff.get('status', 'not_run')}",
         f"change_count: {packet_diff.get('change_count', 'unknown')}",
         f"previous_created_utc: {packet_diff.get('previous_created_utc')}",
@@ -682,8 +683,11 @@ def run_self_test() -> int:
     if "safe_candidate_count" not in diff_text or "1 -> 2" not in diff_text:
         failures.append("print_diff_changed_field_missing")
     passing["previous_packet_diff"] = unchanged_diff
-    if "- none" not in "\n".join(packet_diff_lines(passing)):
+    saved_diff_text = "\n".join(packet_diff_lines(passing, source_label="saved_existing_no_refresh"))
+    if "- none" not in saved_diff_text:
         failures.append("print_diff_unchanged_missing_none")
+    if "source: saved_existing_no_refresh" not in saved_diff_text:
+        failures.append("show_existing_diff_source_missing")
     compared_fields = passing.get("previous_packet_diff_compared_fields")
     if not isinstance(compared_fields, list) or len(compared_fields) != len(PACKET_DIFF_FIELDS):
         failures.append("packet_diff_compared_fields_missing_or_wrong_count")
@@ -716,6 +720,7 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument("--self-test", action="store_true", help="Run offline self-test only; writes no artifacts.")
     parser.add_argument("--print-summary", action="store_true", help="Print the generated packet summary after writing artifacts.")
     parser.add_argument("--print-diff", action="store_true", help="Print the previous-packet diff after writing artifacts.")
+    parser.add_argument("--show-existing-diff", action="store_true", help="Print the saved packet diff without refreshing artifacts or writing logs.")
     parser.add_argument("--strict-exit-code", action="store_true", help="Return nonzero when the packet status is not PASS.")
     return parser.parse_args(argv)
 
@@ -724,6 +729,14 @@ def main(argv: list[str]) -> int:
     args = parse_args(argv)
     if args.self_test:
         return run_self_test()
+
+    if args.show_existing_diff:
+        saved_packet = load_json(SUMMARY)
+        if artifact_failed(saved_packet):
+            print(f"Unable to read saved AI workflow packet: {saved_packet.get('_read_error')} ({saved_packet.get('_path')})", file=sys.stderr)
+            return 1
+        print("\n".join(packet_diff_lines(saved_packet, source_label="saved_existing_no_refresh")))
+        return 1 if args.strict_exit_code and saved_packet.get("status") != "PASS" else 0
 
     previous_packet = load_json(SUMMARY)
     packet = build_packet(previous_packet)

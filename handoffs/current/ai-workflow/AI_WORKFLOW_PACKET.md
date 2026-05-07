@@ -1,7 +1,7 @@
 # RiftScan Offline AI Workflow Packet
 
-Created UTC: `2026-05-07T17:27:04Z`
-App version: `riftscan-ai-workflow-packet-v1.5.0`
+Created UTC: `2026-05-07T17:32:05Z`
+App version: `riftscan-ai-workflow-packet-v1.6.0`
 
 ## Result
 
@@ -45,8 +45,8 @@ current_best_missing_count: 0
 
 ```text
 status: UNCHANGED
-previous_created_utc: 2026-05-07T17:26:46Z
-previous_app_version: riftscan-ai-workflow-packet-v1.5.0
+previous_created_utc: 2026-05-07T17:31:48Z
+previous_app_version: riftscan-ai-workflow-packet-v1.6.0
 change_count: 0
 ```
 

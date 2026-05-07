@@ -52,6 +52,8 @@ It intentionally ignores normal refresh noise such as `created_utc`, JSONL row g
 
 Use `python tools/riftscan_ai_workflow_packet.py --print-diff` for a compact terminal view of the current diff after refreshing the packet artifacts.
 
+Use `python tools/riftscan_ai_workflow_packet.py --show-existing-diff` when you need a read-only terminal view of the saved packet diff without refreshing artifacts or appending logs.
+
 ### Status values
 
 | Status | Meaning |
