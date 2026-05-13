@@ -71,7 +71,7 @@ When `status` is `ARCHIVED`, packet generation appends one JSON object to `hando
 
 Packet refresh also writes a compact history-index report and summary at `AI_WORKFLOW_HISTORY_INDEX_REPORT.md` and `ai-workflow-history-index-summary.json` so agents can inspect history health without rerunning the CLI.
 
-Offline Workflow Check validates `previous_packet_archive.status`, verifies archived summary/report files exist when the status is `ARCHIVED`, confirms archived summaries are valid JSON, validates every `history_index` JSONL row, and confirms the index contains the archived summary/report pair.
+Offline Workflow Check validates `previous_packet_archive.status`, verifies archived summary/report files exist when the status is `ARCHIVED`, confirms archived summaries are valid JSON, validates every `history_index` JSONL row, and confirms the index contains the archived summary/report pair. History-index verification also rejects duplicate `archive_stem` values, duplicate archived artifact paths, non-monotonic `indexed_utc`/`source_created_utc` ordering, source timestamps later than index timestamps, artifact filenames that do not include their `archive_stem`, and archived summary `created_utc`/`app_version` values that disagree with the index row.
 
 ### Status values
 

@@ -1,6 +1,6 @@
 # RiftScan Candidate Ledger Consumer Report
 
-Created UTC: `2026-05-07T18:11:15Z`
+Created UTC: `2026-05-13T17:40:46Z`
 App version: `riftscan-candidate-ledger-consumer-v1.1.0`
 
 ## Result
@@ -9,7 +9,7 @@ App version: `riftscan-candidate-ledger-consumer-v1.1.0`
 status: PASS
 mode: offline_candidate_ledger_consumer
 contract_validation: PASS
-safe_candidate_count: 3
+safe_candidate_count: 2
 rejected_candidate_count: 0
 live_action_authorized: False
 ```
@@ -18,10 +18,10 @@ live_action_authorized: False
 
 ```text
 max_age_hours: 24.0
-checked_count: 5
+checked_count: 2
 stale_count: 2
 missing_count: 0
-current_best_stale_count: 0
+current_best_stale_count: 1
 current_best_missing_count: 0
 ```
 
@@ -29,18 +29,17 @@ current_best_missing_count: 0
 
 | Field | Value |
 |---|---|
-| Stable ID | `coordinate::rift-addon-coordinate-candidate-000001::0x2400EA32120` |
-| State | `validated_candidate_historical_checkpoint` |
-| Address | `0x2400EA32120` |
-| Base + offset | `0x2400E970000` + `0xC2120` |
+| Stable ID | `coordinate::rift-addon-coordinate-candidate-000001::0x1DA682DF690::legacy_coord_api_truth` |
+| State | `historical_stale_trace_blocked` |
+| Address | `0x1DA682DF690` |
+| Base + offset | `None` + `None` |
 | Live use authorized | `False` |
-| Next validation | `rerun exact current PID/HWND proof readback before any more live movement` |
+| Next validation | `keep as historical evidence unless explicitly replaying the stale-trace blocker` |
 
 ## Safe candidates
 
 | State | Candidate / kind | Address | Consumer status |
 |---|---|---|---|
-| `validated_candidate_historical_checkpoint` | `rift-addon-coordinate-candidate-000001` | `0x2400EA32120` | `available_offline_only` |
 | `historical_stale_trace_blocked` | `rift-addon-coordinate-candidate-000001` | `0x1DA682DF690` | `available_offline_only` |
 | `historical_candidate_scan_only` | `coordinate_candidate_scan` | `-` | `available_offline_only` |
 
@@ -50,7 +49,8 @@ current_best_missing_count: 0
 
 ## Warnings
 
-- Historical/non-current candidate rows include 2 stale source artifact(s); keep them historical.
+- Current best candidate has stale source artifact paths; require fresh proof before any live use.
+- Historical/non-current candidate rows include 1 stale source artifact(s); keep them historical.
 
 ## Forbidden downstream uses
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # RiftScan script metadata
-# Version: riftscan-ai-workflow-packet-v1.10.0
+# Version: riftscan-ai-workflow-packet-v1.11.0
 # Total character count: 000000
 # Purpose: Build a compact offline AI workflow packet from current RiftScan handoff and gate artifacts.
 # Safety boundary: Reads existing artifacts and local git metadata only. No focus preflight, live capture, input, movement, memory scan/read, process attach, offset validation, RiftReader command execution, or /reloadui.
@@ -16,7 +16,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-APP_VERSION = "riftscan-ai-workflow-packet-v1.10.0"
+APP_VERSION = "riftscan-ai-workflow-packet-v1.11.0"
 REPO_ROOT = Path(__file__).resolve().parents[1]
 OUT_DIR = REPO_ROOT / "handoffs" / "current" / "ai-workflow"
 REPORT = OUT_DIR / "AI_WORKFLOW_PACKET.md"
@@ -177,6 +177,23 @@ def repo_artifact_path(value: Any) -> Path | None:
     return resolved
 
 
+def parse_utc_field(value: Any, label: str, errors: list[str]) -> datetime | None:
+    if not isinstance(value, str) or not value:
+        errors.append(f"{label} is missing")
+        return None
+
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        errors.append(f"{label} is not a valid UTC timestamp: {value}")
+        return None
+
+    if parsed.tzinfo is None:
+        errors.append(f"{label} must include UTC offset or Z")
+        return None
+    return parsed.astimezone(timezone.utc)
+
+
 def read_history_index() -> tuple[list[dict[str, Any]], list[str]]:
     entries: list[dict[str, Any]] = []
     errors: list[str] = []
@@ -208,15 +225,47 @@ def validate_history_index_entries(
     *,
     current_packet: dict[str, Any] | None = None,
     require_files: bool = True,
+    summary_fixtures: dict[str, dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     errors: list[str] = []
     warnings: list[str] = []
     seen_pairs: set[tuple[str, str]] = set()
+    seen_archive_stems: dict[str, str] = {}
+    seen_artifact_paths: dict[str, str] = {}
+    previous_indexed_utc: tuple[str, datetime] | None = None
+    previous_source_created_utc: tuple[str, datetime] | None = None
 
     for index, entry in enumerate(entries, start=1):
         label = f"history_index[{entry.get('_line_number', index)}]"
         if entry.get("schema_version") != "riftscan.ai_workflow_packet_history_index.v1":
             errors.append(f"{label}.schema_version is invalid")
+
+        archive_stem = entry.get("archive_stem")
+        if not isinstance(archive_stem, str) or not archive_stem:
+            errors.append(f"{label}.archive_stem is missing")
+            archive_stem = None
+        elif archive_stem in seen_archive_stems:
+            errors.append(f"{label}.archive_stem duplicates {seen_archive_stems[archive_stem]}: {archive_stem}")
+        else:
+            seen_archive_stems[archive_stem] = label
+
+        indexed_utc = parse_utc_field(entry.get("indexed_utc"), f"{label}.indexed_utc", errors)
+        if indexed_utc is not None:
+            if previous_indexed_utc is not None and indexed_utc < previous_indexed_utc[1]:
+                errors.append(f"{label}.indexed_utc is earlier than {previous_indexed_utc[0]}.indexed_utc")
+            previous_indexed_utc = (label, indexed_utc)
+
+        source_created_utc = parse_utc_field(entry.get("source_created_utc"), f"{label}.source_created_utc", errors)
+        if source_created_utc is not None:
+            if previous_source_created_utc is not None and source_created_utc < previous_source_created_utc[1]:
+                errors.append(f"{label}.source_created_utc is earlier than {previous_source_created_utc[0]}.source_created_utc")
+            previous_source_created_utc = (label, source_created_utc)
+            if indexed_utc is not None and source_created_utc > indexed_utc:
+                errors.append(f"{label}.source_created_utc is later than indexed_utc")
+
+        if not isinstance(entry.get("source_app_version"), str) or not entry.get("source_app_version"):
+            errors.append(f"{label}.source_app_version is missing")
+
         artifacts = entry.get("artifacts")
         if not isinstance(artifacts, dict):
             errors.append(f"{label}.artifacts is missing or not an object")
@@ -233,6 +282,14 @@ def validate_history_index_entries(
             if artifact_path is None:
                 errors.append(f"{label}.artifacts.{artifact_name} is outside the repo")
                 continue
+            artifact_key = str(artifact_path).casefold()
+            artifact_label = f"{label}.artifacts.{artifact_name}"
+            if artifact_key in seen_artifact_paths:
+                errors.append(f"{artifact_label} duplicates {seen_artifact_paths[artifact_key]}: {artifact_text}")
+            else:
+                seen_artifact_paths[artifact_key] = artifact_label
+            if archive_stem and archive_stem not in artifact_path.name:
+                errors.append(f"{artifact_label} filename does not include archive_stem {archive_stem}: {artifact_text}")
             if require_files and not artifact_path.is_file():
                 errors.append(f"{label}.artifacts.{artifact_name} does not exist: {artifact_text}")
 
@@ -244,10 +301,20 @@ def validate_history_index_entries(
 
         summary_text = pair_values.get("summary")
         summary_path = repo_artifact_path(summary_text) if summary_text else None
-        if require_files and summary_path and summary_path.is_file():
+        loaded_summary = summary_fixtures.get(summary_text) if summary_fixtures and summary_text in summary_fixtures else None
+        loaded: dict[str, Any] | None = None
+        if loaded_summary is not None:
+            loaded = loaded_summary
+        elif require_files and summary_path and summary_path.is_file():
             loaded = load_json(summary_path)
+        if loaded is not None:
             if artifact_failed(loaded):
                 errors.append(f"{label}.artifacts.summary is not valid JSON object: {loaded.get('_read_error')}")
+            else:
+                if loaded.get("created_utc") != entry.get("source_created_utc"):
+                    errors.append(f"{label}.artifacts.summary created_utc does not match source_created_utc")
+                if loaded.get("app_version") != entry.get("source_app_version"):
+                    errors.append(f"{label}.artifacts.summary app_version does not match source_app_version")
 
     current_archive = current_packet.get("previous_packet_archive") if isinstance(current_packet, dict) and isinstance(current_packet.get("previous_packet_archive"), dict) else {}
     archive_artifacts = current_archive.get("artifacts") if isinstance(current_archive.get("artifacts"), dict) else {}
@@ -1146,7 +1213,10 @@ def run_self_test() -> int:
             "archive_stem": "fixture-stem",
             "source_created_utc": "2026-01-01T00:00:00Z",
             "source_app_version": "fixture-version",
-            "artifacts": {"summary": "handoffs/current/ai-workflow/history/summary.json", "report": "handoffs/current/ai-workflow/history/report.md"},
+            "artifacts": {
+                "summary": "handoffs/current/ai-workflow/history/summary-fixture-stem.json",
+                "report": "handoffs/current/ai-workflow/history/report-fixture-stem.md",
+            },
         },
         indexed_utc="2026-01-01T00:00:01Z",
     )
@@ -1162,7 +1232,18 @@ def run_self_test() -> int:
             "artifacts": history_entry["artifacts"],
         }
     }
-    history_verify = validate_history_index_entries([history_entry], current_packet=history_packet, require_files=False)
+    history_summary_fixtures = {
+        history_entry["artifacts"]["summary"]: {
+            "created_utc": "2026-01-01T00:00:00Z",
+            "app_version": "fixture-version",
+        }
+    }
+    history_verify = validate_history_index_entries(
+        [history_entry],
+        current_packet=history_packet,
+        require_files=False,
+        summary_fixtures=history_summary_fixtures,
+    )
     if history_verify.get("status") != "PASS" or history_verify.get("current_archive_represented") is not True:
         failures.append("history_index_verify_valid_fixture_failed")
     bad_history_verify = validate_history_index_entries(
@@ -1171,6 +1252,75 @@ def run_self_test() -> int:
     )
     if bad_history_verify.get("status") != "FAIL":
         failures.append("history_index_verify_bad_fixture_did_not_fail")
+    duplicate_stem_entry = build_history_index_entry(
+        {
+            "archive_stem": "fixture-stem",
+            "source_created_utc": "2026-01-01T00:00:01Z",
+            "source_app_version": "fixture-version",
+            "artifacts": {
+                "summary": "handoffs/current/ai-workflow/history/summary-fixture-stem-2.json",
+                "report": "handoffs/current/ai-workflow/history/report-fixture-stem-2.md",
+            },
+        },
+        indexed_utc="2026-01-01T00:00:02Z",
+    )
+    duplicate_stem_verify = validate_history_index_entries([history_entry, duplicate_stem_entry], require_files=False)
+    if not any("archive_stem duplicates" in error for error in duplicate_stem_verify.get("errors", [])):
+        failures.append("history_index_duplicate_archive_stem_not_detected")
+    duplicate_artifact_entry = build_history_index_entry(
+        {
+            "archive_stem": "fixture-stem-duplicate-path",
+            "source_created_utc": "2026-01-01T00:00:01Z",
+            "source_app_version": "fixture-version",
+            "artifacts": {
+                "summary": history_entry["artifacts"]["summary"],
+                "report": "handoffs/current/ai-workflow/history/report-fixture-stem-duplicate-path.md",
+            },
+        },
+        indexed_utc="2026-01-01T00:00:02Z",
+    )
+    duplicate_artifact_verify = validate_history_index_entries([history_entry, duplicate_artifact_entry], require_files=False)
+    if not any("duplicates history_index" in error and ".artifacts.summary" in error for error in duplicate_artifact_verify.get("errors", [])):
+        failures.append("history_index_duplicate_artifact_path_not_detected")
+    non_monotonic_entry = build_history_index_entry(
+        {
+            "archive_stem": "older-fixture-stem",
+            "source_created_utc": "2025-12-31T23:59:58Z",
+            "source_app_version": "fixture-version",
+            "artifacts": {
+                "summary": "handoffs/current/ai-workflow/history/summary-older-fixture-stem.json",
+                "report": "handoffs/current/ai-workflow/history/report-older-fixture-stem.md",
+            },
+        },
+        indexed_utc="2025-12-31T23:59:59Z",
+    )
+    non_monotonic_verify = validate_history_index_entries([history_entry, non_monotonic_entry], require_files=False)
+    if not any("indexed_utc is earlier" in error for error in non_monotonic_verify.get("errors", [])):
+        failures.append("history_index_non_monotonic_indexed_utc_not_detected")
+    mismatch_summary_verify = validate_history_index_entries(
+        [history_entry],
+        require_files=False,
+        summary_fixtures={
+            history_entry["artifacts"]["summary"]: {
+                "created_utc": "2026-01-01T00:00:00Z",
+                "app_version": "wrong-version",
+            }
+        },
+    )
+    if not any("app_version does not match" in error for error in mismatch_summary_verify.get("errors", [])):
+        failures.append("history_index_summary_app_version_mismatch_not_detected")
+    mismatch_created_verify = validate_history_index_entries(
+        [history_entry],
+        require_files=False,
+        summary_fixtures={
+            history_entry["artifacts"]["summary"]: {
+                "created_utc": "2025-12-31T23:59:59Z",
+                "app_version": "fixture-version",
+            }
+        },
+    )
+    if not any("created_utc does not match" in error for error in mismatch_created_verify.get("errors", [])):
+        failures.append("history_index_summary_created_utc_mismatch_not_detected")
     history_report = build_history_report_data(history_packet, created_utc="2026-01-01T00:00:02Z")
     history_report["history_index"] = {
         "path": rel(HISTORY_INDEX),

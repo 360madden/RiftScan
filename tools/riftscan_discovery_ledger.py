@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # RiftScan script metadata
-# Version: riftscan-discovery-ledger-v1.2.0
+# Version: riftscan-discovery-ledger-v1.2.1
 # Total character count: 000000
 # Purpose: Build and validate an offline, replayable discovery ledger from stored RiftScan/RiftReader artifacts.
 # Safety boundary: Reads existing JSON/Markdown/session artifacts only. No RIFT focus preflight, live capture, input, movement, memory scan/read, process attach, offset validation, RiftReader command execution, or /reloadui.
@@ -14,7 +14,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-APP_VERSION = "riftscan-discovery-ledger-v1.2.0"
+APP_VERSION = "riftscan-discovery-ledger-v1.2.1"
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_RIFTREADER_ROOT = Path(r"C:\RIFT MODDING\RiftReader")
 OUT_DIR = REPO_ROOT / "handoffs" / "current" / "discovery-ledger"
@@ -131,11 +131,40 @@ def get_nested(root: dict[str, Any], *keys: str) -> Any:
     return current
 
 
+def first_present(mapping: dict[str, Any], *keys: str) -> Any:
+    for key in keys:
+        value = mapping.get(key)
+        if value is not None and (not isinstance(value, str) or value.strip()):
+            return value
+    return None
+
+
+def same_text(left: Any, right: Any) -> bool:
+    return isinstance(left, str) and isinstance(right, str) and left.strip().lower() == right.strip().lower()
+
+
 def first_candidate(match_result: dict[str, Any]) -> dict[str, Any]:
     candidates = match_result.get("candidates")
     if isinstance(candidates, list) and candidates and isinstance(candidates[0], dict):
         return candidates[0]
     return {}
+
+
+def preferred_candidate(match_result: dict[str, Any], pointer_candidate: dict[str, Any], pointer_anchor: dict[str, Any]) -> dict[str, Any]:
+    candidates = [candidate for candidate in match_result.get("candidates", []) if isinstance(candidate, dict)] if isinstance(match_result.get("candidates"), list) else []
+    if not candidates:
+        return {}
+
+    pointer_candidate_id = pointer_candidate.get("candidateId")
+    pointer_address = pointer_candidate.get("sourceAbsoluteAddressHex") or pointer_anchor.get("candidateAddressHex")
+    for candidate in candidates:
+        if same_text(candidate.get("candidate_id"), pointer_candidate_id):
+            return candidate
+    for candidate in candidates:
+        candidate_address = first_present(candidate, "source_absolute_address_hex", "absolute_address_hex")
+        if same_text(candidate_address, pointer_address):
+            return candidate
+    return candidates[0]
 
 
 def candidate_from_match(
@@ -144,17 +173,17 @@ def candidate_from_match(
     riftreader_pointer_path: Path | None,
     riftreader_pointer: dict[str, Any],
 ) -> dict[str, Any] | None:
-    candidate = first_candidate(match_result)
-    if not candidate:
-        return None
-
-    address = candidate.get("source_absolute_address_hex")
     pointer_candidate = riftreader_pointer.get("riftscanCandidateSource") if isinstance(riftreader_pointer.get("riftscanCandidateSource"), dict) else {}
     pointer_gate = riftreader_pointer.get("movementGate") if isinstance(riftreader_pointer.get("movementGate"), dict) else {}
     pointer_latest = riftreader_pointer.get("latestValidation") if isinstance(riftreader_pointer.get("latestValidation"), dict) else {}
     pointer_anchor = riftreader_pointer.get("proofAnchorCache") if isinstance(riftreader_pointer.get("proofAnchorCache"), dict) else {}
+    candidate = preferred_candidate(match_result, pointer_candidate, pointer_anchor)
+    if not candidate:
+        return None
+
+    address = first_present(candidate, "source_absolute_address_hex", "absolute_address_hex")
     pointer_address = pointer_candidate.get("sourceAbsoluteAddressHex") or pointer_anchor.get("candidateAddressHex")
-    pointer_matches = bool(address and pointer_address and str(address).lower() == str(pointer_address).lower())
+    pointer_matches = same_text(address, pointer_address)
 
     proof_green = (
         pointer_matches
@@ -193,11 +222,11 @@ def candidate_from_match(
         "claim_level": "validated_candidate" if proof_green else "candidate",
         "proof_level": proof_level,
         "source": "riftscan_addon_coordinate_match",
-        "source_session_id": match_result.get("session_id"),
-        "source_session_path": match_result.get("session_path"),
-        "source_region_id": candidate.get("source_region_id"),
-        "source_base_address_hex": candidate.get("source_base_address_hex"),
-        "source_offset_hex": candidate.get("source_offset_hex"),
+        "source_session_id": match_result.get("session_id") or candidate.get("session_id"),
+        "source_session_path": match_result.get("session_path") or candidate.get("session_path"),
+        "source_region_id": first_present(candidate, "source_region_id", "region_id"),
+        "source_base_address_hex": first_present(candidate, "source_base_address_hex", "base_address_hex"),
+        "source_offset_hex": first_present(candidate, "source_offset_hex", "offset_hex"),
         "source_absolute_address_hex": address,
         "axis_order": candidate.get("axis_order"),
         "support_count": candidate.get("support_count"),
@@ -924,6 +953,52 @@ def run_self_test() -> int:
         failures.append(f"unexpected_state={candidate.get('state')}")
     elif candidate.get("ledger_live_movement_authorized") is not False:
         failures.append("ledger_must_not_authorize_live_movement")
+
+    alias_match = {
+        "candidates": [
+            {
+                "candidate_id": "api-coord-hit-000001",
+                "region_id": "0x2000",
+                "base_address_hex": "0x2000",
+                "offset_hex": "0x10",
+                "absolute_address_hex": "0x2010",
+                "axis_order": "xyz",
+                "support_count": 1,
+                "best_max_abs_distance": 0.05,
+                "best_memory_x": 1.0,
+                "best_memory_y": 2.0,
+                "best_memory_z": 3.0,
+                "best_addon_x": 1.0,
+                "best_addon_y": 2.0,
+                "best_addon_z": 3.0,
+            },
+            {
+                "candidate_id": "api-coord-hit-000005",
+                "session_id": "fixture-api-bootstrap",
+                "region_id": "0x3000",
+                "base_address_hex": "0x3000",
+                "offset_hex": "0x80",
+                "absolute_address_hex": "0x3080",
+                "axis_order": "xyz",
+                "support_count": 1,
+                "best_max_abs_distance": 0.05,
+                "best_memory_x": 4.0,
+                "best_memory_y": 5.0,
+                "best_memory_z": 6.0,
+                "best_addon_x": 4.0,
+                "best_addon_y": 5.0,
+                "best_addon_z": 6.0,
+            },
+        ]
+    }
+    alias_pointer = dict(fake_pointer)
+    alias_pointer["riftscanCandidateSource"] = {"candidateId": "api-coord-hit-000005", "sourceAbsoluteAddressHex": "0x3080"}
+    alias_pointer["proofAnchorCache"] = {"candidateAddressHex": "0x3080", "proofMethod": "no-ce-riftscan-reference-multisample"}
+    alias_candidate = candidate_from_match(Path("fixture-alias-match.json"), alias_match, Path("fixture-pointer.json"), alias_pointer)
+    if not alias_candidate or alias_candidate.get("candidate_id") != "api-coord-hit-000005":
+        failures.append("alias_candidate_pointer_selection_failed")
+    elif alias_candidate.get("source_absolute_address_hex") != "0x3080" or alias_candidate.get("source_base_address_hex") != "0x3000":
+        failures.append("alias_candidate_address_field_fallback_failed")
 
     fake_legacy = {
         "coordinate_truth_level": "current_api_plus_readonly_memory_candidate",

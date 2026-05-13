@@ -1,10 +1,10 @@
 {
   "ai_resume_prompt": "Resume RiftScan in offline AI workflow mode. Read handoffs/current/ai-workflow/AI_WORKFLOW_PACKET.md, then the Candidate Ledger Consumer and Discovery Ledger artifacts. Do not touch live RIFT, focus preflight, capture, process attach/memory reads, movement/input, RiftReader commands, offset validation, or /reloadui unless the user explicitly authorizes live work.",
-  "app_version": "riftscan-ai-workflow-packet-v1.11.0",
+  "app_version": "riftscan-ai-workflow-packet-v1.10.0",
   "blockers": [],
   "candidate_ledger_consumer": {
     "artifact_age": {
-      "checked_count": 4,
+      "checked_count": 5,
       "current_best_missing_count": 0,
       "current_best_stale_count": 0,
       "max_age_hours": 24.0,
@@ -17,7 +17,7 @@
     "safe_candidate_count": 3,
     "status": "PASS"
   },
-  "created_utc": "2026-05-09T01:58:53Z",
+  "created_utc": "2026-05-07T18:11:22Z",
   "current_best_candidate": {
     "allowed_downstream_uses": [
       "offline_review",
@@ -26,9 +26,9 @@
       "future_validation_planning"
     ],
     "axis_order": "xyz",
-    "best_max_abs_distance": 0.05,
-    "candidate_id": "api-coord-hit-000005",
-    "claim_level": "candidate",
+    "best_max_abs_distance": 0,
+    "candidate_id": "rift-addon-coordinate-candidate-000001",
+    "claim_level": "validated_candidate",
     "consumer_status": "available_offline_only",
     "forbidden_downstream_uses": [
       "movement",
@@ -42,20 +42,21 @@
     ],
     "kind": "coordinate_vec3",
     "live_use_authorized": false,
-    "next_validation_step": "pair with current RiftReader no-CE readback/promotion before movement",
-    "proof_level": "riftscan_addon_coordinate_match_candidate",
+    "next_validation_step": "rerun exact current PID/HWND proof readback before any more live movement",
+    "proof_level": "riftscan_candidate_plus_riftreader_no_ce_multisample_and_post_readback",
     "source": "riftscan_addon_coordinate_match",
-    "source_absolute_address_hex": "0x24A01358880",
+    "source_absolute_address_hex": "0x2400EA32120",
     "source_artifacts": [
-      "C:\\RIFT MODDING\\RiftReader\\scripts\\captures\\reacquire-currentpid-49504-20260508-211304\\api-bootstrap-vec3-candidates.json",
-      "C:\\RIFT MODDING\\RiftReader\\docs\\recovery\\current-proof-anchor-readback.json"
+      "reports/generated/codex-current-coord-region-passive-20260506-230940-addon-coordinate-matches.json",
+      "C:\\RIFT MODDING\\RiftReader\\docs\\recovery\\current-proof-anchor-readback.json",
+      "C:\\RIFT MODDING\\RiftReader\\scripts\\captures\\proof-anchor-currentpid-47560-readback-summary-20260507-121811.json"
     ],
-    "source_base_address_hex": "0x24A01350000",
+    "source_base_address_hex": "0x2400E970000",
     "source_index": 1,
-    "source_offset_hex": "0x8880",
-    "stable_id": "coordinate::api-coord-hit-000005::0x24A01358880",
-    "state": "candidate",
-    "support_count": 1
+    "source_offset_hex": "0xC2120",
+    "stable_id": "coordinate::rift-addon-coordinate-candidate-000001::0x2400EA32120",
+    "state": "validated_candidate_historical_checkpoint",
+    "support_count": 3
   },
   "discovery_ledger": {
     "candidate_count": 3,
@@ -77,10 +78,10 @@
       "origin_main_parity": "pass",
       "status": "pass"
     },
-    "head": "85471bd0b698ba6de55176562a0d4243c90b2615",
-    "log_oneline_5": "85471bd Add one-hour milestone resume handoff\na6b4300 Add offline AI workflow resume handoff\nfced91d Generate AI packet history report\n60a8e5b Add AI packet history index view\naad6f11 Validate full AI packet history index",
+    "head": "60a8e5b1066a4358a91ff0df77eb8604e93f965f",
+    "log_oneline_5": "60a8e5b Add AI packet history index view\naad6f11 Validate full AI packet history index\n237d9f2 Index AI workflow packet history\nd0d0e92 Validate AI packet archive offline\n6bef855 Archive AI workflow packet history",
     "origin_main_left_right_count": "0\t0",
-    "status_short_branch": "## main...origin/main\n M docs/ai-workflow-packet-schema.md\n M handoffs/current/ai-workflow/AI_WORKFLOW_HISTORY_INDEX_REPORT.md\n M handoffs/current/ai-workflow/AI_WORKFLOW_PACKET.md\n M handoffs/current/ai-workflow/ai-workflow-history-index-summary.json\n M handoffs/current/ai-workflow/ai-workflow-log.jsonl\n M handoffs/current/ai-workflow/ai-workflow-summary.json\n M handoffs/current/ai-workflow/history/index.jsonl\n M handoffs/current/candidate-ledger-consumer/CANDIDATE_LEDGER_CONSUMER_REPORT.md\n M handoffs/current/candidate-ledger-consumer/candidate-ledger-consumer-log.jsonl\n M handoffs/current/candidate-ledger-consumer/candidate-ledger-consumer-summary.json\n M handoffs/current/discovery-ledger/DISCOVERY_LEDGER_REPORT.md\n M handoffs/current/discovery-ledger/candidate_ledger.jsonl\n M handoffs/current/discovery-ledger/discovery-ledger-log.jsonl\n M handoffs/current/discovery-ledger/discovery-ledger-summary.json\n M handoffs/current/offline-workflow-check/OFFLINE_WORKFLOW_CHECK_REPORT.md\n M handoffs/current/offline-workflow-check/offline-workflow-check-log.jsonl\n M handoffs/current/offline-workflow-check/offline-workflow-check-summary.json\n M tools/riftscan_ai_workflow_packet.py\n M tools/riftscan_discovery_ledger.py\n?? handoffs/current/ai-workflow/history/AI_WORKFLOW_PACKET-2026-05-07T18-11-22Z-riftscan-ai-workflow-packet-v1-10-0.md\n?? handoffs/current/ai-workflow/history/ai-workflow-summary-2026-05-07T18-11-22Z-riftscan-ai-workflow-packet-v1-10-0.json"
+    "status_short_branch": "## main...origin/main\n M docs/ai-workflow-packet-schema.md\n M docs/helper-tooling-policy.md\n M handoffs/current/ai-workflow/AI_WORKFLOW_PACKET.md\n M handoffs/current/ai-workflow/ai-workflow-log.jsonl\n M handoffs/current/ai-workflow/ai-workflow-summary.json\n M handoffs/current/ai-workflow/history/index.jsonl\n M handoffs/current/candidate-ledger-consumer/CANDIDATE_LEDGER_CONSUMER_REPORT.md\n M handoffs/current/candidate-ledger-consumer/candidate-ledger-consumer-log.jsonl\n M handoffs/current/candidate-ledger-consumer/candidate-ledger-consumer-summary.json\n M handoffs/current/capture-plan-check/CAPTURE_PLAN_CHECK_REPORT.md\n M handoffs/current/capture-plan-check/capture-plan-check-log.jsonl\n M handoffs/current/capture-plan-check/capture-plan-check-summary.json\n M handoffs/current/discovery-ledger/DISCOVERY_LEDGER_REPORT.md\n M handoffs/current/discovery-ledger/discovery-ledger-log.jsonl\n M handoffs/current/discovery-ledger/discovery-ledger-summary.json\n M handoffs/current/movement-test-readiness/MOVEMENT_TEST_READINESS_REPORT.md\n M handoffs/current/movement-test-readiness/movement-test-readiness-log.jsonl\n M handoffs/current/movement-test-readiness/movement-test-readiness-summary.json\n M handoffs/current/offline-workflow-check/OFFLINE_WORKFLOW_CHECK_REPORT.md\n M handoffs/current/offline-workflow-check/offline-workflow-check-log.jsonl\n M handoffs/current/offline-workflow-check/offline-workflow-check-summary.json\n M handoffs/current/operator/RIFTSCAN_OPERATOR_HANDOFF.md\n M handoffs/current/operator/operator-current-gate-summary.json\n M tools/riftscan_ai_workflow_packet.py\n M tools/riftscan_offline_workflow_check.py\n?? handoffs/current/ai-workflow/AI_WORKFLOW_HISTORY_INDEX_REPORT.md\n?? handoffs/current/ai-workflow/ai-workflow-history-index-summary.json\n?? handoffs/current/ai-workflow/history/AI_WORKFLOW_PACKET-2026-05-07T18-03-05Z-riftscan-ai-workflow-packet-v1-9-0.md\n?? handoffs/current/ai-workflow/history/ai-workflow-summary-2026-05-07T18-03-05Z-riftscan-ai-workflow-packet-v1-9-0.json"
   },
   "mode": "offline_ai_workflow",
   "offline_workflow_check": {
@@ -97,15 +98,15 @@
   },
   "packet_history_index": {
     "entry": {
-      "archive_stem": "2026-05-09T01-50-21Z-riftscan-ai-workflow-packet-v1-11-0",
+      "archive_stem": "2026-05-07T18-10-54Z-riftscan-ai-workflow-packet-v1-10-0",
       "artifacts": {
-        "report": "handoffs/current/ai-workflow/history/AI_WORKFLOW_PACKET-2026-05-09T01-50-21Z-riftscan-ai-workflow-packet-v1-11-0.md",
-        "summary": "handoffs/current/ai-workflow/history/ai-workflow-summary-2026-05-09T01-50-21Z-riftscan-ai-workflow-packet-v1-11-0.json"
+        "report": "handoffs/current/ai-workflow/history/AI_WORKFLOW_PACKET-2026-05-07T18-10-54Z-riftscan-ai-workflow-packet-v1-10-0.md",
+        "summary": "handoffs/current/ai-workflow/history/ai-workflow-summary-2026-05-07T18-10-54Z-riftscan-ai-workflow-packet-v1-10-0.json"
       },
-      "indexed_utc": "2026-05-09T01:58:53Z",
+      "indexed_utc": "2026-05-07T18:11:22Z",
       "schema_version": "riftscan.ai_workflow_packet_history_index.v1",
-      "source_app_version": "riftscan-ai-workflow-packet-v1.11.0",
-      "source_created_utc": "2026-05-09T01:50:21Z"
+      "source_app_version": "riftscan-ai-workflow-packet-v1.10.0",
+      "source_created_utc": "2026-05-07T18:10:54Z"
     },
     "path": "handoffs/current/ai-workflow/history/index.jsonl",
     "status": "APPENDED"
@@ -120,38 +121,27 @@
     "summary": "handoffs/current/ai-workflow/ai-workflow-summary.json"
   },
   "previous_packet_archive": {
-    "archive_stem": "2026-05-09T01-50-21Z-riftscan-ai-workflow-packet-v1-11-0",
+    "archive_stem": "2026-05-07T18-10-54Z-riftscan-ai-workflow-packet-v1-10-0",
     "artifacts": {
-      "report": "handoffs/current/ai-workflow/history/AI_WORKFLOW_PACKET-2026-05-09T01-50-21Z-riftscan-ai-workflow-packet-v1-11-0.md",
-      "summary": "handoffs/current/ai-workflow/history/ai-workflow-summary-2026-05-09T01-50-21Z-riftscan-ai-workflow-packet-v1-11-0.json"
+      "report": "handoffs/current/ai-workflow/history/AI_WORKFLOW_PACKET-2026-05-07T18-10-54Z-riftscan-ai-workflow-packet-v1-10-0.md",
+      "summary": "handoffs/current/ai-workflow/history/ai-workflow-summary-2026-05-07T18-10-54Z-riftscan-ai-workflow-packet-v1-10-0.json"
     },
     "history_dir": "handoffs/current/ai-workflow/history",
     "history_index": "handoffs/current/ai-workflow/history/index.jsonl",
-    "source_app_version": "riftscan-ai-workflow-packet-v1.11.0",
-    "source_created_utc": "2026-05-09T01:50:21Z",
+    "source_app_version": "riftscan-ai-workflow-packet-v1.10.0",
+    "source_created_utc": "2026-05-07T18:10:54Z",
     "status": "ARCHIVED"
   },
   "previous_packet_diff": {
-    "change_count": 2,
-    "changes": [
-      {
-        "after": "coordinate::api-coord-hit-000005::0x24A01358880",
-        "before": "coordinate::rift-addon-coordinate-candidate-000001::0x2400EA32120",
-        "field": "current_best_stable_id"
-      },
-      {
-        "after": "0x24A01358880",
-        "before": "0x2400EA32120",
-        "field": "current_best_address"
-      }
-    ],
-    "current_app_version": "riftscan-ai-workflow-packet-v1.11.0",
-    "current_created_utc": "2026-05-09T01:58:53Z",
-    "previous_app_version": "riftscan-ai-workflow-packet-v1.11.0",
-    "previous_created_utc": "2026-05-09T01:50:21Z",
+    "change_count": 0,
+    "changes": [],
+    "current_app_version": "riftscan-ai-workflow-packet-v1.10.0",
+    "current_created_utc": "2026-05-07T18:11:22Z",
+    "previous_app_version": "riftscan-ai-workflow-packet-v1.10.0",
+    "previous_created_utc": "2026-05-07T18:10:54Z",
     "previous_packet_available": true,
     "schema_version": "riftscan.ai_workflow_packet_diff.v1",
-    "status": "CHANGED"
+    "status": "UNCHANGED"
   },
   "previous_packet_diff_compared_fields": [
     {

@@ -1,19 +1,19 @@
 {
-  "app_version": "riftscan-ai-workflow-packet-v1.10.0",
-  "created_utc": "2026-05-07T18:11:22Z",
+  "app_version": "riftscan-ai-workflow-packet-v1.11.0",
+  "created_utc": "2026-05-09T01:58:53Z",
   "current_packet": {
-    "app_version": "riftscan-ai-workflow-packet-v1.10.0",
-    "created_utc": "2026-05-07T18:11:22Z",
+    "app_version": "riftscan-ai-workflow-packet-v1.11.0",
+    "created_utc": "2026-05-09T01:58:53Z",
     "previous_packet_archive": {
-      "archive_stem": "2026-05-07T18-10-54Z-riftscan-ai-workflow-packet-v1-10-0",
+      "archive_stem": "2026-05-09T01-50-21Z-riftscan-ai-workflow-packet-v1-11-0",
       "artifacts": {
-        "report": "handoffs/current/ai-workflow/history/AI_WORKFLOW_PACKET-2026-05-07T18-10-54Z-riftscan-ai-workflow-packet-v1-10-0.md",
-        "summary": "handoffs/current/ai-workflow/history/ai-workflow-summary-2026-05-07T18-10-54Z-riftscan-ai-workflow-packet-v1-10-0.json"
+        "report": "handoffs/current/ai-workflow/history/AI_WORKFLOW_PACKET-2026-05-09T01-50-21Z-riftscan-ai-workflow-packet-v1-11-0.md",
+        "summary": "handoffs/current/ai-workflow/history/ai-workflow-summary-2026-05-09T01-50-21Z-riftscan-ai-workflow-packet-v1-11-0.json"
       },
       "history_dir": "handoffs/current/ai-workflow/history",
       "history_index": "handoffs/current/ai-workflow/history/index.jsonl",
-      "source_app_version": "riftscan-ai-workflow-packet-v1.10.0",
-      "source_created_utc": "2026-05-07T18:10:54Z",
+      "source_app_version": "riftscan-ai-workflow-packet-v1.11.0",
+      "source_created_utc": "2026-05-09T01:50:21Z",
       "status": "ARCHIVED"
     },
     "report": "handoffs/current/ai-workflow/AI_WORKFLOW_PACKET.md",
@@ -98,19 +98,41 @@
         "line_number": 7,
         "source_app_version": "riftscan-ai-workflow-packet-v1.10.0",
         "source_created_utc": "2026-05-07T18:10:54Z"
+      },
+      {
+        "archive_stem": "2026-05-07T18-11-22Z-riftscan-ai-workflow-packet-v1-10-0",
+        "artifacts": {
+          "report": "handoffs/current/ai-workflow/history/AI_WORKFLOW_PACKET-2026-05-07T18-11-22Z-riftscan-ai-workflow-packet-v1-10-0.md",
+          "summary": "handoffs/current/ai-workflow/history/ai-workflow-summary-2026-05-07T18-11-22Z-riftscan-ai-workflow-packet-v1-10-0.json"
+        },
+        "indexed_utc": "2026-05-09T01:50:21Z",
+        "line_number": 8,
+        "source_app_version": "riftscan-ai-workflow-packet-v1.10.0",
+        "source_created_utc": "2026-05-07T18:11:22Z"
+      },
+      {
+        "archive_stem": "2026-05-09T01-50-21Z-riftscan-ai-workflow-packet-v1-11-0",
+        "artifacts": {
+          "report": "handoffs/current/ai-workflow/history/AI_WORKFLOW_PACKET-2026-05-09T01-50-21Z-riftscan-ai-workflow-packet-v1-11-0.md",
+          "summary": "handoffs/current/ai-workflow/history/ai-workflow-summary-2026-05-09T01-50-21Z-riftscan-ai-workflow-packet-v1-11-0.json"
+        },
+        "indexed_utc": "2026-05-09T01:58:53Z",
+        "line_number": 9,
+        "source_app_version": "riftscan-ai-workflow-packet-v1.11.0",
+        "source_created_utc": "2026-05-09T01:50:21Z"
       }
     ],
-    "entry_count": 7,
+    "entry_count": 9,
     "latest_entry": {
-      "archive_stem": "2026-05-07T18-10-54Z-riftscan-ai-workflow-packet-v1-10-0",
+      "archive_stem": "2026-05-09T01-50-21Z-riftscan-ai-workflow-packet-v1-11-0",
       "artifacts": {
-        "report": "handoffs/current/ai-workflow/history/AI_WORKFLOW_PACKET-2026-05-07T18-10-54Z-riftscan-ai-workflow-packet-v1-10-0.md",
-        "summary": "handoffs/current/ai-workflow/history/ai-workflow-summary-2026-05-07T18-10-54Z-riftscan-ai-workflow-packet-v1-10-0.json"
+        "report": "handoffs/current/ai-workflow/history/AI_WORKFLOW_PACKET-2026-05-09T01-50-21Z-riftscan-ai-workflow-packet-v1-11-0.md",
+        "summary": "handoffs/current/ai-workflow/history/ai-workflow-summary-2026-05-09T01-50-21Z-riftscan-ai-workflow-packet-v1-11-0.json"
       },
-      "indexed_utc": "2026-05-07T18:11:22Z",
-      "line_number": 7,
-      "source_app_version": "riftscan-ai-workflow-packet-v1.10.0",
-      "source_created_utc": "2026-05-07T18:10:54Z"
+      "indexed_utc": "2026-05-09T01:58:53Z",
+      "line_number": 9,
+      "source_app_version": "riftscan-ai-workflow-packet-v1.11.0",
+      "source_created_utc": "2026-05-09T01:50:21Z"
     },
     "path": "handoffs/current/ai-workflow/history/index.jsonl"
   },
@@ -135,7 +157,7 @@
   "status": "PASS",
   "verification": {
     "current_archive_represented": true,
-    "entry_count": 7,
+    "entry_count": 9,
     "error_count": 0,
     "errors": [],
     "path": "handoffs/current/ai-workflow/history/index.jsonl",

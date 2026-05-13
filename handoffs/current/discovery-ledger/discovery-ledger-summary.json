@@ -1,20 +1,20 @@
 {
-  "app_version": "riftscan-discovery-ledger-v1.2.0",
+  "app_version": "riftscan-discovery-ledger-v1.2.1",
   "blockers": [
     "offline ledger cannot authorize live movement or claim current window focus",
     "RiftReader pointer says fresh preflight is required before more movement",
     "older Coord API Truth artifact remains stale-trace-blocked",
     "RiftScan Movement Execution Gate artifact is blocked/stale relative to newer RiftReader proof lane"
   ],
-  "candidate_count": 3,
+  "candidate_count": 2,
   "candidate_ledger_contract_validation": {
-    "app_version": "riftscan-discovery-ledger-v1.2.0",
-    "candidate_count": 3,
-    "created_utc": "2026-05-07T18:11:15Z",
+    "app_version": "riftscan-discovery-ledger-v1.2.1",
+    "candidate_count": 2,
+    "created_utc": "2026-05-13T17:40:45Z",
     "display_status": "PASS",
     "error_count": 0,
     "issues": [],
-    "line_count": 3,
+    "line_count": 2,
     "path": "handoffs/current/discovery-ledger/candidate_ledger.jsonl",
     "safety": {
       "capture_started": false,
@@ -33,85 +33,6 @@
     "warning_count": 0
   },
   "candidates": [
-    {
-      "axis_order": "xyz",
-      "best_addon_xyz": [
-        7436.57568359375,
-        885.2205810546875,
-        3056.736572265625
-      ],
-      "best_max_abs_distance": 0,
-      "best_memory_xyz": [
-        7436.57568359375,
-        885.2205810546875,
-        3056.736572265625
-      ],
-      "candidate_id": "rift-addon-coordinate-candidate-000001",
-      "claim_level": "validated_candidate",
-      "kind": "coordinate_vec3",
-      "latest_validation": {
-        "current_coordinate": {
-          "recordedAtUtc": "2026-05-07T16:18:16.0931490Z",
-          "x": 7437.462890625,
-          "y": 885.2191772460938,
-          "z": 3055.73779296875
-        },
-        "generated_at_utc": "2026-05-07T16:18:16.435533+00:00",
-        "movement_allowed_at_capture_time": true,
-        "movement_sent_by_readback": false,
-        "no_cheat_engine": true,
-        "proof_anchor_max_age_seconds": null,
-        "readback_recorded_sample_count": null,
-        "readback_total_region_read_failures": null,
-        "stable_across_readback_samples": null,
-        "status": "valid"
-      },
-      "ledger_live_movement_authorized": false,
-      "movement_evidence": {
-        "active_movement_input_resumed_by_user": true,
-        "currently_requires_revalidation_before_more_movement": true,
-        "latest_forward_series_completed_pulse_count": 3,
-        "latest_forward_series_requested_pulse_count": 3,
-        "latest_forward_series_status": "passed-python-forward-series-3x250",
-        "latest_forward_smoke_status": "passed-python-orchestrator-forward250",
-        "proof_gated_pulse_status": "passed",
-        "requires_fresh_preflight_immediately_before_movement": true
-      },
-      "next_validation_step": "rerun exact current PID/HWND proof readback before any more live movement",
-      "observation_support_count": 1,
-      "proof_anchor_cache": {
-        "canonical_coord_source_kind": "riftscan-reference-validated-candidate",
-        "generated_at_utc": "2026-05-07T16:03:01.4741365+00:00",
-        "max_delta_error": 0.0063136718749774445,
-        "max_reference_planar_displacement": 2.4753908943841862,
-        "pose_count": 3,
-        "proof_method": "no-ce-riftscan-reference-multisample",
-        "proof_validation_status": "validated"
-      },
-      "proof_level": "riftscan_candidate_plus_riftreader_no_ce_multisample_and_post_readback",
-      "riftreader_pointer_matched_candidate": true,
-      "riftreader_status": "valid-after-run-progress-checkpoint-proofonly",
-      "riftscan_validation_status": "candidate_unverified",
-      "source": "riftscan_addon_coordinate_match",
-      "source_absolute_address_hex": "0x2400EA32120",
-      "source_artifacts": [
-        "reports/generated/codex-current-coord-region-passive-20260506-230940-addon-coordinate-matches.json",
-        "C:\\RIFT MODDING\\RiftReader\\docs\\recovery\\current-proof-anchor-readback.json",
-        "C:\\RIFT MODDING\\RiftReader\\scripts\\captures\\proof-anchor-currentpid-47560-readback-summary-20260507-121811.json"
-      ],
-      "source_base_address_hex": "0x2400E970000",
-      "source_offset_hex": "0xC2120",
-      "source_region_id": "region-001892",
-      "source_session_id": "codex-current-coord-region-passive-20260506-230940",
-      "source_session_path": "C:\\RIFT MODDING\\Riftscan\\sessions\\codex-current-coord-region-passive-20260506-230940",
-      "stable_id": "coordinate::rift-addon-coordinate-candidate-000001::0x2400EA32120",
-      "state": "validated_candidate_historical_checkpoint",
-      "support_count": 3,
-      "warnings": [
-        "offline_ledger_does_not_authorize_live_movement",
-        "fresh_pid_hwnd_preflight_required_before_any_input"
-      ]
-    },
     {
       "axis_order": "xyz",
       "best_addon_xyz": [
@@ -142,7 +63,7 @@
       "source_session_path": "sessions/current-api-coord-readonly-20260506-064252",
       "stable_id": "coordinate::rift-addon-coordinate-candidate-000001::0x1DA682DF690::legacy_coord_api_truth",
       "state": "historical_stale_trace_blocked",
-      "superseded_by_stable_id": "coordinate::rift-addon-coordinate-candidate-000001::0x2400EA32120",
+      "superseded_by_stable_id": null,
       "support_count": 8,
       "trace_anchor": {
         "blocked_reason": "old coord-trace artifact is from PID 41220 and does not match current PID 11220",
@@ -190,89 +111,89 @@
       ]
     }
   ],
-  "created_utc": "2026-05-07T18:11:15Z",
+  "created_utc": "2026-05-13T17:40:44Z",
   "current_best_candidate": {
     "axis_order": "xyz",
     "best_addon_xyz": [
-      7436.57568359375,
-      885.2205810546875,
-      3056.736572265625
+      7511.5297851562,
+      904.47998046875,
+      3040.2800292969
     ],
-    "best_max_abs_distance": 0,
+    "best_max_abs_distance": 5.002220859751105e-11,
     "best_memory_xyz": [
-      7436.57568359375,
-      885.2205810546875,
-      3056.736572265625
+      7511.52978515625,
+      904.47998046875,
+      3040.280029296875
     ],
     "candidate_id": "rift-addon-coordinate-candidate-000001",
-    "claim_level": "validated_candidate",
+    "claim_level": "candidate",
     "kind": "coordinate_vec3",
-    "latest_validation": {
-      "current_coordinate": {
-        "recordedAtUtc": "2026-05-07T16:18:16.0931490Z",
-        "x": 7437.462890625,
-        "y": 885.2191772460938,
-        "z": 3055.73779296875
-      },
-      "generated_at_utc": "2026-05-07T16:18:16.435533+00:00",
-      "movement_allowed_at_capture_time": true,
-      "movement_sent_by_readback": false,
-      "no_cheat_engine": true,
-      "proof_anchor_max_age_seconds": null,
-      "readback_recorded_sample_count": null,
-      "readback_total_region_read_failures": null,
-      "stable_across_readback_samples": null,
-      "status": "valid"
-    },
     "ledger_live_movement_authorized": false,
-    "movement_evidence": {
-      "active_movement_input_resumed_by_user": true,
-      "currently_requires_revalidation_before_more_movement": true,
-      "latest_forward_series_completed_pulse_count": 3,
-      "latest_forward_series_requested_pulse_count": 3,
-      "latest_forward_series_status": "passed-python-forward-series-3x250",
-      "latest_forward_smoke_status": "passed-python-orchestrator-forward250",
-      "proof_gated_pulse_status": "passed",
-      "requires_fresh_preflight_immediately_before_movement": true
-    },
-    "next_validation_step": "rerun exact current PID/HWND proof readback before any more live movement",
-    "observation_support_count": 1,
-    "proof_anchor_cache": {
-      "canonical_coord_source_kind": "riftscan-reference-validated-candidate",
-      "generated_at_utc": "2026-05-07T16:03:01.4741365+00:00",
-      "max_delta_error": 0.0063136718749774445,
-      "max_reference_planar_displacement": 2.4753908943841862,
-      "pose_count": 3,
-      "proof_method": "no-ce-riftscan-reference-multisample",
-      "proof_validation_status": "validated"
-    },
-    "proof_level": "riftscan_candidate_plus_riftreader_no_ce_multisample_and_post_readback",
-    "riftreader_pointer_matched_candidate": true,
-    "riftreader_status": "valid-after-run-progress-checkpoint-proofonly",
-    "riftscan_validation_status": "candidate_unverified",
-    "source": "riftscan_addon_coordinate_match",
-    "source_absolute_address_hex": "0x2400EA32120",
+    "next_validation_step": "keep as historical evidence unless explicitly replaying the stale-trace blocker",
+    "proof_level": "current_api_plus_readonly_memory_candidate",
+    "source": "coord_api_truth_handoff",
+    "source_absolute_address_hex": "0x1DA682DF690",
     "source_artifacts": [
-      "reports/generated/codex-current-coord-region-passive-20260506-230940-addon-coordinate-matches.json",
-      "C:\\RIFT MODDING\\RiftReader\\docs\\recovery\\current-proof-anchor-readback.json",
-      "C:\\RIFT MODDING\\RiftReader\\scripts\\captures\\proof-anchor-currentpid-47560-readback-summary-20260507-121811.json"
+      "handoffs/current/coord-api-truth/coord-api-truth-summary.json"
     ],
-    "source_base_address_hex": "0x2400E970000",
-    "source_offset_hex": "0xC2120",
-    "source_region_id": "region-001892",
-    "source_session_id": "codex-current-coord-region-passive-20260506-230940",
-    "source_session_path": "C:\\RIFT MODDING\\Riftscan\\sessions\\codex-current-coord-region-passive-20260506-230940",
-    "stable_id": "coordinate::rift-addon-coordinate-candidate-000001::0x2400EA32120",
-    "state": "validated_candidate_historical_checkpoint",
-    "support_count": 3,
+    "source_base_address_hex": null,
+    "source_offset_hex": null,
+    "source_session_id": "current-api-coord-readonly-20260506-064252",
+    "source_session_path": "sessions/current-api-coord-readonly-20260506-064252",
+    "stable_id": "coordinate::rift-addon-coordinate-candidate-000001::0x1DA682DF690::legacy_coord_api_truth",
+    "state": "historical_stale_trace_blocked",
+    "superseded_by_stable_id": null,
+    "support_count": 8,
+    "trace_anchor": {
+      "blocked_reason": "old coord-trace artifact is from PID 41220 and does not match current PID 11220",
+      "process_id": 11220,
+      "trace_matches_process": false,
+      "trace_process_id": 41220
+    },
     "warnings": [
-      "offline_ledger_does_not_authorize_live_movement",
-      "fresh_pid_hwnd_preflight_required_before_any_input"
+      "old_coord_trace_anchor_does_not_match_current_process",
+      "not_movement_grade_truth"
     ]
   },
-  "current_best_candidate_stable_id": "coordinate::rift-addon-coordinate-candidate-000001::0x2400EA32120",
+  "current_best_candidate_stable_id": "coordinate::rift-addon-coordinate-candidate-000001::0x1DA682DF690::legacy_coord_api_truth",
   "inventory": {
     "latest_sessions": [
+      {
+        "capture_mode": "passive",
+        "last_write_utc_inferred_from_filesystem": "2026-05-12T00:56:51.777976Z",
+        "path": "sessions/riftreader-currentpid-39116-passive-noinput-20260511-205640",
+        "process_id": 39116,
+        "process_name": "rift_x64",
+        "region_count": 16,
+        "session_id": "riftreader-currentpid-39116-passive-noinput-20260511-205640",
+        "snapshot_count": 32,
+        "status": "complete",
+        "total_bytes_raw": 2097152
+      },
+      {
+        "capture_mode": "passive",
+        "last_write_utc_inferred_from_filesystem": "2026-05-10T07:49:48.786210Z",
+        "path": "sessions/riftreader-currentpid-30992-passive-noinput-20260510-034929",
+        "process_id": 30992,
+        "process_name": "rift_x64",
+        "region_count": 16,
+        "session_id": "riftreader-currentpid-30992-passive-noinput-20260510-034929",
+        "snapshot_count": 32,
+        "status": "complete",
+        "total_bytes_raw": 2097152
+      },
+      {
+        "capture_mode": "passive",
+        "last_write_utc_inferred_from_filesystem": "2026-05-08T04:26:26.040226Z",
+        "path": "sessions/currentpid-33912-reacquire-exact16m-20260508-042613",
+        "process_id": 33912,
+        "process_name": "rift_x64",
+        "region_count": 2,
+        "session_id": "currentpid-33912-reacquire-exact16m-20260508-042613",
+        "snapshot_count": 6,
+        "status": "complete",
+        "total_bytes_raw": 101056512
+      },
       {
         "capture_mode": "passive",
         "last_write_utc_inferred_from_filesystem": "2026-05-07T03:09:44.862971Z",
@@ -476,45 +397,9 @@
         "snapshot_count": 80,
         "status": "complete",
         "total_bytes_raw": 7864320
-      },
-      {
-        "capture_mode": "passive",
-        "last_write_utc_inferred_from_filesystem": "2026-04-30T06:56:26.021229Z",
-        "path": "sessions/live-redo-movement-20260430-025319-camera_only",
-        "process_id": 41220,
-        "process_name": "rift_x64",
-        "region_count": 1,
-        "session_id": "live-redo-movement-20260430-025319-camera_only",
-        "snapshot_count": 80,
-        "status": "complete",
-        "total_bytes_raw": 7864320
-      },
-      {
-        "capture_mode": "passive",
-        "last_write_utc_inferred_from_filesystem": "2026-04-30T06:54:01.932778Z",
-        "path": "sessions/live-redo-movement-20260430-025319-move_forward",
-        "process_id": 41220,
-        "process_name": "rift_x64",
-        "region_count": 1,
-        "session_id": "live-redo-movement-20260430-025319-move_forward",
-        "snapshot_count": 80,
-        "status": "complete",
-        "total_bytes_raw": 7864320
-      },
-      {
-        "capture_mode": "passive",
-        "last_write_utc_inferred_from_filesystem": "2026-04-30T06:53:50.991365Z",
-        "path": "sessions/live-redo-movement-20260430-025319-turn_right",
-        "process_id": 41220,
-        "process_name": "rift_x64",
-        "region_count": 1,
-        "session_id": "live-redo-movement-20260430-025319-turn_right",
-        "snapshot_count": 80,
-        "status": "complete",
-        "total_bytes_raw": 7864320
       }
     ],
-    "session_manifest_count": 115
+    "session_manifest_count": 118
   },
   "next_recommended_actions": [
     "Use the RiftReader May 7 current-proof pointer as the latest discovery status, but treat it as requiring fresh preflight before more movement.",
@@ -551,11 +436,11 @@
   },
   "source_artifacts": {
     "riftreader_current_proof_pointer": "C:\\RIFT MODDING\\RiftReader\\docs\\recovery\\current-proof-anchor-readback.json",
-    "riftreader_latest_handoff": "C:\\RIFT MODDING\\RiftReader\\docs\\handoffs\\2026-05-07-122200-python-live-test-orchestrator-current-handoff.md",
-    "riftreader_latest_proof_summary": "C:\\RIFT MODDING\\RiftReader\\scripts\\captures\\proof-anchor-currentpid-47560-readback-summary-20260507-123808.json",
+    "riftreader_latest_handoff": "C:\\RIFT MODDING\\RiftReader\\docs\\handoffs\\2026-05-13-001802-x64dbg-safe-reintegration-handoff.md",
+    "riftreader_latest_proof_summary": "C:\\RIFT MODDING\\RiftReader\\scripts\\captures\\proof-anchor-currentpid-57656-readback-summary-20260512-071051.json",
     "riftscan_coord_api_truth_summary": "handoffs/current/coord-api-truth/coord-api-truth-summary.json",
     "riftscan_coord_recovery_summary": "handoffs/current/coord-recovery/coord-recovery-summary.json",
-    "riftscan_match_file": "reports/generated/codex-current-coord-region-passive-20260506-230940-addon-coordinate-matches.json",
+    "riftscan_match_file": "C:\\RIFT MODDING\\RiftReader\\scripts\\captures\\family-scan-currentpid-57656-20260512-103249\\api-family-vec3-candidates.jsonl",
     "riftscan_movement_execution_gate_summary": "handoffs/current/movement-execution-gate/movement-execution-gate-summary.json"
   },
   "status": "ledger_written"

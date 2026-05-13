@@ -1,14 +1,14 @@
 # RiftScan Offline Discovery Ledger
 
-Created UTC: `2026-05-07T18:11:15Z`
-App version: `riftscan-discovery-ledger-v1.2.0`
+Created UTC: `2026-05-13T17:40:44Z`
+App version: `riftscan-discovery-ledger-v1.2.1`
 
 ## Result
 
 ```text
 status: ledger_written
 scope: offline_artifact_inventory_no_live_process_access
-candidate_count: 3
+candidate_count: 2
 candidate_ledger_contract_validation: PASS
 ledger_live_movement_authorized: False
 ```
@@ -18,22 +18,21 @@ ledger_live_movement_authorized: False
 | Field | Value |
 |---|---|
 | Candidate | `rift-addon-coordinate-candidate-000001` |
-| State | `validated_candidate_historical_checkpoint` |
-| Claim level | `validated_candidate` |
-| Proof level | `riftscan_candidate_plus_riftreader_no_ce_multisample_and_post_readback` |
-| Address | `0x2400EA32120` |
-| Base + offset | `0x2400E970000` + `0xC2120` |
+| State | `historical_stale_trace_blocked` |
+| Claim level | `candidate` |
+| Proof level | `current_api_plus_readonly_memory_candidate` |
+| Address | `0x1DA682DF690` |
+| Base + offset | `None` + `None` |
 | Axis | `xyz` |
-| Support | `3` snapshots / `1` observations |
-| Best max abs distance | `0` |
-| RiftReader status | `valid-after-run-progress-checkpoint-proofonly` |
-| Next validation | `rerun exact current PID/HWND proof readback before any more live movement` |
+| Support | `8` snapshots / `None` observations |
+| Best max abs distance | `5.002220859751105e-11` |
+| RiftReader status | `None` |
+| Next validation | `keep as historical evidence unless explicitly replaying the stale-trace blocker` |
 
 ## Candidate ledger
 
 | State | Candidate / kind | Address | Proof level | Next validation |
 |---|---|---|---|---|
-| `validated_candidate_historical_checkpoint` | `rift-addon-coordinate-candidate-000001` | `0x2400EA32120` | `riftscan_candidate_plus_riftreader_no_ce_multisample_and_post_readback` | `rerun exact current PID/HWND proof readback before any more live movement` |
 | `historical_stale_trace_blocked` | `rift-addon-coordinate-candidate-000001` | `0x1DA682DF690` | `current_api_plus_readonly_memory_candidate` | `keep as historical evidence unless explicitly replaying the stale-trace blocker` |
 | `historical_candidate_scan_only` | `coordinate_candidate_scan` | `-` | `candidate_like_values_only` | `do not use for current-client movement proof; keep only as historical search context` |
 
@@ -42,7 +41,7 @@ ledger_live_movement_authorized: False
 ```text
 status: PASS
 path: handoffs/current/discovery-ledger/candidate_ledger.jsonl
-candidate_count: 3
+candidate_count: 2
 error_count: 0
 warning_count: 0
 ```
@@ -59,11 +58,11 @@ warning_count: 0
 ```json
 {
   "riftreader_current_proof_pointer": "C:\\RIFT MODDING\\RiftReader\\docs\\recovery\\current-proof-anchor-readback.json",
-  "riftreader_latest_handoff": "C:\\RIFT MODDING\\RiftReader\\docs\\handoffs\\2026-05-07-122200-python-live-test-orchestrator-current-handoff.md",
-  "riftreader_latest_proof_summary": "C:\\RIFT MODDING\\RiftReader\\scripts\\captures\\proof-anchor-currentpid-47560-readback-summary-20260507-123808.json",
+  "riftreader_latest_handoff": "C:\\RIFT MODDING\\RiftReader\\docs\\handoffs\\2026-05-13-001802-x64dbg-safe-reintegration-handoff.md",
+  "riftreader_latest_proof_summary": "C:\\RIFT MODDING\\RiftReader\\scripts\\captures\\proof-anchor-currentpid-57656-readback-summary-20260512-071051.json",
   "riftscan_coord_api_truth_summary": "handoffs/current/coord-api-truth/coord-api-truth-summary.json",
   "riftscan_coord_recovery_summary": "handoffs/current/coord-recovery/coord-recovery-summary.json",
-  "riftscan_match_file": "reports/generated/codex-current-coord-region-passive-20260506-230940-addon-coordinate-matches.json",
+  "riftscan_match_file": "C:\\RIFT MODDING\\RiftReader\\scripts\\captures\\family-scan-currentpid-57656-20260512-103249\\api-family-vec3-candidates.jsonl",
   "riftscan_movement_execution_gate_summary": "handoffs/current/movement-execution-gate/movement-execution-gate-summary.json"
 }
 ```

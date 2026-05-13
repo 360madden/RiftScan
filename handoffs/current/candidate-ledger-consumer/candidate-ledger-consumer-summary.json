@@ -7,77 +7,27 @@
   ],
   "app_version": "riftscan-candidate-ledger-consumer-v1.1.0",
   "artifact_age": {
-    "checked_count": 5,
-    "current_best_checked_count": 3,
+    "checked_count": 2,
+    "current_best_checked_count": 1,
     "current_best_missing_count": 0,
     "current_best_records": [
       {
-        "age_hours": 15.021,
+        "age_hours": 174.924,
         "exists": true,
         "max_age_hours": 24.0,
-        "mtime_utc": "2026-05-07T03:10:00Z",
-        "path": "reports/generated/codex-current-coord-region-passive-20260506-230940-addon-coordinate-matches.json",
-        "resolved_path": "C:\\RIFT MODDING\\Riftscan\\reports\\generated\\codex-current-coord-region-passive-20260506-230940-addon-coordinate-matches.json",
-        "stale": false,
-        "status": "fresh"
-      },
-      {
-        "age_hours": 1.858,
-        "exists": true,
-        "max_age_hours": 24.0,
-        "mtime_utc": "2026-05-07T16:19:47Z",
-        "path": "C:\\RIFT MODDING\\RiftReader\\docs\\recovery\\current-proof-anchor-readback.json",
-        "resolved_path": "C:\\RIFT MODDING\\RiftReader\\docs\\recovery\\current-proof-anchor-readback.json",
-        "stale": false,
-        "status": "fresh"
-      },
-      {
-        "age_hours": 1.883,
-        "exists": true,
-        "max_age_hours": 24.0,
-        "mtime_utc": "2026-05-07T16:18:16Z",
-        "path": "C:\\RIFT MODDING\\RiftReader\\scripts\\captures\\proof-anchor-currentpid-47560-readback-summary-20260507-121811.json",
-        "resolved_path": "C:\\RIFT MODDING\\RiftReader\\scripts\\captures\\proof-anchor-currentpid-47560-readback-summary-20260507-121811.json",
-        "stale": false,
-        "status": "fresh"
+        "mtime_utc": "2026-05-06T10:45:20Z",
+        "path": "handoffs/current/coord-api-truth/coord-api-truth-summary.json",
+        "resolved_path": "C:\\RIFT MODDING\\Riftscan\\handoffs\\current\\coord-api-truth\\coord-api-truth-summary.json",
+        "stale": true,
+        "status": "stale"
       }
     ],
-    "current_best_stale_count": 0,
+    "current_best_stale_count": 1,
     "max_age_hours": 24.0,
     "missing_count": 0,
     "records": [
       {
-        "age_hours": 15.021,
-        "exists": true,
-        "max_age_hours": 24.0,
-        "mtime_utc": "2026-05-07T03:10:00Z",
-        "path": "reports/generated/codex-current-coord-region-passive-20260506-230940-addon-coordinate-matches.json",
-        "resolved_path": "C:\\RIFT MODDING\\Riftscan\\reports\\generated\\codex-current-coord-region-passive-20260506-230940-addon-coordinate-matches.json",
-        "stale": false,
-        "status": "fresh"
-      },
-      {
-        "age_hours": 1.858,
-        "exists": true,
-        "max_age_hours": 24.0,
-        "mtime_utc": "2026-05-07T16:19:47Z",
-        "path": "C:\\RIFT MODDING\\RiftReader\\docs\\recovery\\current-proof-anchor-readback.json",
-        "resolved_path": "C:\\RIFT MODDING\\RiftReader\\docs\\recovery\\current-proof-anchor-readback.json",
-        "stale": false,
-        "status": "fresh"
-      },
-      {
-        "age_hours": 1.883,
-        "exists": true,
-        "max_age_hours": 24.0,
-        "mtime_utc": "2026-05-07T16:18:16Z",
-        "path": "C:\\RIFT MODDING\\RiftReader\\scripts\\captures\\proof-anchor-currentpid-47560-readback-summary-20260507-121811.json",
-        "resolved_path": "C:\\RIFT MODDING\\RiftReader\\scripts\\captures\\proof-anchor-currentpid-47560-readback-summary-20260507-121811.json",
-        "stale": false,
-        "status": "fresh"
-      },
-      {
-        "age_hours": 31.432,
+        "age_hours": 174.924,
         "exists": true,
         "max_age_hours": 24.0,
         "mtime_utc": "2026-05-06T10:45:20Z",
@@ -87,7 +37,7 @@
         "status": "stale"
       },
       {
-        "age_hours": 120.941,
+        "age_hours": 264.433,
         "exists": true,
         "max_age_hours": 24.0,
         "mtime_utc": "2026-05-02T17:14:47Z",
@@ -101,13 +51,13 @@
   },
   "blockers": [],
   "candidate_ledger_contract_validation": {
-    "candidate_count": 3,
+    "candidate_count": 2,
     "error_count": 0,
     "path": "handoffs/current/discovery-ledger/candidate_ledger.jsonl",
     "status": "PASS",
     "warning_count": 0
   },
-  "created_utc": "2026-05-07T18:11:15Z",
+  "created_utc": "2026-05-13T17:40:46Z",
   "current_best_candidate": {
     "allowed_downstream_uses": [
       "offline_review",
@@ -116,9 +66,9 @@
       "future_validation_planning"
     ],
     "axis_order": "xyz",
-    "best_max_abs_distance": 0,
+    "best_max_abs_distance": 5.002220859751105e-11,
     "candidate_id": "rift-addon-coordinate-candidate-000001",
-    "claim_level": "validated_candidate",
+    "claim_level": "candidate",
     "consumer_status": "available_offline_only",
     "forbidden_downstream_uses": [
       "movement",
@@ -132,21 +82,19 @@
     ],
     "kind": "coordinate_vec3",
     "live_use_authorized": false,
-    "next_validation_step": "rerun exact current PID/HWND proof readback before any more live movement",
-    "proof_level": "riftscan_candidate_plus_riftreader_no_ce_multisample_and_post_readback",
-    "source": "riftscan_addon_coordinate_match",
-    "source_absolute_address_hex": "0x2400EA32120",
+    "next_validation_step": "keep as historical evidence unless explicitly replaying the stale-trace blocker",
+    "proof_level": "current_api_plus_readonly_memory_candidate",
+    "source": "coord_api_truth_handoff",
+    "source_absolute_address_hex": "0x1DA682DF690",
     "source_artifacts": [
-      "reports/generated/codex-current-coord-region-passive-20260506-230940-addon-coordinate-matches.json",
-      "C:\\RIFT MODDING\\RiftReader\\docs\\recovery\\current-proof-anchor-readback.json",
-      "C:\\RIFT MODDING\\RiftReader\\scripts\\captures\\proof-anchor-currentpid-47560-readback-summary-20260507-121811.json"
+      "handoffs/current/coord-api-truth/coord-api-truth-summary.json"
     ],
-    "source_base_address_hex": "0x2400E970000",
+    "source_base_address_hex": null,
     "source_index": 1,
-    "source_offset_hex": "0xC2120",
-    "stable_id": "coordinate::rift-addon-coordinate-candidate-000001::0x2400EA32120",
-    "state": "validated_candidate_historical_checkpoint",
-    "support_count": 3
+    "source_offset_hex": null,
+    "stable_id": "coordinate::rift-addon-coordinate-candidate-000001::0x1DA682DF690::legacy_coord_api_truth",
+    "state": "historical_stale_trace_blocked",
+    "support_count": 8
   },
   "display_status": "PASS",
   "forbidden_downstream_uses": [
@@ -168,48 +116,8 @@
   },
   "rejected_candidate_count": 0,
   "rejected_candidates": [],
-  "safe_candidate_count": 3,
+  "safe_candidate_count": 2,
   "safe_candidates": [
-    {
-      "allowed_downstream_uses": [
-        "offline_review",
-        "report_generation",
-        "replay_analysis_seed",
-        "future_validation_planning"
-      ],
-      "axis_order": "xyz",
-      "best_max_abs_distance": 0,
-      "candidate_id": "rift-addon-coordinate-candidate-000001",
-      "claim_level": "validated_candidate",
-      "consumer_status": "available_offline_only",
-      "forbidden_downstream_uses": [
-        "movement",
-        "input",
-        "live_capture",
-        "process_attach",
-        "memory_read",
-        "offset_validation",
-        "riftreader_command",
-        "reloadui"
-      ],
-      "kind": "coordinate_vec3",
-      "live_use_authorized": false,
-      "next_validation_step": "rerun exact current PID/HWND proof readback before any more live movement",
-      "proof_level": "riftscan_candidate_plus_riftreader_no_ce_multisample_and_post_readback",
-      "source": "riftscan_addon_coordinate_match",
-      "source_absolute_address_hex": "0x2400EA32120",
-      "source_artifacts": [
-        "reports/generated/codex-current-coord-region-passive-20260506-230940-addon-coordinate-matches.json",
-        "C:\\RIFT MODDING\\RiftReader\\docs\\recovery\\current-proof-anchor-readback.json",
-        "C:\\RIFT MODDING\\RiftReader\\scripts\\captures\\proof-anchor-currentpid-47560-readback-summary-20260507-121811.json"
-      ],
-      "source_base_address_hex": "0x2400E970000",
-      "source_index": 1,
-      "source_offset_hex": "0xC2120",
-      "stable_id": "coordinate::rift-addon-coordinate-candidate-000001::0x2400EA32120",
-      "state": "validated_candidate_historical_checkpoint",
-      "support_count": 3
-    },
     {
       "allowed_downstream_uses": [
         "offline_review",
@@ -242,7 +150,7 @@
         "handoffs/current/coord-api-truth/coord-api-truth-summary.json"
       ],
       "source_base_address_hex": null,
-      "source_index": 2,
+      "source_index": 1,
       "source_offset_hex": null,
       "stable_id": "coordinate::rift-addon-coordinate-candidate-000001::0x1DA682DF690::legacy_coord_api_truth",
       "state": "historical_stale_trace_blocked",
@@ -280,7 +188,7 @@
         "handoffs/current/coord-recovery/coord-recovery-summary.json"
       ],
       "source_base_address_hex": null,
-      "source_index": 3,
+      "source_index": 2,
       "source_offset_hex": null,
       "stable_id": "coordinate_scan::33812::2026-05-02T17:14:47Z",
       "state": "historical_candidate_scan_only",
@@ -306,6 +214,7 @@
   },
   "status": "PASS",
   "warnings": [
-    "Historical/non-current candidate rows include 2 stale source artifact(s); keep them historical."
+    "Current best candidate has stale source artifact paths; require fresh proof before any live use.",
+    "Historical/non-current candidate rows include 1 stale source artifact(s); keep them historical."
   ]
 }

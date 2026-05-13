@@ -1,7 +1,7 @@
 # RiftScan Offline AI Workflow Packet
 
-Created UTC: `2026-05-09T01:58:53Z`
-App version: `riftscan-ai-workflow-packet-v1.11.0`
+Created UTC: `2026-05-07T18:11:22Z`
+App version: `riftscan-ai-workflow-packet-v1.10.0`
 
 ## Result
 
@@ -17,13 +17,13 @@ candidate_ledger_consumer: PASS
 
 | Field | Value |
 |---|---|
-| Stable ID | `coordinate::api-coord-hit-000005::0x24A01358880` |
-| State | `candidate` |
-| Claim level | `candidate` |
-| Address | `0x24A01358880` |
-| Base + offset | `0x24A01350000` + `0x8880` |
+| Stable ID | `coordinate::rift-addon-coordinate-candidate-000001::0x2400EA32120` |
+| State | `validated_candidate_historical_checkpoint` |
+| Claim level | `validated_candidate` |
+| Address | `0x2400EA32120` |
+| Base + offset | `0x2400E970000` + `0xC2120` |
 | Live use authorized | `False` |
-| Next validation | `pair with current RiftReader no-CE readback/promotion before movement` |
+| Next validation | `rerun exact current PID/HWND proof readback before any more live movement` |
 
 ## Candidate ledger consumer
 
@@ -44,16 +44,11 @@ current_best_missing_count: 0
 ## Previous packet diff
 
 ```text
-status: CHANGED
-previous_created_utc: 2026-05-09T01:50:21Z
-previous_app_version: riftscan-ai-workflow-packet-v1.11.0
-change_count: 2
+status: UNCHANGED
+previous_created_utc: 2026-05-07T18:10:54Z
+previous_app_version: riftscan-ai-workflow-packet-v1.10.0
+change_count: 0
 ```
-
-| Field | Before | After |
-|---|---|---|
-| `current_best_stable_id` | `coordinate::rift-addon-coordinate-candidate-000001::0x2400EA32120` | `coordinate::api-coord-hit-000005::0x24A01358880` |
-| `current_best_address` | `0x2400EA32120` | `0x24A01358880` |
 
 Compared fields are listed in JSON at `previous_packet_diff_compared_fields` and documented in `docs/ai-workflow-packet-schema.md`.
 
@@ -61,15 +56,15 @@ Compared fields are listed in JSON at `previous_packet_diff_compared_fields` and
 
 ```json
 {
-  "archive_stem": "2026-05-09T01-50-21Z-riftscan-ai-workflow-packet-v1-11-0",
+  "archive_stem": "2026-05-07T18-10-54Z-riftscan-ai-workflow-packet-v1-10-0",
   "artifacts": {
-    "report": "handoffs/current/ai-workflow/history/AI_WORKFLOW_PACKET-2026-05-09T01-50-21Z-riftscan-ai-workflow-packet-v1-11-0.md",
-    "summary": "handoffs/current/ai-workflow/history/ai-workflow-summary-2026-05-09T01-50-21Z-riftscan-ai-workflow-packet-v1-11-0.json"
+    "report": "handoffs/current/ai-workflow/history/AI_WORKFLOW_PACKET-2026-05-07T18-10-54Z-riftscan-ai-workflow-packet-v1-10-0.md",
+    "summary": "handoffs/current/ai-workflow/history/ai-workflow-summary-2026-05-07T18-10-54Z-riftscan-ai-workflow-packet-v1-10-0.json"
   },
   "history_dir": "handoffs/current/ai-workflow/history",
   "history_index": "handoffs/current/ai-workflow/history/index.jsonl",
-  "source_app_version": "riftscan-ai-workflow-packet-v1.11.0",
-  "source_created_utc": "2026-05-09T01:50:21Z",
+  "source_app_version": "riftscan-ai-workflow-packet-v1.10.0",
+  "source_created_utc": "2026-05-07T18:10:54Z",
   "status": "ARCHIVED"
 }
 ```
@@ -79,15 +74,15 @@ Compared fields are listed in JSON at `previous_packet_diff_compared_fields` and
 ```json
 {
   "entry": {
-    "archive_stem": "2026-05-09T01-50-21Z-riftscan-ai-workflow-packet-v1-11-0",
+    "archive_stem": "2026-05-07T18-10-54Z-riftscan-ai-workflow-packet-v1-10-0",
     "artifacts": {
-      "report": "handoffs/current/ai-workflow/history/AI_WORKFLOW_PACKET-2026-05-09T01-50-21Z-riftscan-ai-workflow-packet-v1-11-0.md",
-      "summary": "handoffs/current/ai-workflow/history/ai-workflow-summary-2026-05-09T01-50-21Z-riftscan-ai-workflow-packet-v1-11-0.json"
+      "report": "handoffs/current/ai-workflow/history/AI_WORKFLOW_PACKET-2026-05-07T18-10-54Z-riftscan-ai-workflow-packet-v1-10-0.md",
+      "summary": "handoffs/current/ai-workflow/history/ai-workflow-summary-2026-05-07T18-10-54Z-riftscan-ai-workflow-packet-v1-10-0.json"
     },
-    "indexed_utc": "2026-05-09T01:58:53Z",
+    "indexed_utc": "2026-05-07T18:11:22Z",
     "schema_version": "riftscan.ai_workflow_packet_history_index.v1",
-    "source_app_version": "riftscan-ai-workflow-packet-v1.11.0",
-    "source_created_utc": "2026-05-09T01:50:21Z"
+    "source_app_version": "riftscan-ai-workflow-packet-v1.10.0",
+    "source_created_utc": "2026-05-07T18:10:54Z"
   },
   "path": "handoffs/current/ai-workflow/history/index.jsonl",
   "status": "APPENDED"
