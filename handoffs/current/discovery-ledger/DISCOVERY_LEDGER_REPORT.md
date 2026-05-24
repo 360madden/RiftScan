@@ -1,6 +1,6 @@
 # RiftScan Offline Discovery Ledger
 
-Created UTC: `2026-05-13T17:40:44Z`
+Created UTC: `2026-05-24T16:24:02Z`
 App version: `riftscan-discovery-ledger-v1.2.1`
 
 ## Result
@@ -58,11 +58,11 @@ warning_count: 0
 ```json
 {
   "riftreader_current_proof_pointer": "C:\\RIFT MODDING\\RiftReader\\docs\\recovery\\current-proof-anchor-readback.json",
-  "riftreader_latest_handoff": "C:\\RIFT MODDING\\RiftReader\\docs\\handoffs\\2026-05-13-001802-x64dbg-safe-reintegration-handoff.md",
-  "riftreader_latest_proof_summary": "C:\\RIFT MODDING\\RiftReader\\scripts\\captures\\proof-anchor-currentpid-57656-readback-summary-20260512-071051.json",
+  "riftreader_latest_handoff": "C:\\RIFT MODDING\\RiftReader\\docs\\handoffs\\2026-05-23-0648-no-live-target-after-pid28248-drift-handoff.md",
+  "riftreader_latest_proof_summary": "C:\\RIFT MODDING\\RiftReader\\scripts\\captures\\proof-anchor-currentpid-28248-readback-summary-20260523-013808.json",
   "riftscan_coord_api_truth_summary": "handoffs/current/coord-api-truth/coord-api-truth-summary.json",
   "riftscan_coord_recovery_summary": "handoffs/current/coord-recovery/coord-recovery-summary.json",
-  "riftscan_match_file": "C:\\RIFT MODDING\\RiftReader\\scripts\\captures\\family-scan-currentpid-57656-20260512-103249\\api-family-vec3-candidates.jsonl",
+  "riftscan_match_file": "C:\\RIFT MODDING\\RiftReader\\scripts\\captures\\family-scan-currentpid-28248-20260523-053403-077701\\api-family-vec3-candidates.jsonl",
   "riftscan_movement_execution_gate_summary": "handoffs/current/movement-execution-gate/movement-execution-gate-summary.json"
 }
 ```

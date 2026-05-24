@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # RiftScan script metadata
-# Version: riftscan-offline-workflow-check-v1.0.12
+# Version: riftscan-offline-workflow-check-v1.0.13
 # Total character count: 000000
 # Purpose: Run conservative offline helper workflow checks, refresh the offline discovery ledger, and write deterministic report artifacts.
 # Safety boundary: Offline validation only. No RIFT focus preflight, live capture, input, movement, memory scan/read, offset validation, RiftReader validation, or /reloadui.
@@ -16,12 +16,13 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-APP_VERSION = "riftscan-offline-workflow-check-v1.0.12"
+APP_VERSION = "riftscan-offline-workflow-check-v1.0.13"
 REPO_ROOT = Path(__file__).resolve().parents[1]
 OUT_DIR = REPO_ROOT / "handoffs" / "current" / "offline-workflow-check"
 REPORT = OUT_DIR / "OFFLINE_WORKFLOW_CHECK_REPORT.md"
 SUMMARY = OUT_DIR / "offline-workflow-check-summary.json"
 LOG = OUT_DIR / "offline-workflow-check-log.jsonl"
+LOG_ENABLED = True
 AI_WORKFLOW_SUMMARY = REPO_ROOT / "handoffs" / "current" / "ai-workflow" / "ai-workflow-summary.json"
 AI_WORKFLOW_HISTORY_SUMMARY = REPO_ROOT / "handoffs" / "current" / "ai-workflow" / "ai-workflow-history-index-summary.json"
 AI_WORKFLOW_HISTORY_REPORT = REPO_ROOT / "handoffs" / "current" / "ai-workflow" / "AI_WORKFLOW_HISTORY_INDEX_REPORT.md"
@@ -69,6 +70,8 @@ def write_text(path: Path, data: str) -> None:
 
 
 def log(event: str, **fields: Any) -> None:
+    if not LOG_ENABLED:
+        return
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     with LOG.open("a", encoding="utf-8", newline="\n") as f:
         f.write(json.dumps({"created_utc": utc(), "event": event, **fields}, sort_keys=True) + "\n")
@@ -406,8 +409,8 @@ def run_ai_workflow_packet_contract_check() -> dict[str, Any]:
     return result
 
 
-def helper_checks(timeout_seconds: int) -> list[tuple[str, list[str], int]]:
-    return [
+def helper_checks(timeout_seconds: int, *, check_only: bool = False) -> list[tuple[str, list[str], int]]:
+    checks = [
         (
             "py_compile_helpers",
             [
@@ -464,6 +467,47 @@ def helper_checks(timeout_seconds: int) -> list[tuple[str, list[str], int]]:
             [sys.executable, "tools/riftscan_discovery_ledger.py", "--self-test"],
             timeout_seconds,
         ),
+    ]
+
+    if check_only:
+        checks.extend(
+            [
+                (
+                    "discovery_ledger_validate_existing",
+                    [sys.executable, "tools/riftscan_discovery_ledger.py", "--validate-existing"],
+                    timeout_seconds,
+                ),
+                (
+                    "candidate_ledger_consumer_self_test",
+                    [sys.executable, "tools/riftscan_candidate_ledger_consumer.py", "--self-test"],
+                    timeout_seconds,
+                ),
+                (
+                    "candidate_ledger_consumer_check_only",
+                    [sys.executable, "tools/riftscan_candidate_ledger_consumer.py", "--check-only", "--strict-exit-code"],
+                    timeout_seconds,
+                ),
+                (
+                    "ai_workflow_packet_self_test",
+                    [sys.executable, "tools/riftscan_ai_workflow_packet.py", "--self-test"],
+                    timeout_seconds,
+                ),
+                (
+                    "ai_workflow_history_index_verify",
+                    [sys.executable, "tools/riftscan_ai_workflow_packet.py", "--verify-history-index", "--history-limit", "0"],
+                    timeout_seconds,
+                ),
+                (
+                    "patch_intake_self_test",
+                    [sys.executable, "tools/riftscan_patch_intake_app.py", "--self-test"],
+                    max(timeout_seconds, 180),
+                ),
+            ]
+        )
+        return checks
+
+    checks.extend(
+        [
         (
             "discovery_ledger_refresh",
             [sys.executable, "tools/riftscan_discovery_ledger.py"],
@@ -494,7 +538,9 @@ def helper_checks(timeout_seconds: int) -> list[tuple[str, list[str], int]]:
             [sys.executable, "tools/riftscan_patch_intake_app.py", "--self-test"],
             max(timeout_seconds, 180),
         ),
-    ]
+        ]
+    )
+    return checks
 
 
 def summarize_results(results: list[dict[str, Any]]) -> dict[str, Any]:
@@ -581,9 +627,13 @@ Recent commits:
 
 
 def run_offline_check(args: argparse.Namespace) -> dict[str, Any]:
-    OUT_DIR.mkdir(parents=True, exist_ok=True)
+    global LOG_ENABLED
+
+    LOG_ENABLED = not args.check_only
+    if not args.check_only:
+        OUT_DIR.mkdir(parents=True, exist_ok=True)
     log("offline_workflow_check_start", version=APP_VERSION)
-    results = [run_command(name, cmd, timeout) for name, cmd, timeout in helper_checks(args.timeout_seconds)]
+    results = [run_command(name, cmd, timeout) for name, cmd, timeout in helper_checks(args.timeout_seconds, check_only=args.check_only)]
     results.append(run_ai_workflow_packet_contract_check())
     clean_python_caches()
     summary = summarize_results(results)
@@ -591,6 +641,7 @@ def run_offline_check(args: argparse.Namespace) -> dict[str, Any]:
         "schema_version": "riftscan.offline_workflow_check.v1",
         "created_utc": utc(),
         "app_version": APP_VERSION,
+        "mode": "check_only" if args.check_only else "write_artifacts",
         **summary,
         "checks": results,
         "paths": {"report": rel(REPORT), "summary": rel(SUMMARY), "log": rel(LOG)},
@@ -604,11 +655,13 @@ def run_offline_check(args: argparse.Namespace) -> dict[str, Any]:
             "riftreader_validation_started": False,
             "riftreader_command_executed": False,
             "reloadui_sent": False,
+            "writes_report_artifacts": not args.check_only,
         },
         "git": git_snapshot(args.git_timeout_seconds),
     }
-    write_json(SUMMARY, data)
-    write_text(REPORT, build_report(data))
+    if not args.check_only:
+        write_json(SUMMARY, data)
+        write_text(REPORT, build_report(data))
     log("offline_workflow_check_finish", status=data["status"], failed_check_count=data["failed_check_count"])
     return data
 
@@ -717,6 +770,27 @@ def run_self_test() -> tuple[bool, dict[str, Any]]:
             "pass": bool(invalid_archive_errors),
         }
     )
+    check_only_names = {name for name, _cmd, _timeout in helper_checks(120, check_only=True)}
+    mutating_names = {name for name, _cmd, _timeout in helper_checks(120, check_only=False)}
+    check_only_errors: list[str] = []
+    for forbidden in ("discovery_ledger_refresh", "candidate_ledger_consumer_refresh"):
+        if forbidden in check_only_names:
+            check_only_errors.append(f"{forbidden}_present")
+    for required in ("discovery_ledger_validate_existing", "candidate_ledger_consumer_check_only", "ai_workflow_history_index_verify"):
+        if required not in check_only_names:
+            check_only_errors.append(f"{required}_missing")
+    for required in ("discovery_ledger_refresh", "candidate_ledger_consumer_refresh"):
+        if required not in mutating_names:
+            check_only_errors.append(f"{required}_missing_from_write_mode")
+    tests.append(
+        {
+            "name": "check-only helper set excludes refresh/write checks",
+            "expected": "pass",
+            "actual": "pass" if not check_only_errors else "fail",
+            "errors": check_only_errors,
+            "pass": not check_only_errors,
+        }
+    )
     passed = all(test["pass"] for test in tests)
     return passed, {
         "schema_version": "riftscan.offline_workflow_check_self_test.v1",
@@ -742,6 +816,7 @@ def parse(argv: list[str]) -> argparse.Namespace:
     p.add_argument("--timeout-seconds", type=int, default=120)
     p.add_argument("--git-timeout-seconds", type=int, default=15)
     p.add_argument("--self-test", action="store_true")
+    p.add_argument("--check-only", "--no-write", dest="check_only", action="store_true", help="Run read-only checks without refreshing ledgers or writing report, summary, or log artifacts.")
     return p.parse_args(argv)
 
 
@@ -754,9 +829,13 @@ def main(argv: list[str]) -> int:
 
     data = run_offline_check(args)
     print(f"OFFLINE WORKFLOW CHECK: {data['display_status']}")
-    print(f"Report: {rel(REPORT)}")
-    print(f"Summary: {rel(SUMMARY)}")
-    print(f"Log: {rel(LOG)}")
+    if args.check_only:
+        print("Mode: check-only")
+        print("No report, summary, or log artifacts were written.")
+    else:
+        print(f"Report: {rel(REPORT)}")
+        print(f"Summary: {rel(SUMMARY)}")
+        print(f"Log: {rel(LOG)}")
     for failure in data["failed_checks"]:
         print(f"- {failure}")
     return 0 if data["status"] == "pass" else 1

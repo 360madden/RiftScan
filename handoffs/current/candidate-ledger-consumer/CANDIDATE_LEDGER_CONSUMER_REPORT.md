@@ -1,7 +1,7 @@
 # RiftScan Candidate Ledger Consumer Report
 
-Created UTC: `2026-05-13T17:40:46Z`
-App version: `riftscan-candidate-ledger-consumer-v1.1.0`
+Created UTC: `2026-05-24T16:24:04Z`
+App version: `riftscan-candidate-ledger-consumer-v1.1.1`
 
 ## Result
 

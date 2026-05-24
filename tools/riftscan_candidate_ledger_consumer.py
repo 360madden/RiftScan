@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # RiftScan script metadata
-# Version: riftscan-candidate-ledger-consumer-v1.1.0
+# Version: riftscan-candidate-ledger-consumer-v1.1.1
 # Total character count: 000000
 # Purpose: Build a safe offline-only consumer view of the Discovery Ledger candidate_ledger.jsonl artifact.
 # Safety boundary: Reads existing JSON/JSONL artifacts only. No focus preflight, live capture, input, movement, memory scan/read, process attach, offset validation, RiftReader command execution, or /reloadui.
@@ -20,12 +20,13 @@ if str(SCRIPT_DIR) not in sys.path:
 
 from riftscan_discovery_ledger import validate_candidate_ledger  # noqa: E402
 
-APP_VERSION = "riftscan-candidate-ledger-consumer-v1.1.0"
+APP_VERSION = "riftscan-candidate-ledger-consumer-v1.1.1"
 REPO_ROOT = Path(__file__).resolve().parents[1]
 OUT_DIR = REPO_ROOT / "handoffs" / "current" / "candidate-ledger-consumer"
 REPORT = OUT_DIR / "CANDIDATE_LEDGER_CONSUMER_REPORT.md"
 SUMMARY = OUT_DIR / "candidate-ledger-consumer-summary.json"
 LOG = OUT_DIR / "candidate-ledger-consumer-log.jsonl"
+LOG_ENABLED = True
 DISCOVERY_LEDGER_DIR = REPO_ROOT / "handoffs" / "current" / "discovery-ledger"
 DISCOVERY_SUMMARY = DISCOVERY_LEDGER_DIR / "discovery-ledger-summary.json"
 CANDIDATE_LEDGER = DISCOVERY_LEDGER_DIR / "candidate_ledger.jsonl"
@@ -70,6 +71,8 @@ def write_text(path: Path, data: str) -> None:
 
 
 def append_log(event: str, **fields: Any) -> None:
+    if not LOG_ENABLED:
+        return
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     with LOG.open("a", encoding="utf-8", newline="\n") as f:
         f.write(json.dumps({"created_utc": utc(), "event": event, **fields}, sort_keys=True) + "\n")
@@ -540,6 +543,10 @@ def run_self_test() -> int:
         failures.append("bad_candidate_not_rejected")
     if good.get("artifact_age", {}).get("current_best_missing_count") != 1:
         failures.append("missing_fixture_source_artifact_not_reported")
+    if not parse_args(["--check-only"]).check_only:
+        failures.append("check_only_arg_not_parsed")
+    if not parse_args(["--no-write"]).check_only:
+        failures.append("no_write_alias_not_parsed")
 
     result = {
         "schema_version": "riftscan.candidate_ledger_consumer.self_test.v1",
@@ -565,21 +572,34 @@ def run_self_test() -> int:
 def parse_args(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Build a safe offline-only consumer view of the candidate ledger.")
     parser.add_argument("--self-test", action="store_true", help="Run offline self-test only; writes no artifacts.")
-    parser.add_argument("--print-summary", action="store_true", help="Print the generated consumer summary after writing artifacts.")
+    parser.add_argument("--check-only", "--no-write", dest="check_only", action="store_true", help="Build and validate the consumer view without writing report, summary, or log artifacts.")
+    parser.add_argument("--print-summary", action="store_true", help="Print the generated consumer summary.")
     parser.add_argument("--strict-exit-code", action="store_true", help="Return nonzero when the consumer status is not PASS.")
     parser.add_argument("--max-artifact-age-hours", type=float, default=DEFAULT_MAX_ARTIFACT_AGE_HOURS, help="Warn when source artifacts are older than this many hours.")
     return parser.parse_args(argv)
 
 
 def main(argv: list[str]) -> int:
+    global LOG_ENABLED
+
     args = parse_args(argv)
     if args.self_test:
         return run_self_test()
 
+    LOG_ENABLED = not args.check_only
     data = build_consumer_view(max_artifact_age_hours=args.max_artifact_age_hours)
-    write_outputs(data)
+    if args.check_only:
+        data["mode"] = "offline_candidate_ledger_consumer_check_only"
+        data.setdefault("safety", {})["writes_artifacts"] = False
+    else:
+        write_outputs(data)
+
     if args.print_summary:
         print(json.dumps(data, indent=2, sort_keys=True))
+    elif args.check_only:
+        print(f"RIFTSCAN CANDIDATE LEDGER CONSUMER CHECK-ONLY: {data['status']}")
+        print("No report, summary, or log artifacts were written.")
+        print("Safety: offline consumer only; no focus, capture, input, movement, memory read, RiftReader command, offset validation, or /reloadui was run.")
     else:
         print(f"RIFTSCAN CANDIDATE LEDGER CONSUMER: {rel(REPORT)}")
         print(f"Summary: {rel(SUMMARY)}")

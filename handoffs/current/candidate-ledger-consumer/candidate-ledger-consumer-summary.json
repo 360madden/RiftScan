@@ -5,14 +5,14 @@
     "replay_analysis_seed",
     "future_validation_planning"
   ],
-  "app_version": "riftscan-candidate-ledger-consumer-v1.1.0",
+  "app_version": "riftscan-candidate-ledger-consumer-v1.1.1",
   "artifact_age": {
     "checked_count": 2,
     "current_best_checked_count": 1,
     "current_best_missing_count": 0,
     "current_best_records": [
       {
-        "age_hours": 174.924,
+        "age_hours": 437.646,
         "exists": true,
         "max_age_hours": 24.0,
         "mtime_utc": "2026-05-06T10:45:20Z",
@@ -27,7 +27,7 @@
     "missing_count": 0,
     "records": [
       {
-        "age_hours": 174.924,
+        "age_hours": 437.646,
         "exists": true,
         "max_age_hours": 24.0,
         "mtime_utc": "2026-05-06T10:45:20Z",
@@ -37,7 +37,7 @@
         "status": "stale"
       },
       {
-        "age_hours": 264.433,
+        "age_hours": 527.155,
         "exists": true,
         "max_age_hours": 24.0,
         "mtime_utc": "2026-05-02T17:14:47Z",
@@ -57,7 +57,7 @@
     "status": "PASS",
     "warning_count": 0
   },
-  "created_utc": "2026-05-13T17:40:46Z",
+  "created_utc": "2026-05-24T16:24:04Z",
   "current_best_candidate": {
     "allowed_downstream_uses": [
       "offline_review",

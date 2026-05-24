@@ -19,17 +19,18 @@ python tools/riftscan_discovery_ledger.py --validate-existing
 
 Normal ledger generation writes `candidate_ledger.jsonl`, validates it immediately, then embeds the validation result in both `discovery-ledger-summary.json` and `DISCOVERY_LEDGER_REPORT.md`.
 
-`.\scripts\run-riftscan-offline-workflow-check.cmd` refreshes the ledger and then validates the generated candidate ledger contract.
+`.\scripts\check-riftscan-offline-workflow.cmd` validates existing offline artifacts without writing report/log artifacts. `.\scripts\run-riftscan-offline-workflow-check.cmd` refreshes the ledger and then validates the generated candidate ledger contract.
 
 Downstream tools should prefer the safe consumer view:
 
 ```text
 python tools/riftscan_candidate_ledger_consumer.py --self-test
+python tools/riftscan_candidate_ledger_consumer.py --check-only --strict-exit-code
 .\scripts\run-riftscan-candidate-ledger-consumer.cmd --strict-exit-code
 .\scripts\run-riftscan-candidate-ledger-consumer.cmd --max-artifact-age-hours 24 --strict-exit-code
 ```
 
-The consumer writes `handoffs/current/candidate-ledger-consumer/`, marks every usable row as offline-only with `live_use_authorized=false`, and reports source-artifact age/missing diagnostics without starting live validation.
+Normal consumer generation writes `handoffs/current/candidate-ledger-consumer/`. Check-only consumer validation builds the same view in memory without writing report/log artifacts. Both modes mark every usable row as offline-only with `live_use_authorized=false` and report source-artifact age/missing diagnostics without starting live validation.
 
 ## Artifact contract
 

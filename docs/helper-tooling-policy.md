@@ -134,6 +134,7 @@ scripts/run-riftscan-capture-readiness.cmd
 
 tools/riftscan_offline_workflow_check.py
 scripts/run-riftscan-offline-workflow-check.cmd
+scripts/check-riftscan-offline-workflow.cmd
 
 tools/riftscan_discovery_ledger.py
 scripts/run-riftscan-discovery-ledger.cmd
@@ -178,8 +179,11 @@ Offline workflow check validation and full helper sweep:
 
 ```text
 python tools/riftscan_offline_workflow_check.py --self-test
+.\scripts\check-riftscan-offline-workflow.cmd
 .\scripts\run-riftscan-offline-workflow-check.cmd
 ```
+
+`check-riftscan-offline-workflow.cmd` runs check-only validation without refreshing ledgers or writing report/log artifacts. `run-riftscan-offline-workflow-check.cmd` refreshes generated offline workflow artifacts intentionally.
 
 Offline discovery ledger validation:
 
@@ -193,6 +197,7 @@ Candidate ledger consumer validation:
 
 ```text
 python tools/riftscan_candidate_ledger_consumer.py --self-test
+python tools/riftscan_candidate_ledger_consumer.py --check-only --strict-exit-code
 .\scripts\run-riftscan-candidate-ledger-consumer.cmd --strict-exit-code
 .\scripts\run-riftscan-candidate-ledger-consumer.cmd --max-artifact-age-hours 24 --strict-exit-code
 ```
